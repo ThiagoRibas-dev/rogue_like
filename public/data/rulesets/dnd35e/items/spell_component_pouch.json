@@ -1,0 +1,20 @@
+{
+  "spell_component_pouch": {
+    "id": "spell_component_pouch",
+    "name": "Spell Component Pouch",
+    "unidentifiedName": "Compartmented Belt Pouch",
+    "description": "A watertight leather belt pouch holding material components and focuses for arcane and divine spellcasting.",
+    "glyph": ")",
+    "fg": "#8e44ad",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 2,
+    "baseValue": 5,
+    "currencyUnit": "gp",
+    "tags": [
+      "class_tool",
+      "spellcasting_focus"
+    ],
+    "spriteId": "item_coin_purse"
+  }
+}

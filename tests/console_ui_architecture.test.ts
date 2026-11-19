@@ -239,7 +239,7 @@ describe('Console UI Architecture & Cartridge Adapter Suite', () => {
     expect((emptySheet.featureEntries ?? []).length).toBe(0);
 
     const emptyInv = adapter.getInventoryData({});
-    expect(emptyInv.maxWeightLbs).toBe(150);
+    expect(emptyInv.maxWeightLbs).toBe(100);
     expect(emptyInv.goldCurrency).toBe(0);
     expect(emptyInv.stashItems.length).toBe(0);
     expect(emptyInv.equippedSlots.main_hand).toBeNull();

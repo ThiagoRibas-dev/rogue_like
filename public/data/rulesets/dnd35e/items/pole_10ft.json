@@ -1,0 +1,20 @@
+{
+  "pole_10ft": {
+    "id": "pole_10ft",
+    "name": "Pole, 10-foot",
+    "unidentifiedName": "10-foot Wooden Pole",
+    "description": "A 10-foot wooden pole for probing suspicious flagstones, pits, and dark alcoves from a safe distance.",
+    "glyph": "/",
+    "fg": "#af601a",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 8,
+    "baseValue": 2,
+    "currencyUnit": "sp",
+    "tags": [
+      "adventuring_gear",
+      "dungeoneering"
+    ],
+    "spriteId": "dcss_item_staff_staff_0"
+  }
+}

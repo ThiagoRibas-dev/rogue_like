@@ -1,0 +1,25 @@
+{
+  "acid_flask": {
+    "id": "acid_flask",
+    "name": "Acid (Flask)",
+    "unidentifiedName": "Bubbling Glass Flask",
+    "description": "Splash weapon (10-ft. range increment) dealing 1d6 acid damage on a direct hit and 1 splash damage.",
+    "glyph": "!",
+    "fg": "#2ecc71",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 1,
+    "baseValue": 10,
+    "currencyUnit": "gp",
+    "tags": [
+      "alchemical",
+      "splash_weapon"
+    ],
+    "throwable": {
+      "range": 4,
+      "damage": 4,
+      "destroyOnImpact": true
+    },
+    "spriteId": "item_green_potion"
+  }
+}

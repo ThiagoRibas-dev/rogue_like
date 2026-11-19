@@ -1,0 +1,26 @@
+{
+  "oil_flask": {
+    "id": "oil_flask",
+    "name": "Oil (1-pint Flask)",
+    "unidentifiedName": "Flask of Oil",
+    "description": "A pint of lamp oil that burns for 6 hours in a lantern or can be thrown/ignited as a splash hazard.",
+    "glyph": "!",
+    "fg": "#d68910",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 1,
+    "baseValue": 1,
+    "currencyUnit": "sp",
+    "tags": [
+      "adventuring_gear",
+      "fuel",
+      "alchemical"
+    ],
+    "throwable": {
+      "range": 3,
+      "damage": 2,
+      "destroyOnImpact": true
+    },
+    "spriteId": "dcss_item_potion_brown_new"
+  }
+}

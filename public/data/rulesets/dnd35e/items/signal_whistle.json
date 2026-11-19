@@ -1,0 +1,19 @@
+{
+  "signal_whistle": {
+    "id": "signal_whistle",
+    "name": "Signal Whistle",
+    "unidentifiedName": "Metal Whistle",
+    "description": "A small metal whistle used to signal allies across dungeon halls or wilderness.",
+    "glyph": "~",
+    "fg": "#d5dbdb",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 0,
+    "baseValue": 8,
+    "currencyUnit": "sp",
+    "tags": [
+      "adventuring_gear"
+    ],
+    "spriteId": "dcss_item_misc_misc_horn"
+  }
+}

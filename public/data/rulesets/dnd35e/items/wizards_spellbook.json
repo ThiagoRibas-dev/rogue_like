@@ -1,0 +1,20 @@
+{
+  "wizards_spellbook": {
+    "id": "wizards_spellbook",
+    "name": "Spellbook, Wizard's",
+    "unidentifiedName": "Leatherbound Grimoire",
+    "description": "A 100-page leatherbound parchment tome serving as a wizard's arcane spell reference.",
+    "glyph": "+",
+    "fg": "#3498db",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 3,
+    "baseValue": 15,
+    "currencyUnit": "gp",
+    "tags": [
+      "class_tool",
+      "spellbook"
+    ],
+    "spriteId": "dcss_item_book_leather_new"
+  }
+}

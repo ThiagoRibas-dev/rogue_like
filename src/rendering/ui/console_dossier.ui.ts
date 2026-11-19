@@ -4,6 +4,7 @@
  */
 
 import type { UICharacterSheetModel, UIInventoryModel } from '../../types/ui_adapter.types.ts';
+import { renderSpriteToDataUrl } from '../sprite_atlas.ts';
 import {
   type ConsoleInventoryCallbacks,
   renderCompactStashWidget,
@@ -39,9 +40,13 @@ function renderIdentityDefensesColumn(
   portRow.className = 'crpg-portrait-health-row';
   const portrait = document.createElement('div');
   portrait.className = 'crpg-character-portrait';
-  portrait.textContent = sheet.portraitUrl ? '' : '👤';
-  if (sheet.portraitUrl) {
-    portrait.style.backgroundImage = `url(${sheet.portraitUrl})`;
+  const resolvedPortraitUrl =
+    sheet.portraitUrl ?? (sheet.spriteId !== undefined ? renderSpriteToDataUrl(sheet.spriteId, 64) : undefined);
+  portrait.textContent = resolvedPortraitUrl !== undefined ? '' : (sheet.glyph ?? '👤');
+  if (resolvedPortraitUrl !== undefined) {
+    portrait.style.backgroundImage = `url(${resolvedPortraitUrl})`;
+  } else if (sheet.glyphColor !== undefined) {
+    portrait.style.color = sheet.glyphColor;
   }
 
   const hpPill = document.createElement('div');

@@ -1,0 +1,20 @@
+{
+  "scroll_organizer": {
+    "id": "scroll_organizer",
+    "name": "Scroll Organizer",
+    "unidentifiedName": "Leather Scroll Strip",
+    "description": "A long strip of leather with 15 overlapping pockets allowing you to scan scroll titles at a glance.",
+    "glyph": "?",
+    "fg": "#af601a",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 0.5,
+    "baseValue": 5,
+    "currencyUnit": "gp",
+    "tags": [
+      "adventuring_gear",
+      "container"
+    ],
+    "spriteId": "item_scroll_2"
+  }
+}

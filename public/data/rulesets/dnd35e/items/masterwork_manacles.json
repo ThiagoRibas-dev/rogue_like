@@ -1,0 +1,20 @@
+{
+  "masterwork_manacles": {
+    "id": "masterwork_manacles",
+    "baseItemId": "manacles",
+    "name": "Masterwork Manacles",
+    "unidentifiedName": "Precision Iron Manacles",
+    "description": "Superior iron manacles (Escape Artist DC 35, Break DC 28).",
+    "glyph": "(",
+    "fg": "#bdc3c7",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 2,
+    "baseValue": 50,
+    "currencyUnit": "gp",
+    "magicalProperties": {
+      "isMasterwork": true
+    },
+    "spriteId": "dcss_item_misc_misc_box"
+  }
+}

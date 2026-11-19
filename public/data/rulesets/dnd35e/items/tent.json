@@ -1,0 +1,20 @@
+{
+  "tent": {
+    "id": "tent",
+    "name": "Tent (Two-Person)",
+    "unidentifiedName": "Canvas Tent",
+    "description": "A simple collapsible canvas tent that sleeps two adventurers.",
+    "glyph": "^",
+    "fg": "#b9770e",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 20,
+    "baseValue": 10,
+    "currencyUnit": "gp",
+    "tags": [
+      "adventuring_gear",
+      "camp_gear"
+    ],
+    "spriteId": "dcss_item_misc_misc_box"
+  }
+}

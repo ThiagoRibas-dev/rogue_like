@@ -15,7 +15,7 @@
       "defense": 2
     },
     "inventoryConfig": {
-      "baseCapacity": 10
+      "baseCapacity": 30
     },
     "equipmentSlots": [
       "head",

@@ -34,6 +34,22 @@
       "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_char_builder_class.ui.ts."
     ]
   },
+  "src/rendering/ui/dnd35e_char_builder_equipment.ui.ts": {
+    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
+    "tier": "tier2_ui",
+    "responsibility": "Renders the Starting Equipment Kit Inspector (11 PHB/SRD Class Packages + 4 Classic Kits) and hosts the Custom Gear Shop mode switcher.",
+    "canonicalEntryPoints": [
+      "resetEquipmentStepUiState",
+      "renderCharBuilderEquipmentStep"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_char_builder_equipment.ui.ts.",
+      "excludes": "Custom Gear Shop view (owned by dnd35e_char_builder_shop.ui.ts)."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_char_builder_equipment.ui.ts."
+    ]
+  },
   "src/rendering/ui/dnd35e_char_builder_feat_row.ui.ts": {
     "domain": "D&D 3.5e: Tactical UI & Character Sheet",
     "tier": "tier2_ui",
@@ -85,6 +101,25 @@
       "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_char_builder_race_abilities.ui.ts."
     ]
   },
+  "src/rendering/ui/dnd35e_char_builder_shop.ui.ts": {
+    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
+    "tier": "tier2_ui",
+    "responsibility": "Renders the Custom Gear Shop sub-view with SRD Goods & Services catalog browsing, proficiency badges, starting gold rolling, free outfit selection, and equip-slot controls.",
+    "canonicalEntryPoints": [
+      "SizeCat",
+      "buildEncumbranceBanner",
+      "makeCharBuilderMiniBtn",
+      "resetCustomGearShopUiState",
+      "renderCustomGearShopView"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_char_builder_shop.ui.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_char_builder_shop.ui.ts."
+    ]
+  },
   "src/rendering/ui/dnd35e_char_builder_skills.ui.ts": {
     "domain": "D&D 3.5e: Tactical UI & Character Sheet",
     "tier": "tier2_ui",
@@ -117,20 +152,51 @@
       "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_char_builder_spells.ui.ts."
     ]
   },
+  "src/rendering/ui/dnd35e_char_builder_sprite_picker.ui.ts": {
+    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
+    "tier": "tier2_ui",
+    "responsibility": "Renders the searchable multi-tab Sprite Picker and expands D&D 3.5e race/class sprite hints for Character Creation.",
+    "canonicalEntryPoints": [
+      "resetSpritePickerUiState",
+      "expandDnD35SpriteHints",
+      "renderSpritePickerSection"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_char_builder_sprite_picker.ui.ts.",
+      "excludes": "Tier 1 Console sprite catalog discovery (owned by src/utils/sprite_pack.ts)."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_char_builder_sprite_picker.ui.ts."
+    ]
+  },
   "src/rendering/ui/dnd35e_char_builder_steps.ui.ts": {
     "domain": "D&D 3.5e: Tactical UI & Character Sheet",
     "tier": "tier2_ui",
-    "responsibility": "Single Source of Truth for reusable, parameterized 2-pane step views (Skills, Feats, Class Spells, Equipment) shared across Character Creation and Level-Up modals.",
-    "canonicalEntryPoints": [
-      "renderCharBuilderEquipmentStep"
-    ],
+    "responsibility": "Single Source of Truth barrel for reusable, parameterized 2-pane step views (Skills, Feats, Class Spells, Equipment, Summary) shared across Character Creation and Level-Up modals.",
+    "canonicalEntryPoints": [],
     "ownershipBoundary": {
-      "includes": "2-pane master/detail step rendering for Skills, Feats, per-class Spells, and Starting Equipment with filter chips and live inspector binding.",
-      "excludes": "Modal shell framing, step-tab bar navigation, and state commit orchestration (owned by dnd35e_char_builder.ui.ts and dnd35e_level_up.ui.ts)."
+      "includes": "Coordinating facade and primary orchestration exports declared directly in src/rendering/ui/dnd35e_char_builder_steps.ui.ts.",
+      "excludes": "Underlying primitive symbols re-exported from leaf modules (e.g. src/rendering/ui/dnd35e_char_builder_equipment.ui.ts)."
     },
     "antiPatterns": [
       "Never duplicate inline Skills, Feats, or Spell step DOM rendering inside dnd35e_level_up.ui.ts or dnd35e_char_builder.ui.ts.",
       "Never mix multiple classes' spellbooks into a single spell selection step."
+    ]
+  },
+  "src/rendering/ui/dnd35e_char_builder_summary.ui.ts": {
+    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
+    "tier": "tier2_ui",
+    "responsibility": "Renders the final Review & Identity step of D&D 3.5e Character Creation (Name, Title, Glyph Color, Traits, Sprite Picker, and memoized authoritative live Character Sheet Summary).",
+    "canonicalEntryPoints": [
+      "resetSummaryStepUiState",
+      "renderCharBuilderSummaryStep"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_char_builder_summary.ui.ts.",
+      "excludes": "Sprite Picker sub-view (owned by dnd35e_char_builder_sprite_picker.ui.ts)."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_char_builder_summary.ui.ts."
     ]
   },
   "src/rendering/ui/dnd35e_char_builder.ui.ts": {
@@ -586,6 +652,10 @@
       "POINT_BUY_MIN_SCORE",
       "POINT_BUY_MAX_SCORE",
       "SYNERGY_RANK_THRESHOLD",
+      "MAX_CHARACTER_NAME_LENGTH",
+      "MAX_CHARACTER_TITLE_LENGTH",
+      "MAX_CHARACTER_MANNERISMS",
+      "INVENTORY_CAPACITY_HEADROOM",
       "CharacterCreationDraft",
       "LevelUpChoice",
       "calculatePointBuyCost",
@@ -799,10 +869,19 @@
   "src/rulesets/dnd35e/builder/starting_packages.ts": {
     "domain": "D&D 3.5e: Character Builder, Progression & Ledger",
     "tier": "tier2_cartridge",
-    "responsibility": "Pre-configured starting equipment packages for quick character creation.",
+    "responsibility": "All 11 PHB/SRD Class Starting Packages, 4 Classic Kits, free starter outfit registry, and custom gear shop cost/weight/wealth helpers.",
     "canonicalEntryPoints": [
+      "StartingPackageItemEntry",
       "StartingEquipmentPackage",
-      "STARTING_EQUIPMENT_PACKAGES"
+      "FREE_STARTER_OUTFIT_IDS",
+      "getStarterOutfitIds",
+      "COMMON_ADVENTURER_GEAR_ITEMS",
+      "STARTING_EQUIPMENT_PACKAGES",
+      "resolveClassStartingWealthCp",
+      "rollClassStartingWealthCp",
+      "computeCustomKitCostCp",
+      "computeKitTotalWeightLbs",
+      "buildCustomItemsFromPackage"
     ],
     "ownershipBoundary": {
       "includes": "Pure implementation and exports for src/rulesets/dnd35e/builder/starting_packages.ts.",

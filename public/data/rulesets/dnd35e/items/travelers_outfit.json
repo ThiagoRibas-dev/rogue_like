@@ -1,0 +1,20 @@
+{
+  "travelers_outfit": {
+    "id": "travelers_outfit",
+    "name": "Traveler's Outfit",
+    "unidentifiedName": "Woolen Travel Garb",
+    "description": "Boots, a wool skirt or breeches, a sturdy belt, a shirt, and an ample hooded cloak.",
+    "glyph": "[",
+    "fg": "#7f8c8d",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 5,
+    "baseValue": 1,
+    "currencyUnit": "gp",
+    "tags": [
+      "clothing_outfit",
+      "starter_outfit"
+    ],
+    "spriteId": "dcss_item_armor_back_cloak_3"
+  }
+}

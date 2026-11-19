@@ -1,0 +1,21 @@
+{
+  "tindertwig": {
+    "id": "tindertwig",
+    "name": "Tindertwig",
+    "unidentifiedName": "Alchemical Matchstick",
+    "description": "An alchemically tipped wooden stick that ignites instantly when struck (lights a fire as a standard action).",
+    "glyph": "/",
+    "fg": "#e67e22",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 0,
+    "baseValue": 1,
+    "currencyUnit": "gp",
+    "tags": [
+      "adventuring_gear",
+      "fire_starter",
+      "alchemical"
+    ],
+    "spriteId": "dcss_item_wand_gem_bone_new"
+  }
+}

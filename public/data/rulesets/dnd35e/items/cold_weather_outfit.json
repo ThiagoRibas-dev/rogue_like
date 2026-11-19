@@ -1,0 +1,19 @@
+{
+  "cold_weather_outfit": {
+    "id": "cold_weather_outfit",
+    "name": "Cold Weather Outfit",
+    "unidentifiedName": "Fur-Lined Wool Coat",
+    "description": "A wool coat, linen shirt, wool cap, heavy cloak, thick pants, and boots (+5 circumstance bonus on Fort saves vs cold).",
+    "glyph": "[",
+    "fg": "#aed6f1",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 7,
+    "baseValue": 8,
+    "currencyUnit": "gp",
+    "tags": [
+      "clothing_outfit"
+    ],
+    "spriteId": "dcss_item_armor_back_cloak_2"
+  }
+}

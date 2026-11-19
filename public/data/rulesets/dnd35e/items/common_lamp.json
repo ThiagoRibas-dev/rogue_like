@@ -1,0 +1,21 @@
+{
+  "common_lamp": {
+    "id": "common_lamp",
+    "name": "Lamp, Common",
+    "unidentifiedName": "Oil Lamp",
+    "description": "An open-flame oil lamp that clearly illuminates a 15-ft. radius for 6 hours per pint of oil.",
+    "glyph": "(",
+    "fg": "#f39c12",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 1,
+    "baseValue": 1,
+    "currencyUnit": "sp",
+    "tags": [
+      "adventuring_gear",
+      "light_source",
+      "light_radius_ft:15"
+    ],
+    "spriteId": "dcss_item_misc_misc_lamp_new"
+  }
+}

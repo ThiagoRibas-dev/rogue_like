@@ -210,6 +210,9 @@
         "activatedAbilities": []
       }
     },
-    "acfSwaps": []
+    "acfSwaps": [],
+    "startingGoldDice": "3d4*10",
+    "averageStartingGoldGp": 75,
+    "defaultStartingPackageId": "pkg_rogue"
   }
 }

@@ -1,0 +1,21 @@
+{
+  "arrows_20": {
+    "id": "arrows_20",
+    "name": "Quiver of Arrows (20)",
+    "unidentifiedName": "Quiver of Arrows",
+    "description": "A leather quiver holding 20 standard bow arrows.",
+    "glyph": "{",
+    "fg": "#d35400",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 3,
+    "baseValue": 1,
+    "currencyUnit": "gp",
+    "tags": [
+      "adventuring_gear",
+      "ammunition",
+      "ammo:arrow"
+    ],
+    "spriteId": "dcss_item_weapon_ranged_elven_arrow"
+  }
+}

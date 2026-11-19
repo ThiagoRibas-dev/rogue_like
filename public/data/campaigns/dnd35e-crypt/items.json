@@ -191,12 +191,18 @@
     "id": "backpack",
     "name": "Backpack",
     "unidentifiedName": "Backpack",
-    "description": "A sturdy pack that increases the amount of items you can carry.",
+    "description": "A sturdy leather pack carried on the back that increases the amount of items you can carry.",
     "glyph": "b",
     "fg": "#8e6b3e",
     "bg": "transparent",
     "category": "armor",
     "weight": 2,
+    "baseValue": 2,
+    "currencyUnit": "gp",
+    "tags": [
+      "adventuring_gear",
+      "container"
+    ],
     "equippable": {
       "slot": "back",
       "attackBonus": 0,

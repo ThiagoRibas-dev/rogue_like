@@ -1,0 +1,22 @@
+{
+  "bullseye_lantern": {
+    "id": "bullseye_lantern",
+    "baseItemId": "hooded_lantern",
+    "name": "Lantern, Bullseye",
+    "unidentifiedName": "Polished Cone Lantern",
+    "description": "A single-shutter polished lantern illuminating a 60-ft. cone (120-ft. shadowy) for 6 hours per pint of oil.",
+    "glyph": "(",
+    "fg": "#f4d03f",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 3,
+    "baseValue": 12,
+    "currencyUnit": "gp",
+    "tags": [
+      "adventuring_gear",
+      "light_source",
+      "light_radius_ft:60"
+    ],
+    "spriteId": "dcss_item_misc_magic_lamp"
+  }
+}

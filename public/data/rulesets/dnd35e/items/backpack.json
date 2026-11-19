@@ -1,0 +1,27 @@
+{
+  "backpack": {
+    "id": "backpack",
+    "name": "Backpack",
+    "unidentifiedName": "Backpack",
+    "description": "A leather pack carried on the back with straps to secure it (holds up to 1 cu. ft., +5 slot capacity).",
+    "glyph": "b",
+    "fg": "#8e6b3e",
+    "bg": "transparent",
+    "category": "armor",
+    "weight": 2,
+    "baseValue": 2,
+    "currencyUnit": "gp",
+    "tags": [
+      "adventuring_gear",
+      "container"
+    ],
+    "equippable": {
+      "slot": "back",
+      "attackBonus": 0,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 5
+    },
+    "spriteId": "tile_chest_closed"
+  }
+}

@@ -3,6 +3,91 @@ import { type CampaignData, type SpriteSheetSource } from '../types/campaign.typ
 import { isEffectiveSpriteMode } from './procedural_sprites.ts';
 
 /**
+ * Snapshot of the currently mounted composited sprite atlas for synchronous UI thumbnail extraction.
+ */
+export interface ActiveSpriteAtlasSnapshot {
+  readonly atlas: HTMLCanvasElement;
+  readonly tileMap: Readonly<Record<string, readonly [number, number]>>;
+  readonly tileWidth: number;
+  readonly tileHeight: number;
+  readonly revision: number;
+}
+
+let activeAtlasSnapshot: ActiveSpriteAtlasSnapshot | null = null;
+let atlasRevisionCounter = 0;
+const spriteDataUrlCache = new Map<string, string>();
+const MAX_SPRITE_DATA_URL_CACHE_ENTRIES = 512;
+
+/**
+ * Updates or clears the active composited sprite atlas snapshot used by UI modals and character portraits.
+ *
+ * @param snapshot Atlas canvas, merged tileMap, and tile dimensions, or `null` when entering pure ASCII mode.
+ */
+export function setActiveSpriteAtlas(snapshot: Omit<ActiveSpriteAtlasSnapshot, 'revision'> | null): void {
+  atlasRevisionCounter += 1;
+  spriteDataUrlCache.clear();
+  activeAtlasSnapshot = snapshot ? { ...snapshot, revision: atlasRevisionCounter } : null;
+}
+
+/**
+ * Returns the currently active composited sprite atlas snapshot, or `null` in ASCII/headless mode.
+ */
+export function getActiveSpriteAtlas(): ActiveSpriteAtlasSnapshot | null {
+  return activeAtlasSnapshot;
+}
+
+/**
+ * Slices a single sprite from the active composited atlas into a crisp pixel-art PNG data URL.
+ *
+ * @param spriteId Sprite identifier key in `mergedTileMap`.
+ * @param sizePx Target square canvas dimension in pixels (defaults to `64`).
+ * @returns PNG data URL string, or `undefined` if no active atlas or matching `spriteId` exists.
+ */
+export function renderSpriteToDataUrl(spriteId: string, sizePx = 64): string | undefined {
+  if (!activeAtlasSnapshot || !spriteId || typeof document === 'undefined') {
+    return undefined;
+  }
+  const coords = activeAtlasSnapshot.tileMap[spriteId];
+  if (!coords) {
+    return undefined;
+  }
+  const cacheKey = `${activeAtlasSnapshot.revision}:${spriteId}:${sizePx}`;
+  const cached = spriteDataUrlCache.get(cacheKey);
+  if (cached !== undefined) {
+    return cached;
+  }
+
+  const canvas = document.createElement('canvas');
+  canvas.width = sizePx;
+  canvas.height = sizePx;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) {
+    return undefined;
+  }
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(
+    activeAtlasSnapshot.atlas,
+    coords[0],
+    coords[1],
+    activeAtlasSnapshot.tileWidth,
+    activeAtlasSnapshot.tileHeight,
+    0,
+    0,
+    sizePx,
+    sizePx
+  );
+  const dataUrl = canvas.toDataURL('image/png');
+  if (spriteDataUrlCache.size >= MAX_SPRITE_DATA_URL_CACHE_ENTRIES) {
+    const firstKey = spriteDataUrlCache.keys().next().value;
+    if (firstKey !== undefined) {
+      spriteDataUrlCache.delete(firstKey);
+    }
+  }
+  spriteDataUrlCache.set(cacheKey, dataUrl);
+  return dataUrl;
+}
+
+/**
  * Loads all spritesheet images and composites them into one atlas canvas + merged tileMap.
  */
 export async function compositeAtlas(

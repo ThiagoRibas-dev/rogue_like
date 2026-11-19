@@ -105,6 +105,9 @@ export interface UILevelHistoryRowModel {
 export interface UICharacterSheetModel {
   readonly name: string;
   readonly portraitUrl?: string;
+  readonly spriteId?: string;
+  readonly glyph?: string;
+  readonly glyphColor?: string;
   readonly levelSummary: string;
   readonly raceName: string;
   readonly alignmentName?: string;

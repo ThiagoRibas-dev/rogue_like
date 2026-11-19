@@ -10,6 +10,9 @@ import type { EntityId, GameState } from '../../types/game-state.types.ts';
 import type { EntityTemplate } from '../../types/campaign/entity.ts';
 import { buildAnatomyEquipmentSlots, type AnatomyBodyPlan } from '../../systems/inventory/equipment_slots.ts';
 
+/** Default inventory slot capacity for spawned actors when no template `inventoryConfig` is specified. */
+export const DEFAULT_ACTOR_INVENTORY_CAPACITY = 30;
+
 /**
  * Initializes an actor's anatomical `EquipmentComponent` and `InventoryComponent`.
  * If `template.equipmentSlots` is specified, it builds flat slots from the template.
@@ -41,7 +44,7 @@ export function initializeActorEquipmentAndInventory(
     const inventoryCmp: InventoryComponent = {
       type: ComponentType.Inventory,
       items: [],
-      baseCapacity: 20
+      baseCapacity: DEFAULT_ACTOR_INVENTORY_CAPACITY
     };
     nextState = addComponent(nextState, entityId, inventoryCmp);
   }

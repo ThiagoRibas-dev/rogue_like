@@ -1,0 +1,19 @@
+{
+  "antitoxin": {
+    "id": "antitoxin",
+    "name": "Antitoxin (Vial)",
+    "unidentifiedName": "Herbal Vial",
+    "description": "Grants a +5 alchemical bonus on Fortitude saving throws against poison for 1 hour.",
+    "glyph": "!",
+    "fg": "#1abc9c",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 0,
+    "baseValue": 50,
+    "currencyUnit": "gp",
+    "tags": [
+      "alchemical"
+    ],
+    "spriteId": "dcss_item_potion_cyan_new"
+  }
+}

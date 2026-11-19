@@ -1,0 +1,24 @@
+{
+  "smokestick": {
+    "id": "smokestick",
+    "name": "Smokestick",
+    "unidentifiedName": "Resin-Treated Stick",
+    "description": "Alchemically treated wooden stick that instantly fills a 10-ft. cube with opaque fog-like smoke when lit.",
+    "glyph": "/",
+    "fg": "#95a5a6",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 0.5,
+    "baseValue": 20,
+    "currencyUnit": "gp",
+    "tags": [
+      "alchemical"
+    ],
+    "throwable": {
+      "range": 3,
+      "damage": 0,
+      "destroyOnImpact": true
+    },
+    "spriteId": "dcss_item_wand_gem_brass_new"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "hammer": {
+    "id": "hammer",
+    "name": "Hammer (Tool)",
+    "unidentifiedName": "Iron Hammer",
+    "description": "A one-handed iron-headed tool hammer useful for pounding pitons and spikes into stone.",
+    "glyph": "/",
+    "fg": "#95a5a6",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 2,
+    "baseValue": 5,
+    "currencyUnit": "sp",
+    "tags": [
+      "adventuring_gear",
+      "dungeoneering"
+    ],
+    "spriteId": "dcss_item_weapon_hammer_2_new"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "small_steel_mirror": {
+    "id": "small_steel_mirror",
+    "name": "Mirror, Small Steel",
+    "unidentifiedName": "Polished Steel Mirror",
+    "description": "A polished steel mirror handy for looking around corners, signaling, or keeping an eye on gaze attacks.",
+    "glyph": "(",
+    "fg": "#d5dbdb",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 0.5,
+    "baseValue": 10,
+    "currencyUnit": "gp",
+    "tags": [
+      "adventuring_gear",
+      "dungeoneering"
+    ],
+    "spriteId": "dcss_item_misc_mirror"
+  }
+}

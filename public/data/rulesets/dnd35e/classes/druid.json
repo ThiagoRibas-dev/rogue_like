@@ -829,6 +829,9 @@
           "9": 4
         }
       }
-    ]
+    ],
+    "startingGoldDice": "2d4*10",
+    "averageStartingGoldGp": 50,
+    "defaultStartingPackageId": "pkg_druid"
   }
 }

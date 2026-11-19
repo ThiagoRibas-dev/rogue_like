@@ -1,0 +1,21 @@
+{
+  "candle": {
+    "id": "candle",
+    "name": "Candle",
+    "unidentifiedName": "Tallow Candle",
+    "description": "A wax candle that dimly illuminates a 5-ft. radius for 1 hour.",
+    "glyph": "!",
+    "fg": "#f9e79f",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 0,
+    "baseValue": 1,
+    "currencyUnit": "cp",
+    "tags": [
+      "adventuring_gear",
+      "light_source",
+      "light_radius_ft:5"
+    ],
+    "spriteId": "dcss_item_misc_misc_lamp_inert"
+  }
+}

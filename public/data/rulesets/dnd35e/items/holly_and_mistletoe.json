@@ -1,0 +1,21 @@
+{
+  "holly_and_mistletoe": {
+    "id": "holly_and_mistletoe",
+    "name": "Holly and Mistletoe",
+    "unidentifiedName": "Sprigs of Holly",
+    "description": "Sacred sprigs of holly and mistletoe used by druids as their default divine focus.",
+    "glyph": "*",
+    "fg": "#2ecc71",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 0,
+    "baseValue": 0,
+    "currencyUnit": "gp",
+    "tags": [
+      "class_tool",
+      "divine_focus",
+      "druid_focus"
+    ],
+    "spriteId": "dcss_item_amulet_artefact_urand_air_new"
+  }
+}

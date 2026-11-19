@@ -1,0 +1,20 @@
+{
+  "sack": {
+    "id": "sack",
+    "name": "Sack (Empty)",
+    "unidentifiedName": "Burlap Sack",
+    "description": "A drawstring sack made of burlap (holds 1 cu. ft.).",
+    "glyph": ")",
+    "fg": "#c2b280",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 0.5,
+    "baseValue": 1,
+    "currencyUnit": "sp",
+    "tags": [
+      "adventuring_gear",
+      "container"
+    ],
+    "spriteId": "dcss_item_misc_misc_box"
+  }
+}

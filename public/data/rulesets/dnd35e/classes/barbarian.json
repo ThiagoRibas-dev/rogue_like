@@ -415,6 +415,9 @@
           "rage_6"
         ]
       }
-    ]
+    ],
+    "startingGoldDice": "4d4*10",
+    "averageStartingGoldGp": 100,
+    "defaultStartingPackageId": "pkg_barbarian"
   }
 }

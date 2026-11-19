@@ -1,0 +1,20 @@
+{
+  "grappling_hook": {
+    "id": "grappling_hook",
+    "name": "Grappling Hook",
+    "unidentifiedName": "Iron Grappling Hook",
+    "description": "Multi-pronged iron hook tied to the end of a rope to secure it to ledges and battlements.",
+    "glyph": "(",
+    "fg": "#7f8c8d",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 4,
+    "baseValue": 1,
+    "currencyUnit": "gp",
+    "tags": [
+      "adventuring_gear",
+      "dungeoneering"
+    ],
+    "spriteId": "dcss_item_misc_misc_disc_new"
+  }
+}

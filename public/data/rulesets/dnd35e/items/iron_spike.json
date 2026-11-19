@@ -1,0 +1,20 @@
+{
+  "iron_spike": {
+    "id": "iron_spike",
+    "name": "Iron Spike",
+    "unidentifiedName": "Iron Spike",
+    "description": "A heavy iron spike commonly hammered into door frames to wedge doors shut.",
+    "glyph": "^",
+    "fg": "#7f8c8d",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 1,
+    "baseValue": 1,
+    "currencyUnit": "sp",
+    "tags": [
+      "adventuring_gear",
+      "dungeoneering"
+    ],
+    "spriteId": "item_primitive_key"
+  }
+}

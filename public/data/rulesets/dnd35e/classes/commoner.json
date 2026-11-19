@@ -201,6 +201,9 @@
         "activatedAbilities": []
       }
     },
-    "acfSwaps": []
+    "acfSwaps": [],
+    "startingGoldDice": "5d4",
+    "averageStartingGoldGp": 13,
+    "defaultStartingPackageId": "pkg_monk"
   }
 }

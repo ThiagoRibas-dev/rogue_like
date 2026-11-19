@@ -558,5 +558,190 @@
     "category": "item",
     "color": "#3498db",
     "description": "SRD item property tag: spell:mage_armor."
+  },
+  "adventuring_gear": {
+    "category": "item",
+    "color": "#95a5a6",
+    "description": "Standard SRD adventuring gear."
+  },
+  "alchemical": {
+    "category": "item",
+    "color": "#2ecc71",
+    "description": "Alchemical substance or preparation."
+  },
+  "ammo:arrow": {
+    "category": "item",
+    "color": "#d35400",
+    "description": "Arrow ammunition for bows."
+  },
+  "ammo:bolt": {
+    "category": "item",
+    "color": "#d35400",
+    "description": "Bolt ammunition for crossbows."
+  },
+  "ammo:sling_bullet": {
+    "category": "item",
+    "color": "#7f8c8d",
+    "description": "Lead bullet ammunition for slings."
+  },
+  "ammunition": {
+    "category": "item",
+    "color": "#d35400",
+    "description": "Ranged weapon ammunition."
+  },
+  "camp_gear": {
+    "category": "item",
+    "color": "#8d6e63",
+    "description": "Overland camping and rest equipment."
+  },
+  "class_tool": {
+    "category": "item",
+    "color": "#f1c40f",
+    "description": "Special tool or kit associated with class abilities."
+  },
+  "clothing_outfit": {
+    "category": "item",
+    "color": "#9b59b6",
+    "description": "Clothing outfit."
+  },
+  "container": {
+    "category": "item",
+    "color": "#a0522d",
+    "description": "Storage pack, pouch, or vessel."
+  },
+  "divine_focus": {
+    "category": "item",
+    "color": "#f1c40f",
+    "description": "Divine spellcasting focus."
+  },
+  "druid_focus": {
+    "category": "item",
+    "color": "#27ae60",
+    "description": "Druidic natural focus such as holly and mistletoe."
+  },
+  "dungeoneering": {
+    "category": "item",
+    "color": "#7f8c8d",
+    "description": "Subterranean exploration utility gear."
+  },
+  "fire_starter": {
+    "category": "item",
+    "color": "#e67e22",
+    "description": "Device or tinder used to ignite flames."
+  },
+  "food": {
+    "category": "item",
+    "color": "#e67e22",
+    "description": "Edible provisions or trail rations."
+  },
+  "fuel": {
+    "category": "item",
+    "color": "#f39c12",
+    "description": "Combustible lamp oil or fuel."
+  },
+  "holy": {
+    "category": "item",
+    "color": "#f1c40f",
+    "description": "Consecrated holy item."
+  },
+  "holy_symbol": {
+    "category": "item",
+    "color": "#f1c40f",
+    "description": "Religious symbol used for Turning Undead and divine spells."
+  },
+  "light_radius_ft:5": {
+    "category": "item",
+    "color": "#f39c12",
+    "description": "Bright illumination radius of 5 feet."
+  },
+  "light_radius_ft:15": {
+    "category": "item",
+    "color": "#f39c12",
+    "description": "Bright illumination radius of 15 feet."
+  },
+  "light_radius_ft:20": {
+    "category": "item",
+    "color": "#f39c12",
+    "description": "Bright illumination radius of 20 feet."
+  },
+  "light_radius_ft:30": {
+    "category": "item",
+    "color": "#f1c40f",
+    "description": "Bright illumination radius of 30 feet."
+  },
+  "light_radius_ft:60": {
+    "category": "item",
+    "color": "#f1c40f",
+    "description": "Bright illumination beam/cone of 60 feet."
+  },
+  "light_source": {
+    "category": "item",
+    "color": "#f1c40f",
+    "description": "Portable illumination source."
+  },
+  "magical": {
+    "category": "item",
+    "color": "#9b59b6",
+    "description": "Imbued with permanent magic."
+  },
+  "musical_instrument": {
+    "category": "item",
+    "color": "#f39c12",
+    "description": "Instrument used for Perform checks and Bardic Music."
+  },
+  "permanent_light": {
+    "category": "item",
+    "color": "#f1c40f",
+    "description": "Continual illumination without fuel."
+  },
+  "restraints": {
+    "category": "item",
+    "color": "#7f8c8d",
+    "description": "Chains or manacles for binding."
+  },
+  "rope": {
+    "category": "item",
+    "color": "#d35400",
+    "description": "Coiled climbing or binding rope."
+  },
+  "skill_kit": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "Specialized kit granting circumstance bonuses on skill checks."
+  },
+  "spellbook": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "Wizard grimoire storing arcane formulas."
+  },
+  "spellcasting_focus": {
+    "category": "item",
+    "color": "#9b59b6",
+    "description": "Material components pouch or spellcasting focus."
+  },
+  "splash_weapon": {
+    "category": "item",
+    "color": "#2ecc71",
+    "description": "Throwable flask dealing splash damage."
+  },
+  "starter_outfit": {
+    "category": "item",
+    "color": "#9b59b6",
+    "description": "Free 1st-level character creation clothing outfit."
+  },
+  "tactical_hazard": {
+    "category": "item",
+    "color": "#e74c3c",
+    "description": "Deployable area denial hazard such as caltrops."
+  },
+  "thieves_tools": {
+    "category": "item",
+    "color": "#95a5a6",
+    "description": "Lockpicks and trap-disabling tools."
+  },
+  "writing_gear": {
+    "category": "item",
+    "color": "#bdc3c7",
+    "description": "Ink, parchment, paper, and writing instruments."
   }
 }

@@ -1,0 +1,25 @@
+{
+  "flour_pouch": {
+    "id": "flour_pouch",
+    "name": "Flour Pouch",
+    "unidentifiedName": "Burlap Flour Satchel",
+    "description": "Loosely tied satchel of white flour used as a splash weapon to coat invisible foes (reducing miss chance to 20%).",
+    "glyph": ")",
+    "fg": "#fdfefe",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 0.5,
+    "baseValue": 1,
+    "currencyUnit": "sp",
+    "tags": [
+      "adventuring_gear",
+      "dungeoneering"
+    ],
+    "throwable": {
+      "range": 3,
+      "damage": 0,
+      "destroyOnImpact": true
+    },
+    "spriteId": "dcss_item_misc_misc_box"
+  }
+}

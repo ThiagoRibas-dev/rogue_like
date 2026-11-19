@@ -1,0 +1,18 @@
+{
+  "silver_holy_symbol": {
+    "id": "silver_holy_symbol",
+    "baseItemId": "wooden_holy_symbol",
+    "name": "Holy Symbol, Silver",
+    "unidentifiedName": "Silver Holy Symbol",
+    "description": "A finely wrought silver divine focus serving as a mark of ecclesiastical status.",
+    "glyph": "+",
+    "fg": "#ecf0f1",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 1,
+    "baseValue": 25,
+    "currencyUnit": "gp",
+    "specialMaterial": "silver",
+    "spriteId": "item_ankh"
+  }
+}

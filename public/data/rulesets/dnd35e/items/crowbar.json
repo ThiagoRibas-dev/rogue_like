@@ -1,0 +1,20 @@
+{
+  "crowbar": {
+    "id": "crowbar",
+    "name": "Crowbar",
+    "unidentifiedName": "Iron Crowbar",
+    "description": "An iron bar for levering chests and doors open (+2 circumstance bonus on Strength checks to force open).",
+    "glyph": "/",
+    "fg": "#7f8c8d",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 5,
+    "baseValue": 2,
+    "currencyUnit": "gp",
+    "tags": [
+      "adventuring_gear",
+      "dungeoneering"
+    ],
+    "spriteId": "item_primitive_key"
+  }
+}

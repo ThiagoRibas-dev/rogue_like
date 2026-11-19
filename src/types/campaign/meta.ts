@@ -141,6 +141,10 @@ export const SpriteSheetSourceSchema = z.object({
     .describe('Runtime-resolved base URL or disk subpath when hydrated from a shared sprite pack'),
   tileWidth: z.number().int().positive().describe('Width of each sprite cell in pixels'),
   tileHeight: z.number().int().positive().describe('Height of each sprite cell in pixels'),
+  isCharacterSpriteSheet: z
+    .boolean()
+    .optional()
+    .describe('Marks sheets whose sprites represent playable character avatars'),
   tileMap: z
     .record(
       z.string(),

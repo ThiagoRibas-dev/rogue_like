@@ -1,0 +1,21 @@
+{
+  "thieves_tools": {
+    "id": "thieves_tools",
+    "name": "Thieves' Tools",
+    "unidentifiedName": "Lockpick Roll",
+    "description": "Skeleton keys, picks, pries, and clamps required for Disable Device and Open Lock checks without penalty.",
+    "glyph": "~",
+    "fg": "#95a5a6",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 1,
+    "baseValue": 30,
+    "currencyUnit": "gp",
+    "tags": [
+      "class_tool",
+      "skill_kit",
+      "thieves_tools"
+    ],
+    "spriteId": "dcss_item_misc_key"
+  }
+}

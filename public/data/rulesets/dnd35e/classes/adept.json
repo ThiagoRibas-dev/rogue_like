@@ -338,6 +338,9 @@
         "activatedAbilities": []
       }
     },
-    "acfSwaps": []
+    "acfSwaps": [],
+    "startingGoldDice": "2d4*10",
+    "averageStartingGoldGp": 50,
+    "defaultStartingPackageId": "pkg_cleric"
   }
 }

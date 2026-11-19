@@ -444,6 +444,9 @@
           "4": 3
         }
       }
-    ]
+    ],
+    "startingGoldDice": "6d4*10",
+    "averageStartingGoldGp": 150,
+    "defaultStartingPackageId": "pkg_paladin"
   }
 }

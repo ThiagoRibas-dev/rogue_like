@@ -1,0 +1,20 @@
+{
+  "inkpen": {
+    "id": "inkpen",
+    "name": "Inkpen",
+    "unidentifiedName": "Wooden Inkpen",
+    "description": "A wooden stick with a special tip that draws ink in when dipped in a vial.",
+    "glyph": "/",
+    "fg": "#d35400",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 0,
+    "baseValue": 1,
+    "currencyUnit": "sp",
+    "tags": [
+      "adventuring_gear",
+      "writing_gear"
+    ],
+    "spriteId": "item_page"
+  }
+}

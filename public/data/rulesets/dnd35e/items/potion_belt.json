@@ -1,0 +1,20 @@
+{
+  "potion_belt": {
+    "id": "potion_belt",
+    "name": "Potion Belt",
+    "unidentifiedName": "Potion Belt",
+    "description": "A sturdy leather belt with pockets shaped to hold 6 potion vials (retrieve 1/round as a free action).",
+    "glyph": ")",
+    "fg": "#935116",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 1,
+    "baseValue": 1,
+    "currencyUnit": "gp",
+    "tags": [
+      "adventuring_gear",
+      "container"
+    ],
+    "spriteId": "item_coin_purse"
+  }
+}

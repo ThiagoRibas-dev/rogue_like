@@ -1,0 +1,35 @@
+{
+  "lute_masterwork": {
+    "id": "lute_masterwork",
+    "baseItemId": "lute_common",
+    "name": "Musical Instrument, Masterwork (Lute)",
+    "unidentifiedName": "Inlaid Masterwork Lute",
+    "description": "A superior musical instrument granting a +2 circumstance bonus on Perform checks.",
+    "glyph": "(",
+    "fg": "#f1c40f",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 3,
+    "baseValue": 100,
+    "currencyUnit": "gp",
+    "magicalProperties": {
+      "isMasterwork": true
+    },
+    "effectBundle": {
+      "bundleId": "item_lute_masterwork",
+      "name": "Musical Instrument, Masterwork (Lute)",
+      "category": "item",
+      "usageMode": "passive",
+      "description": "+2 circumstance bonus on Perform checks.",
+      "modifiers": [
+        {
+          "id": "mod_0",
+          "target": "skill:perform",
+          "value": 2,
+          "type": "circumstance"
+        }
+      ]
+    },
+    "spriteId": "dcss_item_misc_misc_horn"
+  }
+}

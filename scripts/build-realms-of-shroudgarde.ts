@@ -1031,7 +1031,7 @@ const entities: Record<string, unknown> = {
     isActor: true,
     speed: 100,
     fighter: { maxHp: 30, attack: 4, defense: 2 },
-    inventoryConfig: { baseCapacity: 14 },
+    inventoryConfig: { baseCapacity: 30 },
     equipmentSlots: ['head', 'neck', 'torso', 'back', 'arm', 'arm', 'hand', 'hand', 'finger', 'finger', 'leg', 'foot'],
     tags: ['actor'],
     faction: 'player',

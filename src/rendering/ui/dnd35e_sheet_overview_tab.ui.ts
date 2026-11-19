@@ -18,6 +18,7 @@ import {
 } from '../../types/components.types.ts';
 import type { EntityId, GameState } from '../../types/game-state.types.ts';
 import type { UICharacterSheetModel } from '../../types/ui_adapter.types.ts';
+import { renderSpriteToDataUrl } from '../sprite_atlas.ts';
 
 const DEFAULT_ABILITY_SCORE = 10;
 const dndAdapter = new DnD35UIAdapter();
@@ -67,15 +68,48 @@ export function renderSheetOverviewTab(
   const trackSummary = dndData.tracks.map((t) => `${t.trackId} ${t.levels}`).join(' / ') || 'Adventurer 1';
 
   // 1. Identity & Vitals Banner
+  const idRow = document.createElement('div');
+  idRow.style.display = 'flex';
+  idRow.style.alignItems = 'center';
+  idRow.style.gap = '10px';
+
+  const portrait = document.createElement('div');
+  portrait.className = 'crpg-character-portrait';
+  portrait.style.width = '48px';
+  portrait.style.height = '48px';
+  portrait.style.flexShrink = '0';
+  const resolvedPortraitUrl =
+    sheetModel.portraitUrl ??
+    (sheetModel.spriteId !== undefined ? renderSpriteToDataUrl(sheetModel.spriteId, 48) : undefined);
+  portrait.textContent = resolvedPortraitUrl !== undefined ? '' : (sheetModel.glyph ?? '👤');
+  if (resolvedPortraitUrl !== undefined) {
+    portrait.style.backgroundImage = `url(${resolvedPortraitUrl})`;
+  } else if (sheetModel.glyphColor !== undefined) {
+    portrait.style.color = sheetModel.glyphColor;
+  }
+
+  const idTextCol = document.createElement('div');
+  idTextCol.style.minWidth = '0';
   const nameHeading = document.createElement('h3');
   nameHeading.className = 'crpg-section-heading';
-  nameHeading.textContent = identity?.name ?? 'Adventurer';
-  col.appendChild(nameHeading);
+  nameHeading.textContent = sheetModel.name || identity?.name || 'Adventurer';
+  idTextCol.appendChild(nameHeading);
 
   const subLine = document.createElement('div');
   subLine.className = 'crpg-identity-subline';
   subLine.textContent = `${(dndData.alignment ?? 'NG').toUpperCase().replace(/_/g, ' ')} ${(dndData.raceId ?? 'human').toUpperCase()} • ${trackSummary} (ECL ${chassis.ecl})`;
-  col.appendChild(subLine);
+  idTextCol.appendChild(subLine);
+
+  if (identity?.mannerisms && identity.mannerisms.length > 0) {
+    const traitsLine = document.createElement('div');
+    traitsLine.className = 'crpg-identity-subline';
+    traitsLine.style.fontStyle = 'italic';
+    traitsLine.textContent = `Traits: ${identity.mannerisms.join(' • ')}`;
+    idTextCol.appendChild(traitsLine);
+  }
+
+  idRow.append(portrait, idTextCol);
+  col.appendChild(idRow);
 
   const vitalsGrid = document.createElement('div');
   vitalsGrid.className = 'crpg-vitals-grid';

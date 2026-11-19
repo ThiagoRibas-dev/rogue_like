@@ -1,0 +1,35 @@
+{
+  "climbers_kit": {
+    "id": "climbers_kit",
+    "name": "Climber's Kit",
+    "unidentifiedName": "Climbing Harness & Pitons",
+    "description": "Special pitons, boot tips, gloves, and a harness granting a +2 circumstance bonus on Climb checks.",
+    "glyph": "~",
+    "fg": "#d35400",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 5,
+    "baseValue": 80,
+    "currencyUnit": "gp",
+    "tags": [
+      "class_tool",
+      "skill_kit"
+    ],
+    "effectBundle": {
+      "bundleId": "item_climbers_kit",
+      "name": "Climber's Kit",
+      "category": "item",
+      "usageMode": "passive",
+      "description": "+2 circumstance bonus on Climb checks.",
+      "modifiers": [
+        {
+          "id": "mod_0",
+          "target": "skill:climb",
+          "value": 2,
+          "type": "circumstance"
+        }
+      ]
+    },
+    "spriteId": "dcss_item_misc_misc_box"
+  }
+}

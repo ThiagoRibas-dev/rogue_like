@@ -1,0 +1,21 @@
+{
+  "crossbow_bolts_10": {
+    "id": "crossbow_bolts_10",
+    "name": "Case of Crossbow Bolts (10)",
+    "unidentifiedName": "Case of Bolts",
+    "description": "A wooden case holding 10 crossbow bolts.",
+    "glyph": "{",
+    "fg": "#bdc3c7",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 1,
+    "baseValue": 1,
+    "currencyUnit": "gp",
+    "tags": [
+      "adventuring_gear",
+      "ammunition",
+      "ammo:bolt"
+    ],
+    "spriteId": "dcss_dungeon_traps_trap_bolt"
+  }
+}

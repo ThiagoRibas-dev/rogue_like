@@ -1,4 +1,6 @@
+import type { CurrencyConfig, ItemDefinition } from '../../../types/campaign.types.ts';
 import { computeAbilityModifier } from '../abilities.ts';
+import { DND35E_CP_PER_GP, DND35E_DEFAULT_CURRENCY_CONFIG } from '../currency.ts';
 import { parseParameterizedFeatId } from '../effect_bundle.ts';
 import { evaluatePrerequisiteAST, type PrerequisiteEvalContext } from '../prerequisites.ts';
 import { collectClassFeaturesUpToLevel } from '../progression.ts';
@@ -8,9 +10,13 @@ import {
   calculatePointBuyCost,
   calculateSkillAllocationCost,
   type CharacterCreationDraft,
+  computeCustomKitCostCp,
   computeFirstLevelFeatSlotBudget,
   getEffectiveClassSkillIds,
   isFeatAllowedInSlot,
+  MAX_CHARACTER_NAME_LENGTH,
+  MAX_CHARACTER_TITLE_LENGTH,
+  resolveClassStartingWealthCp,
   STARTING_EQUIPMENT_PACKAGES,
   validateSpecialistSchoolSelection
 } from './builder_core.ts';
@@ -39,8 +45,10 @@ export {
  */
 export function validateCharacterCreationStep(
   draft: CharacterCreationDraft,
-  stepId: 'race' | 'class' | 'abilities' | 'skills' | 'feats' | 'spells' | 'equipment',
-  sysContent: DnD35SystemContent
+  stepId: 'race' | 'class' | 'abilities' | 'skills' | 'feats' | 'spells' | 'equipment' | 'summary',
+  sysContent: DnD35SystemContent,
+  campaignItems?: Readonly<Record<string, ItemDefinition>>,
+  currencyCfg: Readonly<CurrencyConfig> = DND35E_DEFAULT_CURRENCY_CONFIG
 ): { readonly valid: boolean; readonly reason?: string } {
   const raceDef = sysContent.races[draft.raceId];
   const classDef = sysContent.classes[draft.classId];
@@ -213,8 +221,36 @@ export function validateCharacterCreationStep(
   }
 
   if (stepId === 'equipment') {
+    if (draft.equipmentMode === 'custom') {
+      const mergedItems = campaignItems ? { ...sysContent.items, ...campaignItems } : sysContent.items;
+      const budgetCp = draft.customStartingBudgetCp ?? resolveClassStartingWealthCp(classDef, currencyCfg);
+      const spentCp = computeCustomKitCostCp(draft.customEquipmentItems ?? [], mergedItems, currencyCfg);
+      if (spentCp > budgetCp) {
+        const overGp = ((spentCp - budgetCp) / DND35E_CP_PER_GP).toFixed(2);
+        return {
+          valid: false,
+          reason: `Custom equipment exceeds your starting wealth by ${overGp} gp.`
+        };
+      }
+      return { valid: true };
+    }
     const pkg = STARTING_EQUIPMENT_PACKAGES.find((p) => p.id === draft.equipmentPackageId);
     if (!pkg) return { valid: false, reason: 'Please select a starting equipment package.' };
+    return { valid: true };
+  }
+
+  if (stepId === 'summary') {
+    const trimmedName = (draft.characterName ?? 'Adventurer').trim();
+    if (trimmedName.length === 0) {
+      return { valid: false, reason: 'Please enter a character name before embarking.' };
+    }
+    if (trimmedName.length > MAX_CHARACTER_NAME_LENGTH) {
+      return { valid: false, reason: `Character name must be ${MAX_CHARACTER_NAME_LENGTH} characters or fewer.` };
+    }
+    const trimmedTitle = (draft.characterTitle ?? '').trim();
+    if (trimmedTitle.length > MAX_CHARACTER_TITLE_LENGTH) {
+      return { valid: false, reason: `Character title must be ${MAX_CHARACTER_TITLE_LENGTH} characters or fewer.` };
+    }
     return { valid: true };
   }
 

@@ -1,0 +1,20 @@
+{
+  "peasants_outfit": {
+    "id": "peasants_outfit",
+    "name": "Peasant's Outfit",
+    "unidentifiedName": "Simple Homespun Clothes",
+    "description": "A loose shirt, baggy breeches, and cloth foot wrappings.",
+    "glyph": "[",
+    "fg": "#95a5a6",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 2,
+    "baseValue": 1,
+    "currencyUnit": "sp",
+    "tags": [
+      "clothing_outfit",
+      "starter_outfit"
+    ],
+    "spriteId": "item_cloth_armor"
+  }
+}

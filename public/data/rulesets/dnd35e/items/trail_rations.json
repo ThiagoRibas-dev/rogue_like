@@ -1,0 +1,24 @@
+{
+  "trail_rations": {
+    "id": "trail_rations",
+    "name": "Trail Rations (1 day)",
+    "unidentifiedName": "Dried Rations",
+    "description": "Compact, dry, high-energy travel food such as jerky, dried fruit, hardtack, and nuts.",
+    "glyph": "%",
+    "fg": "#d35400",
+    "bg": "transparent",
+    "category": "consumable",
+    "weight": 1,
+    "baseValue": 5,
+    "currencyUnit": "sp",
+    "tags": [
+      "adventuring_gear",
+      "food"
+    ],
+    "consumable": {
+      "effectId": "food_ration",
+      "charges": 1
+    },
+    "spriteId": "dcss_item_food_bread_ration_new"
+  }
+}

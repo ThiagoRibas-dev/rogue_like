@@ -1,0 +1,41 @@
+{
+  "masterwork_thieves_tools": {
+    "id": "masterwork_thieves_tools",
+    "baseItemId": "thieves_tools",
+    "name": "Thieves' Tools, Masterwork",
+    "unidentifiedName": "Precision Lockpick Kit",
+    "description": "Superior lockpicks and precision tools granting a +2 circumstance bonus on Disable Device and Open Lock checks.",
+    "glyph": "~",
+    "fg": "#f1c40f",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 2,
+    "baseValue": 100,
+    "currencyUnit": "gp",
+    "magicalProperties": {
+      "isMasterwork": true
+    },
+    "effectBundle": {
+      "bundleId": "item_masterwork_thieves_tools",
+      "name": "Thieves' Tools, Masterwork",
+      "category": "item",
+      "usageMode": "passive",
+      "description": "+2 circumstance bonus on Disable Device and Open Lock checks.",
+      "modifiers": [
+        {
+          "id": "mod_0",
+          "target": "skill:disable_device",
+          "value": 2,
+          "type": "circumstance"
+        },
+        {
+          "id": "mod_1",
+          "target": "skill:open_lock",
+          "value": 2,
+          "type": "circumstance"
+        }
+      ]
+    },
+    "spriteId": "dcss_item_misc_key"
+  }
+}

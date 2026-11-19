@@ -1,0 +1,21 @@
+{
+  "torch": {
+    "id": "torch",
+    "name": "Torch",
+    "unidentifiedName": "Wooden Torch",
+    "description": "A tallow-soaked wooden torch that illuminates a 20-ft. radius for 1 hour (40-ft. shadowy).",
+    "glyph": "(",
+    "fg": "#f39c12",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 1,
+    "baseValue": 1,
+    "currencyUnit": "cp",
+    "tags": [
+      "adventuring_gear",
+      "light_source",
+      "light_radius_ft:20"
+    ],
+    "spriteId": "dcss_dungeon_wall_torches_torch_0"
+  }
+}

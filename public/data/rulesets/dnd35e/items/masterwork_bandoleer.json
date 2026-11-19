@@ -1,0 +1,20 @@
+{
+  "masterwork_bandoleer": {
+    "id": "masterwork_bandoleer",
+    "baseItemId": "bandoleer",
+    "name": "Masterwork Bandoleer",
+    "unidentifiedName": "Fine Bandoleer",
+    "description": "A well-crafted bandoleer that holds up to 12 small items.",
+    "glyph": ")",
+    "fg": "#d4ac0d",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 0.5,
+    "baseValue": 5,
+    "currencyUnit": "gp",
+    "magicalProperties": {
+      "isMasterwork": true
+    },
+    "spriteId": "item_coin_purse"
+  }
+}

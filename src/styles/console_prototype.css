@@ -1445,6 +1445,7 @@
   font-size: 1.8rem;
   background-size: cover;
   background-position: center;
+  image-rendering: pixelated;
 }
 
 .crpg-hp-pill {

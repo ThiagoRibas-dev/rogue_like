@@ -10,7 +10,7 @@ import { type CampaignData } from '../types/campaign.types.ts';
 import { resolveThemeSpriteSheets } from '../utils/sprite_pack.ts';
 import { recordDrawCommand } from './render_debug.ts';
 import { buildProceduralSpriteAtlas, isEffectiveSpriteMode, resolvePlaybackThemeConfig } from './procedural_sprites.ts';
-import { compositeAtlas, mountDisplayWithFogOverlay } from './sprite_atlas.ts';
+import { compositeAtlas, mountDisplayWithFogOverlay, setActiveSpriteAtlas } from './sprite_atlas.ts';
 
 export * from './sprite_atlas.ts';
 
@@ -99,6 +99,7 @@ export async function configureDisplayForCampaign(
     if (sheets && Object.keys(sheets).length > 0) {
       try {
         const { atlas, mergedTileMap, tileWidth, tileHeight } = await compositeAtlas(sheets, basePath);
+        setActiveSpriteAtlas({ atlas, tileMap: mergedTileMap, tileWidth, tileHeight });
         display.clear();
         display.setOptions({
           layout: 'tile',
@@ -117,6 +118,7 @@ export async function configureDisplayForCampaign(
     }
 
     const { atlas, mergedTileMap, tileWidth, tileHeight } = buildProceduralSpriteAtlas(hydratedCampaign);
+    setActiveSpriteAtlas({ atlas, tileMap: mergedTileMap, tileWidth, tileHeight });
     display.clear();
     display.setOptions({
       layout: 'tile',
@@ -131,6 +133,7 @@ export async function configureDisplayForCampaign(
     return true;
   }
 
+  setActiveSpriteAtlas(null);
   display.setOptions({
     layout: 'rect',
     fontSize: hydratedCampaign.theme.ui.fontSize,

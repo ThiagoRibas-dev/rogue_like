@@ -1,0 +1,20 @@
+{
+  "flint_and_steel": {
+    "id": "flint_and_steel",
+    "name": "Flint and Steel",
+    "unidentifiedName": "Flint and Steel",
+    "description": "Striking steel and flint together creates sparks to light a torch or campfire (full-round action).",
+    "glyph": "~",
+    "fg": "#95a5a6",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 0,
+    "baseValue": 1,
+    "currencyUnit": "gp",
+    "tags": [
+      "adventuring_gear",
+      "fire_starter"
+    ],
+    "spriteId": "dcss_item_misc_misc_stone_new"
+  }
+}

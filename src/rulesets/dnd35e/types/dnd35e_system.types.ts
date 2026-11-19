@@ -73,6 +73,9 @@ export const DnD35ClassDefinitionSchema = z.object({
   spellAcquisitionMode: z.enum(['none', 'spellbook_scribed', 'spontaneous_known', 'prayerbook_full_list']).optional(),
   castingKeyAbility: z.enum(['str', 'dex', 'con', 'int', 'wis', 'cha']).optional(),
   allowedAlignments: z.array(DnD35AlignmentSchema).optional(),
+  startingGoldDice: z.string().optional(),
+  averageStartingGoldGp: z.number().nonnegative().optional(),
+  defaultStartingPackageId: z.string().optional(),
   prerequisites: PrerequisiteNodeSchema.optional(),
   proficiencies: z
     .object({

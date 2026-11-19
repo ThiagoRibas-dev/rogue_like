@@ -1,0 +1,35 @@
+{
+  "masterwork_artisan_tools": {
+    "id": "masterwork_artisan_tools",
+    "baseItemId": "artisan_tools",
+    "name": "Artisan's Tools, Masterwork",
+    "unidentifiedName": "Fine Craftsman's Tools",
+    "description": "Precision crafting tools granting a +2 circumstance bonus on Craft checks.",
+    "glyph": "~",
+    "fg": "#f1c40f",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 5,
+    "baseValue": 55,
+    "currencyUnit": "gp",
+    "magicalProperties": {
+      "isMasterwork": true
+    },
+    "effectBundle": {
+      "bundleId": "item_masterwork_artisan_tools",
+      "name": "Artisan's Tools, Masterwork",
+      "category": "item",
+      "usageMode": "passive",
+      "description": "+2 circumstance bonus on Craft checks.",
+      "modifiers": [
+        {
+          "id": "mod_0",
+          "target": "skill:craft",
+          "value": 2,
+          "type": "circumstance"
+        }
+      ]
+    },
+    "spriteId": "dcss_item_weapon_hammer_3"
+  }
+}

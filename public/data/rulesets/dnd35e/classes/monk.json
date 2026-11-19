@@ -443,6 +443,9 @@
           "slow_fall_any"
         ]
       }
-    ]
+    ],
+    "startingGoldDice": "5d4",
+    "averageStartingGoldGp": 13,
+    "defaultStartingPackageId": "pkg_monk"
   }
 }

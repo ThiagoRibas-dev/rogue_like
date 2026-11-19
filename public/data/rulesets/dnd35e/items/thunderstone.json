@@ -1,0 +1,25 @@
+{
+  "thunderstone": {
+    "id": "thunderstone",
+    "name": "Thunderstone",
+    "unidentifiedName": "Dense Gray Stone",
+    "description": "Thrown alchemical stone (20-ft. range increment) that erupts with a deafening sonic bang (Fort DC 15).",
+    "glyph": "*",
+    "fg": "#abb2b9",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 1,
+    "baseValue": 30,
+    "currencyUnit": "gp",
+    "tags": [
+      "alchemical",
+      "splash_weapon"
+    ],
+    "throwable": {
+      "range": 4,
+      "damage": 2,
+      "destroyOnImpact": true
+    },
+    "spriteId": "dcss_item_misc_misc_stone_new"
+  }
+}

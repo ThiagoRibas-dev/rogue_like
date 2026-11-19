@@ -1,0 +1,26 @@
+{
+  "holy_water": {
+    "id": "holy_water",
+    "name": "Holy Water (Flask)",
+    "unidentifiedName": "Silver-Stoppered Flask",
+    "description": "Blessed water that deals 2d4 positive energy damage to undead and evil outsiders on a direct splash hit.",
+    "glyph": "!",
+    "fg": "#85c1e9",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 1,
+    "baseValue": 25,
+    "currencyUnit": "gp",
+    "tags": [
+      "alchemical",
+      "splash_weapon",
+      "holy"
+    ],
+    "throwable": {
+      "range": 4,
+      "damage": 5,
+      "destroyOnImpact": true
+    },
+    "spriteId": "dcss_item_misc_misc_phial"
+  }
+}

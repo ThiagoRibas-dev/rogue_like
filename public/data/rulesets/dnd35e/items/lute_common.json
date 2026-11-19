@@ -1,0 +1,20 @@
+{
+  "lute_common": {
+    "id": "lute_common",
+    "name": "Musical Instrument, Common (Lute)",
+    "unidentifiedName": "Wooden Lute",
+    "description": "A standard wooden lute suitable for bardic music and Perform checks.",
+    "glyph": "(",
+    "fg": "#d68910",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 3,
+    "baseValue": 5,
+    "currencyUnit": "gp",
+    "tags": [
+      "class_tool",
+      "musical_instrument"
+    ],
+    "spriteId": "dcss_item_misc_misc_horn"
+  }
+}

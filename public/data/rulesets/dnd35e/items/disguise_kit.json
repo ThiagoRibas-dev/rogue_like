@@ -1,0 +1,35 @@
+{
+  "disguise_kit": {
+    "id": "disguise_kit",
+    "name": "Disguise Kit",
+    "unidentifiedName": "Cosmetics & Props Bag",
+    "description": "Cosmetics, hair dye, and small physical props granting a +2 circumstance bonus on Disguise checks.",
+    "glyph": ")",
+    "fg": "#af7ac5",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 8,
+    "baseValue": 50,
+    "currencyUnit": "gp",
+    "tags": [
+      "class_tool",
+      "skill_kit"
+    ],
+    "effectBundle": {
+      "bundleId": "item_disguise_kit",
+      "name": "Disguise Kit",
+      "category": "item",
+      "usageMode": "passive",
+      "description": "+2 circumstance bonus on Disguise checks.",
+      "modifiers": [
+        {
+          "id": "mod_0",
+          "target": "skill:disguise",
+          "value": 2,
+          "type": "circumstance"
+        }
+      ]
+    },
+    "spriteId": "dcss_item_misc_misc_box"
+  }
+}

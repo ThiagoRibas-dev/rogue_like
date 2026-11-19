@@ -1,0 +1,21 @@
+{
+  "wooden_holy_symbol": {
+    "id": "wooden_holy_symbol",
+    "name": "Holy Symbol, Wooden",
+    "unidentifiedName": "Carved Wooden Symbol",
+    "description": "A sacred wooden divine focus used by clerics and paladins for divine spellcasting and turning undead.",
+    "glyph": "+",
+    "fg": "#ca6f1e",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 0,
+    "baseValue": 1,
+    "currencyUnit": "gp",
+    "tags": [
+      "class_tool",
+      "divine_focus",
+      "holy_symbol"
+    ],
+    "spriteId": "dcss_item_amulet_artefact_urand_brooch_of_shielding_new"
+  }
+}

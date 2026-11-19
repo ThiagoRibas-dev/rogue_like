@@ -18,23 +18,29 @@ import {
   validateCharacterCreationStep
 } from '../../rulesets/dnd35e/character_builder.ts';
 import { type DnD35SystemContent, getDnD35SystemContent } from '../../rulesets/dnd35e/types/dnd35e_system.types.ts';
+import { resolveCurrencyConfig } from '../../systems/currency.system.ts';
 import { ComponentType } from '../../types/components.types.ts';
 import type { GameState } from '../../types/game-state.types.ts';
+import { collectCatalogSpriteEntries, suggestCharacterSprites } from '../../utils/sprite_pack.ts';
 import { closeCartridgeModal, isCartridgeModalOpen } from './cartridge_ui_registry.ts';
 import { renderClassStep } from './dnd35e_char_builder_class.ui.ts';
 import { renderAbilityStep, renderRaceStep } from './dnd35e_char_builder_race_abilities.ui.ts';
 import {
+  expandDnD35SpriteHints,
   renderCharBuilderEquipmentStep,
   renderCharBuilderFeatsStep,
   renderCharBuilderSkillsStep,
-  renderCharBuilderSpellsStep
+  renderCharBuilderSpellsStep,
+  renderCharBuilderSummaryStep,
+  resetEquipmentStepUiState,
+  resetSummaryStepUiState
 } from './dnd35e_char_builder_steps.ui.ts';
 
 export * from './dnd35e_char_builder_class.ui.ts';
 export * from './dnd35e_char_builder_race_abilities.ui.ts';
 
 interface WizardStepDescriptor {
-  readonly id: 'race' | 'class' | 'abilities' | 'skills' | 'feats' | 'spells' | 'equipment';
+  readonly id: 'race' | 'class' | 'abilities' | 'skills' | 'feats' | 'spells' | 'equipment' | 'summary';
   readonly label: string;
 }
 
@@ -63,8 +69,10 @@ function getActiveWizardSteps(
       label: `6. ${cls?.name ?? ''} Spells`.trim()
     });
     baseSteps.push({ id: 'equipment', label: '7. Equipment' });
+    baseSteps.push({ id: 'summary', label: '8. Review & Identity' });
   } else {
     baseSteps.push({ id: 'equipment', label: '6. Equipment' });
+    baseSteps.push({ id: 'summary', label: '7. Review & Identity' });
   }
   return baseSteps;
 }
@@ -89,7 +97,7 @@ function createDefaultDraft(): CharacterCreationDraft {
     skillRanks: {},
     selectedFeats: [],
     knownSpells: [],
-    equipmentPackageId: 'martial_vanguard'
+    equipmentPackageId: 'pkg_fighter'
   };
 }
 
@@ -123,6 +131,36 @@ export function restoreScrollPositions(root: HTMLElement, saved: ReadonlyMap<str
   });
 }
 
+interface FocusSnapshot {
+  readonly id: string;
+  readonly selectionStart: number | null;
+  readonly selectionEnd: number | null;
+}
+
+function captureFocusState(root: HTMLElement): FocusSnapshot | null {
+  const active = document.activeElement;
+  if (!(active instanceof HTMLInputElement) || !active.id || !root.contains(active)) return null;
+  return {
+    id: active.id,
+    selectionStart: active.selectionStart,
+    selectionEnd: active.selectionEnd
+  };
+}
+
+function restoreFocusState(root: HTMLElement, saved: FocusSnapshot | null): void {
+  if (!saved) return;
+  const target = root.querySelector<HTMLInputElement>(`#${CSS.escape(saved.id)}`);
+  if (!target) return;
+  target.focus({ preventScroll: true });
+  if (saved.selectionStart !== null && saved.selectionEnd !== null) {
+    try {
+      target.setSelectionRange(saved.selectionStart, saved.selectionEnd);
+    } catch {
+      // Input types such as color do not support setSelectionRange.
+    }
+  }
+}
+
 /**
  * Resets the character creation wizard draft state for a fresh campaign start.
  */
@@ -131,6 +169,8 @@ export function resetDnD35eCharBuilderDraft(_state: GameState): void {
   showMonstrousRaces = false;
   showNpcClasses = false;
   draftState = createDefaultDraft();
+  resetEquipmentStepUiState();
+  resetSummaryStepUiState();
 }
 
 /**
@@ -150,6 +190,7 @@ export function renderDnD35eCharBuilderModal(state: GameState): void {
   if (!content) return;
 
   const savedScrolls = captureScrollPositions(content);
+  const savedFocus = captureFocusState(content);
   content.replaceChildren();
 
   const sys = getDnD35SystemContent(state.campaign);
@@ -166,18 +207,37 @@ export function renderDnD35eCharBuilderModal(state: GameState): void {
     return;
   }
 
+  if (!draftState.spriteManuallySelected) {
+    const hints = expandDnD35SpriteHints(draftState.raceId, draftState.classId);
+    const suggestedSpriteId = suggestCharacterSprites(
+      collectCatalogSpriteEntries(state.campaign.theme),
+      hints.primary,
+      hints.secondary
+    )[0]?.spriteId;
+    if (suggestedSpriteId && draftState.spriteId !== suggestedSpriteId) {
+      draftState = { ...draftState, spriteId: suggestedSpriteId };
+    }
+  }
+
+  const currencyCfg = resolveCurrencyConfig(state);
   const activeSteps = getActiveWizardSteps(draftState, sys);
   if (currentStepIndex >= activeSteps.length) {
     currentStepIndex = activeSteps.length - 1;
   }
   const activeStep = activeSteps[currentStepIndex] ?? activeSteps[0]!;
-  const currentStepCheck = validateCharacterCreationStep(draftState, activeStep.id, sys);
+  const currentStepCheck = validateCharacterCreationStep(
+    draftState,
+    activeStep.id,
+    sys,
+    state.campaign.items,
+    currencyCfg
+  );
 
   const canNavigateToStep = (targetIdx: number): boolean => {
     if (targetIdx <= currentStepIndex) return true;
     for (let i = 0; i < targetIdx; i++) {
       const st = activeSteps[i];
-      if (st && !validateCharacterCreationStep(draftState, st.id, sys).valid) {
+      if (st && !validateCharacterCreationStep(draftState, st.id, sys, state.campaign.items, currencyCfg).valid) {
         return false;
       }
     }
@@ -185,55 +245,23 @@ export function renderDnD35eCharBuilderModal(state: GameState): void {
   };
 
   const topRow = document.createElement('div');
-  topRow.style.display = 'flex';
-  topRow.style.flexWrap = 'wrap';
-  topRow.style.alignItems = 'center';
-  topRow.style.justifyContent = 'space-between';
-  topRow.style.gap = '10px';
-
-  const nameGroup = document.createElement('div');
-  nameGroup.style.display = 'flex';
-  nameGroup.style.alignItems = 'center';
-  nameGroup.style.gap = '6px';
-
-  const nameLabel = document.createElement('label');
-  nameLabel.htmlFor = 'char-builder-name-input';
-  nameLabel.style.fontSize = '0.82rem';
-  nameLabel.style.fontWeight = '700';
-  nameLabel.style.color = 'var(--crpg-text-header, #3b2818)';
-  nameLabel.textContent = 'Name:';
-
-  const nameInput = document.createElement('input');
-  nameInput.id = 'char-builder-name-input';
-  nameInput.type = 'text';
-  nameInput.maxLength = 32;
-  nameInput.placeholder = 'Adventurer';
-  nameInput.value = draftState.characterName ?? 'Adventurer';
-  nameInput.style.padding = '5px 8px';
-  nameInput.style.fontSize = '0.82rem';
-  nameInput.style.fontWeight = '600';
-  nameInput.style.width = '180px';
-  nameInput.style.background = 'var(--crpg-bg-card, rgba(235, 227, 212, 0.96))';
-  nameInput.style.color = 'var(--crpg-text-main, #261d14)';
-  nameInput.style.border = '1px solid var(--crpg-border-outer, #5c4730)';
-  nameInput.addEventListener('input', () => {
-    draftState = { ...draftState, characterName: nameInput.value };
-  });
-
-  nameGroup.appendChild(nameLabel);
-  nameGroup.appendChild(nameInput);
+  topRow.style.cssText = 'display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;';
 
   const stepBar = document.createElement('div');
-  stepBar.style.display = 'flex';
-  stepBar.style.gap = '6px';
-  stepBar.style.flexWrap = 'wrap';
+  stepBar.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;';
   activeSteps.forEach((stepDesc, idx) => {
     const tab = document.createElement('button');
     tab.type = 'button';
     tab.className = 'modal-btn';
     tab.style.padding = '6px 12px';
     tab.style.fontSize = '0.8rem';
-    const stepValid = validateCharacterCreationStep(draftState, stepDesc.id, sys).valid;
+    const stepValid = validateCharacterCreationStep(
+      draftState,
+      stepDesc.id,
+      sys,
+      state.campaign.items,
+      currencyCfg
+    ).valid;
     tab.style.borderColor =
       idx === currentStepIndex
         ? 'var(--crpg-border-gold, #b88a36)'
@@ -250,15 +278,10 @@ export function renderDnD35eCharBuilderModal(state: GameState): void {
     stepBar.appendChild(tab);
   });
   topRow.appendChild(stepBar);
-  topRow.appendChild(nameGroup);
   content.appendChild(topRow);
 
   const stageHost = document.createElement('div');
-  stageHost.style.flex = '1';
-  stageHost.style.minHeight = '0';
-  stageHost.style.display = 'flex';
-  stageHost.style.flexDirection = 'column';
-  stageHost.style.overflow = 'hidden';
+  stageHost.style.cssText = 'flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;';
 
   const updateDraft = (next: CharacterCreationDraft): void => {
     draftState = sanitizeDraftOnRaceOrClassChange(next, sys);
@@ -297,8 +320,10 @@ export function renderDnD35eCharBuilderModal(state: GameState): void {
     renderCharBuilderFeatsStep(stageHost, state, draftState, updateDraft);
   } else if (activeStep.id === 'spells') {
     renderCharBuilderSpellsStep(stageHost, state, draftState, updateDraft);
+  } else if (activeStep.id === 'equipment') {
+    renderCharBuilderEquipmentStep(stageHost, state, draftState, updateDraft, sys);
   } else {
-    renderCharBuilderEquipmentStep(stageHost, draftState, updateDraft, sys);
+    renderCharBuilderSummaryStep(stageHost, state, playerId, draftState, updateDraft);
   }
 
   content.appendChild(stageHost);
@@ -362,7 +387,9 @@ export function renderDnD35eCharBuilderModal(state: GameState): void {
     });
     navRight.appendChild(nextBtn);
   } else {
-    const allStepsValid = activeSteps.every((st) => validateCharacterCreationStep(draftState, st.id, sys).valid);
+    const allStepsValid = activeSteps.every(
+      (st) => validateCharacterCreationStep(draftState, st.id, sys, state.campaign.items, currencyCfg).valid
+    );
     const finishBtn = document.createElement('button');
     finishBtn.type = 'button';
     finishBtn.className = 'modal-btn';
@@ -385,4 +412,5 @@ export function renderDnD35eCharBuilderModal(state: GameState): void {
   content.appendChild(footer);
 
   restoreScrollPositions(content, savedScrolls);
+  restoreFocusState(content, savedFocus);
 }

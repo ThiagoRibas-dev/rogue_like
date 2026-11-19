@@ -1,0 +1,20 @@
+{
+  "manacles": {
+    "id": "manacles",
+    "name": "Manacles",
+    "unidentifiedName": "Iron Manacles",
+    "description": "Heavy iron restraints that can bind a Medium creature (Escape Artist DC 30, Break DC 26).",
+    "glyph": "(",
+    "fg": "#7f8c8d",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 2,
+    "baseValue": 15,
+    "currencyUnit": "gp",
+    "tags": [
+      "adventuring_gear",
+      "restraints"
+    ],
+    "spriteId": "dcss_item_misc_misc_box"
+  }
+}

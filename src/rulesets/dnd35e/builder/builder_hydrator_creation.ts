@@ -1,15 +1,16 @@
 import { addComponent, getComponent, removeComponent, spawnItem } from '../../../core/ecs.ts';
+import { DEFAULT_ACTOR_INVENTORY_CAPACITY } from '../../../core/ecs/ecs_spawner_equipment.ts';
 import { resolveCurrencyConfig, toBaseUnits } from '../../../systems/currency.system.ts';
 import {
   ComponentType,
   type EquipmentComponent,
   type FighterComponent,
-  type InventoryComponent
+  type InventoryComponent,
+  type RenderableComponent
 } from '../../../types/components.types.ts';
 import type { EntityId, GameState } from '../../../types/game-state.types.ts';
 import { computeAbilityModifier, computeEffectiveAbilityScore } from '../abilities.ts';
-import { FAVORED_ENEMY_BONUS_STEP } from '../companions.ts';
-import { syncActorCompanionsAndFamiliars } from '../companions.ts';
+import { FAVORED_ENEMY_BONUS_STEP, syncActorCompanionsAndFamiliars } from '../companions.ts';
 import {
   buildClassAndDomainEffectModifiers,
   collectActiveGrantedAndVirtualFeats,
@@ -31,7 +32,14 @@ import type {
   HitDieTrack
 } from '../types/dnd35e.types.ts';
 import { getDnD35SystemContent } from '../types/dnd35e_system.types.ts';
-import { type CharacterCreationDraft, STARTING_EQUIPMENT_PACKAGES } from './builder_core.ts';
+import {
+  type CharacterCreationDraft,
+  INVENTORY_CAPACITY_HEADROOM,
+  STARTING_EQUIPMENT_PACKAGES,
+  type StartingPackageItemEntry,
+  computeCustomKitCostCp,
+  resolveClassStartingWealthCp
+} from './builder_core.ts';
 
 /**
  * Applies a completed 7-Step `CharacterCreationDraft` to an entity in `GameState`.
@@ -168,10 +176,10 @@ export function applyCharacterCreationToPlayer(
     feats: mergedFeats,
     knownSpells: draft.knownSpells,
     preparedSpells: draft.knownSpells,
-    weaponDice: equipPkg.weaponDice,
-    weaponDamageType: equipPkg.weaponDamageType,
-    armorBonus: equipPkg.armorBonus,
-    shieldBonus: equipPkg.shieldBonus,
+    weaponDice: draft.equipmentMode === 'custom' ? '1d3' : equipPkg.weaponDice,
+    weaponDamageType: draft.equipmentMode === 'custom' ? 'bludgeoning' : equipPkg.weaponDamageType,
+    armorBonus: draft.equipmentMode === 'custom' ? 0 : equipPkg.armorBonus,
+    shieldBonus: draft.equipmentMode === 'custom' ? 0 : equipPkg.shieldBonus,
     hasPounce,
     levelHistory: [levelOneRecord],
     statModifiers: [...withRaceResult.statModifiers, ...classAndDomainMods]
@@ -188,44 +196,80 @@ export function applyCharacterCreationToPlayer(
   const chassis = aggregateProgressionChassis(updatedData.tracks, conMod, updatedData.levelAdjustment ?? 0);
   let runningState = setDnD35EntityData(state, entityId, updatedData);
   const resolvedCharName = (draft.characterName ?? '').trim() || 'Adventurer';
+  const resolvedTitle = draft.characterTitle?.trim();
   const existingIdentity = getComponent(runningState, entityId, ComponentType.Identity);
+  const { title: _oldTitle, colorOverride: _oldColor, ...preservedIdentity } = existingIdentity ?? {};
+  const nextColorOverride = draft.glyphColor ?? existingIdentity?.colorOverride;
   runningState = addComponent(runningState, entityId, {
-    ...existingIdentity,
+    ...preservedIdentity,
     type: ComponentType.Identity,
     name: resolvedCharName,
-    mannerisms: existingIdentity?.mannerisms ?? []
+    ...(resolvedTitle ? { title: resolvedTitle } : {}),
+    mannerisms: draft.mannerisms !== undefined ? [...draft.mannerisms] : (existingIdentity?.mannerisms ?? []),
+    ...(nextColorOverride !== undefined ? { colorOverride: nextColorOverride } : {})
   });
+  const existingRenderable = getComponent(runningState, entityId, ComponentType.Renderable) as
+    RenderableComponent | undefined;
+  if (existingRenderable && (draft.spriteId !== undefined || draft.glyphColor !== undefined)) {
+    const nextSpriteId = draft.spriteId ?? existingRenderable.spriteId;
+    runningState = addComponent(runningState, entityId, {
+      ...existingRenderable,
+      fg: draft.glyphColor ?? existingRenderable.fg,
+      ...(nextSpriteId !== undefined ? { spriteId: nextSpriteId } : {})
+    });
+  }
   runningState = syncActorResourcePoolsComponent(runningState, entityId, updatedData, sysContent);
 
   const inventory = getComponent(runningState, entityId, ComponentType.Inventory) as InventoryComponent | undefined;
   const equipment = getComponent(runningState, entityId, ComponentType.Equipment) as EquipmentComponent | undefined;
   const currencyCfg = resolveCurrencyConfig(runningState);
   const goldDenomId = currencyCfg.defaultValueDenominationId ?? currencyCfg.baseUnitId;
-  const startingCp = Math.max(0, toBaseUnits(equipPkg.startingGoldGp, goldDenomId, currencyCfg));
 
-  if (inventory && equipPkg.items) {
+  const isCustomEquipment = draft.equipmentMode === 'custom';
+  const baseItemsToSpawn: ReadonlyArray<StartingPackageItemEntry> = isCustomEquipment
+    ? (draft.customEquipmentItems ?? [])
+    : (equipPkg.items ?? []);
+  const freeOutfitId = isCustomEquipment ? draft.customFreeOutfitId : equipPkg.freeOutfitId;
+  const itemsToSpawn: StartingPackageItemEntry[] =
+    freeOutfitId &&
+    runningState.campaign.items[freeOutfitId] &&
+    !baseItemsToSpawn.some((entry) => entry.itemId === freeOutfitId)
+      ? [{ itemId: freeOutfitId }, ...baseItemsToSpawn]
+      : [...baseItemsToSpawn];
+  const startingCp = isCustomEquipment
+    ? Math.max(
+        0,
+        (draft.customStartingBudgetCp ?? resolveClassStartingWealthCp(classDef, currencyCfg)) -
+          computeCustomKitCostCp(baseItemsToSpawn, runningState.campaign.items, currencyCfg)
+      )
+    : Math.max(0, toBaseUnits(equipPkg.startingGoldGp, goldDenomId, currencyCfg));
+
+  if (inventory && itemsToSpawn.length > 0) {
     const spawnedItemIds: EntityId[] = [];
     const updatedSlots = equipment ? equipment.slots.map((s) => ({ ...s })) : [];
 
-    for (const itemEntry of equipPkg.items) {
+    for (const itemEntry of itemsToSpawn) {
       if (!runningState.campaign.items[itemEntry.itemId]) continue;
-      let itemEntityId: EntityId;
-      [runningState, itemEntityId] = spawnItem(runningState, itemEntry.itemId, 0, 0);
-      runningState = removeComponent(runningState, itemEntityId, ComponentType.Position);
-      spawnedItemIds.push(itemEntityId);
+      const qty = Math.max(1, Math.floor(itemEntry.quantity ?? 1));
+      for (let copyIdx = 0; copyIdx < qty; copyIdx++) {
+        let itemEntityId: EntityId;
+        [runningState, itemEntityId] = spawnItem(runningState, itemEntry.itemId, 0, 0);
+        runningState = removeComponent(runningState, itemEntityId, ComponentType.Position);
+        spawnedItemIds.push(itemEntityId);
 
-      if (itemEntry.equipSlot && updatedSlots.length > 0) {
-        const targetSlotType = itemEntry.equipSlot;
-        const slot = updatedSlots.find((s) => {
-          if (s.equippedItem !== null) return false;
-          if (targetSlotType === 'main_hand' || targetSlotType === 'off_hand') {
-            return s.slotType === targetSlotType || s.slotType === 'hand' || s.slotType === 'held';
-          }
-          return targetSlotType === 'torso'
-            ? s.slotType === 'torso' || s.slotType === 'body'
-            : s.slotType === targetSlotType;
-        });
-        if (slot) (slot as { equippedItem: EntityId | null }).equippedItem = itemEntityId;
+        if (copyIdx === 0 && itemEntry.equipSlot && updatedSlots.length > 0) {
+          const targetSlotType = itemEntry.equipSlot;
+          const slot = updatedSlots.find((s) => {
+            if (s.equippedItem !== null) return false;
+            if (targetSlotType === 'main_hand' || targetSlotType === 'off_hand') {
+              return s.slotType === targetSlotType || s.slotType === 'hand' || s.slotType === 'held';
+            }
+            return targetSlotType === 'torso'
+              ? s.slotType === 'torso' || s.slotType === 'body'
+              : s.slotType === targetSlotType;
+          });
+          if (slot) (slot as { equippedItem: EntityId | null }).equippedItem = itemEntityId;
+        }
       }
     }
 
@@ -235,6 +279,11 @@ export function applyCharacterCreationToPlayer(
     if (latestInventory) {
       runningState = addComponent(runningState, entityId, {
         ...latestInventory,
+        baseCapacity: Math.max(
+          latestInventory.baseCapacity,
+          DEFAULT_ACTOR_INVENTORY_CAPACITY,
+          latestInventory.items.length + spawnedItemIds.length + INVENTORY_CAPACITY_HEADROOM
+        ),
         items: spawnedItemIds.length > 0 ? [...latestInventory.items, ...spawnedItemIds] : latestInventory.items,
         currencyBalance: baseBalance + startingCp
       });
@@ -245,6 +294,7 @@ export function applyCharacterCreationToPlayer(
   } else if (inventory) {
     runningState = addComponent(runningState, entityId, {
       ...inventory,
+      baseCapacity: Math.max(inventory.baseCapacity, DEFAULT_ACTOR_INVENTORY_CAPACITY),
       currencyBalance: (inventory.currencyBalance ?? 0) + startingCp
     });
   }
@@ -254,12 +304,20 @@ export function applyCharacterCreationToPlayer(
   const fighter = getComponent(runningState, entityId, ComponentType.Fighter) as FighterComponent | undefined;
   if (!fighter) return runningState;
 
+  const customDefenseBonus = isCustomEquipment
+    ? baseItemsToSpawn.reduce((sum, entry) => {
+        if (!entry.equipSlot) return sum;
+        const def = runningState.campaign.items[entry.itemId];
+        return sum + (def?.equippable?.defenseBonus ?? 0);
+      }, 0)
+    : equipPkg.armorBonus + equipPkg.shieldBonus;
+
   return addComponent(runningState, entityId, {
     ...fighter,
     level: chassis.ecl,
     hp: chassis.maxHp,
     maxHp: chassis.maxHp,
     attack: chassis.totalBab,
-    defense: equipPkg.armorBonus + equipPkg.shieldBonus
+    defense: customDefenseBonus
   });
 }

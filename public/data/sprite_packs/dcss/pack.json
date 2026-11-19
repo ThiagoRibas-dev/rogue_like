@@ -15917,7 +15917,8 @@
           608,
           96
         ]
-      }
+      },
+      "isCharacterSpriteSheet": true
     },
     "effects": {
       "src": "sheets/effects.png",

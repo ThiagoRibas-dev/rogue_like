@@ -1,0 +1,26 @@
+{
+  "caltrops": {
+    "id": "caltrops",
+    "name": "Caltrops (2-lb. bag)",
+    "unidentifiedName": "Bag of Iron Spikes",
+    "description": "Four-pronged iron spikes covering a 5-ft. square that wound and halve the speed of creatures stepping on them.",
+    "glyph": "^",
+    "fg": "#7f8c8d",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 2,
+    "baseValue": 1,
+    "currencyUnit": "gp",
+    "tags": [
+      "adventuring_gear",
+      "dungeoneering",
+      "tactical_hazard"
+    ],
+    "throwable": {
+      "range": 2,
+      "damage": 1,
+      "destroyOnImpact": false
+    },
+    "spriteId": "dcss_item_misc_misc_quad"
+  }
+}

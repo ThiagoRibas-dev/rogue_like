@@ -1,0 +1,20 @@
+{
+  "ink_vial": {
+    "id": "ink_vial",
+    "name": "Ink (1 oz. Vial)",
+    "unidentifiedName": "Ink Vial",
+    "description": "A 1-ounce stoppered vial of black writing ink.",
+    "glyph": "!",
+    "fg": "#34495e",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 0,
+    "baseValue": 8,
+    "currencyUnit": "gp",
+    "tags": [
+      "adventuring_gear",
+      "writing_gear"
+    ],
+    "spriteId": "dcss_item_potion_black_new"
+  }
+}

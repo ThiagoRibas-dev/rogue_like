@@ -46,11 +46,42 @@ const MIN_SKILL_POINTS_PER_LEVEL = 1;
 /** Minimum ranks required in a source skill to unlock a +2 synergy bonus (`5`). */
 export const SYNERGY_RANK_THRESHOLD = SYNERGY_REQUIRED_RANKS;
 
-export { type StartingEquipmentPackage, STARTING_EQUIPMENT_PACKAGES } from './starting_packages.ts';
+/** Maximum allowed length for character name and title/epithet inputs. */
+export const MAX_CHARACTER_NAME_LENGTH = 32;
 
-/** Draft state for the 7-Step D&D 3.5e Character Creation Wizard. */
+/** Maximum allowed length for optional character title/epithet. */
+export const MAX_CHARACTER_TITLE_LENGTH = 32;
+
+/** Maximum selectable mannerism/trait tags per character during creation. */
+export const MAX_CHARACTER_MANNERISMS = 4;
+
+/** Extra inventory slot headroom ensured above spawned starting items. */
+export const INVENTORY_CAPACITY_HEADROOM = 5;
+
+export {
+  buildCustomItemsFromPackage,
+  COMMON_ADVENTURER_GEAR_ITEMS,
+  computeCustomKitCostCp,
+  computeKitTotalWeightLbs,
+  FREE_STARTER_OUTFIT_IDS,
+  getStarterOutfitIds,
+  resolveClassStartingWealthCp,
+  rollClassStartingWealthCp,
+  STARTING_EQUIPMENT_PACKAGES,
+  type StartingEquipmentPackage,
+  type StartingEquipSlot,
+  type StartingPackageItemEntry
+} from './starting_packages.ts';
+import type { StartingPackageItemEntry } from './starting_packages.ts';
+
+/** Draft state for the D&D 3.5e Character Creation Wizard. */
 export interface CharacterCreationDraft {
   readonly characterName?: string | undefined;
+  readonly characterTitle?: string | undefined;
+  readonly spriteId?: string | undefined;
+  readonly spriteManuallySelected?: boolean | undefined;
+  readonly glyphColor?: string | undefined;
+  readonly mannerisms?: ReadonlyArray<string> | undefined;
   readonly raceId: string;
   readonly classId: string;
   readonly alignment: DnD35Alignment;
@@ -67,6 +98,12 @@ export interface CharacterCreationDraft {
   readonly selectedFeats: ReadonlyArray<string>;
   readonly knownSpells: ReadonlyArray<string>;
   readonly equipmentPackageId: string;
+  readonly equipmentMode?: 'preset' | 'custom' | undefined;
+  readonly customStartingBudgetCp?: number | undefined;
+  readonly customStartingBudgetRolled?: boolean | undefined;
+  readonly customStartingBudgetClassId?: string | undefined;
+  readonly customEquipmentItems?: ReadonlyArray<StartingPackageItemEntry> | undefined;
+  readonly customFreeOutfitId?: string | undefined;
   readonly deityFavoredWeaponId?: string | undefined;
   readonly familiarId?: string | undefined;
   readonly animalCompanionId?: string | undefined;

@@ -1,0 +1,24 @@
+{
+  "everburning_torch": {
+    "id": "everburning_torch",
+    "baseItemId": "torch",
+    "name": "Everburning Torch",
+    "unidentifiedName": "Flame-Crowned Torch",
+    "description": "A torch bearing a permanent Continual Flame spell (20-ft. bright illumination, never consumes fuel).",
+    "glyph": "(",
+    "fg": "#f1c40f",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 1,
+    "baseValue": 110,
+    "currencyUnit": "gp",
+    "tags": [
+      "adventuring_gear",
+      "light_source",
+      "light_radius_ft:20",
+      "magical",
+      "permanent_light"
+    ],
+    "spriteId": "dcss_dungeon_wall_torches_torch_4"
+  }
+}

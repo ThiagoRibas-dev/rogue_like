@@ -1,0 +1,19 @@
+{
+  "whetstone": {
+    "id": "whetstone",
+    "name": "Whetstone",
+    "unidentifiedName": "Grinding Stone",
+    "description": "A fine-grained stone for honing edged blades.",
+    "glyph": "~",
+    "fg": "#7f8c8d",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 1,
+    "baseValue": 2,
+    "currencyUnit": "cp",
+    "tags": [
+      "adventuring_gear"
+    ],
+    "spriteId": "dcss_item_misc_misc_stone_old"
+  }
+}

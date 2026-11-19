@@ -1,0 +1,20 @@
+{
+  "map_or_scroll_case": {
+    "id": "map_or_scroll_case",
+    "name": "Map or Scroll Case",
+    "unidentifiedName": "Scroll Case",
+    "description": "A capped leather or tin tube for holding rolled pieces of parchment or paper.",
+    "glyph": "?",
+    "fg": "#b9770e",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 0.5,
+    "baseValue": 1,
+    "currencyUnit": "gp",
+    "tags": [
+      "adventuring_gear",
+      "container"
+    ],
+    "spriteId": "dcss_item_scroll_scroll_new"
+  }
+}

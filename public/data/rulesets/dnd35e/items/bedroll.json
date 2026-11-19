@@ -1,0 +1,20 @@
+{
+  "bedroll": {
+    "id": "bedroll",
+    "name": "Bedroll",
+    "unidentifiedName": "Bedroll",
+    "description": "Bedding and a blanket thin enough to be rolled up and tied for sleeping on the cold ground.",
+    "glyph": "(",
+    "fg": "#a0522d",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 5,
+    "baseValue": 1,
+    "currencyUnit": "sp",
+    "tags": [
+      "adventuring_gear",
+      "camp_gear"
+    ],
+    "spriteId": "dcss_item_scroll_scroll_brown"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "explorers_outfit": {
+    "id": "explorers_outfit",
+    "name": "Explorer's Outfit",
+    "unidentifiedName": "Sturdy Travel Clothes",
+    "description": "Sturdy boots, leather breeches, belt, shirt, jacket, gloves, and a pocketed cloak suited for dungeon expeditions.",
+    "glyph": "[",
+    "fg": "#8e6b3e",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 8,
+    "baseValue": 10,
+    "currencyUnit": "gp",
+    "tags": [
+      "clothing_outfit",
+      "starter_outfit"
+    ],
+    "spriteId": "dcss_item_armor_back_cloak_1_leather"
+  }
+}

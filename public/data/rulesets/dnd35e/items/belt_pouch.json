@@ -1,0 +1,20 @@
+{
+  "belt_pouch": {
+    "id": "belt_pouch",
+    "name": "Belt Pouch",
+    "unidentifiedName": "Leather Pouch",
+    "description": "A small leather pouch that straps to your belt (holds 1/5 cu. ft.).",
+    "glyph": ")",
+    "fg": "#8e6b3e",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 0.5,
+    "baseValue": 1,
+    "currencyUnit": "gp",
+    "tags": [
+      "adventuring_gear",
+      "container"
+    ],
+    "spriteId": "item_coin_purse"
+  }
+}

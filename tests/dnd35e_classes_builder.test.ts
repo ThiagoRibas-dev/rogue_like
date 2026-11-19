@@ -4,22 +4,36 @@ import { initRNG } from '../src/core/rng.ts';
 import {
   applyCharacterCreationToPlayer,
   applyLevelUpToActor,
+  buildCustomItemsFromPackage,
   buildPrerequisiteContextForActor,
   calculateLevelSkillPointBudget,
   calculatePointBuyCost,
   calculateSkillAllocationCost,
+  type CharacterCreationDraft,
+  computeCustomKitCostCp,
   computeFirstLevelFeatSlotBudget,
+  computeKitTotalWeightLbs,
   ELITE_ABILITY_ARRAY,
   getEffectiveClassSkillIds,
   getSkillMaxRanks,
   getSpellLevelForClass,
+  getStarterOutfitIds,
   isSpellSelectableForDraft,
   NONELITE_ABILITY_ARRAY,
   POINT_BUY_PRESETS,
+  resolveClassStartingWealthCp,
   rollAbilityScores4d6DropLowest,
+  rollClassStartingWealthCp,
   sanitizeDraftOnRaceOrClassChange,
+  STARTING_EQUIPMENT_PACKAGES,
+  validateCharacterCreationStep,
   validateSpecialistSchoolSelection
 } from '../src/rulesets/dnd35e/character_builder.ts';
+import { DND35E_DEFAULT_CURRENCY_CONFIG } from '../src/rulesets/dnd35e/currency.ts';
+import { checkDnD35eRuleset } from '../src/rulesets/dnd35e/dnd35e_validator.ts';
+import { DnD35UIAdapter } from '../src/rulesets/dnd35e/ui/dnd35e_ui_adapter.ts';
+import { projectCharacterSheetData } from '../src/rulesets/dnd35e/ui/dnd35e_ui_char_sheet.ts';
+import { collectCatalogSpriteEntries, suggestCharacterSprites } from '../src/utils/sprite_pack.ts';
 import {
   applyNegativeLevelsToActor,
   applyPermanentLevelDrainToActor,
@@ -1052,6 +1066,164 @@ describe('Phase 23: D&D 3.5e Core 11 Classes, 5 NPC Classes, Prestige Classes, A
       expect(trapAcMod).toBeDefined();
       expect(trapAcMod?.value).toBe(2);
       expect(trapAcMod?.bonusType).toBe('competence');
+    });
+
+    it('Milestone 149: validates all 15 starting equipment packages, custom gear shop budget, sprite catalog suggestions, and identity/appearance hydration', () => {
+      initRNG(42);
+      const campaign = loadCampaignFromDisk('dnd35e-crypt');
+      const state = buildGameState(campaign);
+      const sys = getDnD35SystemContent(state.campaign)!;
+      const playerId = state.entities.find((id) => getComponent(state, id, ComponentType.Player) !== undefined)!;
+
+      // 1. Validator verifies every STARTING_EQUIPMENT_PACKAGES item and class defaultStartingPackageId
+      const validationErrors = checkDnD35eRuleset(state.campaign);
+      expect(validationErrors.filter((e) => e.severity === 'error')).toEqual([]);
+      expect(STARTING_EQUIPMENT_PACKAGES.length).toBe(15);
+
+      const brokenCampaign = {
+        ...state.campaign,
+        items: Object.fromEntries(
+          Object.entries(state.campaign.items).filter(([k]) => k !== 'wooden_holy_symbol')
+        ),
+        systemContent: {
+          ...(state.campaign.systemContent as Record<string, unknown>),
+          items: Object.fromEntries(
+            Object.entries(sys.items).filter(([k]) => k !== 'wooden_holy_symbol')
+          )
+        }
+      };
+      const brokenErrors = checkDnD35eRuleset(brokenCampaign);
+      expect(brokenErrors.some((e) => e.message.includes('wooden_holy_symbol'))).toBe(true);
+
+      // 2. Every starting package spawns 100% of its items + free outfit with baseCapacity >= 30
+      for (const pkg of STARTING_EQUIPMENT_PACKAGES) {
+        const draft: CharacterCreationDraft = {
+          characterName: 'KitTester',
+          raceId: 'human',
+          classId: pkg.recommendedClassIds?.[0] ?? 'fighter',
+          alignment: 'NG',
+          selectedAcfs: [],
+          domains: [],
+          prohibitedSchools: [],
+          abilityMethod: 'point_buy',
+          pointBuyBudget: 28,
+          baseAbilityScores: { str: 14, dex: 14, con: 14, int: 12, wis: 12, cha: 12 },
+          skillRanks: {},
+          selectedFeats: ['toughness'],
+          knownSpells: [],
+          equipmentPackageId: pkg.id
+        };
+        const hydrated = applyCharacterCreationToPlayer(state, playerId, draft);
+        const inv = getComponent(hydrated, playerId, ComponentType.Inventory)!;
+        expect(inv.baseCapacity).toBeGreaterThanOrEqual(30);
+        const expectedCopies =
+          (pkg.items ?? []).reduce((sum, entry) => sum + Math.max(1, entry.quantity ?? 1), 0) +
+          (pkg.freeOutfitId ? 1 : 0);
+        expect(inv.items.length).toBeGreaterThanOrEqual(expectedCopies);
+      }
+
+      // 3. Class wealth average/roll, custom kit cost & weight, overspend validation, and identity/appearance projection
+      const clericCls = sys.classes['cleric']!;
+      expect(resolveClassStartingWealthCp(clericCls, DND35E_DEFAULT_CURRENCY_CONFIG)).toBe(12500);
+      const rolledCp = rollClassStartingWealthCp(clericCls, DND35E_DEFAULT_CURRENCY_CONFIG);
+      expect(rolledCp).toBeGreaterThanOrEqual(5000);
+      expect(rolledCp).toBeLessThanOrEqual(20000);
+
+      const clericPkg = STARTING_EQUIPMENT_PACKAGES.find((p) => p.id === 'pkg_cleric')!;
+      const seededCustom = buildCustomItemsFromPackage(clericPkg);
+      expect(computeCustomKitCostCp(seededCustom, state.campaign.items, DND35E_DEFAULT_CURRENCY_CONFIG)).toBeGreaterThan(0);
+      expect(computeKitTotalWeightLbs(seededCustom, state.campaign.items)).toBeGreaterThan(0);
+
+      const customDraft: CharacterCreationDraft = {
+        characterName: 'Aurelia',
+        characterTitle: 'Dawnbringer',
+        mannerisms: ['Devout', 'Stoic'],
+        glyphColor: '#f1c40f',
+        spriteId: 'paladin',
+        spriteManuallySelected: true,
+        raceId: 'human',
+        classId: 'cleric',
+        alignment: 'LG',
+        selectedAcfs: [],
+        domains: ['healing', 'sun'],
+        prohibitedSchools: [],
+        abilityMethod: 'point_buy',
+        pointBuyBudget: 28,
+        baseAbilityScores: { str: 14, dex: 10, con: 14, int: 10, wis: 16, cha: 14 },
+        skillRanks: { concentration: 4, heal: 4, knowledge_religion: 4 },
+        selectedFeats: ['combat_casting', 'extra_turning'],
+        knownSpells: [],
+        equipmentPackageId: 'pkg_cleric',
+        equipmentMode: 'custom',
+        customStartingBudgetCp: 5000,
+        customFreeOutfitId: 'travelers_outfit',
+        customEquipmentItems: [
+          { itemId: 'heavy_mace', equipSlot: 'main_hand' },
+          { itemId: 'wooden_holy_symbol' },
+          { itemId: 'backpack', equipSlot: 'back' }
+        ]
+      };
+      expect(validateCharacterCreationStep(customDraft, 'equipment', sys).valid).toBe(true);
+      expect(validateCharacterCreationStep(customDraft, 'summary', sys).valid).toBe(true);
+      expect(
+        validateCharacterCreationStep({ ...customDraft, characterName: '   ' }, 'summary', sys).valid
+      ).toBe(false);
+      expect(
+        validateCharacterCreationStep({ ...customDraft, customStartingBudgetCp: 100 }, 'equipment', sys).valid
+      ).toBe(false);
+
+      const hydratedCustom = applyCharacterCreationToPlayer(state, playerId, customDraft);
+      const sheet = projectCharacterSheetData({ state: hydratedCustom, entityId: playerId });
+      expect(sheet.name).toBe('Aurelia Dawnbringer');
+      expect(sheet.spriteId).toBe('paladin');
+      expect(sheet.glyphColor).toBe('#f1c40f');
+      expect(getComponent(hydratedCustom, playerId, ComponentType.Identity)?.mannerisms).toEqual(['Devout', 'Stoic']);
+
+      // 3b. Audit fixes: custom mode does not leak preset armor/shield bonuses, free outfit weighs 0 lb,
+      //     clearing title/mannerisms removes stale values, and class switch resets rolled wealth.
+      const customDnd = getDnD35EntityData(hydratedCustom, playerId);
+      expect(customDnd.armorBonus).toBe(0);
+      expect(customDnd.shieldBonus).toBe(0);
+      const customInv = new DnD35UIAdapter().getInventoryData({ state: hydratedCustom, entityId: playerId });
+      const expectedCustomWeight = computeKitTotalWeightLbs(
+        customDraft.customEquipmentItems!,
+        state.campaign.items,
+        customDraft.customFreeOutfitId
+      );
+      expect(customInv.currentWeightLbs).toBe(expectedCustomWeight);
+      expect(getStarterOutfitIds(state.campaign.items).length).toBe(8);
+
+      const clearedIdentityState = applyCharacterCreationToPlayer(hydratedCustom, playerId, {
+        ...customDraft,
+        characterTitle: '',
+        mannerisms: []
+      });
+      expect(getComponent(clearedIdentityState, playerId, ComponentType.Identity)?.title).toBeUndefined();
+      expect(getComponent(clearedIdentityState, playerId, ComponentType.Identity)?.mannerisms).toEqual([]);
+
+      const rolledFighter = sanitizeDraftOnRaceOrClassChange(
+        {
+          ...customDraft,
+          classId: 'fighter',
+          customStartingBudgetCp: 21000,
+          customStartingBudgetRolled: true,
+          customStartingBudgetClassId: 'fighter'
+        },
+        sys
+      );
+      expect(rolledFighter.customStartingBudgetCp).toBe(21000);
+      const switchedToMonk = sanitizeDraftOnRaceOrClassChange({ ...rolledFighter, classId: 'monk' }, sys);
+      expect(switchedToMonk.customStartingBudgetRolled).toBe(false);
+      expect(switchedToMonk.customStartingBudgetCp).toBe(
+        resolveClassStartingWealthCp(sys.classes['monk']!, DND35E_DEFAULT_CURRENCY_CONFIG)
+      );
+
+      // 4. Sprite catalog suggestions rank matching race/class character sprites first
+      const catalog = collectCatalogSpriteEntries(state.campaign.theme);
+      expect(catalog.length).toBeGreaterThan(100);
+      const dwarfSuggestions = suggestCharacterSprites(catalog, ['dwarf', 'fighter']);
+      expect(dwarfSuggestions.length).toBeGreaterThan(0);
+      expect(dwarfSuggestions[0]?.isCharacterSprite).toBe(true);
     });
   });
 });

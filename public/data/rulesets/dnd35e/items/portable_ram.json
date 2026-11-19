@@ -1,0 +1,20 @@
+{
+  "portable_ram": {
+    "id": "portable_ram",
+    "name": "Ram, Portable",
+    "unidentifiedName": "Iron-Shod Beam",
+    "description": "An iron-shod wooden beam granting a +2 circumstance bonus on Strength checks to break open doors.",
+    "glyph": "=",
+    "fg": "#a04000",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 20,
+    "baseValue": 10,
+    "currencyUnit": "gp",
+    "tags": [
+      "adventuring_gear",
+      "dungeoneering"
+    ],
+    "spriteId": "dcss_item_weapon_giant_club_new"
+  }
+}

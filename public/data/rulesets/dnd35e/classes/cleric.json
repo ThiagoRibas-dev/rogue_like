@@ -586,6 +586,9 @@
           "9": 1
         }
       }
-    ]
+    ],
+    "startingGoldDice": "5d4*10",
+    "averageStartingGoldGp": 125,
+    "defaultStartingPackageId": "pkg_cleric"
   }
 }

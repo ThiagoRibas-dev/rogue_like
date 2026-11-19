@@ -1,0 +1,21 @@
+{
+  "marbles": {
+    "id": "marbles",
+    "name": "Marbles (2-lb. bag)",
+    "unidentifiedName": "Pouch of Glass Spheres",
+    "description": "Glass spheres covering a 5-ft. square; creatures moving through must pass a DC 15 Balance check or stall.",
+    "glyph": ":",
+    "fg": "#85c1e9",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 2,
+    "baseValue": 1,
+    "currencyUnit": "sp",
+    "tags": [
+      "adventuring_gear",
+      "dungeoneering",
+      "tactical_hazard"
+    ],
+    "spriteId": "dcss_item_misc_misc_orb"
+  }
+}

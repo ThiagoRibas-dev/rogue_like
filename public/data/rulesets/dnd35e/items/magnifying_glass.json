@@ -1,0 +1,35 @@
+{
+  "magnifying_glass": {
+    "id": "magnifying_glass",
+    "name": "Magnifying Glass",
+    "unidentifiedName": "Mounted Lens",
+    "description": "A simple lens granting a +2 circumstance bonus on Appraise checks involving small or detailed items.",
+    "glyph": "(",
+    "fg": "#85c1e9",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 0,
+    "baseValue": 100,
+    "currencyUnit": "gp",
+    "tags": [
+      "class_tool",
+      "skill_kit"
+    ],
+    "effectBundle": {
+      "bundleId": "item_magnifying_glass",
+      "name": "Magnifying Glass",
+      "category": "item",
+      "usageMode": "passive",
+      "description": "+2 circumstance bonus on Appraise checks involving small or detailed items.",
+      "modifiers": [
+        {
+          "id": "mod_0",
+          "target": "skill:appraise",
+          "value": 2,
+          "type": "circumstance"
+        }
+      ]
+    },
+    "spriteId": "dcss_item_misc_mirror"
+  }
+}

@@ -714,7 +714,8 @@
           128,
           192
         ]
-      }
+      },
+      "isCharacterSpriteSheet": true
     },
     "monsters": {
       "src": "sprites/monsters.png",

@@ -1,0 +1,35 @@
+{
+  "healers_kit": {
+    "id": "healers_kit",
+    "name": "Healer's Kit",
+    "unidentifiedName": "Herbal Bandage Kit",
+    "description": "Herbs, salves, and bandages granting a +2 circumstance bonus on Heal checks (10 uses).",
+    "glyph": "+",
+    "fg": "#2ecc71",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 1,
+    "baseValue": 50,
+    "currencyUnit": "gp",
+    "tags": [
+      "class_tool",
+      "skill_kit"
+    ],
+    "effectBundle": {
+      "bundleId": "item_healers_kit",
+      "name": "Healer's Kit",
+      "category": "item",
+      "usageMode": "passive",
+      "description": "+2 circumstance bonus on Heal checks.",
+      "modifiers": [
+        {
+          "id": "mod_0",
+          "target": "skill:heal",
+          "value": 2,
+          "type": "circumstance"
+        }
+      ]
+    },
+    "spriteId": "dcss_item_misc_misc_box"
+  }
+}

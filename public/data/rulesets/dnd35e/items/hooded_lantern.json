@@ -1,0 +1,21 @@
+{
+  "hooded_lantern": {
+    "id": "hooded_lantern",
+    "name": "Lantern, Hooded",
+    "unidentifiedName": "Hooded Lantern",
+    "description": "A shuttered oil lantern that clearly illuminates a 30-ft. radius (60-ft. shadowy) for 6 hours per pint of oil.",
+    "glyph": "(",
+    "fg": "#f1c40f",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 2,
+    "baseValue": 7,
+    "currencyUnit": "gp",
+    "tags": [
+      "adventuring_gear",
+      "light_source",
+      "light_radius_ft:30"
+    ],
+    "spriteId": "dcss_item_misc_misc_lantern"
+  }
+}

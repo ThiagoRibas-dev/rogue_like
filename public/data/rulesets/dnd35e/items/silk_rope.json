@@ -1,0 +1,32 @@
+{
+  "silk_rope": {
+    "id": "silk_rope",
+    "baseItemId": "hempen_rope",
+    "name": "Silk Rope (50 ft.)",
+    "unidentifiedName": "Supple Silk Rope",
+    "description": "A 50-foot coil of supple silk rope (4 hp, burst DC 24, grants +2 circumstance bonus on Use Rope checks).",
+    "glyph": "~",
+    "fg": "#f7dc6f",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 5,
+    "baseValue": 10,
+    "currencyUnit": "gp",
+    "effectBundle": {
+      "bundleId": "item_silk_rope",
+      "name": "Silk Rope (50 ft.)",
+      "category": "item",
+      "usageMode": "passive",
+      "description": "+2 circumstance bonus on Use Rope checks.",
+      "modifiers": [
+        {
+          "id": "mod_0",
+          "target": "skill:use_rope",
+          "value": 2,
+          "type": "circumstance"
+        }
+      ]
+    },
+    "spriteId": "dcss_item_misc_misc_disc_new"
+  }
+}

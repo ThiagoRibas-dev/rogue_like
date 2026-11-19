@@ -210,6 +210,9 @@
         "activatedAbilities": []
       }
     },
-    "acfSwaps": []
+    "acfSwaps": [],
+    "startingGoldDice": "6d8*10",
+    "averageStartingGoldGp": 270,
+    "defaultStartingPackageId": "pkg_paladin"
   }
 }

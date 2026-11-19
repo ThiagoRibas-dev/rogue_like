@@ -1,0 +1,25 @@
+{
+  "alchemists_fire": {
+    "id": "alchemists_fire",
+    "name": "Alchemist's Fire (Flask)",
+    "unidentifiedName": "Volatile Amber Flask",
+    "description": "Splash weapon dealing 1d6 fire damage on a direct hit (plus 1d6 next round) and 1 splash fire damage.",
+    "glyph": "!",
+    "fg": "#e74c3c",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 1,
+    "baseValue": 20,
+    "currencyUnit": "gp",
+    "tags": [
+      "alchemical",
+      "splash_weapon"
+    ],
+    "throwable": {
+      "range": 4,
+      "damage": 6,
+      "destroyOnImpact": true
+    },
+    "spriteId": "item_orange_potion"
+  }
+}

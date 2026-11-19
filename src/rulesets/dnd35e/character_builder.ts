@@ -8,7 +8,9 @@ import {
   computeFirstLevelFeatSlotBudget,
   getEffectiveClassSkillIds,
   getSkillMaxRanks,
-  isFeatAllowedInSlot
+  isFeatAllowedInSlot,
+  resolveClassStartingWealthCp,
+  STARTING_EQUIPMENT_PACKAGES
 } from './builder/builder_core.ts';
 import { buildCreationDraftPrerequisiteContext } from './builder/builder_prereq_context.ts';
 import { computeClassSpellSelectionBudget, isSpellSelectableForDraft } from './builder/builder_spells.ts';
@@ -162,9 +164,33 @@ export function sanitizeDraftOnRaceOrClassChange(
         })
       : [];
 
+  const currentPkg = STARTING_EQUIPMENT_PACKAGES.find((p) => p.id === draft.equipmentPackageId);
+  const shouldSyncClassPkg =
+    !currentPkg ||
+    (currentPkg.recommendedClassIds !== undefined && !currentPkg.recommendedClassIds.includes(classDef.id));
+  const resolvedPkgId =
+    shouldSyncClassPkg && classDef.defaultStartingPackageId
+      ? classDef.defaultStartingPackageId
+      : (currentPkg?.id ?? classDef.defaultStartingPackageId ?? 'martial_vanguard');
+  const budgetBelongsToCurrentClass =
+    draft.customStartingBudgetClassId === undefined || draft.customStartingBudgetClassId === classDef.id;
+  const keepRolledBudget =
+    draft.customStartingBudgetRolled === true &&
+    budgetBelongsToCurrentClass &&
+    draft.customStartingBudgetCp !== undefined;
+  const nextCustomBudgetCp = keepRolledBudget ? draft.customStartingBudgetCp : resolveClassStartingWealthCp(classDef);
+
   return {
     ...intermediateDraft,
     selectedFeats,
-    knownSpells
+    knownSpells,
+    equipmentPackageId: resolvedPkgId,
+    ...(draft.customStartingBudgetCp !== undefined || draft.equipmentMode === 'custom'
+      ? {
+          customStartingBudgetCp: nextCustomBudgetCp,
+          customStartingBudgetRolled: keepRolledBudget,
+          customStartingBudgetClassId: classDef.id
+        }
+      : {})
   };
 }

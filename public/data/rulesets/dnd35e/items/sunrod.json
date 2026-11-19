@@ -1,0 +1,22 @@
+{
+  "sunrod": {
+    "id": "sunrod",
+    "name": "Sunrod",
+    "unidentifiedName": "Gold-Tipped Iron Rod",
+    "description": "A 1-foot gold-tipped alchemical iron rod that glows brightly in a 30-ft. radius for 6 hours when struck.",
+    "glyph": "/",
+    "fg": "#f7dc6f",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 1,
+    "baseValue": 2,
+    "currencyUnit": "gp",
+    "tags": [
+      "adventuring_gear",
+      "light_source",
+      "light_radius_ft:30",
+      "alchemical"
+    ],
+    "spriteId": "dcss_item_rod_rod_0_new"
+  }
+}

@@ -23,6 +23,7 @@ import type {
 } from '../../../types/ui_adapter.types.ts';
 import { convertCurrency, formatCurrency, resolveCurrencyConfig } from '../../../systems/currency.system.ts';
 import { aggregateProgressionChassis } from '../progression.ts';
+import { computeEncumbranceState } from '../combat/tactical_doctrine.ts';
 import { canToggleTwoHandedGrip } from '../equipment_physics.ts';
 import { DND35E_CP_PER_GP, DND35E_DEFAULT_CURRENCY_CONFIG } from '../currency.ts';
 import { evaluateActiveSpellAuraContributions } from '../magic/spell_aura_resolver.ts';
@@ -36,7 +37,6 @@ import {
   type DnD35ExtendedActorData
 } from './dnd35e_ui_char_sheet.ts';
 
-const LIGHT_LOAD_MULTIPLIER_LBS = 15;
 const DEFAULT_GOLD_CURRENCY = 0;
 const TOTAL_HOTBAR_BANKS = 10;
 
@@ -86,12 +86,20 @@ export class DnD35UIAdapter implements ICartridgeUIAdapter {
 
     const stashItems: UIInventoryItem[] = [];
     let currentWeightLbs = 0;
+    let excludedStarterOutfitWeight = false;
     inventory?.items.forEach((itemEntityId, idx) => {
       if (!state) return;
       const isEquipped = equipment?.slots.some((s) => s.equippedItem === itemEntityId) ?? false;
       const uiItem = mapEntityItemToUI(state, itemEntityId, isEquipped, idx);
       if (uiItem) {
-        currentWeightLbs += uiItem.weightLbs;
+        const itemComp = getComponent(state, itemEntityId, ComponentType.Item);
+        const itemDef = itemComp ? state.campaign.items[itemComp.itemId] : undefined;
+        const isFreeStarterOutfit = !excludedStarterOutfitWeight && (itemDef?.tags ?? []).includes('starter_outfit');
+        if (isFreeStarterOutfit) {
+          excludedStarterOutfitWeight = true;
+        } else {
+          currentWeightLbs += uiItem.weightLbs;
+        }
         if (!isEquipped) {
           stashItems.push(uiItem);
         }
@@ -106,6 +114,8 @@ export class DnD35UIAdapter implements ICartridgeUIAdapter {
       convertCurrency(balanceBaseUnits, currencyCfg.baseUnitId, defaultDenomId, currencyCfg)
     );
 
+    const encumbrance = computeEncumbranceState(strScore, dndData.sizeCategory ?? 'medium', currentWeightLbs);
+
     return {
       equippedSlots,
       anatomicalSlots,
@@ -113,7 +123,7 @@ export class DnD35UIAdapter implements ICartridgeUIAdapter {
       activeWeaponSetIndex: 1,
       stashItems,
       currentWeightLbs,
-      maxWeightLbs: strScore * LIGHT_LOAD_MULTIPLIER_LBS,
+      maxWeightLbs: encumbrance.heavyMaxLb,
       goldCurrency,
       currencyFormatted: formatCurrency(balanceBaseUnits, currencyCfg)
     };

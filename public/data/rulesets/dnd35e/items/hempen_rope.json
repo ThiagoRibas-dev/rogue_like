@@ -1,0 +1,21 @@
+{
+  "hempen_rope": {
+    "id": "hempen_rope",
+    "name": "Hempen Rope (50 ft.)",
+    "unidentifiedName": "Coil of Rope",
+    "description": "A 50-foot coil of sturdy hemp rope (2 hp, burst DC 23 Strength check).",
+    "glyph": "~",
+    "fg": "#b7950b",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 10,
+    "baseValue": 1,
+    "currencyUnit": "gp",
+    "tags": [
+      "adventuring_gear",
+      "dungeoneering",
+      "rope"
+    ],
+    "spriteId": "dcss_item_misc_misc_disc_new"
+  }
+}

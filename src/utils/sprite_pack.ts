@@ -235,3 +235,136 @@ export function stripTransientThemeHydration(theme: ThemeConfig): ThemeConfig {
     spriteSheets: cleanSheets
   };
 }
+
+/**
+ * Metadata entry for a single selectable sprite discovered across loaded theme packs and sheets.
+ */
+export interface SpriteCatalogEntry {
+  readonly spriteId: string;
+  readonly label: string;
+  readonly sheetId: string;
+  readonly packId: string;
+  readonly isCharacterSprite: boolean;
+}
+
+const PRIMARY_HINT_WEIGHT = 10;
+const SECONDARY_HINT_WEIGHT = 5;
+const EXACT_TOKEN_MATCH_MULTIPLIER = 2;
+
+const catalogSpriteCache = new WeakMap<object, ReadonlyArray<SpriteCatalogEntry>>();
+
+function formatSpriteLabel(spriteId: string): string {
+  return spriteId
+    .replace(/^dcss_(actor|monster|item|dungeon|spell|effect|misc|gui|player)_/, '')
+    .replace(/^(actor|monster|item|tile)_/, '')
+    .replace(/_/g, ' ')
+    .trim();
+}
+
+/**
+ * Collects all deduplicated selectable sprites from a theme's loaded sprite packs and local spriteSheets,
+ * flagging character-avatar sprites declaratively via `sheet.isCharacterSpriteSheet` (with prefix fallback).
+ *
+ * @param theme Active campaign theme configuration.
+ * @returns Ordered array of `SpriteCatalogEntry` descriptors.
+ */
+export function collectCatalogSpriteEntries(
+  theme: Pick<ThemeConfig, 'spritePacks' | 'loadedSpritePacks' | 'spriteSheets'> | undefined
+): ReadonlyArray<SpriteCatalogEntry> {
+  if (!theme) return [];
+  const cached = catalogSpriteCache.get(theme);
+  if (cached !== undefined) return cached;
+
+  const entries: SpriteCatalogEntry[] = [];
+  const seen = new Set<string>();
+  const loadedPacks = theme.loadedSpritePacks ?? {};
+
+  const pushSheetEntries = (packId: string, sheetId: string, sheet: SpriteSheetSource): void => {
+    const sheetFlag = sheet.isCharacterSpriteSheet === true || sheetId === 'actors' || sheetId === 'rogues';
+    for (const spriteId of Object.keys(sheet.tileMap)) {
+      if (seen.has(spriteId) || spriteId.includes('__alt_') || spriteId.includes('__rare_')) {
+        continue;
+      }
+      seen.add(spriteId);
+      const isChar = sheetFlag || spriteId.startsWith('dcss_actor_') || spriteId.startsWith('actor_');
+      entries.push({
+        spriteId,
+        label: formatSpriteLabel(spriteId),
+        sheetId,
+        packId,
+        isCharacterSprite: isChar
+      });
+    }
+  };
+
+  if (theme.spriteSheets) {
+    for (const [sheetId, sheet] of Object.entries(theme.spriteSheets)) {
+      pushSheetEntries('campaign', sheetId, sheet);
+    }
+  }
+
+  for (const rawRef of theme.spritePacks ?? []) {
+    const { packId, includeSheets } = normalizeSpritePackRef(rawRef);
+    const pack = loadedPacks[packId];
+    if (!pack) continue;
+    const sheetIds = includeSheets && includeSheets.length > 0 ? includeSheets : Object.keys(pack.spriteSheets);
+    for (const sheetId of sheetIds) {
+      const sheet = pack.spriteSheets[sheetId];
+      if (sheet) {
+        pushSheetEntries(packId, sheetId, sheet);
+      }
+    }
+  }
+
+  catalogSpriteCache.set(theme, entries);
+  return entries;
+}
+
+/**
+ * Ranks character-avatar sprites by relevance to ruleset-supplied hint tokens
+ * (e.g. primary tokens like `['elf', 'wizard']` and optional secondary synonym tokens).
+ *
+ * @param entries Full sprite catalog entries.
+ * @param hintTokens Primary keywords (highest relevance weight).
+ * @param secondaryHints Optional secondary/synonym keywords supplied by the active cartridge.
+ * @returns Character sprite entries ordered from best match to fallback.
+ */
+export function suggestCharacterSprites(
+  entries: ReadonlyArray<SpriteCatalogEntry>,
+  hintTokens: ReadonlyArray<string>,
+  secondaryHints: ReadonlyArray<string> = []
+): ReadonlyArray<SpriteCatalogEntry> {
+  const charEntries = entries.filter((e) => e.isCharacterSprite);
+  const pool = charEntries.length > 0 ? charEntries : entries;
+  if (hintTokens.length === 0 && secondaryHints.length === 0) return pool;
+
+  const expandedWeights = new Map<string, number>();
+  for (const raw of hintTokens) {
+    const token = raw.toLowerCase().trim();
+    if (!token) continue;
+    expandedWeights.set(token, Math.max(expandedWeights.get(token) ?? 0, PRIMARY_HINT_WEIGHT));
+  }
+  for (const raw of secondaryHints) {
+    const token = raw.toLowerCase().trim();
+    if (!token) continue;
+    expandedWeights.set(token, Math.max(expandedWeights.get(token) ?? 0, SECONDARY_HINT_WEIGHT));
+  }
+
+  const scored = pool.map((entry, idx) => {
+    const hay = `${entry.spriteId} ${entry.label}`.toLowerCase();
+    const parts = hay.split(/[^a-z0-9]+/);
+    let score = 0;
+    for (const [kw, weight] of expandedWeights.entries()) {
+      if (parts.includes(kw)) {
+        score += weight * EXACT_TOKEN_MATCH_MULTIPLIER;
+      } else if (hay.includes(kw)) {
+        score += weight;
+      }
+    }
+    return { entry, score, idx };
+  });
+
+  const matching = scored.filter((s) => s.score > 0).sort((a, b) => b.score - a.score || a.idx - b.idx);
+  if (matching.length === 0) return pool;
+  return matching.map((s) => s.entry);
+}

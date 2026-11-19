@@ -1,0 +1,19 @@
+{
+  "courtiers_outfit": {
+    "id": "courtiers_outfit",
+    "name": "Courtier's Outfit",
+    "unidentifiedName": "Tailored Noble Court Attire",
+    "description": "Fancy, tailored clothes in the current fashion of noble courts.",
+    "glyph": "[",
+    "fg": "#d4ac0d",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 6,
+    "baseValue": 30,
+    "currencyUnit": "gp",
+    "tags": [
+      "clothing_outfit"
+    ],
+    "spriteId": "dcss_item_armor_torso_robe_3"
+  }
+}

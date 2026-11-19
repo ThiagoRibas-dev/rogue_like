@@ -1,0 +1,20 @@
+{
+  "waterskin": {
+    "id": "waterskin",
+    "name": "Waterskin",
+    "unidentifiedName": "Waterskin",
+    "description": "A leather pouch with a narrow neck used for holding 1/2 gallon of water.",
+    "glyph": "!",
+    "fg": "#5dade2",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 4,
+    "baseValue": 1,
+    "currencyUnit": "gp",
+    "tags": [
+      "adventuring_gear",
+      "container"
+    ],
+    "spriteId": "dcss_item_misc_misc_bottle"
+  }
+}

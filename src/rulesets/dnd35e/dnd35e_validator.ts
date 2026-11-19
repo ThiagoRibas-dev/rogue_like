@@ -1,6 +1,7 @@
 import type { CampaignData } from '../../types/campaign.types.ts';
 import type { ValidationError } from '../../types/ruleset.types.ts';
 import { getDnD35Archetype } from './archetype_resolver.ts';
+import { STARTING_EQUIPMENT_PACKAGES } from './builder/starting_packages.ts';
 import { type DnD35SystemContent, DnD35SystemContentSchema } from './types/dnd35e_system.types.ts';
 import {
   validateDnD35eClassesRacesTemplates,
@@ -260,6 +261,38 @@ export function checkDnD35eRuleset(campaign: Readonly<CampaignData>): ReadonlyAr
       errors.push({
         path: `entities.${entityId}.archetypeId`,
         message: `Entity template "${entityId}" references unknown system archetype "${entity.archetypeId}"`,
+        severity: 'error'
+      });
+    }
+  }
+
+  const mergedItems = { ...(sys.items ?? {}), ...campaign.items };
+  for (const pkg of STARTING_EQUIPMENT_PACKAGES) {
+    if (pkg.freeOutfitId && !mergedItems[pkg.freeOutfitId]) {
+      errors.push({
+        path: `STARTING_EQUIPMENT_PACKAGES.${pkg.id}.freeOutfitId`,
+        message: `Starting equipment package "${pkg.id}" references missing freeOutfitId "${pkg.freeOutfitId}".`,
+        severity: 'error'
+      });
+    }
+    for (const entry of pkg.items ?? []) {
+      if (!mergedItems[entry.itemId]) {
+        errors.push({
+          path: `STARTING_EQUIPMENT_PACKAGES.${pkg.id}.items.${entry.itemId}`,
+          message: `Starting equipment package "${pkg.id}" references missing item "${entry.itemId}".`,
+          severity: 'error'
+        });
+      }
+    }
+  }
+  for (const classDef of Object.values(sys.classes)) {
+    if (
+      classDef.defaultStartingPackageId &&
+      !STARTING_EQUIPMENT_PACKAGES.some((pkg) => pkg.id === classDef.defaultStartingPackageId)
+    ) {
+      errors.push({
+        path: `systemContent.classes.${classDef.id}.defaultStartingPackageId`,
+        message: `Class "${classDef.id}" references unknown defaultStartingPackageId "${classDef.defaultStartingPackageId}".`,
         severity: 'error'
       });
     }

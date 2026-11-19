@@ -1,0 +1,20 @@
+{
+  "artisan_tools": {
+    "id": "artisan_tools",
+    "name": "Artisan's Tools",
+    "unidentifiedName": "Craftsman's Tool Roll",
+    "description": "Standard tools needed to pursue Craft checks without the -2 improvised tool penalty.",
+    "glyph": "~",
+    "fg": "#95a5a6",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 5,
+    "baseValue": 5,
+    "currencyUnit": "gp",
+    "tags": [
+      "class_tool",
+      "skill_kit"
+    ],
+    "spriteId": "dcss_item_weapon_hammer_1_new"
+  }
+}

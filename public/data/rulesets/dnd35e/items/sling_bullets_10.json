@@ -1,0 +1,21 @@
+{
+  "sling_bullets_10": {
+    "id": "sling_bullets_10",
+    "name": "Pouch of Sling Bullets (10)",
+    "unidentifiedName": "Pouch of Lead Bullets",
+    "description": "A pouch holding 10 smoothed lead sling bullets.",
+    "glyph": "{",
+    "fg": "#7f8c8d",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 5,
+    "baseValue": 1,
+    "currencyUnit": "sp",
+    "tags": [
+      "adventuring_gear",
+      "ammunition",
+      "ammo:sling_bullet"
+    ],
+    "spriteId": "dcss_item_weapon_ranged_sling_bullet_1_new"
+  }
+}

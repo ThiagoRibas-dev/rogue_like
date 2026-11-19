@@ -786,6 +786,7 @@
     "tier": "tier1_console",
     "responsibility": "Actor anatomical equipment initialization and default armament equipping.",
     "canonicalEntryPoints": [
+      "DEFAULT_ACTOR_INVENTORY_CAPACITY",
       "initializeActorEquipmentAndInventory",
       "equipActorDefaultArmaments"
     ],
@@ -2187,8 +2188,12 @@
   "src/rendering/sprite_atlas.ts": {
     "domain": "Core Console: Rendering & UI Views",
     "tier": "tier1_console",
-    "responsibility": "Loads and caches 2D tile sprite sheets and procedural sprite atlases for ROT.Display.",
+    "responsibility": "Loads and caches 2D tile sprite sheets and procedural sprite atlases for ROT.Display, and provides crisp pixel-art thumbnail slicing via renderSpriteToDataUrl.",
     "canonicalEntryPoints": [
+      "ActiveSpriteAtlasSnapshot",
+      "setActiveSpriteAtlas",
+      "getActiveSpriteAtlas",
+      "renderSpriteToDataUrl",
       "compositeAtlas",
       "mountDisplayWithFogOverlay",
       "syncFogOverlayCanvas"
@@ -5234,7 +5239,7 @@
   "src/utils/sprite_pack.ts": {
     "domain": "Core Console: Utility Helpers",
     "tier": "tier1_console",
-    "responsibility": "Canonical resolution of ordered shared sprite pack bundles, campaign sheet overrides, and transient hydration stripping.",
+    "responsibility": "Canonical resolution of ordered shared sprite pack bundles, campaign sheet overrides, catalog indexing, and transient hydration stripping.",
     "canonicalEntryPoints": [
       "SPRITE_PACKS_DATA_SUBPATH",
       "SPRITE_PACK_MANIFEST_FILENAME",
@@ -5246,7 +5251,10 @@
       "resolveEffectiveThemeWithPreference",
       "resolveThemeSpriteSheets",
       "attachLoadedSpritePacks",
-      "stripTransientThemeHydration"
+      "stripTransientThemeHydration",
+      "SpriteCatalogEntry",
+      "collectCatalogSpriteEntries",
+      "suggestCharacterSprites"
     ],
     "ownershipBoundary": {
       "includes": "Pure implementation and exports for src/utils/sprite_pack.ts.",

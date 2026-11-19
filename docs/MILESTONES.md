@@ -2212,4 +2212,59 @@ Establish a modular, multi-denomination currency engine, overhaul trade and bart
   - Mapped complete campaign topology into `docs/CAMPAIGN_TOPOLOGIES.md`.
   - Added comprehensive 10-test suite `tests/currency_trade_and_campaign.test.ts` (310/310 passing across 43 test suites).
 
+---
+
+# 🚀 Phase 41: Shared Sprite Pack Architecture, SSOT Partitioning & Ruleset Hygiene
+
+Decouple reusable 32x32 sprite tilesets into a shared asset repository with per-sprite priority fallback and live Settings switching, enforce a strict 3-way SSOT registry partition with hard-error canonical export uniqueness, extract generic rest/stance primitives to Tier 1 Console, eliminate Rule 21 content-ID branches, and complete Quickcast per-domain spontaneous conversion support.
+
+## 🟢 Milestone 147: Shared Sprite Packs Repository, DCSS CC0 Primary Pack, Settings Switcher & Attributions (Complete)
+
+- [x] **Shared Sprite Packs Pipeline & 32rogues / DCSS Bundles (`public/data/sprite_packs/`, `src/utils/sprite_pack.ts`, `src/core/loader/sprite_pack_loader.ts`, `scripts/run-validator.ts`)**:
+  - Established `public/data/sprite_packs/` with `catalog.json`, DCSS CC0 primary pack (`6,185` sprites across 9 sheets + `118` aliases) and 8-sheet `32rogues` fallback pack (`Seth Boyles`), merged priority-first per `spriteId` in `resolveThemeSpriteSheets`.
+  - Added disk parity validation for shared sprite packs in `scripts/run-validator.ts`.
+- [x] **Live Tileset Pack Switcher, Credits Panel & Hand/Backpack Fixes (`src/rendering/ui/settings_attributions.ts`, `src/rendering/ui/hud_dock.ui.ts`, `CREDITS.md`, `src/rulesets/dnd35e/equipment/`)**:
+  - Added runtime `preferredSpritePack` switcher in Settings (`applyDisplaySettingsUpdate`) and an in-game Credits & Attributions section synced with `CREDITS.md`.
+  - Hardened equipment hand counts, 2H grip toggle gating, and backpack hotkeys.
+
+## 🟢 Milestone 148: 3-Way SSOT Partition, Console Rest Primitives, Rule 21 Purity & Quickcast Domain Spontaneity (Complete)
+
+- [x] **3-Way Disjoint SSOT Partition & Old-Brain Eviction (`docs/ssot/ssot_{console,classic,dnd35e}.json`, `scripts/ssot_parity.ts`, `src/systems/{rest,stance}.system.ts`, `src/rulesets/dnd35e/magic/{rest_recovery,spellbook_actions}.ts`)**:
+  - Partitioned SSOT into 3 disjoint registries (`console`, `classic`, `dnd35e`) with `tier2_types` tagging and hard-error uniqueness checks across all `canonicalEntryPoints`.
+  - Extracted Tier 1 Console rest/wait safety primitives (`src/systems/rest.system.ts`) and `updateActorTacticalDoctrine` (`src/systems/stance.system.ts`), moved D&D 3.5e rest recovery and Vancian slot reducers into `src/rulesets/dnd35e/magic/`, and removed superseded legacy inventory/equipment UIs.
+  - Eliminated remaining Rule 21 content-ID branches across quickcast, hotbar, spellbook, shapeshift, race hydration, and archetype resolution.
+- [x] **Test Determinism & Quickcast Per-Domain Spontaneous Radio Group (`tests/helpers.ts`, `src/rulesets/dnd35e/combat/combat_exchange_phases.ts`, `src/rulesets/dnd35e/magic/spellbook_slots.ts`, `src/rulesets/dnd35e/ui/dnd35e_quickcast_{modifiers,model}.ts`, `src/rendering/ui/dnd35e_quickcast.ui.ts`)**:
+  - Defaulted `buildGameState` to deterministic RNG seeding (`DEFAULT_TEST_RNG_SEED = 42` with `null` opt-out) and forwarded `forcedAttackRoll` into `resolveOnDropCleaveFollowup`.
+  - Added `SpontaneousConversionFilter`, `resolveEligibleSpontaneousDomainIds`, individual `spontaneous:domain:<id>` Quickcast modifier toggles, radio-group exclusivity across all `spontaneous:*` chips, and prepared non-general slot preservation in Quickcast rows.
+
+---
+
+# 🚀 Phase 42: Character Creation Review & Identity Experience, SRD Goods & Services & Weight-Based Encumbrance
+
+Upgrade the Character Creation Wizard into a full CRPG character forging experience with a dedicated final Review & Identity step, live pixel-art Sprite Picker (Suggested, Character Sheets, and Full Catalogue), Character Sheet portraits, complete SRD Goods & Services items composed via `baseItemId` inheritance, all 11 PHB/SRD Class Starting Kits, Custom Loadout shopping with class starting gold, automated starting-kit referential validation, and follow-up live weight-based encumbrance enforcement.
+
+## 🟢 Milestone 149: Character Creation Review & Identity Step, Sprite Picker, Portrait Integration, 11 Class Kits & Custom Loadout Shop (Completed)
+
+- [x] **Phase 1 — Tier 1 Console Sprite Atlas Thumbnails, Declarative Catalog & Character Sheet Portrait**:
+  - Add optional `isCharacterSpriteSheet` to `SpriteSheetSourceSchema` (`src/types/campaign/meta.ts`), stamp `dcss` (`actors`) and `32rogues` (`rogues`), and add `collectCatalogSpriteEntries` & `suggestCharacterSprites` (`src/utils/sprite_pack.ts`).
+  - Cache active atlas snapshot + `renderSpriteToDataUrl` (`src/rendering/sprite_atlas.ts`, `src/rendering/display.ts`).
+  - Add pure `spriteId` / `glyph` / `glyphColor` fields to `UICharacterSheetModel` (`src/types/ui_adapter.types.ts`, `dnd35e_ui_char_sheet.ts`) and render crisp pixel-art character portraits inside `.crpg-character-portrait` (`src/rendering/ui/console_dossier.ui.ts`, `src/styles/console_prototype.css`).
+- [x] **Phase 2 — Tier 3 SRD Goods & Services Compendium (`baseItemId` Root/Downstream Composition), Class Starting Wealth & Capacity `30`**:
+  - Add `startingGoldDice`, `averageStartingGoldGp`, and `defaultStartingPackageId` to `DnD35ClassDefinitionSchema` and `public/data/rulesets/dnd35e/classes/*.json` (11 PC + 5 NPC classes).
+  - Author 81 modular SRD Adventuring Gear, Light Sources, Ammunition, Class Tools/Skill Kits, Alchemical Substances, and Starter Clothing Outfits in `public/data/rulesets/dnd35e/items/*.json` using Root -> Downstream `baseItemId` composition, register all IDs in `ITEM_IDS`, align `dnd35e-crypt/items.json` `backpack`, and raise default slot capacity to `30` (`entities.json`, `ecs_spawner_equipment.ts`).
+- [x] **Phase 3 — Tier 2 Builder: 11 SRD Class Packages, Custom Kit Shop Math, Validator Guards & Pure Hydration**:
+  - Expand `starting_packages.ts` with all 11 PHB/SRD Class Starting Packages + 4 legacy kits (using canonical SRD items) and pure starting-wealth, cost, encumbrance-weight, and kit-customization helpers.
+  - Add automated starting-package & class `defaultStartingPackageId` validation in `checkDnD35eRuleset` (`src/rulesets/dnd35e/dnd35e_validator.ts`), and switch `dnd35e_ui_adapter.ts` `maxWeightLbs` to `computeEncumbranceState(...).heavyMaxLb`.
+  - Extend `CharacterCreationDraft`, `sanitizeDraftOnRaceOrClassChange`, `validateCharacterCreationStep`, and `applyCharacterCreationToPlayer` to support custom loadouts, free starter outfits, `characterTitle`, `mannerisms`, `glyphColor`, and `spriteId` while remaining 100% pure/immutable for live Summary previews.
+- [x] **Phase 4 — Character Creation Wizard UI Overhaul (`dnd35e_char_builder_{equipment,summary}.ui.ts`, `dnd35e_char_builder.ui.ts`)**:
+  - Upgrade Equipment step into a dedicated Preset Kit Inspector + Custom Gear Shop (class starting gold average/roll, Free Starter Outfit selector, category tabs, affordable filter, live `computeEncumbranceState` load meter).
+  - Remove top-bar `Name:` input and add the final **`Review & Identity`** (`'summary'`) step featuring Name + Randomize, Title/Epithet, ASCII Glyph Color swatches, Character Traits/Mannerisms, Suggested/Characters/Full-Catalogue Sprite Picker, and authoritative live Character Summary (`applyCharacterCreationToPlayer` -> `projectCharacterSheetData`).
+- [x] **Phase 5 — Tests, SSOT Sync & 8-Stage Verification**:
+  - Add regression coverage in `tests/dnd35e_classes_builder.test.ts` (and `tests/console_ui_architecture.test.ts` encumbrance expectation), sync `docs/ssot/ssot_{console,dnd35e}.json` via `bun scripts/map-codebase.ts`, and pass all 8 stages of `./verify.sh`.
+
+## ⚪ Milestone 150: Live Weight-Based Encumbrance Enforcement (Planned Follow-Up)
+
+- [ ] Wire live carried weight computation (`computeEncumbranceState`, excluding free starter outfit weight) into `resolveEntitySituationalTagContext` (`src/rulesets/dnd35e/semantic_tags_context.ts`) to project `load:light` / `load:medium` / `load:heavy` / `load:overloaded` dynamically.
+- [ ] Enforce SRD encumbrance Max Dex Bonus (`+3` / `+1` / `0`), ACP (`-3` / `-6`), and speed scaling (`30 ft -> 20 ft`, `20 ft -> 15 ft`, bypassed by `trait:unencumbered_speed`) inside `dnd35e_dag_adapter.ts` with comprehensive regression coverage.
+
 

@@ -1,0 +1,20 @@
+{
+  "bandoleer": {
+    "id": "bandoleer",
+    "name": "Bandoleer",
+    "unidentifiedName": "Leather Bandoleer",
+    "description": "A leather chest belt with loops and pouches for carrying up to 8 small items (dagger-sized or potions).",
+    "glyph": ")",
+    "fg": "#8e6b3e",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 0.5,
+    "baseValue": 5,
+    "currencyUnit": "sp",
+    "tags": [
+      "adventuring_gear",
+      "container"
+    ],
+    "spriteId": "item_coin_purse"
+  }
+}

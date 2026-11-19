@@ -1,0 +1,20 @@
+{
+  "parchment_sheet": {
+    "id": "parchment_sheet",
+    "name": "Parchment (Sheet)",
+    "unidentifiedName": "Parchment Sheet",
+    "description": "A sheet of goat hide or sheepskin prepared for writing on.",
+    "glyph": "?",
+    "fg": "#f5cba7",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 0,
+    "baseValue": 2,
+    "currencyUnit": "sp",
+    "tags": [
+      "adventuring_gear",
+      "writing_gear"
+    ],
+    "spriteId": "dcss_item_scroll_blank_paper"
+  }
+}

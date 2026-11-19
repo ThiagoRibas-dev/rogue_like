@@ -9,6 +9,7 @@ import {
   type EquipmentSlotInstance,
   type FighterComponent,
   type IdentityComponent,
+  type RenderableComponent,
   type ResourcePoolComponent,
   type TacticalDoctrineComponent
 } from '../../../types/components.types.ts';
@@ -92,6 +93,10 @@ export function projectCharacterSheetData(actor: unknown): UICharacterSheetModel
   const identity =
     state && entityId !== undefined
       ? (getComponent(state, entityId, ComponentType.Identity) as IdentityComponent | undefined)
+      : undefined;
+  const renderable =
+    state && entityId !== undefined
+      ? (getComponent(state, entityId, ComponentType.Renderable) as RenderableComponent | undefined)
       : undefined;
   const fighter =
     state && entityId !== undefined
@@ -211,8 +216,13 @@ export function projectCharacterSheetData(actor: unknown): UICharacterSheetModel
       ? resolveEntityDisplayName(state, entityId, dndData.name ?? 'Adventurer')
       : (identity?.name ?? dndData.name ?? 'Adventurer');
 
+  const resolvedGlyphColor = identity?.colorOverride ?? renderable?.fg;
+
   return {
     name: resolvedName,
+    ...(renderable?.spriteId !== undefined ? { spriteId: renderable.spriteId } : {}),
+    ...(renderable?.glyph !== undefined ? { glyph: renderable.glyph } : {}),
+    ...(resolvedGlyphColor !== undefined ? { glyphColor: resolvedGlyphColor } : {}),
     levelSummary: tracks.map((t) => `${t.trackId} ${t.levels}`).join(' / ') || 'Level 1',
     raceName: (dndData.raceId ?? 'human').toUpperCase(),
     alignmentName: (dndData.alignment ?? 'NG').toUpperCase().replace(/_/g, ' '),
