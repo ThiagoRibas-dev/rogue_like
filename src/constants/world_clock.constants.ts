@@ -1,7 +1,7 @@
 /** Default game start hour (`08:00 AM`). */
 export const DEFAULT_CLOCK_START_HOUR = 8;
 
-/** Default seconds per global world turn (`1` D&D round = `6` seconds). */
+/** Default seconds per global world turn (`6` seconds). */
 export const DEFAULT_SECONDS_PER_TURN = 6;
 
 /** Default hours per diurnal day (`24`). */
@@ -26,7 +26,7 @@ export const BULK_CADENCE_STEP_SIZE = 5;
 export const BULK_REST_CHUNK_TURNS = 240;
 
 /**
- * Default SRD-aligned satiation loss per standard 1-turn action:
+ * Default baseline satiation loss per standard 1-turn action:
  * `0.035 * 14,400 turns/day = 504 satiation / 24h` (~1 daily trail ration of `500` satiation).
  */
 export const DEFAULT_SATIATION_LOSS_PER_STANDARD_TURN = 0.035;

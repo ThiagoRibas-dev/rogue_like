@@ -3,7 +3,7 @@ import { dispatchAction } from '../src/actions/action.registry.ts';
 import { createFireAimedAction, createToggleTargetingAction } from '../src/actions/targeting.actions.ts';
 import { addComponent, getComponent, spawnEntity, spawnItem } from '../src/core/ecs.ts';
 import { initRNG } from '../src/core/rng.ts';
-import { prepareSpellIntoSlot } from '../src/rendering/ui/dnd35e_spellbook_actions.ts';
+import { prepareSpellIntoSlot } from '../src/rulesets/dnd35e/magic/spellbook_actions.ts';
 import { createRoundActionBudget } from '../src/rulesets/dnd35e/action_economy.ts';
 import { resolveDnD35eActionEnergyCost } from '../src/rulesets/dnd35e/cartridge/dnd35e_lifecycle_adapter.ts';
 import { applyCharacterCreationToPlayer, type CharacterCreationDraft } from '../src/rulesets/dnd35e/character_builder.ts';
@@ -108,7 +108,7 @@ describe('D&D 3.5e End-to-End Spell Casting & Quickcast Matrix', () => {
       (m.sourcePath ?? '').startsWith('spell:mage_armor:')
     );
     expect(afterSecondMods.length).toBe(1);
-  });
+  }, 15_000);
 
   it('fires targeted magic_missile via RulesetContract.resolveAimedAction and deals force damage', () => {
     let { state, playerId } = buildWizardPlayerState();

@@ -7,10 +7,7 @@ import {
   buildNegativeLevelModifiers,
   collectActiveClassFeaturesAndPools
 } from './progression/ledger_features_spells.ts';
-import {
-  applyNegativeLevelsToActor,
-  applyPermanentLevelDrainToActor as applyPermanentLevelDrain
-} from './progression/ledger_level_drain.ts';
+import { applyNegativeLevelsToActor, applyPermanentLevelDrain } from './progression/ledger_level_drain.ts';
 import {
   buildClassAndDomainEffectModifiers,
   buildCombatRuleOverridesFromActiveRules,

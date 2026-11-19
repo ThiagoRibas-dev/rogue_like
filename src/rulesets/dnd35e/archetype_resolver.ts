@@ -1,6 +1,7 @@
 import { computeAbilityModifier, computeEffectiveAbilityScore, createAbilityScoreState } from './abilities.ts';
 import { hydrateRaceAsArchetype } from './archetype/race_hydrator.ts';
 import { synthesizeDragonFromRaceTier, synthesizeElementalFromRaceTier } from './family_synthesizer.ts';
+import { buildHitDieTrackFromClass } from './progression.ts';
 import {
   buildClassAndDomainEffectModifiers,
   collectActiveGrantedAndVirtualFeats
@@ -64,10 +65,37 @@ export function hydrateArchetypeData(
       ? (archetypeOrRace as DnD35RaceDefinition)
       : (systemContent?.['races'] as Record<string, DnD35RaceDefinition> | undefined)?.[archetype.archetypeId];
 
-  const tracks =
-    levelOverride !== undefined && archetype.tracks.length > 0
-      ? [{ ...archetype.tracks[0]!, levels: Math.max(1, levelOverride) }, ...archetype.tracks.slice(1)]
-      : archetype.tracks;
+  let tracks = archetype.tracks;
+  if (levelOverride !== undefined && archetype.tracks.length > 0) {
+    const first = archetype.tracks[0]!;
+    const overriddenLevels = Math.max(1, levelOverride);
+    const classDefs = systemContent?.['classes'] as Record<string, DnD35ClassDefinition> | undefined;
+    const firstClassDef = classDefs?.[first.trackId];
+    if (firstClassDef) {
+      const rebuilt = buildHitDieTrackFromClass(firstClassDef, overriddenLevels);
+      tracks = [
+        {
+          trackId: rebuilt.trackId,
+          levels: rebuilt.levels,
+          hitDieSides: firstClassDef.hitDieSides,
+          babCurve: rebuilt.babCurve,
+          fortCurve: rebuilt.fortCurve,
+          refCurve: rebuilt.refCurve,
+          willCurve: rebuilt.willCurve,
+          skillPointsPerLevel: rebuilt.skillPointsPerLevel,
+          ...(rebuilt.explicitBab !== undefined ? { explicitBab: rebuilt.explicitBab } : {}),
+          ...(rebuilt.explicitFort !== undefined ? { explicitFort: rebuilt.explicitFort } : {}),
+          ...(rebuilt.explicitRef !== undefined ? { explicitRef: rebuilt.explicitRef } : {}),
+          ...(rebuilt.explicitWill !== undefined ? { explicitWill: rebuilt.explicitWill } : {}),
+          ...(rebuilt.trackCategory !== undefined ? { trackCategory: rebuilt.trackCategory } : {})
+        },
+        ...archetype.tracks.slice(1)
+      ];
+    } else {
+      const { explicitBab: _b, explicitFort: _f, explicitRef: _r, explicitWill: _w, ...curveTrack } = first;
+      tracks = [{ ...curveTrack, levels: overriddenLevels }, ...archetype.tracks.slice(1)];
+    }
+  }
 
   const normalizedDr =
     archetype.damageReduction !== undefined

@@ -142,9 +142,7 @@ export function buildActorSpellbooksByClass(
 
     const knownSet = new Set<string>();
     const grantsDomainSlots =
-      row?.domainSpellSlots !== undefined ||
-      classDef.id === 'cleric' ||
-      classDef.progression.some((r) => r.domainSpellSlots !== undefined);
+      row?.domainSpellSlots !== undefined || classDef.progression.some((r) => r.domainSpellSlots !== undefined);
 
     if (spellAcquisitionMode === 'prayerbook_full_list') {
       if (maxCastableSpellLevel >= 0) {
@@ -172,9 +170,9 @@ export function buildActorSpellbooksByClass(
         }
       }
     } else {
-      if (classDef.id === 'wizard' && maxCastableSpellLevel >= 0) {
+      if (spellAcquisitionMode === 'spellbook_scribed' && maxCastableSpellLevel >= 0) {
         for (const spell of Object.values(sysContent.spells)) {
-          if (spell.levelByClass['wizard'] === 0 && !prohibitedSchools.includes(spell.school as DnD35SpellSchool)) {
+          if (spell.levelByClass[classDef.id] === 0 && !prohibitedSchools.includes(spell.school as DnD35SpellSchool)) {
             knownSet.add(spell.id);
           }
         }

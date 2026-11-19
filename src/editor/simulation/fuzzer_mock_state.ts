@@ -4,8 +4,7 @@ import {
   type GameState,
   UIMode,
   EngineMode,
-  type PersistentEntityRecord,
-  toEntityId
+  type PersistentEntityRecord
 } from '../../types/game-state.types.ts';
 import {
   ComponentType,
@@ -18,29 +17,10 @@ import {
   type SchemeComponent,
   type ActorComponent
 } from '../../types/components.types.ts';
-import { spawnEntity, spawnItem, addComponent } from '../../core/ecs.ts';
+import { addComponent, createEntity, spawnEntity, spawnItem } from '../../core/ecs.ts';
 import { generateArea } from '../../map/generator.ts';
 import { compilePhases } from '../../systems/scheme_compiler.ts';
 import { DEFAULT_GLOBAL_DRAMA_BUDGET } from '../../constants/pacing.constants.ts';
-
-/**
- * Headless helper to create an entity.
- */
-export function createEntity(state: GameState): [GameState, EntityId] {
-  const newId = toEntityId(state.nextEntityId);
-  const nextEntities = [...state.entities, newId];
-  const nextComponents = new Map(state.components);
-  nextComponents.set(newId, {});
-  return [
-    {
-      ...state,
-      entities: nextEntities,
-      components: nextComponents,
-      nextEntityId: state.nextEntityId + 1
-    },
-    newId
-  ];
-}
 
 /**
  * Creates the initial mock GameState for a headless fuzzer run.

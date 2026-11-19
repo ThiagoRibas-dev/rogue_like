@@ -11,8 +11,9 @@ import {
   spawnItem
 } from '../src/core/ecs.ts';
 import { initRNG } from '../src/core/rng.ts';
-import { executeEightHourRest, evaluateActorRestSafety } from '../src/rendering/ui/dnd35e_rest_actions.ts';
-import { prepareSpellIntoSlot } from '../src/rendering/ui/dnd35e_spellbook_actions.ts';
+import { executeEightHourRest } from '../src/rulesets/dnd35e/magic/rest_recovery.ts';
+import { prepareSpellIntoSlot } from '../src/rulesets/dnd35e/magic/spellbook_actions.ts';
+import { evaluateActorRestSafety } from '../src/systems/rest.system.ts';
 import { buildTurnStatusRibbon, isActorPerceivedByPlayer } from '../src/rendering/ui/hud_alerts.ui.ts';
 import { applyCharacterCreationToPlayer, type CharacterCreationDraft } from '../src/rulesets/dnd35e/character_builder.ts';
 import { EIGHT_HOURS_IN_ROUNDS, OPEN_SLOT_PREPARATION_ROUNDS } from '../src/rulesets/dnd35e/magic/aoe_rest.ts';

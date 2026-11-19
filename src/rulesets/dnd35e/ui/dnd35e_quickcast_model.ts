@@ -11,6 +11,7 @@ import {
   computeClassLevelSlotSummaries,
   getSpontaneousConversionTargets,
   reconcilePreparedSlots,
+  resolveActiveSpontaneousConversionModes,
   type SpellLevelSlotSummary
 } from '../magic/spellbook_slots.ts';
 import { getDnD35EntityData } from '../srd_registry.ts';
@@ -105,9 +106,11 @@ function buildPreparedRows(
     book.preparedSlots && book.preparedSlots.length > 0
       ? book.preparedSlots
       : reconcilePreparedSlots(book, summaries, sys?.spells);
-  const convertCure = classId === 'cleric' && activeSet.has('spontaneous:cure');
-  const convertInflict = classId === 'cleric' && activeSet.has('spontaneous:inflict');
-  const convertSna = classId === 'druid' && activeSet.has('spontaneous:sna');
+  const convModes = resolveActiveSpontaneousConversionModes(classId, dndData, sys);
+  const supportsCureOrInflict = convModes.includes('cure_or_inflict');
+  const convertCure = supportsCureOrInflict && activeSet.has('spontaneous:cure');
+  const convertInflict = supportsCureOrInflict && activeSet.has('spontaneous:inflict');
+  const convertSna = convModes.includes('summon_nature_ally') && activeSet.has('spontaneous:sna');
   const rows: QuickcastLevelRow[] = [];
 
   for (let lvl = 0; lvl <= MAX_SPELL_LEVEL; lvl++) {
@@ -169,6 +172,7 @@ function buildPreparedRows(
 function buildSpontaneousRows(
   classId: string,
   book: DnD35ClassSpellbookState,
+  effectiveCastingMode: 'prepared' | 'spontaneous' | 'innate',
   summaries: ReadonlyArray<SpellLevelSlotSummary>,
   govAbMod: number,
   sys: DnD35SystemContent | undefined,
@@ -187,7 +191,7 @@ function buildSpontaneousRows(
 
     const sum = summaryMap.get(effectiveLvl);
     const totalDaily = sum?.totalSlots ?? book.spellsPerDay[String(effectiveLvl)] ?? 0;
-    const isAtWill = (effectiveLvl === 0 && totalDaily === 0) || classId === 'warlock' || classId === 'innate';
+    const isAtWill = (effectiveLvl === 0 && totalDaily === 0) || effectiveCastingMode === 'innate';
     const remaining = isAtWill ? -1 : Math.max(0, totalDaily - (usedMap[String(effectiveLvl)] ?? 0));
     if (!isAtWill && totalDaily <= 0) continue;
 
@@ -240,15 +244,26 @@ export function buildDnD35eQuickcastModel(
       dag?.dagResult.effectiveAbilityModifiers[book.governingAbility] ?? computeAbilityModifier(govAbScore);
     const summaries = computeClassLevelSlotSummaries(book, dndData, effectiveAbilities, sys);
 
+    const effectiveCastingMode: 'prepared' | 'spontaneous' | 'innate' =
+      classDef?.castingMode === 'innate' ? 'innate' : book.castingMode;
     const rows =
-      book.castingMode === 'prepared'
+      effectiveCastingMode === 'prepared'
         ? buildPreparedRows(classId, book, summaries, dndData, govAbMod, sys, activeSet, activeRodIds)
-        : buildSpontaneousRows(classId, book, summaries, govAbMod, sys, activeMetaIds, totalMetaBump);
+        : buildSpontaneousRows(
+            classId,
+            book,
+            effectiveCastingMode,
+            summaries,
+            govAbMod,
+            sys,
+            activeMetaIds,
+            totalMetaBump
+          );
 
     sections.push({
       classId,
       className: classDef?.name ?? classId.replace(/_/g, ' '),
-      castingMode: classId === 'warlock' || classId === 'innate' ? 'innate' : book.castingMode,
+      castingMode: effectiveCastingMode,
       isCollapsed: collapsedSet.has(classId),
       rows
     });

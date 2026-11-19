@@ -102,7 +102,7 @@ export function computeClassLevelSlotSummaries(
     const progDomainSlots = progRow?.domainSpellSlots?.[lvlKey] ?? book.domainSpellSlots?.[lvlKey] ?? 0;
     const domainSlots = progDomainSlots > 0 && (dndData.domains?.length ?? 0) > 0 && canCast ? progDomainSlots : 0;
     const specialistSlots =
-      book.classId === 'wizard' &&
+      classDef?.supportsArcaneSchoolSpecialization === true &&
       lvl > 0 &&
       canCast &&
       generalSlots > 0 &&
@@ -232,9 +232,11 @@ export function resolveActiveSpontaneousConversionModes(
   const featureDetails = classDef?.featureDetails;
   if (classDef && featureDetails && Object.keys(featureDetails).length > 0) {
     const level = Math.max(1, dndData.tracks?.find((t) => t.trackId === classId)?.levels ?? 1);
-    const activeFeatures = dndData.activeClassFeatures?.length
-      ? dndData.activeClassFeatures
-      : collectClassFeaturesUpToLevel(classDef, level, dndData.selectedAcfs ?? []);
+    const matchingExplicit = (dndData.activeClassFeatures ?? []).filter((f) => featureDetails[f] !== undefined);
+    const activeFeatures =
+      matchingExplicit.length > 0
+        ? matchingExplicit
+        : collectClassFeaturesUpToLevel(classDef, level, dndData.selectedAcfs ?? []);
     const modes = new Set<DnD35SpontaneousConversionMode>();
     for (const featId of activeFeatures) {
       const mode = featureDetails[featId]?.spontaneousConversionMode;
@@ -242,8 +244,6 @@ export function resolveActiveSpontaneousConversionModes(
     }
     if (modes.size > 0) return Array.from(modes);
   }
-  if (classId === 'cleric') return ['cure_or_inflict'];
-  if (classId === 'druid') return ['summon_nature_ally'];
   return [];
 }
 
@@ -254,7 +254,7 @@ export function canPrepareSpellInDomainSlot(
   spellLevel: number,
   dndData: Partial<DnD35EntityData>,
   systemContent: DnD35SystemContent | undefined,
-  classId = 'cleric'
+  classId: string
 ): boolean {
   if (isActorDomainSpellAtLevel(spellId, spellDef, spellLevel, dndData.domains, systemContent?.domains)) return true;
   if (!resolveActiveSpontaneousConversionModes(classId, dndData, systemContent).includes('domain')) return false;

@@ -1,5 +1,5 @@
 import { synthesizeDragonFromRaceTier, synthesizeElementalFromRaceTier } from '../family_synthesizer.ts';
-import { computeNpcClassCrContribution, NPC_CLASS_LEVEL_1_CR } from '../progression.ts';
+import { buildHitDieTrackFromClass, computeNpcClassCrContribution, NPC_CLASS_LEVEL_1_CR } from '../progression.ts';
 
 /** Fallback Challenge Rating (`1`) when neither `raceDef.cr` nor class progression tracks specify a CR. */
 const DEFAULT_CREATURE_CR = 1;
@@ -97,30 +97,36 @@ export function hydrateRaceAsArchetype(
 
   for (const cl of requestedClassLevels) {
     const clsDef = classes?.[cl.classId];
-    const row1 = clsDef?.progression?.[0];
-    const row4 = clsDef?.progression?.[3];
-    const babCurve: 'full' | 'three_quarters' | 'half' =
-      row1?.bab === 1
-        ? 'full'
-        : row4?.bab === 3
-          ? 'three_quarters'
-          : cl.classId === 'warrior'
-            ? 'full'
-            : 'three_quarters';
-    const fortCurve: 'good' | 'poor' = row1?.fortSave === 2 ? 'good' : cl.classId === 'warrior' ? 'good' : 'poor';
-    const refCurve: 'good' | 'poor' = row1?.refSave === 2 ? 'good' : 'poor';
-    const willCurve: 'good' | 'poor' = row1?.willSave === 2 ? 'good' : 'poor';
+    if (clsDef) {
+      const built = buildHitDieTrackFromClass(clsDef, cl.levels);
+      tracks.push({
+        trackId: built.trackId,
+        levels: built.levels,
+        hitDieSides: clsDef.hitDieSides,
+        babCurve: built.babCurve,
+        fortCurve: built.fortCurve,
+        refCurve: built.refCurve,
+        willCurve: built.willCurve,
+        skillPointsPerLevel: built.skillPointsPerLevel,
+        ...(built.explicitBab !== undefined ? { explicitBab: built.explicitBab } : {}),
+        ...(built.explicitFort !== undefined ? { explicitFort: built.explicitFort } : {}),
+        ...(built.explicitRef !== undefined ? { explicitRef: built.explicitRef } : {}),
+        ...(built.explicitWill !== undefined ? { explicitWill: built.explicitWill } : {}),
+        ...(built.trackCategory !== undefined ? { trackCategory: built.trackCategory } : {})
+      });
+      continue;
+    }
 
     tracks.push({
       trackId: cl.classId,
       levels: cl.levels,
-      hitDieSides: clsDef?.hitDieSides ?? 8,
-      babCurve,
-      fortCurve,
-      refCurve,
-      willCurve,
-      skillPointsPerLevel: clsDef?.skillPointsPerLevel ?? 2,
-      trackCategory: clsDef?.isPrestige ? 'prestige' : clsDef?.isNpcClass || cl.classId === 'warrior' ? 'npc' : 'pc'
+      hitDieSides: 8,
+      babCurve: 'three_quarters',
+      fortCurve: 'poor',
+      refCurve: 'poor',
+      willCurve: 'poor',
+      skillPointsPerLevel: 2,
+      trackCategory: 'pc'
     });
   }
 

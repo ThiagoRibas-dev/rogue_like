@@ -8,7 +8,7 @@ import type { ActorSpatialProfile } from '../types/ruleset.types.ts';
 import { isHostile } from '../utils/faction.ts';
 import { coordToIndex, isInBounds } from '../utils/grid.ts';
 
-/** SRD size-rank delta threshold (`3`) allowing creatures to move through an opponent's square. */
+/** Size-rank delta threshold (`3`) allowing larger/smaller creatures to move through an opponent's square. */
 export const SIZE_DIFF_PASS_THROUGH_THRESHOLD = 3;
 
 /** Resolved target footprint placement returned by `resolveMovementFootprintPlacement`. */

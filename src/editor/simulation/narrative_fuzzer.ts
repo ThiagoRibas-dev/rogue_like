@@ -22,7 +22,7 @@ import { createMockFuzzerState } from './fuzzer_mock_state.ts';
 import { generatePlayerFuzzerIntent, checkFuzzerSoftlock, checkSaveBloat } from './fuzzer_invariants.ts';
 import { processLedgerEvents, compileFuzzerReport } from './fuzzer_telemetry.ts';
 
-export { createEntity, createMockFuzzerState } from './fuzzer_mock_state.ts';
+export { createMockFuzzerState } from './fuzzer_mock_state.ts';
 
 export {
   TriggerRunawayError,

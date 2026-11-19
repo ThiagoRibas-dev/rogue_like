@@ -703,20 +703,21 @@ To ensure that weapon handedness, size penalties, limb occupation, and per-strik
 
 ### 9.11 Single Source of Truth (SSOT) Architecture & Continuous Parity Engine (Milestone 112.8)
 
-To eliminate "split-brain" architecture risks, duplicate implementations, and architectural drift across the TypeScript codebase (**432** source files at Milestone 112.8 introduction; **471** source files at Milestone 141), the codebase is governed by machine-readable Single Source of Truth (SSOT) registries and automated parity enforcement:
+To eliminate "split-brain" architecture risks, duplicate implementations, and architectural drift across the TypeScript codebase (**432** source files at Milestone 112.8 introduction; **480** source files currently), the codebase is governed by machine-readable Single Source of Truth (SSOT) registries and automated parity enforcement:
 
-1. **Two-Tier SSOT Registries (`docs/ssot/`)**:
-   - `docs/ssot/ssot_console.json`: Maps **311** Core Console & Classic files (307 at M112.8) across actions, AI behavior trees, app wiring, editor, constants, ECS systems, engine types, map generation, rendering/UI views, workers, and utility helpers.
-   - `docs/ssot/ssot_dnd35e.json`: Maps **160** D&D 3.5e Cartridge files (125 at M112.8) across cartridge adapters, core progression, character builder/ledger, math/multipliers, 4-stage stat DAG, spatial geometry, combat maneuvers, Vancian magic, races/bestiary, and tactical UI.
-   - Every file entry defines its domain, tier (`tier1_console`, `tier1_types`, `tier2_cartridge`, `tier2_ui`), primary responsibility, canonical entry points, explicit ownership boundary (`includes` / `excludes`), and forbidden anti-patterns.
+1. **Three-Way Disjoint SSOT Registries (`docs/ssot/`)**:
+   - `docs/ssot/ssot_console.json`: Maps **309** Core Console files (`tier1_console`, `tier1_types`) across actions, AI behavior trees, app wiring, editor, constants, ECS systems (including generic `rest.system.ts` & `stance.system.ts`), engine types, map generation, rendering/UI views, workers, and utility helpers.
+   - `docs/ssot/ssot_classic.json`: Maps **6** Classic Sci-Fi Cartridge files (`tier2_cartridge`, `tier2_ui`) across ruleset mechanics and UI adapter registration.
+   - `docs/ssot/ssot_dnd35e.json`: Maps **165** D&D 3.5e Cartridge files (`tier2_cartridge`, `tier2_types`, `tier2_ui`) across cartridge adapters, core progression, character builder/ledger, math/multipliers, 4-stage stat DAG, spatial geometry, combat maneuvers, Vancian magic (`rest_recovery.ts`, `spellbook_actions.ts`), races/bestiary, and tactical UI.
+   - Every file entry defines its domain, tier (`tier1_console`, `tier1_types`, `tier2_cartridge`, `tier2_types`, `tier2_ui`), primary responsibility, canonical entry points, explicit ownership boundary (`includes` / `excludes`), and forbidden anti-patterns.
 
 2. **Automated Markdown Projection (`scripts/map-codebase.ts`)**:
-   - `docs/SSOT_CONSOLE.md` and `docs/SSOT_DND35E.md` are 100% generated from the JSON registries (`bun run map:ssot`), providing human-readable navigation tables without manual documentation drift.
+   - `docs/SSOT_CONSOLE.md`, `docs/SSOT_CLASSIC.md`, and `docs/SSOT_DND35E.md` are 100% generated from the JSON registries (`bun run map:ssot`), providing human-readable navigation tables without manual documentation drift.
 
 3. **Continuous Parity Enforcement (`scripts/ssot_parity.ts`, `scripts/run-validator.ts`, `tests/ssot_registry_parity.test.ts`)**:
-   - Validates that every TypeScript source file on disk is registered in exactly one registry (disjoint partition, zero orphans).
-   - Verifies that every declared `canonicalEntryPoint` is actively exported by the underlying TypeScript file.
-   - Verifies that `docs/SSOT_CONSOLE.md` and `docs/SSOT_DND35E.md` are in sync with the JSON registries.
+   - Validates that every TypeScript source file on disk is registered in exactly one registry (3-way disjoint partition, zero orphans) with matching tier tags (`tier1_*` in Console vs. `tier2_*` in Cartridges).
+   - Verifies that every declared `canonicalEntryPoint` is actively exported by the underlying TypeScript file **and is claimed by strictly one defining file** (preventing barrel/facade split ownership and duplicate declarations).
+   - Verifies that `docs/SSOT_CONSOLE.md`, `docs/SSOT_CLASSIC.md`, and `docs/SSOT_DND35E.md` are in sync with the JSON registries.
    - Enforced automatically in `scripts/run-validator.ts` and automated test suites.
 
 ### 9.12 Console UI Slot & Modal Host API, Unified Master Dossier & D&D 3.5e Tactical UI (Phase 26, Milestones 118–120)

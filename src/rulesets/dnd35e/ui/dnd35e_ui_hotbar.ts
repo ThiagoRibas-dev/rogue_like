@@ -255,7 +255,7 @@ export function buildActorHotbarSlots(
         const name = spDef?.name ?? spellId.replace(/_/g, ' ');
         const lvl = spDef?.levelByClass[classId] ?? spDef?.level ?? 0;
         const total = book.spellsPerDay[String(lvl)] ?? 0;
-        const isAtWill = (lvl === 0 && total === 0) || classId === 'warlock' || classId === 'innate';
+        const isAtWill = (lvl === 0 && total === 0) || book.castingMode === 'innate';
         if (!isAtWill && total <= 0) return;
         const rem = isAtWill ? -1 : Math.max(0, total - (usedMap[String(lvl)] ?? 0));
         const suffix = rem < 0 ? '∞' : `${rem}`;

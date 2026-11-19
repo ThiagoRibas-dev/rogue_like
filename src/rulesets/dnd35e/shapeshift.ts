@@ -159,17 +159,15 @@ export function executeDruidShapeshift(
 ): { readonly state: GameState; readonly success: boolean } {
   const dndData = getDnD35EntityData(state, actorId);
   const sysContent = getDnD35SystemContent(state.campaign) ?? getLastLoadedDnD35SystemContent();
-  const hasShapeshiftTrait =
-    (dndData.activeClassFeatures ?? []).some((featId) => {
-      if (featId === 'shapeshift') return true;
-      for (const track of dndData.tracks) {
-        const abilities = sysContent?.classes[track.trackId]?.featureDetails?.[featId]?.activatedAbilities ?? [];
-        if (abilities.some((a) => a.toggleGroup === SHAPESHIFT_STANCE_GROUP_ID || a.formOverlay !== undefined)) {
-          return true;
-        }
+  const hasShapeshiftTrait = (dndData.activeClassFeatures ?? []).some((featId) => {
+    for (const track of dndData.tracks) {
+      const abilities = sysContent?.classes[track.trackId]?.featureDetails?.[featId]?.activatedAbilities ?? [];
+      if (abilities.some((a) => a.toggleGroup === SHAPESHIFT_STANCE_GROUP_ID || a.formOverlay !== undefined)) {
+        return true;
       }
-      return false;
-    }) || (dndData.selectedAcfs ?? []).some((a) => a.includes('shapeshift'));
+    }
+    return false;
+  });
 
   if (!hasShapeshiftTrait) {
     return {

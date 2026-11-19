@@ -13,7 +13,7 @@ import { syncActorResourcePoolsComponent } from './ledger_resource_pools.ts';
  * Applies permanent level drain to an actor, popping the last `levelsDrained` records
  * from their chronological levelHistory and rebuilding actor state on the fly.
  */
-export function applyPermanentLevelDrainToActor(
+export function applyPermanentLevelDrain(
   state: GameState,
   entityId: EntityId,
   levelsDrained: number,

@@ -79,7 +79,7 @@ async function main(): Promise<void> {
 
   console.log('📝 Generating SSOT Markdown Documentation...');
   writeSsotMarkdownDocs(process.cwd());
-  console.log('✅ Generated docs/SSOT_CONSOLE.md and docs/SSOT_DND35E.md\n');
+  console.log('✅ Generated docs/SSOT_CONSOLE.md, docs/SSOT_CLASSIC.md, and docs/SSOT_DND35E.md\n');
 
   console.log('🗺️  Mapping Codebase Exports...\n');
 

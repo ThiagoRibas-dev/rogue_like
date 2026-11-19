@@ -11,12 +11,9 @@ import {
   openCartridgeModal,
   toggleCartridgeModal
 } from '../src/rendering/ui/cartridge_ui_registry.ts';
-import { updateActorTacticalDoctrine } from '../src/rendering/ui/dnd35e_doctrine_actions.ts';
-import {
-  executeEightHourRest,
-  prepareSpellIntoSlot,
-  unprepareSpellSlot
-} from '../src/rendering/ui/dnd35e_spellbook_actions.ts';
+import { updateActorTacticalDoctrine } from '../src/systems/stance.system.ts';
+import { executeEightHourRest } from '../src/rulesets/dnd35e/magic/rest_recovery.ts';
+import { prepareSpellIntoSlot, unprepareSpellSlot } from '../src/rulesets/dnd35e/magic/spellbook_actions.ts';
 import { registerDnD35eUIAdapter } from '../src/rendering/ui/dnd35e_ui_registration.ts';
 import { evaluateDnD35eEntityDAG } from '../src/rulesets/dnd35e/cartridge/dnd35e_dag_adapter.ts';
 import {

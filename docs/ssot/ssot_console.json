@@ -18,7 +18,7 @@
   "src/actions/core.actions.ts": {
     "domain": "Core Console: Action Pipeline & Commands",
     "tier": "tier1_console",
-    "responsibility": "Creates a move intent.",
+    "responsibility": "Intent creator factories for core movement, waiting, camera/zoom, RTwP pause/speed, and modal toggles.",
     "canonicalEntryPoints": [
       "createMoveAction",
       "createWaitAction",
@@ -84,12 +84,11 @@
       "processSelectDialogueOptionIntent",
       "processCloseDialogueIntent",
       "processAskAboutIntent",
-      "processGossipIntent",
-      "transferKnowledge"
+      "processGossipIntent"
     ],
     "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/actions/dialogue.actions.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
+      "includes": "Coordinating facade and primary orchestration exports declared directly in src/actions/dialogue.actions.ts.",
+      "excludes": "Underlying primitive symbols re-exported from leaf modules (e.g. src/systems/knowledge.system.ts)."
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/actions/dialogue.actions.ts."
@@ -114,7 +113,7 @@
   "src/actions/interaction.actions.ts": {
     "domain": "Core Console: Action Pipeline & Commands",
     "tier": "tier1_console",
-    "responsibility": "Creates an ApplyIntent.",
+    "responsibility": "Intent creator factories for item/object Apply and entity Interact actions.",
     "canonicalEntryPoints": [
       "createApplyAction",
       "createInteractAction"
@@ -130,7 +129,7 @@
   "src/actions/inventory.actions.ts": {
     "domain": "Core Console: Action Pipeline & Commands",
     "tier": "tier1_console",
-    "responsibility": "Creates a PickUp intent.",
+    "responsibility": "Intent creator factories for picking up, dropping, equipping, unequipping, and toggling inventory.",
     "canonicalEntryPoints": [
       "createPickUpAction",
       "createDropAction",
@@ -579,26 +578,10 @@
       "Do not duplicate or bypass exports from src/constants/verbs.constants.ts."
     ]
   },
-  "src/constants/world_events.constants.ts": {
-    "domain": "Core Console: Constants & Dictionaries",
-    "tier": "tier1_console",
-    "responsibility": "Generic flavor text events that can occur to Areas.",
-    "canonicalEntryPoints": [
-      "AREA_NARRATIVE_EVENTS",
-      "FACTION_NARRATIVE_EVENTS"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/constants/world_events.constants.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/constants/world_events.constants.ts."
-    ]
-  },
   "src/constants/world_clock.constants.ts": {
     "domain": "Core Console: Constants & Dictionaries",
     "tier": "tier1_console",
-    "responsibility": "Constants for diurnal World Clock timing, bulk rest chunk sizing, SRD hunger scaling, and HUD clock badges.",
+    "responsibility": "Constants for diurnal World Clock timing, bulk rest chunk sizing, baseline hunger scaling, and HUD clock badges.",
     "canonicalEntryPoints": [
       "DEFAULT_CLOCK_START_HOUR",
       "DEFAULT_SECONDS_PER_TURN",
@@ -615,6 +598,22 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/constants/world_clock.constants.ts."
+    ]
+  },
+  "src/constants/world_events.constants.ts": {
+    "domain": "Core Console: Constants & Dictionaries",
+    "tier": "tier1_console",
+    "responsibility": "Generic flavor text events that can occur to Areas.",
+    "canonicalEntryPoints": [
+      "AREA_NARRATIVE_EVENTS",
+      "FACTION_NARRATIVE_EVENTS"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/constants/world_events.constants.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/constants/world_events.constants.ts."
     ]
   },
   "src/core/auto_pause_signals.ts": {
@@ -639,12 +638,11 @@
     "tier": "tier1_console",
     "responsibility": "Evaluates every configured auto-pause trigger for a completed intent and pauses",
     "canonicalEntryPoints": [
-      "evaluateAutoPause",
-      "resetAutoPauseTracking"
+      "evaluateAutoPause"
     ],
     "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/core/auto_pause.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
+      "includes": "Coordinating facade and primary orchestration exports declared directly in src/core/auto_pause.ts.",
+      "excludes": "Underlying primitive symbols re-exported from leaf modules (e.g. src/core/auto_pause_signals.ts)."
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/core/auto_pause.ts."
@@ -670,13 +668,11 @@
     "tier": "tier1_console",
     "responsibility": "Deterministically shuffles an array using Fisher-Yates and the global RNG.",
     "canonicalEntryPoints": [
-      "InitialCampaignWorldEntities",
-      "initializeCampaignWorldEntities",
       "SpawnOverride"
     ],
     "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/core/bootstrap.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
+      "includes": "Coordinating facade and primary orchestration exports declared directly in src/core/bootstrap.ts.",
+      "excludes": "Underlying primitive symbols re-exported from leaf modules (e.g. src/core/bootstrap/world_entities_bootstrap.ts)."
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/core/bootstrap.ts."
@@ -719,19 +715,10 @@
     "domain": "Core Console: ECS, Loop, RNG & Loader",
     "tier": "tier1_console",
     "responsibility": "Facade re-exporting ECS core primitives, spawning, lifecycle, and query systems.",
-    "canonicalEntryPoints": [
-      "createEntity",
-      "addComponent",
-      "removeComponent",
-      "updateSpatialIndex",
-      "getComponent",
-      "queryEntities",
-      "spawnEntity",
-      "spawnItem"
-    ],
+    "canonicalEntryPoints": [],
     "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/core/ecs.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
+      "includes": "Coordinating facade and primary orchestration exports declared directly in src/core/ecs.ts.",
+      "excludes": "Underlying primitive symbols re-exported from leaf modules (e.g. src/core/ecs/ecs_core.ts)."
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/core/ecs.ts."
@@ -794,23 +781,6 @@
       "Do not duplicate or bypass exports from src/core/ecs/ecs_lifecycle.ts."
     ]
   },
-  "src/core/ecs/ecs_spawner.ts": {
-    "domain": "Core Console: ECS, Loop, RNG & Loader",
-    "tier": "tier1_console",
-    "responsibility": "Template spawning, item instancing, and entity promotion logic.",
-    "canonicalEntryPoints": [
-      "spawnEntity",
-      "spawnItem",
-      "promoteEntity"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/core/ecs/ecs_spawner.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/core/ecs/ecs_spawner.ts."
-    ]
-  },
   "src/core/ecs/ecs_spawner_equipment.ts": {
     "domain": "Core Console: ECS, Loop, RNG & Loader",
     "tier": "tier1_console",
@@ -827,6 +797,21 @@
       "Do not duplicate or bypass exports from src/core/ecs/ecs_spawner_equipment.ts."
     ]
   },
+  "src/core/ecs/ecs_spawner.ts": {
+    "domain": "Core Console: ECS, Loop, RNG & Loader",
+    "tier": "tier1_console",
+    "responsibility": "Template spawning, item instancing, and entity promotion logic.",
+    "canonicalEntryPoints": [
+      "spawnEntity"
+    ],
+    "ownershipBoundary": {
+      "includes": "Coordinating facade and primary orchestration exports declared directly in src/core/ecs/ecs_spawner.ts.",
+      "excludes": "Underlying primitive symbols re-exported from leaf modules (e.g. src/core/ecs/ecs_item_promoter.ts)."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/core/ecs/ecs_spawner.ts."
+    ]
+  },
   "src/core/game-loop.ts": {
     "domain": "Core Console: ECS, Loop, RNG & Loader",
     "tier": "tier1_console",
@@ -836,12 +821,11 @@
       "getGameState",
       "onStateChange",
       "queuePlayerIntent",
-      "processTurn",
-      "applyIntentWithCost"
+      "processTurn"
     ],
     "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/core/game-loop.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
+      "includes": "Coordinating facade and primary orchestration exports declared directly in src/core/game-loop.ts.",
+      "excludes": "Underlying primitive symbols re-exported from leaf modules (e.g. src/core/loop/intent_cost_resolver.ts)."
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/core/game-loop.ts."
@@ -937,7 +921,7 @@
   "src/core/input/mouse_input.ts": {
     "domain": "Core Console: ECS, Loop, RNG & Loader",
     "tier": "tier1_console",
-    "responsibility": "non-mutating hover tile inspection, left-click move/attack/smart-interact,",
+    "responsibility": "Handles pointer hover inspection, left-click move/attack/smart-interact, and right-click contextual verb menus.",
     "canonicalEntryPoints": [
       "bindCanvasMouseControls",
       "toggleAllHudPanelsFolded"
@@ -970,14 +954,11 @@
     "tier": "tier1_console",
     "responsibility": "Loads and validates all JSON files for a given campaign ID.",
     "canonicalEntryPoints": [
-      "loadCampaign",
-      "loadCampaignRegistry",
-      "loadRulesetSystemContent",
-      "loadRulesetBaseContent"
+      "loadCampaign"
     ],
     "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/core/loader.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
+      "includes": "Coordinating facade and primary orchestration exports declared directly in src/core/loader.ts.",
+      "excludes": "Underlying primitive symbols re-exported from leaf modules (e.g. src/core/loader/system_content_loader.ts)."
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/core/loader.ts."
@@ -1440,15 +1421,11 @@
     "tier": "tier1_console",
     "responsibility": "Telemetry record tracking HP levels, turns, and damage metrics during a simulation.",
     "canonicalEntryPoints": [
-      "ArenaTelemetry",
-      "ArenaResult",
-      "ArenaOptions",
-      "runAIArena",
-      "runEncounterArena"
+      "runAIArena"
     ],
     "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/editor/simulation/ai_arena.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
+      "includes": "Coordinating facade and primary orchestration exports declared directly in src/editor/simulation/ai_arena.ts.",
+      "excludes": "Underlying primitive symbols re-exported from leaf modules (e.g. src/editor/simulation/arena_state_factory.ts)."
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/editor/simulation/ai_arena.ts."
@@ -1499,7 +1476,6 @@
     "tier": "tier1_console",
     "responsibility": "Headless helper to create an entity.",
     "canonicalEntryPoints": [
-      "createEntity",
       "createMockFuzzerState"
     ],
     "ownershipBoundary": {
@@ -1548,17 +1524,11 @@
     "responsibility": "Ticks a single actor's turn in a pure-functional headless state.",
     "canonicalEntryPoints": [
       "tickHeadlessTurn",
-      "runFuzzerBatch",
-      "createEntity",
-      "createMockFuzzerState",
-      "TriggerRunawayError",
-      "generatePlayerFuzzerIntent",
-      "checkFuzzerSoftlock",
-      "checkSaveBloat"
+      "runFuzzerBatch"
     ],
     "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/editor/simulation/narrative_fuzzer.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
+      "includes": "Coordinating facade and primary orchestration exports declared directly in src/editor/simulation/narrative_fuzzer.ts.",
+      "excludes": "Underlying primitive symbols re-exported from leaf modules (e.g. src/editor/simulation/fuzzer_invariants.ts)."
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/editor/simulation/narrative_fuzzer.ts."
@@ -1758,13 +1728,10 @@
     "domain": "Core Console: Campaign Editor Subsystem",
     "tier": "tier1_console",
     "responsibility": "Module implementation for src/editor/validator/validator.types.ts",
-    "canonicalEntryPoints": [
-      "ValidationError",
-      "ValidationReport"
-    ],
+    "canonicalEntryPoints": [],
     "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/editor/validator/validator.types.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
+      "includes": "Coordinating facade and primary orchestration exports declared directly in src/editor/validator/validator.types.ts.",
+      "excludes": "Underlying primitive symbols re-exported from leaf modules (e.g. src/types/ruleset.types.ts)."
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/editor/validator/validator.types.ts."
@@ -1774,12 +1741,10 @@
     "domain": "Core Console: Campaign Editor Subsystem",
     "tier": "tier1_console",
     "responsibility": "Parses and extracts a campaign from a flat ZIP container.",
-    "canonicalEntryPoints": [
-      "createBlankSlateCampaign"
-    ],
+    "canonicalEntryPoints": [],
     "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/editor/workspace_file_service.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
+      "includes": "Coordinating facade and primary orchestration exports declared directly in src/editor/workspace_file_service.ts.",
+      "excludes": "Underlying primitive symbols re-exported from leaf modules (e.g. src/editor/blank_slate_campaign.ts)."
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/editor/workspace_file_service.ts."
@@ -1799,7 +1764,7 @@
     ]
   },
   "src/map/director/director_zone.ts": {
-    "domain": "Core Console: Map Generation & Spatial",
+    "domain": "Core Console: Map Generation & Director",
     "tier": "tier1_console",
     "responsibility": "Resolves CR budget axes, floor tile placement, and single-zone encounter director allocation.",
     "canonicalEntryPoints": [
@@ -1902,7 +1867,6 @@
     "tier": "tier1_console",
     "responsibility": "Output data resulting from map generation, containing tiles, portals, rooms, and entities.",
     "canonicalEntryPoints": [
-      "GeneratedArea",
       "generateArea"
     ],
     "ownershipBoundary": {
@@ -1914,7 +1878,7 @@
     ]
   },
   "src/map/stages/biome_dijkstra_stages.ts": {
-    "domain": "Core Console: Map Generation & Spatial",
+    "domain": "Core Console: Map Generation & Director",
     "tier": "tier1_console",
     "responsibility": "Partitions sub-biomes with Voronoi, culls non-bordering walls, scatters water, and computes Dijkstra hot paths.",
     "canonicalEntryPoints": [
@@ -1982,13 +1946,11 @@
     "responsibility": "Internal interface representing a ROT.js rectangular layout backend",
     "canonicalEntryPoints": [
       "drawCell",
-      "syncDisplayLayout",
-      "mountDisplayWithFogOverlay",
-      "syncFogOverlayCanvas"
+      "syncDisplayLayout"
     ],
     "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/display.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
+      "includes": "Coordinating facade and primary orchestration exports declared directly in src/rendering/display.ts.",
+      "excludes": "Underlying primitive symbols re-exported from leaf modules (e.g. src/rendering/sprite_atlas.ts)."
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/rendering/display.ts."
@@ -2155,7 +2117,7 @@
   "src/rendering/procedural_sprites.ts": {
     "domain": "Core Console: Rendering & UI Views",
     "tier": "tier1_console",
-    "responsibility": "graphical tile rendering on ASCII campaigns or unmapped glyphs.",
+    "responsibility": "Synthesizes procedural 32x32 2D pixel-art sprite atlases for ASCII campaigns or unmapped glyphs and resolves playback theme config.",
     "canonicalEntryPoints": [
       "resolvePlaybackThemeConfig",
       "isEffectiveSpriteMode",
@@ -2195,17 +2157,13 @@
     "responsibility": "Collects counters that make \"the canvas is blank\" diagnosable from a real",
     "canonicalEntryPoints": [
       "RenderDebugMetrics",
-      "DisplayContainerSource",
       "renderDebugMetrics",
       "recordMissingSprite",
-      "DrawCommandRecord",
-      "recordDrawCommand",
-      "getDrawLog",
       "isRenderDebugEnabled"
     ],
     "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/render_debug.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
+      "includes": "Coordinating facade and primary orchestration exports declared directly in src/rendering/render_debug.ts.",
+      "excludes": "Underlying primitive symbols re-exported from leaf modules (e.g. src/rendering/render_debug_sampler.ts)."
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/rendering/render_debug.ts."
@@ -2266,7 +2224,7 @@
   "src/rendering/tactical_snapshot.ts": {
     "domain": "Core Console: Rendering & UI Views",
     "tier": "tier1_console",
-    "responsibility": "status pips, torchlight FOV center, and path preview DTOs for the 60Hz presenter.",
+    "responsibility": "Projects unit micro health bars, faction pips, status indicators, torchlight FOV center, and path preview DTOs for the presenter.",
     "canonicalEntryPoints": [
       "buildTacticalViewportData"
     ],
@@ -2282,19 +2240,10 @@
     "domain": "Core Console: Rendering & UI Views",
     "tier": "tier1_console",
     "responsibility": "Module implementation for src/rendering/ui.ts",
-    "canonicalEntryPoints": [
-      "renderMessageLog",
-      "renderPlayerStats",
-      "updateHUD",
-      "renderInventoryPanel",
-      "renderMenus",
-      "populateRulesetList",
-      "populateCampaignList",
-      "renderRTwPControls"
-    ],
+    "canonicalEntryPoints": [],
     "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
+      "includes": "Coordinating facade and primary orchestration exports declared directly in src/rendering/ui.ts.",
+      "excludes": "Underlying primitive symbols re-exported from leaf modules (e.g. src/rendering/ui/hud.ui.ts)."
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/rendering/ui.ts."
@@ -2403,23 +2352,6 @@
     },
     "antiPatterns": [
       "Never hardcode cartridge-specific UIModes or ruleset modal imports inside Tier 1 Console files."
-    ]
-  },
-  "src/rendering/ui/classic_ui_registration.ts": {
-    "domain": "Ruleset Cartridge: Classic Sci-Fi",
-    "tier": "tier2_ui",
-    "responsibility": "Registers the Classic / Sci-Fi CartridgeUIDefinition (modals, dock commands, hotbar wiring) into the Console Cartridge UI Registry.",
-    "canonicalEntryPoints": [
-      "renderClassicSheetModal",
-      "registerClassicUIAdapter",
-      "classicUIDefinition"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/classic_ui_registration.ts.",
-      "excludes": "Headless Classic UI data projection (owned by src/rulesets/classic/ui/classic_ui_adapter.ts)."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/classic_ui_registration.ts."
     ]
   },
   "src/rendering/ui/console_dossier.ui.ts": {
@@ -2602,17 +2534,12 @@
     "responsibility": "Renders the Encounter Director Sandbox panel.",
     "canonicalEntryPoints": [
       "renderDirectorSandbox",
-      "renderMiniMap",
       "renderReceipt",
-      "updateJsonPreview",
-      "buildBakedStaticArea",
-      "getTileColor",
-      "getEntityDisplay",
-      "lightenColor"
+      "updateJsonPreview"
     ],
     "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/director_sandbox.ui.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
+      "includes": "Coordinating facade and primary orchestration exports declared directly in src/rendering/ui/director_sandbox.ui.ts.",
+      "excludes": "Underlying primitive symbols re-exported from leaf modules (e.g. src/rendering/ui/director/director_telemetry_view.ts)."
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/rendering/ui/director_sandbox.ui.ts."
@@ -2723,21 +2650,6 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/rendering/ui/editor_object_renderer.ts."
-    ]
-  },
-  "src/rendering/ui/equipment.ui.ts": {
-    "domain": "Core Console: Rendering & UI Views",
-    "tier": "tier1_console",
-    "responsibility": "Renders interactive anatomical paper doll slot cards across HUD, Inventory, and Character Sheet views.",
-    "canonicalEntryPoints": [
-      "renderAnatomicalPaperDoll"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/equipment.ui.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/equipment.ui.ts."
     ]
   },
   "src/rendering/ui/faction_matrix_editor.ts": {
@@ -2853,21 +2765,6 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/rendering/ui/inspect_view.ui.ts."
-    ]
-  },
-  "src/rendering/ui/inventory.ui.ts": {
-    "domain": "Core Console: Rendering & UI Views",
-    "tier": "tier1_console",
-    "responsibility": "Renders or hides the inventory panel overlay based on the current UIMode.",
-    "canonicalEntryPoints": [
-      "renderInventoryPanel"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/inventory.ui.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/inventory.ui.ts."
     ]
   },
   "src/rendering/ui/investigation_filters.ui.ts": {
@@ -3031,22 +2928,6 @@
       "Do not duplicate or bypass exports from src/rendering/ui/resizable_panels.ui.ts."
     ]
   },
-  "src/rendering/ui/settings.ui.ts": {
-    "domain": "Core Console: Rendering & UI Views",
-    "tier": "tier1_console",
-    "responsibility": "Applies the current settings to the DOM (e.g. data attributes for CSS).",
-    "canonicalEntryPoints": [
-      "applySettingsToDOM",
-      "renderSettingsMenu"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/settings.ui.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/settings.ui.ts."
-    ]
-  },
   "src/rendering/ui/settings_attributions.ts": {
     "domain": "Core Console: Rendering & UI Views",
     "tier": "tier1_console",
@@ -3063,10 +2944,26 @@
       "Do not hardcode sprite pack attributions outside catalog.json, pack.json, and settings_attributions.ts."
     ]
   },
+  "src/rendering/ui/settings.ui.ts": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Applies the current settings to the DOM (e.g. data attributes for CSS).",
+    "canonicalEntryPoints": [
+      "applySettingsToDOM",
+      "renderSettingsMenu"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/ui/settings.ui.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/ui/settings.ui.ts."
+    ]
+  },
   "src/rendering/ui/tactical_overlay.ui.ts": {
     "domain": "Core Console: Rendering & UI Views",
     "tier": "tier1_console",
-    "responsibility": "warm torchlight FOV radial lighting, unit micro health bars, faction hostility pips,",
+    "responsibility": "Renders warm torchlight FOV radial lighting, unit micro health bars, faction hostility pips, and multi-tile tactical overlays.",
     "canonicalEntryPoints": [
       "renderTacticalOverlay"
     ],
@@ -3323,86 +3220,6 @@
       "Do not duplicate or bypass exports from src/rendering/viewport_snapshot.types.ts."
     ]
   },
-  "src/rulesets/classic/classic_combat.ts": {
-    "domain": "Ruleset Cartridge: Classic Sci-Fi",
-    "tier": "tier1_console",
-    "responsibility": "Faction standing penalty applied when an actor attacks a member of a faction.",
-    "canonicalEntryPoints": [
-      "resolveClassicMeleeAttack",
-      "processClassicDamage",
-      "addFloatingText",
-      "grantClassicXp"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rulesets/classic/classic_combat.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rulesets/classic/classic_combat.ts."
-    ]
-  },
-  "src/rulesets/classic/classic_ruleset.ts": {
-    "domain": "Ruleset Cartridge: Classic Sci-Fi",
-    "tier": "tier1_console",
-    "responsibility": "The canonical `classic` ruleset cartridge encapsulating Milestones 1–81 mechanics.",
-    "canonicalEntryPoints": [
-      "classicRulesetContract"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rulesets/classic/classic_ruleset.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rulesets/classic/classic_ruleset.ts."
-    ]
-  },
-  "src/rulesets/classic/classic_stats.ts": {
-    "domain": "Ruleset Cartridge: Classic Sci-Fi",
-    "tier": "tier1_console",
-    "responsibility": "Default actor speed when ActorComponent is absent.",
-    "canonicalEntryPoints": [
-      "computeClassicEffectiveStats",
-      "projectClassicHudVitals",
-      "grantClassicXp"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rulesets/classic/classic_stats.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rulesets/classic/classic_stats.ts."
-    ]
-  },
-  "src/rulesets/classic/classic_validator.ts": {
-    "domain": "Ruleset Cartridge: Classic Sci-Fi",
-    "tier": "tier1_console",
-    "responsibility": "Validates Classic roguelike ruleset invariants for a campaign.",
-    "canonicalEntryPoints": [
-      "checkClassicRuleset"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rulesets/classic/classic_validator.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rulesets/classic/classic_validator.ts."
-    ]
-  },
-  "src/rulesets/classic/ui/classic_ui_adapter.ts": {
-    "domain": "Ruleset Cartridge: Classic Sci-Fi",
-    "tier": "tier2_cartridge",
-    "responsibility": "Projects Classic / Sci-Fi ECS state into the unified Tier 1 Console UI models (Character Sheet, Inventory, Hotbar).",
-    "canonicalEntryPoints": [
-      "DefaultSciFiUIAdapter"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rulesets/classic/ui/classic_ui_adapter.ts.",
-      "excludes": "DOM manipulation or direct modal registration (owned by src/rendering/ui/classic_ui_registration.ts)."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rulesets/classic/ui/classic_ui_adapter.ts."
-    ]
-  },
   "src/rulesets/registry.ts": {
     "domain": "Core Console: Ruleset Cartridge Registry",
     "tier": "tier1_console",
@@ -3458,12 +3275,11 @@
     "tier": "tier1_console",
     "responsibility": "Records a reference to an important ledger event in an entity's chronicle.",
     "canonicalEntryPoints": [
-      "recordChronicleEvent",
-      "promoteEntity"
+      "recordChronicleEvent"
     ],
     "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/systems/chronicle.system.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
+      "includes": "Coordinating facade and primary orchestration exports declared directly in src/systems/chronicle.system.ts.",
+      "excludes": "Underlying primitive symbols re-exported from leaf modules (e.g. src/core/ecs/ecs_item_promoter.ts)."
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/systems/chronicle.system.ts."
@@ -3506,22 +3322,6 @@
       "Do not duplicate or bypass exports from src/systems/companion_commands.system.ts."
     ]
   },
-  "src/systems/damage.system.ts": {
-    "domain": "Core Console: ECS Systems & Simulation",
-    "tier": "tier1_console",
-    "responsibility": "Duration in milliseconds for floating combat text overlays.",
-    "canonicalEntryPoints": [
-      "addFloatingText",
-      "processDamageSystem"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/systems/damage.system.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/systems/damage.system.ts."
-    ]
-  },
   "src/systems/currency.system.ts": {
     "domain": "Core Console: ECS Systems & Simulation",
     "tier": "tier1_console",
@@ -3547,6 +3347,22 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/systems/currency.system.ts."
+    ]
+  },
+  "src/systems/damage.system.ts": {
+    "domain": "Core Console: ECS Systems & Simulation",
+    "tier": "tier1_console",
+    "responsibility": "Duration in milliseconds for floating combat text overlays.",
+    "canonicalEntryPoints": [
+      "addFloatingText",
+      "processDamageSystem"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/systems/damage.system.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/systems/damage.system.ts."
     ]
   },
   "src/systems/death.system.ts": {
@@ -3707,15 +3523,11 @@
     "canonicalEntryPoints": [
       "getEffectiveCapacity",
       "processPickUpIntent",
-      "processDropIntent",
-      "processEquipItemIntent",
-      "processUnequipItemIntent",
-      "AnatomyBodyPlan",
-      "buildAnatomyEquipmentSlots"
+      "processDropIntent"
     ],
     "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/systems/inventory.system.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
+      "includes": "Coordinating facade and primary orchestration exports declared directly in src/systems/inventory.system.ts.",
+      "excludes": "Underlying primitive symbols re-exported from leaf modules (e.g. src/systems/inventory/equipment_slots.ts)."
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/systems/inventory.system.ts."
@@ -3805,7 +3617,7 @@
     ]
   },
   "src/systems/lifecycle.system.ts": {
-    "domain": "Core Console: ECS Systems & Game Loop",
+    "domain": "Core Console: ECS Systems & Simulation",
     "tier": "tier1_console",
     "responsibility": "Coordinates entity-agnostic turn-start, movement-step, intent energy cost, and action-availability lifecycle windows across ruleset cartridges.",
     "canonicalEntryPoints": [
@@ -3891,26 +3703,10 @@
       "Do not duplicate or bypass exports from src/systems/message.system.ts."
     ]
   },
-  "src/systems/movement.system.ts": {
-    "domain": "Core Console: ECS Systems & Simulation",
-    "tier": "tier1_console",
-    "responsibility": "Resolves active movement modes on an entity from PropertyOverlayComponent or RulesetDataComponent.",
-    "canonicalEntryPoints": [
-      "canTraverseTile",
-      "processMoveIntent"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/systems/movement.system.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/systems/movement.system.ts."
-    ]
-  },
   "src/systems/movement_footprint.ts": {
     "domain": "Core Console: ECS Systems & Simulation",
     "tier": "tier1_console",
-    "responsibility": "Resolves multi-tile footprint placement, SRD squeezing compression, hard-corner diagonal wall checks, rectangular distance/delta helpers, and square-sharing / pass-through occupancy classification.",
+    "responsibility": "Resolves multi-tile footprint placement, squeezing compression, hard-corner diagonal wall checks, rectangular distance/delta helpers, and square-sharing occupancy classification.",
     "canonicalEntryPoints": [
       "SIZE_DIFF_PASS_THROUGH_THRESHOLD",
       "resolveCardinalFacing",
@@ -3929,21 +3725,30 @@
       "Do not duplicate or bypass exports from src/systems/movement_footprint.ts."
     ]
   },
+  "src/systems/movement.system.ts": {
+    "domain": "Core Console: ECS Systems & Simulation",
+    "tier": "tier1_console",
+    "responsibility": "Resolves active movement modes on an entity from PropertyOverlayComponent or RulesetDataComponent.",
+    "canonicalEntryPoints": [
+      "canTraverseTile",
+      "processMoveIntent"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/systems/movement.system.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/systems/movement.system.ts."
+    ]
+  },
   "src/systems/nemesis.system.ts": {
     "domain": "Core Console: ECS Systems & Simulation",
     "tier": "tier1_console",
-    "responsibility": "Nemesis System Facade",
-    "canonicalEntryPoints": [
-      "getEntityBarks",
-      "processNemesisSystem",
-      "applyScar",
-      "evaluateCheatDeath",
-      "promoteNemesis",
-      "fillVacancy"
-    ],
+    "responsibility": "Facade orchestrating persistent Nemesis promotion, grudges, titles, scars, pyramid updates, and ambush spawning.",
+    "canonicalEntryPoints": [],
     "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/systems/nemesis.system.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
+      "includes": "Coordinating facade and primary orchestration exports declared directly in src/systems/nemesis.system.ts.",
+      "excludes": "Underlying primitive symbols re-exported from leaf modules (e.g. src/systems/nemesis/nemesis_presentation.ts)."
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/systems/nemesis.system.ts."
@@ -3955,13 +3760,11 @@
     "responsibility": "Permanently applies a scar definition to an entity, altering their stats and traits.",
     "canonicalEntryPoints": [
       "applyScar",
-      "evaluateCheatDeath",
-      "promoteNemesis",
-      "fillVacancy"
+      "evaluateCheatDeath"
     ],
     "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/systems/nemesis/nemesis_adaptation.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
+      "includes": "Coordinating facade and primary orchestration exports declared directly in src/systems/nemesis/nemesis_adaptation.ts.",
+      "excludes": "Underlying primitive symbols re-exported from leaf modules (e.g. src/systems/nemesis/nemesis_hierarchy.ts)."
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/systems/nemesis/nemesis_adaptation.ts."
@@ -4117,23 +3920,35 @@
       "Do not duplicate or bypass exports from src/systems/reaction.system.ts."
     ]
   },
+  "src/systems/rest.system.ts": {
+    "domain": "Core Console: ECS Systems & Simulation",
+    "tier": "tier1_console",
+    "responsibility": "Ruleset-agnostic party rest safety evaluation, bulk time-skip world-event digesting, and wait-until-diurnal-phase simulation primitives.",
+    "canonicalEntryPoints": [
+      "evaluateActorRestSafety",
+      "finalizeBulkTimeEventsAndRespawn",
+      "finalizeWaitUntilPhase",
+      "executeWaitUntilPhase"
+    ],
+    "ownershipBoundary": {
+      "includes": "Generic party threat/affliction/field/starvation safety checks, bulk time-skip world digests, and diurnal phase wait execution.",
+      "excludes": "Ruleset-specific rest recovery formulas (e.g., D&D 3.5e HD healing or Vancian slot recovery) and DOM loading overlays."
+    },
+    "antiPatterns": [
+      "Do not hardcode ruleset-specific spell slot or hit die recovery rules inside src/systems/rest.system.ts.",
+      "Do not import DOM overlays or browser UI modules into src/systems/rest.system.ts."
+    ]
+  },
   "src/systems/rivalry.system.ts": {
     "domain": "Core Console: ECS Systems & Simulation",
     "tier": "tier1_console",
     "responsibility": "Periodically generates background rivalries based on proximity and hierarchies.",
     "canonicalEntryPoints": [
-      "processRivalryGeneration",
-      "generateEventDrivenRivalry",
-      "processRivalries",
-      "findNemesisComponents",
-      "updateNemesisComponents",
-      "removeNemesisEntity",
-      "findAllNemeses",
-      "resolvePromoteNemesis"
+      "processRivalries"
     ],
     "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/systems/rivalry.system.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
+      "includes": "Coordinating facade and primary orchestration exports declared directly in src/systems/rivalry.system.ts.",
+      "excludes": "Underlying primitive symbols re-exported from leaf modules (e.g. src/systems/rivalry/rivalry_scheduler.ts)."
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/systems/rivalry.system.ts."
@@ -4268,7 +4083,7 @@
     ]
   },
   "src/systems/stance.system.ts": {
-    "domain": "Core Console: ECS Systems & Game Loop",
+    "domain": "Core Console: ECS Systems & Simulation",
     "tier": "tier1_console",
     "responsibility": "Provides Tier 1 Console stance group toggling, semantic stance tag projection, and per-round triggered reaction quota tracking on TacticalDoctrineComponent.",
     "canonicalEntryPoints": [
@@ -4278,11 +4093,12 @@
       "projectConsoleStanceSelfTags",
       "canUseTriggeredReactionThisRound",
       "incrementTriggeredReactionUse",
-      "resetTriggeredReactionsForNewRound"
+      "resetTriggeredReactionsForNewRound",
+      "updateActorTacticalDoctrine"
     ],
     "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/systems/stance.system.ts.",
-      "excludes": "Cartridge-specific math or ruleset content."
+      "includes": "Generic stance groups, tactical doctrine component updates, semantic stance tag projection, and per-round reaction counters.",
+      "excludes": "D&D 3.5e feat-specific doctrine toggles or DOM HUD dispatchers."
     },
     "antiPatterns": [
       "Do not hardcode ruleset-specific stance names in Console systems."
@@ -4346,12 +4162,11 @@
     "canonicalEntryPoints": [
       "evaluateCondition",
       "applyConsequence",
-      "processGlobalTriggers",
-      "processTraps"
+      "processGlobalTriggers"
     ],
     "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/systems/trigger.system.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
+      "includes": "Coordinating facade and primary orchestration exports declared directly in src/systems/trigger.system.ts.",
+      "excludes": "Underlying primitive symbols re-exported from leaf modules (e.g. src/systems/trigger/systemic.ts)."
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/systems/trigger.system.ts."
@@ -4409,12 +4224,11 @@
     "tier": "tier1_console",
     "responsibility": "Condition evaluators specific to NPCs, social interactions, and memory.",
     "canonicalEntryPoints": [
-      "socialConditions",
-      "socialConsequences"
+      "socialConditions"
     ],
     "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/systems/trigger/social.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
+      "includes": "Coordinating facade and primary orchestration exports declared directly in src/systems/trigger/social.ts.",
+      "excludes": "Underlying primitive symbols re-exported from leaf modules (e.g. src/systems/trigger/social_consequences.ts)."
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/systems/trigger/social.ts."
@@ -4451,21 +4265,6 @@
       "Do not duplicate or bypass exports from src/systems/trigger/systemic.ts."
     ]
   },
-  "src/systems/world_events.system.ts": {
-    "domain": "Core Console: ECS Systems & Simulation",
-    "tier": "tier1_console",
-    "responsibility": "Runs periodically to generate background narrative events for Regions and Factions.",
-    "canonicalEntryPoints": [
-      "processWorldEvents"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/systems/world_events.system.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/systems/world_events.system.ts."
-    ]
-  },
   "src/systems/world_clock.system.ts": {
     "domain": "Core Console: ECS Systems & Simulation",
     "tier": "tier1_console",
@@ -4489,10 +4288,25 @@
       "Do not duplicate or bypass exports from src/systems/world_clock.system.ts."
     ]
   },
+  "src/systems/world_events.system.ts": {
+    "domain": "Core Console: ECS Systems & Simulation",
+    "tier": "tier1_console",
+    "responsibility": "Runs periodically to generate background narrative events for Regions and Factions.",
+    "canonicalEntryPoints": [
+      "processWorldEvents"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/systems/world_events.system.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/systems/world_events.system.ts."
+    ]
+  },
   "src/systems/world_time_skip.ts": {
     "domain": "Core Console: ECS Systems & Simulation",
     "tier": "tier1_console",
-    "responsibility": "Bulk world-time advancement replaying macro-simulation cadences, O(entities) duration expiry, SRD hunger drain, and async progress callbacks.",
+    "responsibility": "Bulk world-time advancement replaying macro-simulation cadences, O(entities) duration expiry, baseline hunger drain, and async progress callbacks.",
     "canonicalEntryPoints": [
       "BulkTimeAdvanceResult",
       "advanceWorldTimeBulk",
@@ -4509,7 +4323,7 @@
   "src/systems/zap.system.ts": {
     "domain": "Core Console: ECS Systems & Simulation",
     "tier": "tier1_console",
-    "responsibility": "Processes a Wand Zap.",
+    "responsibility": "Executes charged wand/item zapping, bolt targeting, and effect application.",
     "canonicalEntryPoints": [
       "processWandZap"
     ],
@@ -4526,9 +4340,7 @@
     "tier": "tier1_types",
     "responsibility": "A function that encapsulates a single AI behavior.",
     "canonicalEntryPoints": [
-      "AIBehaviorFn",
-      "AIBehaviorEntry",
-      "AIProfile"
+      "AIBehaviorFn"
     ],
     "ownershipBoundary": {
       "includes": "Pure implementation and exports for src/types/ai.types.ts.",
@@ -4545,13 +4357,11 @@
     "canonicalEntryPoints": [
       "CampaignDataSchema",
       "CampaignData",
-      "CampaignCategorySchemas",
-      "DialogueConditionSchema",
-      "DialogueEffectSchema"
+      "CampaignCategorySchemas"
     ],
     "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/types/campaign.types.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
+      "includes": "Coordinating facade and primary orchestration exports declared directly in src/types/campaign.types.ts.",
+      "excludes": "Underlying primitive symbols re-exported from leaf modules (e.g. src/types/dialogue.types.ts)."
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/types/campaign.types.ts."
@@ -5281,7 +5091,7 @@
     ]
   },
   "src/types/ui_adapter.types.ts": {
-    "domain": "Core Console: Foundation & Data Types",
+    "domain": "Core Console: Engine Types & Schemas",
     "tier": "tier1_console",
     "responsibility": "Type definitions for ICartridgeUIAdapter, UICharacterSheetModel, UIInventoryModel, UIAnatomicalSlotDescriptor, UIAttackGroupModel, and UIInspectData.",
     "canonicalEntryPoints": [
@@ -5404,6 +5214,23 @@
       "Do not duplicate or bypass exports from src/utils/grid.ts."
     ]
   },
+  "src/utils/json-patch.ts": {
+    "domain": "Core Console: Utility Helpers",
+    "tier": "tier1_console",
+    "responsibility": "Represents a single JSON Patch operation (RFC 6902 subset).",
+    "canonicalEntryPoints": [
+      "PatchOperation",
+      "applyPatch",
+      "generateInversePatch"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/utils/json-patch.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/utils/json-patch.ts."
+    ]
+  },
   "src/utils/sprite_pack.ts": {
     "domain": "Core Console: Utility Helpers",
     "tier": "tier1_console",
@@ -5427,23 +5254,6 @@
     },
     "antiPatterns": [
       "Do not read campaign.theme.spriteSheets directly in renderers or editors when resolveThemeSpriteSheets applies."
-    ]
-  },
-  "src/utils/json-patch.ts": {
-    "domain": "Core Console: Utility Helpers",
-    "tier": "tier1_console",
-    "responsibility": "Represents a single JSON Patch operation (RFC 6902 subset).",
-    "canonicalEntryPoints": [
-      "PatchOperation",
-      "applyPatch",
-      "generateInversePatch"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/utils/json-patch.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/utils/json-patch.ts."
     ]
   },
   "src/utils/stats.ts": {

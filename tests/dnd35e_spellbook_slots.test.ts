@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import { addComponent, getComponent } from '../src/core/ecs.ts';
 import { applyIntentWithCost } from '../src/core/loop/intent_cost_resolver.ts';
-import { executeEightHourRest } from '../src/rendering/ui/dnd35e_spellbook_actions.ts';
+import { executeEightHourRest } from '../src/rulesets/dnd35e/magic/rest_recovery.ts';
 import { applyCharacterCreationToPlayer } from '../src/rulesets/dnd35e/builder/builder_hydrator_creation.ts';
 import {
   canPrepareSpellInDomainSlot,
@@ -51,11 +51,21 @@ describe('D&D 3.5e Spellbook Slot & Spontaneous Casting Engine', () => {
             spellsPerDay: { '0': 3, '1': 1 },
             domainSpellSlots: { '1': 1 }
           }
-        ]
+        ],
+        featureDetails: {
+          spontaneous_casting: {
+            id: 'spontaneous_casting',
+            name: 'Spontaneous Cure / Inflict',
+            category: 'su',
+            description: 'Convert prepared spells into Cure or Inflict spells.',
+            spontaneousConversionMode: 'cure_or_inflict'
+          }
+        }
       },
       wizard: {
         id: 'wizard',
         name: 'Wizard',
+        supportsArcaneSchoolSpecialization: true,
         hitDieSides: 4,
         babCurve: 'poor',
         fortCurve: 'poor',

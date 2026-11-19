@@ -1,7 +1,8 @@
-import { type AreaConnection, type CampaignData } from '../types/campaign.types.ts';
-import { type EntityId, type GameMap } from '../types/game-state.types.ts';
+import { type CampaignData } from '../types/campaign.types.ts';
+import { type GameMap } from '../types/game-state.types.ts';
 import { runEncounterDirector } from './encounter_director.ts';
-import type { DirectorContext, DirectorReceipt, RoomBounds } from '../types/encounter.types.ts';
+import type { DirectorContext } from '../types/encounter.types.ts';
+import type { GeneratedArea } from '../types/generation.types.ts';
 import { parseStaticMap } from './static-parser.ts';
 import {
   resolvePalette,
@@ -12,26 +13,7 @@ import {
   type PlacedEntityDef
 } from './generator_stages.ts';
 
-/**
- * Output data resulting from map generation, containing tiles, portals, rooms, and entities.
- */
-export interface GeneratedArea {
-  readonly map: GameMap;
-  readonly startPos: { readonly x: number; readonly y: number };
-  readonly portals: ReadonlyArray<{ readonly x: number; readonly y: number; readonly connection: AreaConnection }>;
-  readonly rooms: ReadonlyArray<RoomBounds>;
-  readonly placedEntities?:
-    | ReadonlyArray<{
-        readonly templateId: string;
-        readonly x: number;
-        readonly y: number;
-        readonly dynamicTraits?: ReadonlyArray<string> | undefined;
-        readonly inventory?: ReadonlyArray<string> | undefined;
-        readonly preExistingEntityId?: EntityId | undefined;
-      }>
-    | undefined;
-  readonly directorReceipt?: DirectorReceipt | undefined;
-}
+export type { GeneratedArea };
 
 /**
  * Generates an area map based on its definition using modular generator stages.

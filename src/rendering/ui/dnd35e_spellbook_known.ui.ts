@@ -18,8 +18,8 @@ import type {
   DnD35PreparedSlotEntry
 } from '../../rulesets/dnd35e/types/dnd35e.types.ts';
 import type { DnD35SpellDefinition, DnD35SystemContent } from '../../rulesets/dnd35e/types/dnd35e_system.types.ts';
+import { prepareSpellIntoSlot } from '../../rulesets/dnd35e/magic/spellbook_actions.ts';
 import { dispatchSpellCastFromLiveUI } from './dnd35e_spell_cast_ui.ts';
-import { prepareSpellIntoSlot } from './dnd35e_spellbook_actions.ts';
 
 /**
  * Renders the right pane showing all known spells grouped by spell level,
@@ -135,7 +135,11 @@ export function renderKnownSpellsPane(
         }
 
         // Specialist prep button
-        if (classId === 'wizard' && sum.specialistSlots > 0 && sp.school === dndData.arcaneSchool) {
+        if (
+          sys?.classes?.[classId]?.supportsArcaneSchoolSpecialization === true &&
+          sum.specialistSlots > 0 &&
+          sp.school === dndData.arcaneSchool
+        ) {
           const openSpecSlot = slots.find(
             (s: DnD35PreparedSlotEntry) =>
               s.spellLevel === sum.spellLevel && s.slotKind === 'specialist' && !s.preparedSpellId && !s.expended

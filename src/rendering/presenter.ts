@@ -14,7 +14,6 @@ import { renderMessageLog, renderPlayerStats, updateHUD } from './ui/hud.ui.ts';
 import { renderHudBottomDock } from './ui/hud_bottom_dock.ui.ts';
 import { renderHudAlerts } from './ui/hud_alerts.ui.ts';
 import { renderHudDock } from './ui/hud_dock.ui.ts';
-import { renderInventoryPanel } from './ui/inventory.ui.ts';
 import { renderMenus } from './ui/menus.ui.ts';
 import { renderRTwPControls, renderViewControls } from './ui/controls.ui.ts';
 import { renderSettingsMenu } from './ui/settings.ui.ts';
@@ -194,9 +193,9 @@ export function renderPresenterFrame(
   }
 
   // Inventory & Equipment
-  if (dirtyDomains.has(PresentationDomain.Inventory)) {
+  if (dirtyDomains.has(PresentationDomain.Inventory) && !dirtyDomains.has(PresentationDomain.Modals)) {
     const tInv0 = performance.now();
-    renderInventoryPanel(state);
+    renderActiveCartridgeModal(state);
     inventoryDomainMs = performance.now() - tInv0;
   }
 

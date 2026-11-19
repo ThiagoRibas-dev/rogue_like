@@ -19,6 +19,7 @@
     ],
     "castingMode": "prepared",
     "castingTradition": "arcane",
+    "supportsArcaneSchoolSpecialization": true,
     "spellAcquisitionMode": "spellbook_scribed",
     "castingKeyAbility": "int",
     "proficiencies": {

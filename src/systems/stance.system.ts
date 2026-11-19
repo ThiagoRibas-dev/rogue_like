@@ -1,4 +1,6 @@
-import { ComponentType, type TacticalDoctrineComponent } from '../types/components.types.ts';
+import { addComponent, getComponent } from '../core/ecs.ts';
+import { ComponentType, type TacticalDoctrineComponent, type WeaponGripMode } from '../types/components.types.ts';
+import type { EntityId, GameState } from '../types/game-state.types.ts';
 
 /**
  * Descriptor for a mutually exclusive stance option in a Tier 1 Console Stance Group.
@@ -150,6 +152,38 @@ export function incrementTriggeredReactionUse(
       [triggerKey]: nextCount
     }
   };
+}
+
+/**
+ * Updates or initializes an actor's `TacticalDoctrineComponent` immutably.
+ *
+ * @param state Current immutable GameState.
+ * @param entityId Target actor EntityId.
+ * @param updates Partial doctrine settings to merge.
+ * @returns Updated GameState.
+ */
+export function updateActorTacticalDoctrine(
+  state: GameState,
+  entityId: EntityId,
+  updates: Partial<Omit<TacticalDoctrineComponent, 'type'>>
+): GameState {
+  const current = (getComponent(state, entityId, ComponentType.TacticalDoctrine) as
+    TacticalDoctrineComponent | undefined) ?? {
+    type: ComponentType.TacticalDoctrine,
+    powerAttackAmount: 0,
+    combatExpertiseAmount: 0,
+    fightingDefensively: false,
+    totalDefense: false,
+    gripMode: 'one_handed' as WeaponGripMode
+  };
+
+  const nextComp: TacticalDoctrineComponent = {
+    ...current,
+    ...updates,
+    type: ComponentType.TacticalDoctrine
+  };
+
+  return addComponent(state, entityId, nextComp);
 }
 
 /**

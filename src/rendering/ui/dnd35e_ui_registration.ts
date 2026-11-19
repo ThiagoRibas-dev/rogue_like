@@ -47,9 +47,9 @@ function bindModalCloseButtons(): void {
 }
 
 /**
- * Renders the D&D 3.5e Character Sheet overlay modal.
+ * Mounts and toggles the registered D&D 3.5e Character Sheet overlay modal.
  */
-export function renderDnD35eSheetModal(state: GameState): void {
+function renderRegisteredSheetOverlay(state: GameState): void {
   bindModalCloseButtons();
   const overlay = document.getElementById('dnd35e-sheet-overlay');
   if (!overlay) return;
@@ -67,9 +67,9 @@ export function renderDnD35eSheetModal(state: GameState): void {
 }
 
 /**
- * Renders the D&D 3.5e Vancian Spellbook overlay modal.
+ * Mounts and toggles the registered D&D 3.5e Vancian Spellbook overlay modal.
  */
-export function renderDnD35eSpellbookModal(state: GameState): void {
+function renderRegisteredSpellbookOverlay(state: GameState): void {
   bindModalCloseButtons();
   const overlay = document.getElementById('dnd35e-spellbook-overlay');
   if (!overlay) return;
@@ -256,13 +256,13 @@ export const dnd35eUIDefinition: CartridgeUIDefinition = {
       overlayElementId: 'dnd35e-sheet-overlay',
       allowEscapeClose: true,
       handlesInventoryHotkeys: true,
-      render: renderDnD35eSheetModal
+      render: renderRegisteredSheetOverlay
     },
     spellbook: {
       modalId: 'spellbook',
       overlayElementId: 'dnd35e-spellbook-overlay',
       allowEscapeClose: true,
-      render: renderDnD35eSpellbookModal
+      render: renderRegisteredSpellbookOverlay
     },
     quickcast: {
       modalId: 'quickcast',

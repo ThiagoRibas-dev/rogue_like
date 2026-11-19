@@ -16,8 +16,8 @@ import type {
   DnD35PreparedSlotEntry
 } from '../../rulesets/dnd35e/types/dnd35e.types.ts';
 import type { DnD35SpellDefinition, DnD35SystemContent } from '../../rulesets/dnd35e/types/dnd35e_system.types.ts';
+import { unprepareSpecificSlot } from '../../rulesets/dnd35e/magic/spellbook_actions.ts';
 import { dispatchSpellCastFromLiveUI } from './dnd35e_spell_cast_ui.ts';
-import { unprepareSpecificSlot } from './dnd35e_spellbook_actions.ts';
 
 export function renderPreparedSlotsPane(
   container: HTMLElement,

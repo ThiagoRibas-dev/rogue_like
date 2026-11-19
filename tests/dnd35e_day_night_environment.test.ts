@@ -1,7 +1,8 @@
 import { describe, expect, test } from 'bun:test';
 import { addComponent, createEntity, getComponent, queryEntities, spawnEntity, spawnItem } from '../src/core/ecs.ts';
 import { applyIntentWithCost } from '../src/core/loop/intent_cost_resolver.ts';
-import { executeEightHourRest, executeWaitUntilPhase } from '../src/rendering/ui/dnd35e_rest_actions.ts';
+import { executeEightHourRest } from '../src/rulesets/dnd35e/magic/rest_recovery.ts';
+import { executeWaitUntilPhase } from '../src/systems/rest.system.ts';
 import { evaluateDnD35eEntityDAG } from '../src/rulesets/dnd35e/cartridge/dnd35e_dag_adapter.ts';
 import { onDnD35eActorMovementStep, onDnD35eActorTurnStart } from '../src/rulesets/dnd35e/cartridge/dnd35e_lifecycle_adapter.ts';
 import {

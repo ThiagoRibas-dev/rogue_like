@@ -8,6 +8,7 @@ import {
 import type { EntityId, GameState } from '../../../types/game-state.types.ts';
 import type { DnD35ClassSpellbookState, DnD35EntityData } from '../types/dnd35e.types.ts';
 import type { DnD35SystemContent } from '../types/dnd35e_system.types.ts';
+import { resolveActiveSpontaneousConversionModes } from '../magic/spellbook_slots.ts';
 
 export interface QuickcastModifierToggle {
   readonly id: string;
@@ -72,7 +73,14 @@ export function collectQuickcastModifierToggles(
     });
   }
 
-  if (classBooks['cleric']) {
+  const availableConvModes = new Set<string>();
+  for (const cid of Object.keys(classBooks)) {
+    for (const mode of resolveActiveSpontaneousConversionModes(cid, dndData, sys)) {
+      availableConvModes.add(mode);
+    }
+  }
+
+  if (availableConvModes.has('cure_or_inflict')) {
     const isGood = dndData.alignment?.endsWith('G') ?? false;
     const isEvil = dndData.alignment?.endsWith('E') ?? false;
     if (!isEvil) {
@@ -97,7 +105,7 @@ export function collectQuickcastModifierToggles(
     }
   }
 
-  if (classBooks['druid']) {
+  if (availableConvModes.has('summon_nature_ally')) {
     toggles.push({
       id: 'spontaneous:sna',
       label: "Spontaneous: Summon Nature's Ally",

@@ -13,22 +13,3 @@ export type AIBehaviorFn = (
   entityId: EntityId,
   params: Readonly<Record<string, unknown>>
 ) => Intent | null;
-
-/**
- * An entry in an AI Profile's behavior pipeline.
- */
-export interface AIBehaviorEntry {
-  /** The string ID of the behavior to run (e.g. 'hunt', 'wander'). */
-  readonly behaviorId: string;
-  /** Parameters passed to the behavior function. */
-  readonly params: Readonly<Record<string, unknown>>;
-}
-
-/**
- * A data-driven AI profile composed of multiple behaviors executed in priority order.
- */
-export interface AIProfile {
-  readonly id: string;
-  /** Ordered list of behaviors. The first one to return a non-null Intent wins. */
-  readonly behaviors: ReadonlyArray<AIBehaviorEntry>;
-}

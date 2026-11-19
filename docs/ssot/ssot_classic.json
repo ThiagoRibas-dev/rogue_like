@@ -1,0 +1,97 @@
+{
+  "src/rendering/ui/classic_ui_registration.ts": {
+    "domain": "Ruleset Cartridge: Classic Sci-Fi",
+    "tier": "tier2_ui",
+    "responsibility": "Registers the Classic / Sci-Fi CartridgeUIDefinition (modals, dock commands, hotbar wiring) into the Console Cartridge UI Registry.",
+    "canonicalEntryPoints": [
+      "renderClassicSheetModal",
+      "registerClassicUIAdapter",
+      "classicUIDefinition"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/ui/classic_ui_registration.ts.",
+      "excludes": "Headless Classic UI data projection (owned by src/rulesets/classic/ui/classic_ui_adapter.ts)."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/ui/classic_ui_registration.ts."
+    ]
+  },
+  "src/rulesets/classic/classic_combat.ts": {
+    "domain": "Ruleset Cartridge: Classic Sci-Fi",
+    "tier": "tier2_cartridge",
+    "responsibility": "Resolves Classic roguelike melee combat exchanges, defense reduction, faction hostility penalties, and lethal damage application.",
+    "canonicalEntryPoints": [
+      "resolveClassicMeleeAttack",
+      "processClassicDamage"
+    ],
+    "ownershipBoundary": {
+      "includes": "Coordinating facade and primary orchestration exports declared directly in src/rulesets/classic/classic_combat.ts.",
+      "excludes": "Underlying primitive symbols re-exported from leaf modules (e.g. src/systems/damage.system.ts)."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/classic/classic_combat.ts."
+    ]
+  },
+  "src/rulesets/classic/classic_ruleset.ts": {
+    "domain": "Ruleset Cartridge: Classic Sci-Fi",
+    "tier": "tier2_cartridge",
+    "responsibility": "The canonical `classic` ruleset cartridge encapsulating Milestones 1–81 mechanics.",
+    "canonicalEntryPoints": [
+      "classicRulesetContract"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/classic/classic_ruleset.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/classic/classic_ruleset.ts."
+    ]
+  },
+  "src/rulesets/classic/classic_stats.ts": {
+    "domain": "Ruleset Cartridge: Classic Sci-Fi",
+    "tier": "tier2_cartridge",
+    "responsibility": "Computes Classic effective combat stats, projects HUD vitals, and resolves XP/level advancement.",
+    "canonicalEntryPoints": [
+      "computeClassicEffectiveStats",
+      "projectClassicHudVitals",
+      "grantClassicXp"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/classic/classic_stats.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/classic/classic_stats.ts."
+    ]
+  },
+  "src/rulesets/classic/classic_validator.ts": {
+    "domain": "Ruleset Cartridge: Classic Sci-Fi",
+    "tier": "tier2_cartridge",
+    "responsibility": "Validates Classic roguelike ruleset invariants for a campaign.",
+    "canonicalEntryPoints": [
+      "checkClassicRuleset"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/classic/classic_validator.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/classic/classic_validator.ts."
+    ]
+  },
+  "src/rulesets/classic/ui/classic_ui_adapter.ts": {
+    "domain": "Ruleset Cartridge: Classic Sci-Fi",
+    "tier": "tier2_cartridge",
+    "responsibility": "Projects Classic / Sci-Fi ECS state into the unified Tier 1 Console UI models (Character Sheet, Inventory, Hotbar).",
+    "canonicalEntryPoints": [
+      "DefaultSciFiUIAdapter"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/classic/ui/classic_ui_adapter.ts.",
+      "excludes": "DOM manipulation or direct modal registration (owned by src/rendering/ui/classic_ui_registration.ts)."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/classic/ui/classic_ui_adapter.ts."
+    ]
+  }
+}

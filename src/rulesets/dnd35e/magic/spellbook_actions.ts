@@ -1,24 +1,20 @@
 /**
- * @file Vancian & Spontaneous Spell Preparation and Rest Recovery Actions (Milestone 118 / Phase 26).
- * Manages per-class spellbook state, structured slot preparation, spontaneous casting,
- * spontaneous conversion (Cure/Inflict, SNA), and 8-hour rest recovery.
+ * @file Pure D&D 3.5e Vancian Spellbook Preparation & Slot Reducers.
+ * Manages structured slot preparation, open-slot 15-minute memorization, and slot clearing
+ * atop Tier 1 Console rest safety & bulk time progression primitives.
  */
 
-import { addComponent } from '../../core/ecs.ts';
-import { setGameState } from '../../core/game-loop.ts';
-import { markAllDomainsDirty } from '../../core/presentation_queue.ts';
-import { OPEN_SLOT_PREPARATION_ROUNDS, prepareOpenDnD35Slot } from '../../rulesets/dnd35e/magic/aoe_rest.ts';
-import { computeClassLevelSlotSummaries, reconcilePreparedSlots } from '../../rulesets/dnd35e/magic/spellbook_slots.ts';
-import { getDnD35EntityData } from '../../rulesets/dnd35e/srd_registry.ts';
-import type { DnD35ClassSpellbookState, DnD35PreparedSlotEntry } from '../../rulesets/dnd35e/types/dnd35e.types.ts';
-import { getDnD35SystemContent } from '../../rulesets/dnd35e/types/dnd35e_system.types.ts';
-import { addMessage, MessageLogCategory } from '../../systems/message.system.ts';
-import { advanceWorldTimeBulk } from '../../systems/world_time_skip.ts';
-import { ComponentType, type RulesetDataComponent } from '../../types/components.types.ts';
-import type { EntityId, GameState } from '../../types/game-state.types.ts';
-import { evaluateActorRestSafety, executeEightHourRest } from './dnd35e_rest_actions.ts';
-
-export { executeEightHourRest };
+import { addComponent } from '../../../core/ecs.ts';
+import { addMessage, MessageLogCategory } from '../../../systems/message.system.ts';
+import { evaluateActorRestSafety } from '../../../systems/rest.system.ts';
+import { advanceWorldTimeBulk } from '../../../systems/world_time_skip.ts';
+import { ComponentType, type RulesetDataComponent } from '../../../types/components.types.ts';
+import type { EntityId, GameState } from '../../../types/game-state.types.ts';
+import { getDnD35EntityData } from '../srd_registry.ts';
+import type { DnD35ClassSpellbookState, DnD35PreparedSlotEntry } from '../types/dnd35e.types.ts';
+import { getDnD35SystemContent } from '../types/dnd35e_system.types.ts';
+import { OPEN_SLOT_PREPARATION_ROUNDS, prepareOpenDnD35Slot } from './aoe_rest.ts';
+import { computeClassLevelSlotSummaries, reconcilePreparedSlots } from './spellbook_slots.ts';
 
 function resolveSpellDisplayName(state: GameState, spellId: string): string {
   const sys = getDnD35SystemContent(state.campaign);
@@ -218,7 +214,7 @@ export function unprepareSpecificSlot(
 }
 
 /**
- * Legacy unprepare function for index-based removal when safe.
+ * Legacy index-based slot removal helper when safe.
  */
 export function unprepareSpellSlot(
   state: GameState,
@@ -250,13 +246,4 @@ export function unprepareSpellSlot(
 
   const removedLabel = removed[0] !== undefined ? resolveSpellDisplayName(nextState, removed[0]) : 'empty';
   return addMessage(nextState, `Unprepared spell: ${removedLabel}`, MessageLogCategory.System);
-}
-
-/**
- * Helper to dispatch 8-hour rest and update state.
- */
-export function applyRestAction(state: GameState, playerId: EntityId): void {
-  const next = executeEightHourRest(state, playerId);
-  setGameState(next);
-  markAllDomainsDirty();
 }

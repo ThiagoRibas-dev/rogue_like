@@ -1,10 +1,9 @@
 /**
- * @file Tactical Doctrine Bar and Combat Maneuver Actions (Milestone 118).
- * Pure state updates for Power Attack, Combat Expertise, Fighting Defensively,
- * Total Defense, Grip Mode, and declarative Class/Feat Stance Toggles.
+ * @file Thin UI Dispatchers for Tactical Doctrine Bar and Combat Maneuver Toggles.
+ * Delegates component updates to `src/systems/stance.system.ts`.
  */
 
-import { addComponent, getComponent } from '../../core/ecs.ts';
+import { getComponent } from '../../core/ecs.ts';
 import { queuePlayerIntent, setGameState } from '../../core/game-loop.ts';
 import { markAllDomainsDirty, markDomainDirty, PresentationDomain } from '../../core/presentation_queue.ts';
 import { canToggleTwoHandedGrip } from '../../rulesets/dnd35e/equipment_physics.ts';
@@ -15,43 +14,11 @@ import {
   getDnD35SystemContent,
   getLastLoadedDnD35SystemContent
 } from '../../rulesets/dnd35e/types/dnd35e_system.types.ts';
-import { toggleConsoleStanceGroup } from '../../systems/stance.system.ts';
-import { ComponentType, type TacticalDoctrineComponent, type WeaponGripMode } from '../../types/components.types.ts';
+import { toggleConsoleStanceGroup, updateActorTacticalDoctrine } from '../../systems/stance.system.ts';
+import { ComponentType, type TacticalDoctrineComponent } from '../../types/components.types.ts';
 import type { EntityId, GameState } from '../../types/game-state.types.ts';
 import { IntentType } from '../../types/intents/intent.enum.ts';
 import type { UIStanceModeEntry } from '../../types/ui_adapter.types.ts';
-
-/**
- * Updates an actor's TacticalDoctrineComponent settings.
- *
- * @param state The current GameState.
- * @param entityId Target entity ID.
- * @param updates Partial updates to merge into TacticalDoctrineComponent.
- * @returns Updated GameState.
- */
-export function updateActorTacticalDoctrine(
-  state: GameState,
-  entityId: EntityId,
-  updates: Partial<Omit<TacticalDoctrineComponent, 'type'>>
-): GameState {
-  const current = (getComponent(state, entityId, ComponentType.TacticalDoctrine) as
-    TacticalDoctrineComponent | undefined) ?? {
-    type: ComponentType.TacticalDoctrine,
-    powerAttackAmount: 0,
-    combatExpertiseAmount: 0,
-    fightingDefensively: false,
-    totalDefense: false,
-    gripMode: 'one_handed' as WeaponGripMode
-  };
-
-  const nextComp: TacticalDoctrineComponent = {
-    ...current,
-    ...updates,
-    type: ComponentType.TacticalDoctrine
-  };
-
-  return addComponent(state, entityId, nextComp);
-}
 
 /**
  * Dispatches an immediate state update to change tactical doctrine and marks presentation dirty.

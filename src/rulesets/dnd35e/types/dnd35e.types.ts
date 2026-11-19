@@ -13,8 +13,11 @@ import type {
   StatResolutionBreakdown
 } from './stats.types.ts';
 
-// Re-export all stats and modifier types
+import type { DnD35DamageType, NaturalWeaponDescriptor, OnHitRiderDescriptor } from './system/base_system.types.ts';
+
+// Re-export all stats, modifier, and shared combat descriptor types
 export * from './stats.types.ts';
+export type { DnD35DamageType, NaturalWeaponDescriptor, OnHitRiderDescriptor };
 
 /** Complete resolved state of an actor across the 4-Stage Sub-Stat DAG. */
 export interface DnD35ResolvedActorStats {
@@ -84,7 +87,7 @@ export interface DnD35PreparedSlotEntry {
 /** Per-class isolated spellbook / spellcasting state for multiclass casters. */
 export interface DnD35ClassSpellbookState {
   readonly classId: string;
-  readonly castingMode: 'prepared' | 'spontaneous';
+  readonly castingMode: 'prepared' | 'spontaneous' | 'innate';
   readonly castingTradition: 'arcane' | 'divine';
   readonly spellAcquisitionMode: 'spellbook_scribed' | 'spontaneous_known' | 'prayerbook_full_list';
   readonly governingAbility: AbilityId;
@@ -118,21 +121,6 @@ export interface DnD35ActionBudget {
   readonly movementAoOReactorsThisRound: ReadonlyArray<number>;
   readonly hasActedThisRound?: boolean | undefined;
 }
-
-/** Damage types supported by the D&D 3.5e damage & resistance pipeline. */
-export type DnD35DamageType =
-  | 'bludgeoning'
-  | 'piercing'
-  | 'slashing'
-  | 'acid'
-  | 'cold'
-  | 'electricity'
-  | 'fire'
-  | 'sonic'
-  | 'force'
-  | 'positive'
-  | 'negative'
-  | 'untyped';
 
 /** Damage Reduction rule (`DR X / bypassTag` or `-` unbypassable). */
 export interface DamageReductionRule {
@@ -168,39 +156,6 @@ export type DnD35ConditionId =
 
 /** Capability classification governing Antimagic, SR, AoO, and Concentration rules. */
 export type CapabilityClassification = 'spell' | 'ex' | 'sp' | 'su';
-
-/**
- * On-hit poison, disease, or curse rider attached to a natural or manufactured attack.
- */
-export interface OnHitRiderDescriptor {
-  readonly riderId: string;
-  readonly type: 'poison' | 'disease' | 'energy_drain' | 'curse' | 'paralysis';
-  readonly delivery: 'injury' | 'contact';
-  readonly saveType: SaveType;
-  readonly dc: number;
-  readonly initialEffectDescription: string;
-  readonly secondaryEffectDescription?: string | undefined;
-  readonly secondaryDelayRounds?: number | undefined;
-  readonly grantedTags?: ReadonlyArray<string> | undefined;
-}
-
-/**
- * Natural weapon attack configuration (claws, bites, gores, slams, stingers, tentacles).
- */
-export interface NaturalWeaponDescriptor {
-  readonly id: string;
-  readonly name: string;
-  readonly naturalType:
-    'bite' | 'claw' | 'gore' | 'slam' | 'sting' | 'tentacle' | 'talon' | 'tail_slap' | 'wings' | 'crush' | 'tail_sweep';
-  readonly isPrimary: boolean;
-  readonly count: number;
-  readonly damageDice: string;
-  readonly damageType: DnD35DamageType;
-  readonly critThreatMin: number;
-  readonly critMultiplier: number;
-  readonly reachFt?: number | undefined;
-  readonly riders?: ReadonlyArray<OnHitRiderDescriptor> | undefined;
-}
 
 /** The nine canonical D&D 3.5e alignment codes. */
 export type DnD35Alignment = 'LG' | 'NG' | 'CG' | 'LN' | 'N' | 'CN' | 'LE' | 'NE' | 'CE';

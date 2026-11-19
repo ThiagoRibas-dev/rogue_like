@@ -14,6 +14,7 @@ export const SsotFileTierSchema = z.enum([
   'tier1_console',
   'tier1_types',
   'tier2_cartridge',
+  'tier2_types',
   'tier2_ui'
 ]);
 export type SsotFileTier = z.infer<typeof SsotFileTierSchema>;
@@ -68,6 +69,13 @@ export function getAllTypeScriptFiles(dir: string, baseDir: string = dir): strin
  */
 export function isDnd35eFile(filePath: string): boolean {
   return filePath.startsWith('src/rulesets/dnd35e/') || filePath.startsWith('src/rendering/ui/dnd35e_');
+}
+
+/**
+ * Determines whether a given source file belongs to the Classic Cartridge partition.
+ */
+export function isClassicFile(filePath: string): boolean {
+  return filePath.startsWith('src/rulesets/classic/') || filePath.startsWith('src/rendering/ui/classic_ui_');
 }
 
 /**
@@ -200,12 +208,13 @@ export function generateSsotMarkdown(
 }
 
 /**
- * Validates 5-point parity across the codebase and SSOT registries:
+ * Validates 6-point parity across the codebase and SSOT registries:
  * 1. 100% coverage of all TypeScript source files under src/.
- * 2. Strict disjoint partition (Console vs D&D 3.5e).
+ * 2. Strict 3-way disjoint partition (Console vs Classic vs D&D 3.5e) & tier consistency.
  * 3. Zero ghost files in JSON registries.
  * 4. Verification that all canonical entry points exist as live exports in source files.
- * 5. Freshness check: ensures docs/SSOT_CONSOLE.md and docs/SSOT_DND35E.md match the JSON.
+ * 5. Strict uniqueness of canonicalEntryPoints across all files (no split ownership).
+ * 6. Freshness check: ensures docs/SSOT_CONSOLE.md, docs/SSOT_CLASSIC.md, and docs/SSOT_DND35E.md match JSON.
  */
 export function validateSsotRegistries(projectRoot: string): SsotParityReport {
   const errors: string[] = [];
@@ -215,23 +224,29 @@ export function validateSsotRegistries(projectRoot: string): SsotParityReport {
   const diskFiles = getAllTypeScriptFiles(srcDir);
 
   const consoleJsonPath = join(projectRoot, 'docs', 'ssot', 'ssot_console.json');
+  const classicJsonPath = join(projectRoot, 'docs', 'ssot', 'ssot_classic.json');
   const dndJsonPath = join(projectRoot, 'docs', 'ssot', 'ssot_dnd35e.json');
 
-  if (!existsSync(consoleJsonPath)) {
-    errors.push(`Missing SSOT registry file: ${consoleJsonPath}`);
-    return { checkedFiles: diskFiles.length, errors, warnings };
-  }
-  if (!existsSync(dndJsonPath)) {
-    errors.push(`Missing SSOT registry file: ${dndJsonPath}`);
-    return { checkedFiles: diskFiles.length, errors, warnings };
+  for (const regPath of [consoleJsonPath, classicJsonPath, dndJsonPath]) {
+    if (!existsSync(regPath)) {
+      errors.push(`Missing SSOT registry file: ${regPath}`);
+      return { checkedFiles: diskFiles.length, errors, warnings };
+    }
   }
 
   let consoleRaw: unknown;
+  let classicRaw: unknown;
   let dndRaw: unknown;
   try {
     consoleRaw = JSON.parse(readFileSync(consoleJsonPath, 'utf-8'));
   } catch (err) {
     errors.push(`Failed to parse ${consoleJsonPath}: ${(err as Error).message}`);
+    return { checkedFiles: diskFiles.length, errors, warnings };
+  }
+  try {
+    classicRaw = JSON.parse(readFileSync(classicJsonPath, 'utf-8'));
+  } catch (err) {
+    errors.push(`Failed to parse ${classicJsonPath}: ${(err as Error).message}`);
     return { checkedFiles: diskFiles.length, errors, warnings };
   }
   try {
@@ -248,6 +263,13 @@ export function validateSsotRegistries(projectRoot: string): SsotParityReport {
     }
   }
 
+  const parseClassic = SsotRegistrySchema.safeParse(classicRaw);
+  if (!parseClassic.success) {
+    for (const issue of parseClassic.error.issues) {
+      errors.push(`[ssot_classic.json] ${issue.path.join('.')}: ${issue.message}`);
+    }
+  }
+
   const parseDnd = SsotRegistrySchema.safeParse(dndRaw);
   if (!parseDnd.success) {
     for (const issue of parseDnd.error.issues) {
@@ -255,56 +277,84 @@ export function validateSsotRegistries(projectRoot: string): SsotParityReport {
     }
   }
 
-  if (!parseConsole.success || !parseDnd.success) {
+  if (!parseConsole.success || !parseClassic.success || !parseDnd.success) {
     return { checkedFiles: diskFiles.length, errors, warnings };
   }
 
   const consoleRegistry = parseConsole.data;
+  const classicRegistry = parseClassic.data;
   const dndRegistry = parseDnd.data;
 
   const consoleKeys = new Set(Object.keys(consoleRegistry));
+  const classicKeys = new Set(Object.keys(classicRegistry));
   const dndKeys = new Set(Object.keys(dndRegistry));
 
-  // 1. Partition & Ghost File Checks
-  for (const file of consoleKeys) {
-    if (dndKeys.has(file)) {
-      errors.push(`File "${file}" is duplicated in both ssot_console.json and ssot_dnd35e.json!`);
+  // 1. Partition, Tier Consistency & Ghost File Checks
+  for (const [file, entry] of Object.entries(consoleRegistry)) {
+    if (classicKeys.has(file) || dndKeys.has(file)) {
+      errors.push(`File "${file}" is duplicated across multiple SSOT registries!`);
     }
-    if (isDnd35eFile(file)) {
-      errors.push(`File "${file}" belongs to D&D 3.5e partition but is listed in ssot_console.json!`);
+    if (isDnd35eFile(file) || isClassicFile(file)) {
+      errors.push(`File "${file}" belongs to a ruleset cartridge partition but is listed in ssot_console.json!`);
     }
-    const fullPath = join(projectRoot, file);
-    if (!existsSync(fullPath)) {
+    if (entry.tier !== 'tier1_console' && entry.tier !== 'tier1_types') {
+      errors.push(`Console file "${file}" has non-Console tier "${entry.tier}" in ssot_console.json!`);
+    }
+    if (!existsSync(join(projectRoot, file))) {
       errors.push(`Ghost file in ssot_console.json does not exist on disk: "${file}"`);
     }
   }
 
-  for (const file of dndKeys) {
-    if (!isDnd35eFile(file)) {
-      errors.push(`File "${file}" belongs to Console partition but is listed in ssot_dnd35e.json!`);
+  for (const [file, entry] of Object.entries(classicRegistry)) {
+    if (dndKeys.has(file)) {
+      errors.push(`File "${file}" is duplicated in both ssot_classic.json and ssot_dnd35e.json!`);
     }
-    const fullPath = join(projectRoot, file);
-    if (!existsSync(fullPath)) {
+    if (!isClassicFile(file)) {
+      errors.push(`File "${file}" does not belong to Classic partition but is listed in ssot_classic.json!`);
+    }
+    if (entry.tier !== 'tier2_cartridge' && entry.tier !== 'tier2_types' && entry.tier !== 'tier2_ui') {
+      errors.push(`Classic cartridge file "${file}" has non-Tier-2 tier "${entry.tier}" in ssot_classic.json!`);
+    }
+    if (!existsSync(join(projectRoot, file))) {
+      errors.push(`Ghost file in ssot_classic.json does not exist on disk: "${file}"`);
+    }
+  }
+
+  for (const [file, entry] of Object.entries(dndRegistry)) {
+    if (!isDnd35eFile(file)) {
+      errors.push(`File "${file}" belongs to another partition but is listed in ssot_dnd35e.json!`);
+    }
+    if (entry.tier !== 'tier2_cartridge' && entry.tier !== 'tier2_types' && entry.tier !== 'tier2_ui') {
+      errors.push(`D&D 3.5e cartridge file "${file}" has non-Tier-2 tier "${entry.tier}" in ssot_dnd35e.json!`);
+    }
+    if (!existsSync(join(projectRoot, file))) {
       errors.push(`Ghost file in ssot_dnd35e.json does not exist on disk: "${file}"`);
     }
   }
 
   // 2. Unmapped Disk File Coverage
   for (const file of diskFiles) {
-    const isDnd = isDnd35eFile(file);
-    if (isDnd && !dndKeys.has(file)) {
-      errors.push(`D&D 3.5e source file "${file}" is not registered in docs/ssot/ssot_dnd35e.json!`);
-    } else if (!isDnd && !consoleKeys.has(file)) {
+    if (isDnd35eFile(file)) {
+      if (!dndKeys.has(file)) {
+        errors.push(`D&D 3.5e source file "${file}" is not registered in docs/ssot/ssot_dnd35e.json!`);
+      }
+    } else if (isClassicFile(file)) {
+      if (!classicKeys.has(file)) {
+        errors.push(`Classic cartridge source file "${file}" is not registered in docs/ssot/ssot_classic.json!`);
+      }
+    } else if (!consoleKeys.has(file)) {
       errors.push(`Console source file "${file}" is not registered in docs/ssot/ssot_console.json!`);
     }
   }
 
-  // 3. Export Verification
+  // 3. Export Verification & Unique Canonical Ownership
   const combinedEntries = [
     ...Object.entries(consoleRegistry),
+    ...Object.entries(classicRegistry),
     ...Object.entries(dndRegistry)
   ];
 
+  const canonicalOwners = new Map<string, string[]>();
   for (const [file, entry] of combinedEntries) {
     const fullPath = join(projectRoot, file);
     if (!existsSync(fullPath)) continue;
@@ -317,43 +367,67 @@ export function validateSsotRegistries(projectRoot: string): SsotParityReport {
           `Canonical entry point "${ep}" in "${file}" was not found in the file's exports on disk.`
         );
       }
+      const list = canonicalOwners.get(ep) ?? [];
+      list.push(file);
+      canonicalOwners.set(ep, list);
+    }
+  }
+
+  for (const [ep, owners] of canonicalOwners.entries()) {
+    if (owners.length > 1) {
+      errors.push(`Duplicate canonicalEntryPoint "${ep}" claimed by multiple files: ${owners.join(', ')}`);
     }
   }
 
   // 4. Markdown Freshness Verification
   const consoleMdPath = join(projectRoot, 'docs', 'SSOT_CONSOLE.md');
+  const classicMdPath = join(projectRoot, 'docs', 'SSOT_CLASSIC.md');
   const dndMdPath = join(projectRoot, 'docs', 'SSOT_DND35E.md');
 
-  if (existsSync(consoleMdPath)) {
-    const expected = generateSsotMarkdown(
-      consoleRegistry,
-      'Console Engine & Shared Subsystems SSOT Map',
-      'Canonical Single Source of Truth, Responsibility Boundaries, and Forbidden Anti-Patterns for the Core Console Engine.'
-    );
-    const actual = readFileSync(consoleMdPath, 'utf-8');
-    if (expected.trim() !== actual.trim()) {
-      errors.push(
-        'docs/SSOT_CONSOLE.md is out of sync with docs/ssot/ssot_console.json. Run `bun scripts/map-codebase.ts` to regenerate.'
-      );
+  const mdSpecs: ReadonlyArray<{
+    readonly mdPath: string;
+    readonly label: string;
+    readonly jsonLabel: string;
+    readonly registry: SsotRegistry;
+    readonly title: string;
+    readonly desc: string;
+  }> = [
+    {
+      mdPath: consoleMdPath,
+      label: 'docs/SSOT_CONSOLE.md',
+      jsonLabel: 'docs/ssot/ssot_console.json',
+      registry: consoleRegistry,
+      title: 'Console Engine & Shared Subsystems SSOT Map',
+      desc: 'Canonical Single Source of Truth, Responsibility Boundaries, and Forbidden Anti-Patterns for the Core Console Engine.'
+    },
+    {
+      mdPath: classicMdPath,
+      label: 'docs/SSOT_CLASSIC.md',
+      jsonLabel: 'docs/ssot/ssot_classic.json',
+      registry: classicRegistry,
+      title: 'Classic Sci-Fi Ruleset Cartridge SSOT Map',
+      desc: 'Canonical Single Source of Truth, Responsibility Boundaries, and Forbidden Anti-Patterns for the Classic Ruleset Cartridge.'
+    },
+    {
+      mdPath: dndMdPath,
+      label: 'docs/SSOT_DND35E.md',
+      jsonLabel: 'docs/ssot/ssot_dnd35e.json',
+      registry: dndRegistry,
+      title: 'D&D 3.5e Ruleset Cartridge SSOT Map',
+      desc: 'Canonical Single Source of Truth, Responsibility Boundaries, and Forbidden Anti-Patterns for the D&D 3.5e Ruleset Cartridge.'
     }
-  } else {
-    warnings.push('docs/SSOT_CONSOLE.md does not exist yet. Run `bun scripts/map-codebase.ts` to generate.');
-  }
+  ];
 
-  if (existsSync(dndMdPath)) {
-    const expected = generateSsotMarkdown(
-      dndRegistry,
-      'D&D 3.5e Ruleset Cartridge SSOT Map',
-      'Canonical Single Source of Truth, Responsibility Boundaries, and Forbidden Anti-Patterns for the D&D 3.5e Ruleset Cartridge.'
-    );
-    const actual = readFileSync(dndMdPath, 'utf-8');
-    if (expected.trim() !== actual.trim()) {
-      errors.push(
-        'docs/SSOT_DND35E.md is out of sync with docs/ssot/ssot_dnd35e.json. Run `bun scripts/map-codebase.ts` to regenerate.'
-      );
+  for (const spec of mdSpecs) {
+    if (existsSync(spec.mdPath)) {
+      const expected = generateSsotMarkdown(spec.registry, spec.title, spec.desc);
+      const actual = readFileSync(spec.mdPath, 'utf-8');
+      if (expected.trim() !== actual.trim()) {
+        errors.push(`${spec.label} is out of sync with ${spec.jsonLabel}. Run \`bun scripts/map-codebase.ts\` to regenerate.`);
+      }
+    } else {
+      warnings.push(`${spec.label} does not exist yet. Run \`bun scripts/map-codebase.ts\` to generate.`);
     }
-  } else {
-    warnings.push('docs/SSOT_DND35E.md does not exist yet. Run `bun scripts/map-codebase.ts` to generate.');
   }
 
   return {
@@ -364,23 +438,26 @@ export function validateSsotRegistries(projectRoot: string): SsotParityReport {
 }
 
 /**
- * Regenerates `docs/SSOT_CONSOLE.md` and `docs/SSOT_DND35E.md` from the JSON registries.
+ * Regenerates `docs/SSOT_CONSOLE.md`, `docs/SSOT_CLASSIC.md`, and `docs/SSOT_DND35E.md` from the JSON registries.
  */
 export function writeSsotMarkdownDocs(projectRoot: string): void {
   const consoleJsonPath = join(projectRoot, 'docs', 'ssot', 'ssot_console.json');
+  const classicJsonPath = join(projectRoot, 'docs', 'ssot', 'ssot_classic.json');
   const dndJsonPath = join(projectRoot, 'docs', 'ssot', 'ssot_dnd35e.json');
 
-  const consoleRegistry = SsotRegistrySchema.parse(
-    JSON.parse(readFileSync(consoleJsonPath, 'utf-8'))
-  );
-  const dndRegistry = SsotRegistrySchema.parse(
-    JSON.parse(readFileSync(dndJsonPath, 'utf-8'))
-  );
+  const consoleRegistry = SsotRegistrySchema.parse(JSON.parse(readFileSync(consoleJsonPath, 'utf-8')));
+  const classicRegistry = SsotRegistrySchema.parse(JSON.parse(readFileSync(classicJsonPath, 'utf-8')));
+  const dndRegistry = SsotRegistrySchema.parse(JSON.parse(readFileSync(dndJsonPath, 'utf-8')));
 
   const consoleMd = generateSsotMarkdown(
     consoleRegistry,
     'Console Engine & Shared Subsystems SSOT Map',
     'Canonical Single Source of Truth, Responsibility Boundaries, and Forbidden Anti-Patterns for the Core Console Engine.'
+  );
+  const classicMd = generateSsotMarkdown(
+    classicRegistry,
+    'Classic Sci-Fi Ruleset Cartridge SSOT Map',
+    'Canonical Single Source of Truth, Responsibility Boundaries, and Forbidden Anti-Patterns for the Classic Ruleset Cartridge.'
   );
   const dndMd = generateSsotMarkdown(
     dndRegistry,
@@ -389,5 +466,6 @@ export function writeSsotMarkdownDocs(projectRoot: string): void {
   );
 
   writeFileSync(join(projectRoot, 'docs', 'SSOT_CONSOLE.md'), consoleMd, 'utf-8');
+  writeFileSync(join(projectRoot, 'docs', 'SSOT_CLASSIC.md'), classicMd, 'utf-8');
   writeFileSync(join(projectRoot, 'docs', 'SSOT_DND35E.md'), dndMd, 'utf-8');
 }

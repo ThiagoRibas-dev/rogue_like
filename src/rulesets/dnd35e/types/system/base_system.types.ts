@@ -93,6 +93,10 @@ export const DnD35ProgressionTrackSchema = z.object({
   refCurve: SaveCurveIdSchema,
   willCurve: SaveCurveIdSchema,
   skillPointsPerLevel: z.number().int().nonnegative(),
+  explicitBab: z.number().int().nonnegative().optional(),
+  explicitFort: z.number().int().nonnegative().optional(),
+  explicitRef: z.number().int().nonnegative().optional(),
+  explicitWill: z.number().int().nonnegative().optional(),
   trackCategory: z.enum(['racial_hd', 'pc', 'npc', 'prestige']).optional()
 });
 /** Inferred type for a declarative progression track. */

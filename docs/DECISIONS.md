@@ -676,6 +676,24 @@ This document records architectural decisions whose rationale is **non-obvious o
 - **Decision 3: Archive `rltiles-pack` (`64×64` Isometric) Under `docs/archive/rltiles-pack/`**:
   - *Rationale*: Visual inspection showed `rltiles-pack` terrain uses 45-degree isometric diamond geometry that leaves transparent corner wedges when downscaled onto an orthogonal `32×32` `ROT.Display` grid, whereas its standalone creature/feature descendants are already redrawn natively at `32×32` inside `dcss`. Archiving it preserves assets and `RLTiles` attribution cleanly for future isometric camera work without degrading the orthogonal renderer.
 
+---
+
+### SSOT Integrity Audit, Console Primitive Extraction, Old-Brain Eviction & Rule 21 Purity
+
+- **Decision 1: Evict Unused Legacy Paper Doll & CSS (`equipment.ui.ts`, `inventory.ui.ts`, `inventory.css`, `#inventory-overlay`)**:
+  - Removed the superseded `#inventory-overlay` DOM/CSS/presenter fallback because every active cartridge delegates to `console_inventory.ui.ts` widgets via `cartridge_ui_registry.ts`, eliminating split-brain paper-doll code (`SLOT_META` duplication).
+
+- **Decision 2: Extract Ruleset-Agnostic Rest/Stance Primitives to Console & Evacuate Pure D&D Reducers from `src/rendering/ui/` (`rest.system.ts`, `stance.system.ts`, `rest_recovery.ts`, `spellbook_actions.ts`)**:
+  - Extracted `evaluateActorRestSafety`, `finalizeBulkTimeEventsAndRespawn`, and `executeWaitUntilPhase` into Tier 1 `src/systems/rest.system.ts` and moved `updateActorTacticalDoctrine` into `src/systems/stance.system.ts` so future cartridges can build custom rest/camp/doctrine mechanics atop shared engine primitives.
+  - Moved D&D 3.5e 8-hour rest recovery (`rest_recovery.ts`) and Vancian slot preparation/clearing (`spellbook_actions.ts`) out of `src/rendering/ui/` into `src/rulesets/dnd35e/magic/`, leaving only thin DOM/loading-overlay dispatchers in `src/rendering/ui/`.
+
+- **Decision 3: Eliminate Remaining Rule 21 Hardcoded Content-ID Branches & Duplicate Declarations**:
+  - Replaced hardcoded tile/class/feat ID checks (`'stone_wall'` -> `!tileDef.transparent && tileDef.glyph !== ' '`; `'wizard'` -> `supportsArcaneSchoolSpecialization` in `wizard.json`; `'cleric'`/`'druid'` -> `resolveActiveSpontaneousConversionModes`; `'warlock'`/`'innate'` -> `castingMode === 'innate'`; `'warrior'`/`'shapeshift'` fallbacks -> schema-driven properties).
+  - Removed duplicate declarations uncovered by unique SSOT ownership enforcement (`createEntity` in `fuzzer_mock_state.ts`, `GeneratedArea` in `generator.ts`, `AIBehaviorEntry`/`AIProfile` in `ai.types.ts`, duplicate modal wrappers in `dnd35e_ui_registration.ts`, `applyPermanentLevelDrain` alias collision, and hand-typed descriptor copies in `dnd35e.types.ts`).
+
+- **Decision 4: 3-Way SSOT Partition (`ssot_classic.json`), `tier2_types` & Hard-Error Unique `canonicalEntryPoints` (`scripts/ssot_parity.ts`)**:
+  - Partitioned Classic cartridge files into `docs/ssot/ssot_classic.json` + `docs/SSOT_CLASSIC.md`, added `tier2_types` for cartridge schema files, normalized fragmented domain labels, deduplicated all 182 re-export overlaps across files, and added hard-error checks for duplicate `canonicalEntryPoints` and tier-to-registry mismatches.
+
 
 
 

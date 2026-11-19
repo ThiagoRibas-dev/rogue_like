@@ -77,7 +77,7 @@ export function buildViewportSnapshot(state: GameState, viewportW: number, viewp
           if (tileDef !== undefined) {
             let fgColor = tileDef.fg;
             if (!isVisible) {
-              if (tile.tileId === 'stone_wall') {
+              if (!tileDef.transparent && tileDef.glyph !== ' ') {
                 fgColor = state.campaign.theme.colors.wallDimFg ?? fgColor;
               } else {
                 fgColor = state.campaign.theme.colors.floorDimFg ?? fgColor;

@@ -1,101 +1,36 @@
 /**
- * @file D&D 3.5e Rest Safety Evaluation & Per-Actor 8-Hour Recovery Helpers.
- * Evaluates party-wide rest safety predicates and applies 8-hour rest recovery
- * (ability damage, living HP, Vancian/spontaneous spellbook refresh with 8h retention,
- * fatigue downgrade/removal, resource pools, and round action budgets) symmetrically
- * across the player and controlled companions.
+ * @file D&D 3.5e 8-Hour Rest Recovery Simulation.
+ * Applies D&D 3.5e rest recovery rules (1 pt ability damage healing, 1 HP/HD natural healing
+ * for living actors, Vancian/spontaneous spellbook refresh honoring the 8-hour recent-cast rule,
+ * fatigue downgrade/removal, resource pool refresh, and round action budget reset) symmetrically
+ * across the player and controlled companions, building atop Tier 1 Console rest primitives.
  */
 
-import { addComponent, getComponent, refreshResourcePools } from '../../core/ecs.ts';
-import { evaluateDnD35eEntityDAG } from '../../rulesets/dnd35e/cartridge/dnd35e_dag_adapter.ts';
-import { hydrateEntityRoundActionBudget } from '../../rulesets/dnd35e/cartridge/dnd35e_turn_budget.ts';
-import { resolveSpellbookEightHourRest } from '../../rulesets/dnd35e/magic/aoe_rest.ts';
-import { buildActorResourcePoolsComponent } from '../../rulesets/dnd35e/progression/ledger_resource_pools.ts';
-import { getDnD35EntityData, setDnD35EntityData } from '../../rulesets/dnd35e/srd_registry.ts';
+import { addComponent, getComponent, refreshResourcePools } from '../../../core/ecs.ts';
+import { getPlayerCompanions } from '../../../systems/companion_commands.system.ts';
+import { addMessage, MessageLogCategory } from '../../../systems/message.system.ts';
+import { evaluateActorRestSafety, finalizeBulkTimeEventsAndRespawn } from '../../../systems/rest.system.ts';
+import { resetTriggeredReactionsForNewRound } from '../../../systems/stance.system.ts';
+import { formatWorldClockShort, readWorldClock } from '../../../systems/world_clock.system.ts';
+import { advanceWorldTimeBulk, type BulkTimeAdvanceResult } from '../../../systems/world_time_skip.ts';
+import {
+  ComponentType,
+  type ResourcePoolComponent,
+  type TacticalDoctrineComponent
+} from '../../../types/components.types.ts';
+import type { EntityId, GameState } from '../../../types/game-state.types.ts';
+import { evaluateDnD35eEntityDAG } from '../cartridge/dnd35e_dag_adapter.ts';
+import { hydrateEntityRoundActionBudget } from '../cartridge/dnd35e_turn_budget.ts';
+import { buildActorResourcePoolsComponent } from '../progression/ledger_resource_pools.ts';
+import { getDnD35EntityData, setDnD35EntityData } from '../srd_registry.ts';
 import {
   ALL_ABILITY_IDS,
   type AbilityId,
   type DnD35ClassSpellbookState,
   type DnD35ConditionId
-} from '../../rulesets/dnd35e/types/dnd35e.types.ts';
-import { getDnD35SystemContent } from '../../rulesets/dnd35e/types/dnd35e_system.types.ts';
-import { getPlayerCompanions } from '../../systems/companion_commands.system.ts';
-import { queryActiveFieldsAtPosition } from '../../systems/field.system.ts';
-import { getHungerState, HungerState } from '../../systems/hunger.system.ts';
-import { resetTriggeredReactionsForNewRound } from '../../systems/stance.system.ts';
-import { isActorThreatenedByVisibleHostiles } from '../../systems/world_clock.system.ts';
-import {
-  ComponentType,
-  type HungerComponent,
-  type PositionComponent,
-  type ResourcePoolComponent,
-  type StatusEffectsComponent,
-  type TacticalDoctrineComponent
-} from '../../types/components.types.ts';
-import type { EntityId, GameState } from '../../types/game-state.types.ts';
-
-/** Result of evaluating whether an actor and active party can safely rest or prepare spells. */
-export interface RestSafetyEvaluation {
-  readonly safe: boolean;
-  readonly reason?: string | undefined;
-}
-
-/**
- * Checks declaratively whether `playerId` and all controlled companions are in safe conditions
- * to rest or prepare spells: no visible hostiles, no active damaging status afflictions,
- * non-starving satiation, and no standing hazardous spatial fields.
- *
- * @param state Current immutable GameState.
- * @param playerId Player EntityId.
- * @returns `{ safe: true }` or `{ safe: false, reason }`.
- */
-export function evaluateActorRestSafety(state: GameState, playerId: EntityId): RestSafetyEvaluation {
-  if (isActorThreatenedByVisibleHostiles(state, playerId)) {
-    return {
-      safe: false,
-      reason: 'Cannot rest or prepare spells while hostile creatures are visible!'
-    };
-  }
-
-  const partyIds = Array.from(new Set<EntityId>([playerId, ...getPlayerCompanions(state, playerId)]));
-  for (const actorId of partyIds) {
-    const statusComp = getComponent(state, actorId, ComponentType.StatusEffects) as StatusEffectsComponent | undefined;
-    for (const eff of statusComp?.activeEffects ?? []) {
-      const def = state.campaign.status[eff.effectId];
-      if (def && def.perTurnDamage !== undefined && def.perTurnDamage > 0) {
-        return {
-          safe: false,
-          reason: 'Cannot rest while you or a companion suffers from ongoing damaging afflictions!'
-        };
-      }
-    }
-
-    const pos = getComponent(state, actorId, ComponentType.Position) as PositionComponent | undefined;
-    if (pos) {
-      for (const activeField of queryActiveFieldsAtPosition(state, pos.x, pos.y)) {
-        const fDef = state.campaign.fields[activeField.field.fieldType];
-        const fieldHasDotStatus =
-          fDef?.statusEffectId !== undefined && (state.campaign.status[fDef.statusEffectId]?.perTurnDamage ?? 0) > 0;
-        if ((fDef && (fDef.damagePerTurn ?? 0) > 0) || fieldHasDotStatus) {
-          return {
-            safe: false,
-            reason: 'Cannot rest while standing in a hazardous area!'
-          };
-        }
-      }
-    }
-  }
-
-  const hunger = getComponent(state, playerId, ComponentType.Hunger) as HungerComponent | undefined;
-  if (hunger && (getHungerState(state, hunger.satiation) === HungerState.Starving || hunger.satiation <= 0)) {
-    return {
-      safe: false,
-      reason: 'Cannot rest while starving! Eat food before resting.'
-    };
-  }
-
-  return { safe: true };
-}
+} from '../types/dnd35e.types.ts';
+import { getDnD35SystemContent } from '../types/dnd35e_system.types.ts';
+import { EIGHT_HOURS_IN_ROUNDS, resolveSpellbookEightHourRest } from './aoe_rest.ts';
 
 /**
  * Recovers 1 point of ability damage on each damaged ability score, heals 1 lethal HP per total HD
@@ -207,4 +142,65 @@ export function applyEightHourRestToActor(
   }
 
   return { state: nextState, retainedRecentCastCount };
+}
+
+/**
+ * Applies post-bulk-time-advance rest recovery (natural healing, 1 pt ability damage healing,
+ * spell slot refresh with 8h retention, `rest_8h` pool recharge, fatigue removal, companion recovery,
+ * active-area respawn, and world event digest), or reports interruption when aborted mid-rest.
+ *
+ * @param bulkRes Completed or interrupted bulk time progression result.
+ * @param playerId Player EntityId.
+ * @returns Updated GameState.
+ */
+export function finalizeEightHourRestRecovery(bulkRes: BulkTimeAdvanceResult, playerId: EntityId): GameState {
+  if (bulkRes.interruptedReason !== undefined) {
+    const respawnedState = finalizeBulkTimeEventsAndRespawn(bulkRes.state, bulkRes.summaryEvents, 'rested');
+    return addMessage(
+      respawnedState,
+      `Rest interrupted at ${formatWorldClockShort(readWorldClock(respawnedState))}: ${bulkRes.interruptedReason}`,
+      MessageLogCategory.System
+    );
+  }
+
+  let nextState = bulkRes.state;
+  const partyIds = Array.from(new Set<EntityId>([playerId, ...getPlayerCompanions(nextState, playerId)]));
+  let totalRetainedRecentCasts = 0;
+
+  for (const actorId of partyIds) {
+    const recovered = applyEightHourRestToActor(nextState, actorId);
+    nextState = recovered.state;
+    totalRetainedRecentCasts += recovered.retainedRecentCastCount;
+  }
+
+  nextState = finalizeBulkTimeEventsAndRespawn(nextState, bulkRes.summaryEvents, 'rested');
+
+  const retentionNote =
+    totalRetainedRecentCasts > 0
+      ? ` (${totalRetainedRecentCasts} slot(s) cast within the last 8 hours remained expended.)`
+      : '';
+  return addMessage(
+    nextState,
+    `Rest completed (8 hours). It is now ${formatWorldClockShort(readWorldClock(nextState))}. All eligible daily spell slots and abilities refreshed.${retentionNote}`,
+    MessageLogCategory.System
+  );
+}
+
+/**
+ * Performs an 8-hour rest synchronously when safe, interrupting cleanly if a hazard emerges mid-rest.
+ *
+ * @param state Current immutable GameState.
+ * @param playerId Player EntityId.
+ * @returns Updated GameState.
+ */
+export function executeEightHourRest(state: GameState, playerId: EntityId): GameState {
+  const safety = evaluateActorRestSafety(state, playerId);
+  if (!safety.safe) {
+    return addMessage(state, safety.reason ?? 'You cannot rest right now!', MessageLogCategory.System);
+  }
+  const bulkRes = advanceWorldTimeBulk(state, EIGHT_HOURS_IN_ROUNDS, playerId, (current) => {
+    const check = evaluateActorRestSafety(current, playerId);
+    return check.safe ? undefined : check.reason;
+  });
+  return finalizeEightHourRestRecovery(bulkRes, playerId);
 }
