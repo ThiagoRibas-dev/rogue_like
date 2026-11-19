@@ -377,5 +377,52 @@ describe('D&D 3.5e End-to-End Spell Casting & Quickcast Matrix', () => {
     expect(quick.modifiers.some((m) => m.id === 'spontaneous:sna')).toBe(true);
     const clericRow1 = quick.sections.find((s) => s.classId === 'cleric')?.rows.find((r) => r.spellLevel === 1);
     expect(clericRow1?.tiles.some((t) => t.convertedSpellId === 'inflict_light_wounds')).toBe(true);
+
+    // Cleric with Spontaneous Domain Casting ACF and 2 domains exposes individual domain toggles in Quickcast
+    const preAcfDnd = getDnD35EntityData(state, playerId);
+    state = setDnD35EntityData(state, playerId, {
+      ...preAcfDnd,
+      alignment: 'LG',
+      domains: ['good', 'war'],
+      selectedAcfs: ['cleric_domain_spontaneity_1'],
+      activeClassFeatures: ['domain_spontaneity'],
+      spellbooksByClass: {
+        cleric: {
+          ...preAcfDnd.spellbooksByClass!['cleric']!,
+          preparedSlots: [
+            { slotId: 'clr_gen_1', spellLevel: 1, slotKind: 'general', preparedSpellId: 'bless', expended: false },
+            {
+              slotId: 'clr_dom_1',
+              spellLevel: 1,
+              slotKind: 'domain',
+              preparedSpellId: 'cure_light_wounds',
+              expended: false
+            }
+          ]
+        }
+      }
+    });
+
+    const quickWar = buildDnD35eQuickcastModel(state, playerId, {
+      activeModifierIds: ['spontaneous:domain:war'],
+      collapsedClassIds: []
+    });
+    expect(quickWar.modifiers.some((m) => m.id === 'spontaneous:domain:good')).toBe(true);
+    expect(quickWar.modifiers.some((m) => m.id === 'spontaneous:domain:war' && m.isActive)).toBe(true);
+    expect(quickWar.modifiers.some((m) => m.id === 'spontaneous:cure')).toBe(false);
+    expect(quickWar.modifiers.some((m) => m.id === 'spontaneous:inflict')).toBe(false);
+    const warRow1 = quickWar.sections.find((s) => s.classId === 'cleric')?.rows.find((r) => r.spellLevel === 1);
+    expect(warRow1?.tiles.some((t) => t.convertedSpellId === 'magic_weapon')).toBe(true);
+    expect(warRow1?.tiles.some((t) => t.spellId === 'cure_light_wounds' && t.convertedSpellId === undefined)).toBe(
+      true
+    );
+
+    const quickGood = buildDnD35eQuickcastModel(state, playerId, {
+      activeModifierIds: ['spontaneous:domain:good'],
+      collapsedClassIds: []
+    });
+    const goodRow1 = quickGood.sections.find((s) => s.classId === 'cleric')?.rows.find((r) => r.spellLevel === 1);
+    expect(goodRow1?.tiles.some((t) => t.convertedSpellId === 'protection_from_evil')).toBe(true);
+    expect(goodRow1?.tiles.some((t) => t.convertedSpellId === 'magic_weapon')).toBe(false);
   });
 });

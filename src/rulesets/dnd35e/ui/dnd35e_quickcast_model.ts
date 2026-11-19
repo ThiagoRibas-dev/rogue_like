@@ -12,7 +12,9 @@ import {
   getSpontaneousConversionTargets,
   reconcilePreparedSlots,
   resolveActiveSpontaneousConversionModes,
-  type SpellLevelSlotSummary
+  resolveEligibleSpontaneousDomainIds,
+  type SpellLevelSlotSummary,
+  type SpontaneousConversionFilter
 } from '../magic/spellbook_slots.ts';
 import { getDnD35EntityData } from '../srd_registry.ts';
 import type { DnD35ClassSpellbookState, DnD35EntityData, DnD35PreparedSlotEntry } from '../types/dnd35e.types.ts';
@@ -92,6 +94,67 @@ function makeTile(
   };
 }
 
+function resolveActiveClassConversionFilter(
+  convModes: ReadonlyArray<string>,
+  dndData: Partial<DnD35EntityData>,
+  activeSet: ReadonlySet<string>
+): SpontaneousConversionFilter | undefined {
+  if (convModes.includes('cure_or_inflict')) {
+    if (activeSet.has('spontaneous:cure')) {
+      return { mode: 'cure_or_inflict', polarity: 'positive' };
+    }
+    if (activeSet.has('spontaneous:inflict')) {
+      return { mode: 'cure_or_inflict', polarity: 'negative' };
+    }
+  }
+  if (convModes.includes('domain')) {
+    const eligibleDomains = resolveEligibleSpontaneousDomainIds(dndData);
+    for (const domId of eligibleDomains) {
+      if (activeSet.has(`spontaneous:domain:${domId}`)) {
+        return { mode: 'domain', domainId: domId };
+      }
+    }
+    if (activeSet.has('spontaneous:domain')) {
+      return {
+        mode: 'domain',
+        ...(eligibleDomains[0] !== undefined ? { domainId: eligibleDomains[0] } : {})
+      };
+    }
+  }
+  if (convModes.includes('summon_nature_ally') && activeSet.has('spontaneous:sna')) {
+    return { mode: 'summon_nature_ally' };
+  }
+  return undefined;
+}
+
+function appendGroupedPreparedSlotTiles(
+  slotsToGroup: ReadonlyArray<DnD35PreparedSlotEntry>,
+  classId: string,
+  lvl: number,
+  govAbMod: number,
+  sys: DnD35SystemContent | undefined,
+  activeRodIds: ReadonlyArray<string>,
+  tiles: QuickcastSpellTile[]
+): void {
+  const grouped = new Map<string, DnD35PreparedSlotEntry[]>();
+  for (const s of slotsToGroup) {
+    const id = s.preparedSpellId!;
+    const arr = grouped.get(id) ?? [];
+    arr.push(s);
+    grouped.set(id, arr);
+  }
+  for (const [spellId, group] of grouped.entries()) {
+    const sp = sys?.spells?.[spellId];
+    const firstSlot = group[0]!;
+    const baseLvl = firstSlot.slotKind === 'domain' ? lvl : (sp?.levelByClass[classId] ?? sp?.level ?? lvl);
+    tiles.push(
+      makeTile(spellId, sp, classId, baseLvl, lvl, group.length, BASE_SPELL_DC + baseLvl + govAbMod, activeRodIds, {
+        slotId: firstSlot.slotId
+      })
+    );
+  }
+}
+
 function buildPreparedRows(
   classId: string,
   book: DnD35ClassSpellbookState,
@@ -107,10 +170,7 @@ function buildPreparedRows(
       ? book.preparedSlots
       : reconcilePreparedSlots(book, summaries, sys?.spells);
   const convModes = resolveActiveSpontaneousConversionModes(classId, dndData, sys);
-  const supportsCureOrInflict = convModes.includes('cure_or_inflict');
-  const convertCure = supportsCureOrInflict && activeSet.has('spontaneous:cure');
-  const convertInflict = supportsCureOrInflict && activeSet.has('spontaneous:inflict');
-  const convertSna = convModes.includes('summon_nature_ally') && activeSet.has('spontaneous:sna');
+  const activeConvFilter = resolveActiveClassConversionFilter(convModes, dndData, activeSet);
   const rows: QuickcastLevelRow[] = [];
 
   for (let lvl = 0; lvl <= MAX_SPELL_LEVEL; lvl++) {
@@ -119,51 +179,44 @@ function buildPreparedRows(
     );
     if (levelSlots.length === 0) continue;
 
-    if ((convertCure || convertInflict || convertSna) && lvl >= 1) {
+    if (activeConvFilter !== undefined && lvl >= 1) {
       const generalSlots = levelSlots.filter((s) => s.slotKind === 'general');
-      if (generalSlots.length === 0) continue;
-      const polarity = convertInflict ? 'negative' : 'positive';
-      const convTargets = getSpontaneousConversionTargets(classId, lvl, dndData, sys, polarity);
-      const tiles = convTargets.map((opt) => {
-        const sp = sys?.spells?.[opt.spellId];
-        return makeTile(
-          generalSlots[0]!.preparedSpellId!,
-          sp,
-          classId,
-          lvl,
-          lvl,
-          generalSlots.length,
-          BASE_SPELL_DC + lvl + govAbMod,
-          activeRodIds,
-          {
-            slotId: generalSlots[0]!.slotId,
-            convertedSpellId: opt.spellId
-          }
-        );
-      });
+      const nonGeneralSlots = levelSlots.filter((s) => s.slotKind !== 'general');
+      const tiles: QuickcastSpellTile[] = [];
+      if (generalSlots.length > 0) {
+        const convTargets = getSpontaneousConversionTargets(classId, lvl, dndData, sys, activeConvFilter);
+        for (const opt of convTargets) {
+          const sp = sys?.spells?.[opt.spellId];
+          const domLvl =
+            activeConvFilter.domainId !== undefined ? sp?.levelByDomain?.[activeConvFilter.domainId] : undefined;
+          const baseLvl = domLvl ?? sp?.levelByClass?.[classId] ?? sp?.level ?? lvl;
+          tiles.push(
+            makeTile(
+              generalSlots[0]!.preparedSpellId!,
+              sp,
+              classId,
+              baseLvl,
+              lvl,
+              generalSlots.length,
+              BASE_SPELL_DC + baseLvl + govAbMod,
+              activeRodIds,
+              {
+                slotId: generalSlots[0]!.slotId,
+                convertedSpellId: opt.spellId
+              }
+            )
+          );
+        }
+      }
+      if (nonGeneralSlots.length > 0) {
+        appendGroupedPreparedSlotTiles(nonGeneralSlots, classId, lvl, govAbMod, sys, activeRodIds, tiles);
+      }
       if (tiles.length > 0) rows.push({ spellLevel: lvl, tiles });
       continue;
     }
 
-    const grouped = new Map<string, DnD35PreparedSlotEntry[]>();
-    for (const s of levelSlots) {
-      const id = s.preparedSpellId!;
-      const arr = grouped.get(id) ?? [];
-      arr.push(s);
-      grouped.set(id, arr);
-    }
-
     const tiles: QuickcastSpellTile[] = [];
-    for (const [spellId, group] of grouped.entries()) {
-      const sp = sys?.spells?.[spellId];
-      const firstSlot = group[0]!;
-      const baseLvl = firstSlot.slotKind === 'domain' ? lvl : (sp?.levelByClass[classId] ?? sp?.level ?? lvl);
-      tiles.push(
-        makeTile(spellId, sp, classId, baseLvl, lvl, group.length, BASE_SPELL_DC + baseLvl + govAbMod, activeRodIds, {
-          slotId: firstSlot.slotId
-        })
-      );
-    }
+    appendGroupedPreparedSlotTiles(levelSlots, classId, lvl, govAbMod, sys, activeRodIds, tiles);
     if (tiles.length > 0) rows.push({ spellLevel: lvl, tiles });
   }
   return rows;

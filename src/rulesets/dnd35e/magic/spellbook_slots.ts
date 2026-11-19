@@ -222,6 +222,24 @@ export interface SpontaneousConversionOption {
   readonly label: string;
 }
 
+/** Optional filter narrowing spontaneous conversion targets to a specific active toggle or domain. */
+export interface SpontaneousConversionFilter {
+  readonly mode?: DnD35SpontaneousConversionMode | undefined;
+  readonly polarity?: 'positive' | 'negative' | undefined;
+  readonly domainId?: string | undefined;
+}
+
+/** Resolves all domain IDs eligible for spontaneous domain conversion on an actor. */
+export function resolveEligibleSpontaneousDomainIds(dndData: Partial<DnD35EntityData>): ReadonlyArray<string> {
+  const owned = dndData.domains ?? [];
+  if (dndData.spontaneousDomainId) {
+    if (owned.length === 0 || owned.includes(dndData.spontaneousDomainId)) {
+      return [dndData.spontaneousDomainId];
+    }
+  }
+  return owned;
+}
+
 /** Resolves active spontaneous conversion modes for a class from its declarative `featureDetails`. */
 export function resolveActiveSpontaneousConversionModes(
   classId: string,
@@ -272,57 +290,73 @@ export function getSpontaneousConversionTargets(
   spellLevel: number,
   dndData: Partial<DnD35EntityData>,
   systemContent: DnD35SystemContent | undefined,
-  preferredPolarity?: 'positive' | 'negative'
+  filterOrPolarity?: 'positive' | 'negative' | SpontaneousConversionFilter
 ): ReadonlyArray<SpontaneousConversionOption> {
+  const filter: SpontaneousConversionFilter =
+    typeof filterOrPolarity === 'string' ? { polarity: filterOrPolarity } : (filterOrPolarity ?? {});
+  const preferredPolarity = filter.polarity;
   const options: SpontaneousConversionOption[] = [];
+  const seenSpells = new Set<string>();
   const hasSpell = (id: string): boolean =>
     !systemContent?.spells || Object.keys(systemContent.spells).length === 0 || systemContent.spells[id] !== undefined;
   const modes = resolveActiveSpontaneousConversionModes(classId, dndData, systemContent);
 
-  if (modes.includes('domain')) {
-    const owned = dndData.domains ?? [];
-    const chosenDomId =
-      dndData.spontaneousDomainId && owned.includes(dndData.spontaneousDomainId)
-        ? dndData.spontaneousDomainId
-        : (dndData.spontaneousDomainId ?? owned[0]);
-    if (chosenDomId) {
-      const seen = new Set<string>();
-      const domDef = systemContent?.domains?.[chosenDomId];
-      const domLabel = `Domain: ${domDef?.name ?? chosenDomId}`;
+  if (modes.includes('domain') && (filter.mode === undefined || filter.mode === 'domain')) {
+    const targetDomains =
+      filter.domainId !== undefined ? [filter.domainId] : resolveEligibleSpontaneousDomainIds(dndData);
+    for (const domId of targetDomains) {
+      const domDef = systemContent?.domains?.[domId];
+      const domName = domDef?.name ?? domId;
       for (let lvl = spellLevel; lvl >= 1; lvl--) {
         const spId = domDef?.domainSpells?.[String(lvl)];
-        if (spId && !seen.has(spId) && hasSpell(spId)) {
-          seen.add(spId);
-          options.push({ spellId: spId, label: domLabel });
+        if (spId && !seenSpells.has(spId) && hasSpell(spId)) {
+          seenSpells.add(spId);
+          const spName = systemContent?.spells?.[spId]?.name ?? spId.replace(/_/g, ' ');
+          options.push({ spellId: spId, label: `${spName} (${domName})` });
         }
         for (const [candKey, candDef] of Object.entries(systemContent?.spells ?? {})) {
           const resolvedId = candDef.id ?? candKey;
-          if (!seen.has(resolvedId) && candDef.levelByDomain?.[chosenDomId] === lvl) {
-            seen.add(resolvedId);
-            options.push({ spellId: resolvedId, label: domLabel });
+          if (!seenSpells.has(resolvedId) && candDef.levelByDomain?.[domId] === lvl) {
+            seenSpells.add(resolvedId);
+            const spName = candDef.name ?? resolvedId.replace(/_/g, ' ');
+            options.push({ spellId: resolvedId, label: `${spName} (${domName})` });
           }
         }
       }
     }
-    if (options.length > 0) return options;
   }
 
-  if (modes.includes('cure_or_inflict')) {
+  if (modes.includes('cure_or_inflict') && (filter.mode === undefined || filter.mode === 'cure_or_inflict')) {
     const isGood = dndData.alignment?.endsWith('G') ?? false;
     const isEvil = dndData.alignment?.endsWith('E') ?? false;
     const cureSp = CURE_SPELLS_BY_LEVEL[spellLevel];
     const inflictSp = INFLICT_SPELLS_BY_LEVEL[spellLevel];
-    if ((isGood || (!isEvil && preferredPolarity !== 'negative')) && cureSp && hasSpell(cureSp)) {
+    if (
+      (isGood || (!isEvil && preferredPolarity !== 'negative')) &&
+      cureSp &&
+      !seenSpells.has(cureSp) &&
+      hasSpell(cureSp)
+    ) {
+      seenSpells.add(cureSp);
       options.push({ spellId: cureSp, label: 'Cure Wounds' });
     }
-    if ((isEvil || (!isGood && preferredPolarity !== 'positive')) && inflictSp && hasSpell(inflictSp)) {
+    if (
+      (isEvil || (!isGood && preferredPolarity !== 'positive')) &&
+      inflictSp &&
+      !seenSpells.has(inflictSp) &&
+      hasSpell(inflictSp)
+    ) {
+      seenSpells.add(inflictSp);
       options.push({ spellId: inflictSp, label: 'Inflict Wounds' });
     }
   }
 
-  if (modes.includes('summon_nature_ally')) {
+  if (modes.includes('summon_nature_ally') && (filter.mode === undefined || filter.mode === 'summon_nature_ally')) {
     const targetSpell = SUMMON_NATURES_ALLY_BY_LEVEL[spellLevel];
-    if (targetSpell && hasSpell(targetSpell)) options.push({ spellId: targetSpell, label: "Summon Nature's Ally" });
+    if (targetSpell && !seenSpells.has(targetSpell) && hasSpell(targetSpell)) {
+      seenSpells.add(targetSpell);
+      options.push({ spellId: targetSpell, label: "Summon Nature's Ally" });
+    }
   }
   return options;
 }

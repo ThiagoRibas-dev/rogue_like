@@ -33,12 +33,23 @@ const activeModifierIds = new Set<string>();
 const collapsedClassIds = new Set<string>();
 let closeBound = false;
 
+function isSpontaneousModifierKind(kind: QuickcastModifierToggle['kind']): boolean {
+  return (
+    kind === 'spontaneous_cure' ||
+    kind === 'spontaneous_inflict' ||
+    kind === 'spontaneous_sna' ||
+    kind === 'spontaneous_domain'
+  );
+}
+
 function toggleModifierId(mod: QuickcastModifierToggle): void {
   const isAlreadyActive = activeModifierIds.has(mod.id);
-  if (mod.kind === 'spontaneous_cure' && !isAlreadyActive) {
-    activeModifierIds.delete('spontaneous:inflict');
-  } else if (mod.kind === 'spontaneous_inflict' && !isAlreadyActive) {
-    activeModifierIds.delete('spontaneous:cure');
+  if (isSpontaneousModifierKind(mod.kind) && !isAlreadyActive) {
+    for (const id of [...activeModifierIds]) {
+      if (id.startsWith('spontaneous:')) {
+        activeModifierIds.delete(id);
+      }
+    }
   }
 
   if (isAlreadyActive) {

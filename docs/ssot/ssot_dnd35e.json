@@ -1712,6 +1712,7 @@
       "collectActorDomainSpellIds",
       "computeClassLevelSlotSummaries",
       "reconcilePreparedSlots",
+      "resolveEligibleSpontaneousDomainIds",
       "resolveActiveSpontaneousConversionModes",
       "canPrepareSpellInDomainSlot",
       "getSpontaneousConversionTargets"

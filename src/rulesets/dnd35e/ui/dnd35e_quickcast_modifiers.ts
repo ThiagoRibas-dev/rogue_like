@@ -8,15 +8,20 @@ import {
 import type { EntityId, GameState } from '../../../types/game-state.types.ts';
 import type { DnD35ClassSpellbookState, DnD35EntityData } from '../types/dnd35e.types.ts';
 import type { DnD35SystemContent } from '../types/dnd35e_system.types.ts';
-import { resolveActiveSpontaneousConversionModes } from '../magic/spellbook_slots.ts';
+import {
+  resolveActiveSpontaneousConversionModes,
+  resolveEligibleSpontaneousDomainIds
+} from '../magic/spellbook_slots.ts';
 
 export interface QuickcastModifierToggle {
   readonly id: string;
   readonly label: string;
   readonly shortBadge: string;
-  readonly kind: 'metamagic' | 'spontaneous_cure' | 'spontaneous_inflict' | 'spontaneous_sna' | 'essence';
+  readonly kind:
+    'metamagic' | 'spontaneous_cure' | 'spontaneous_inflict' | 'spontaneous_sna' | 'spontaneous_domain' | 'essence';
   readonly slotLevelBump: number;
   readonly isActive: boolean;
+  readonly domainId?: string | undefined;
 }
 
 /**
@@ -101,6 +106,36 @@ export function collectQuickcastModifierToggles(
         kind: 'spontaneous_inflict',
         slotLevelBump: 0,
         isActive: activeSet.has('spontaneous:inflict')
+      });
+    }
+  }
+
+  if (availableConvModes.has('domain')) {
+    const eligibleDomains = resolveEligibleSpontaneousDomainIds(dndData);
+    if (eligibleDomains.length > 0) {
+      for (const [idx, domId] of eligibleDomains.entries()) {
+        const domDef = sys?.domains?.[domId];
+        const domName = domDef?.name ?? domId.replace(/_/g, ' ');
+        const toggleId = `spontaneous:domain:${domId}`;
+        const isActive = activeSet.has(toggleId) || (idx === 0 && activeSet.has('spontaneous:domain'));
+        toggles.push({
+          id: toggleId,
+          label: `Spontaneous: ${domName} Domain`,
+          shortBadge: 'DOM',
+          kind: 'spontaneous_domain',
+          slotLevelBump: 0,
+          isActive,
+          domainId: domId
+        });
+      }
+    } else {
+      toggles.push({
+        id: 'spontaneous:domain',
+        label: 'Spontaneous: Domain',
+        shortBadge: 'DOM',
+        kind: 'spontaneous_domain',
+        slotLevelBump: 0,
+        isActive: activeSet.has('spontaneous:domain')
       });
     }
   }
