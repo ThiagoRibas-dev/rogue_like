@@ -298,7 +298,8 @@ export function executeCombatStrikeExchange(params: StrikeExchangeParams): Strik
       strike,
       targetAC,
       attackerEval,
-      cleavesCount
+      cleavesCount,
+      params.forcedAttackRoll
     );
     runningState = cleaveResult.state;
     cleavesCount = cleaveResult.cleavesUsed;

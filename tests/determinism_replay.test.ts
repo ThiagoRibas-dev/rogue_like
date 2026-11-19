@@ -11,7 +11,7 @@ import { serializeGameState } from '../src/core/save.ts';
 function runDeterministicSession(seed: number): GameState {
   initRNG(seed);
   const campaign = loadCampaignFromDisk('default');
-  let state = buildGameState(campaign);
+  let state = buildGameState(campaign, null);
 
   const players = queryEntities(state, [ComponentType.Player]);
   const playerId = players[0]!;

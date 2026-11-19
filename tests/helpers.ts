@@ -26,7 +26,9 @@ const ROOT = join(__dirname, '..');
 const CAMPAIGNS_ROOT = join(ROOT, 'public', 'data', 'campaigns');
 const RULESETS_ROOT = join(ROOT, 'public', 'data', 'rulesets');
 
-initRNG(42);
+export const DEFAULT_TEST_RNG_SEED = 42;
+
+initRNG(DEFAULT_TEST_RNG_SEED);
 
 function toSnakeCase(str: string): string {
   return str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
@@ -124,8 +126,15 @@ export function loadCampaignFromDisk(id: string): CampaignData {
 /**
  * Builds a complete GameState the way `startNewGame` does: generate the starting
  * area and spawn the literal `player` template (no FOV yet).
+ *
+ * @param campaign Loaded campaign data.
+ * @param rngSeed Deterministic RNG seed applied before generating the area, or `null` to preserve the active RNG stream.
+ * @returns Initialized GameState for the test harness.
  */
-export function buildGameState(campaign: CampaignData): GameState {
+export function buildGameState(campaign: CampaignData, rngSeed: number | null = DEFAULT_TEST_RNG_SEED): GameState {
+  if (rngSeed !== null) {
+    initRNG(rngSeed);
+  }
   const startingAreaId = campaign.rules.map.startingAreaId;
   const { map, startPos, rooms } = generateArea(campaign, startingAreaId);
 

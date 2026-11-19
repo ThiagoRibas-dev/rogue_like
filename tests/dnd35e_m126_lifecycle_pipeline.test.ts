@@ -1,5 +1,6 @@
-import { describe, expect, test } from 'bun:test';
+import { beforeEach, describe, expect, test } from 'bun:test';
 import { addComponent, createEntity, getComponent } from '../src/core/ecs.ts';
+import { initRNG } from '../src/core/rng.ts';
 import { runActorMovementStep, runActorTurnStart } from '../src/systems/lifecycle.system.ts';
 import {
   canUseTriggeredReactionThisRound,
@@ -26,6 +27,10 @@ import type { DnD35EntityData } from '../src/rulesets/dnd35e/types/dnd35e.types.
 
 describe('Milestone 126 — Unified Console Lifecycle Windows & Composable Combat Exchange Pipeline', () => {
   const campaign = loadCampaignFromDisk('dnd35e-crypt');
+
+  beforeEach(() => {
+    initRNG(42);
+  });
 
   function createMinimalDndData(overrides: Partial<DnD35EntityData> = {}): DnD35EntityData {
     return {
@@ -241,7 +246,7 @@ describe('Milestone 126 — Unified Console Lifecycle Windows & Composable Comba
   });
 
   test('4. Phase 5 OnDropFollowupPhase: executes Cleave bonus strike against adjacent foe using secondary target AC', () => {
-    let state = buildGameState(campaign);
+    let state = { ...buildGameState(campaign), entities: [] };
     const [state1, attackerId] = createEntity(state);
     const [state2, goblinAId] = createEntity(state1);
     const [state3, goblinBId] = createEntity(state2);

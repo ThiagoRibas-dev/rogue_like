@@ -144,6 +144,7 @@ export function resolveStrikePreAttackContext(
  * @param targetAC Fallback AC if secondary target DAG evaluation is unavailable.
  * @param attackerEval Attacker DAG evaluation.
  * @param cleavesCount Number of cleaves already executed this turn.
+ * @param forcedAttackRoll Optional deterministic d20 roll override for testing.
  * @returns Updated GameState and updated cleaves count.
  */
 export function resolveOnDropCleaveFollowup(
@@ -153,7 +154,8 @@ export function resolveOnDropCleaveFollowup(
   strike: DnD35ResolvedStrikeProfile,
   targetAC: number,
   attackerEval: DnD35EntityDAGResult,
-  cleavesCount: number
+  cleavesCount: number,
+  forcedAttackRoll?: number
 ): { state: GameState; cleavesUsed: number } {
   if (!attackerEval.hasCleave) {
     return { state, cleavesUsed: cleavesCount };
@@ -222,7 +224,8 @@ export function resolveOnDropCleaveFollowup(
     flatDamageBonus: cleaveStrike.strDamageBonus + cleaveStrike.doctrineDamageBonus + cleaveStrike.flatDamageBonus,
     critThreatMin: cleaveStrike.critThreatMin,
     critMultiplier: cleaveStrike.critMultiplier,
-    hasBlindFight: attackerEval.hasBlindFight
+    hasBlindFight: attackerEval.hasBlindFight,
+    ...(forcedAttackRoll !== undefined ? { forcedAttackRoll } : {})
   });
 
   if (cleaveRes.hit) {
