@@ -13,7 +13,8 @@
     "currencyUnit": "sp",
     "tags": [
       "adventuring_gear",
-      "dungeoneering"
+      "dungeoneering",
+      "counter_invisibility_dust"
     ],
     "throwable": {
       "range": 3,

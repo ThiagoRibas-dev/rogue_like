@@ -8,14 +8,20 @@ export const FRAME_BUDGET_MS = 4;
 /** Maximum simulation iterations per animation frame in RTwP to prevent delta time death spirals. */
 export const MAX_RTWP_DRAIN_ITERATIONS = 10;
 
-/** Real-time millisecond conversion constant: 500ms = 100 duration at 1x speed. */
-export const RTWP_MS_PER_100_DURATION = 500;
+/** Canonical 6-second tactical round duration in milliseconds (`6000 ms`). */
+export const DND_ROUND_DURATION_MS = 6000;
 
-/** Base turn duration for actor steps. */
+/** Real-time millisecond conversion constant: 6000ms = 100 duration (1 full 6-second round) at 1x speed. */
+export const RTWP_MS_PER_100_DURATION = DND_ROUND_DURATION_MS;
+
+/** Base turn duration for actor steps (`100` energy = 1 full 6-second round). */
 export const DEFAULT_ACTOR_TURN_DURATION = 100;
 
-/** Fallback energy duration when an active turn concludes without a specific speed cost (`10`). */
-export const RTWP_IDLE_WAIT_DURATION = 10;
+/** Half-round energy duration (`50` energy = 3.0s at 1x speed, e.g. 1 Standard or 1 Move action). */
+export const HALF_ROUND_ENERGY_COST = 50;
+
+/** Fallback energy duration when an active turn concludes without a specific speed cost (`2` = ~120ms at 1x). */
+export const RTWP_IDLE_WAIT_DURATION = 2;
 
 /** Cap for accumulated RTwP time to prevent spiral of death after background tab pauses. */
 export const MAX_ACCUMULATED_RTWP_TIME = MAX_RTWP_DRAIN_ITERATIONS * DEFAULT_ACTOR_TURN_DURATION;

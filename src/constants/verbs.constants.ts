@@ -40,7 +40,8 @@ export type Verb =
   | 'order_defend'
   | 'order_follow'
   | 'order_hold'
-  | 'order_target';
+  | 'order_target'
+  | 'charge';
 
 /**
  * Read-only array of all valid interaction verbs in the game engine.
@@ -84,5 +85,6 @@ export const VERBS: ReadonlyArray<Verb> = [
   'order_defend',
   'order_follow',
   'order_hold',
-  'order_target'
+  'order_target',
+  'charge'
 ];

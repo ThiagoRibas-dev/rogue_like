@@ -7,6 +7,7 @@ import {
 } from '../types/components.types.ts';
 import { getComponent, addComponent, removeComponent, resolveEntityDisplayName } from '../core/ecs.ts';
 
+import { getRuleset } from '../rulesets/registry.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import { getEffectiveStats } from '../utils/stats.ts';
 import type { DamageComponent, DamageInstance } from '../types/components.types.ts';
@@ -36,6 +37,9 @@ export function processStatusEffectsTick(state: GameState, entityId: EntityId): 
 
   for (const active of statuses.activeEffects) {
     const def = state.campaign.status[active.effectId];
+    let nextElapsed = active.elapsedTurns ?? 0;
+    let nextSecondaryResolved = active.secondaryResolved === true;
+
     if (def) {
       if (def.perTurnDamage) damageTaken += def.perTurnDamage;
       if (def.perTurnHeal) healthGained += def.perTurnHeal;
@@ -47,10 +51,33 @@ export function processStatusEffectsTick(state: GameState, entityId: EntityId): 
           xpToGrant = { source: active.sourceEntityId, amount: fighter.xpGiven };
         }
       }
+
+      if (def.secondaryTriggerAfterTurns !== undefined && !nextSecondaryResolved) {
+        nextElapsed += 1;
+        if (nextElapsed >= def.secondaryTriggerAfterTurns) {
+          nextSecondaryResolved = true;
+          const ruleset = getRuleset(nextState.campaign?.manifest?.rulesetId);
+          if (ruleset.resolveStatusSecondaryStage) {
+            const stageRes = ruleset.resolveStatusSecondaryStage(nextState, entityId, active, def);
+            nextState = stageRes.state;
+            if (!stageRes.resisted && def.secondaryDamage !== undefined && def.secondaryDamage > 0) {
+              damageTaken += def.secondaryDamage;
+            }
+          } else if (def.secondaryDamage !== undefined && def.secondaryDamage > 0) {
+            damageTaken += def.secondaryDamage;
+          }
+        }
+      }
     }
 
     if (active.duration > 1) {
-      nextActiveEffects.push({ ...active, duration: active.duration - 1 });
+      nextActiveEffects.push({
+        ...active,
+        duration: active.duration - 1,
+        ...(def?.secondaryTriggerAfterTurns !== undefined
+          ? { elapsedTurns: nextElapsed, secondaryResolved: nextSecondaryResolved }
+          : {})
+      });
     } else {
       if (isPlayer) {
         nextState = addMessage(
@@ -144,8 +171,14 @@ export function applyStatusEffect(
   sourceEntityId?: EntityId
 ): GameState {
   const statuses = getComponent(state, entityId, ComponentType.StatusEffects);
-  const nextActive: ActiveStatusEffect =
-    sourceEntityId !== undefined ? { effectId, duration, sourceEntityId } : { effectId, duration };
+  const def = state.campaign.status[effectId];
+  const hasSecondaryStage = def?.secondaryTriggerAfterTurns !== undefined;
+  const nextActive: ActiveStatusEffect = {
+    effectId,
+    duration,
+    ...(sourceEntityId !== undefined ? { sourceEntityId } : {}),
+    ...(hasSecondaryStage ? { elapsedTurns: 0, secondaryResolved: false } : {})
+  };
 
   let nextState = state;
 
@@ -157,10 +190,12 @@ export function applyStatusEffect(
     if (existingIndex >= 0) {
       const existing = nextEffects[existingIndex]!;
       const newDuration = Math.max(existing.duration, duration);
-      nextEffects[existingIndex] =
-        sourceEntityId !== undefined
-          ? { ...existing, duration: newDuration, sourceEntityId }
-          : { ...existing, duration: newDuration };
+      nextEffects[existingIndex] = {
+        ...existing,
+        duration: newDuration,
+        ...(sourceEntityId !== undefined ? { sourceEntityId } : {}),
+        ...(hasSecondaryStage ? { elapsedTurns: 0, secondaryResolved: false } : {})
+      };
     } else {
       nextEffects.push(nextActive);
     }
@@ -172,7 +207,6 @@ export function applyStatusEffect(
     nextState = addComponent(nextState, entityId, nextStatuses);
   }
 
-  const def = state.campaign.status[effectId];
   const isPlayer = getComponent(state, entityId, ComponentType.Player) !== undefined;
 
   if (isPlayer && def) {
@@ -180,4 +214,41 @@ export function applyStatusEffect(
   }
 
   return nextState;
+}
+
+/**
+ * Neutralizes any unresolved secondary-stage status effects (such as multi-stage poisons)
+ * on `entityId` by marking `secondaryResolved: true` without triggering secondary damage.
+ *
+ * @param state Current immutable GameState.
+ * @param entityId Patient EntityId.
+ * @returns Updated GameState and count of neutralized pending secondary stages.
+ */
+export function neutralizePendingSecondaryStatuses(
+  state: GameState,
+  entityId: EntityId
+): { readonly state: GameState; readonly neutralizedCount: number } {
+  const statuses = getComponent(state, entityId, ComponentType.StatusEffects) as StatusEffectsComponent | undefined;
+  if (!statuses || statuses.activeEffects.length === 0) {
+    return { state, neutralizedCount: 0 };
+  }
+
+  let neutralizedCount = 0;
+  const updatedEffects = statuses.activeEffects.map((eff) => {
+    const def = state.campaign.status[eff.effectId];
+    if (def?.secondaryTriggerAfterTurns !== undefined && eff.secondaryResolved !== true) {
+      neutralizedCount++;
+      return { ...eff, secondaryResolved: true };
+    }
+    return eff;
+  });
+
+  if (neutralizedCount === 0) {
+    return { state, neutralizedCount: 0 };
+  }
+
+  return {
+    state: addComponent(state, entityId, { ...statuses, activeEffects: updatedEffects }),
+    neutralizedCount
+  };
 }

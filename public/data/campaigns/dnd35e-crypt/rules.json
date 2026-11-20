@@ -36,6 +36,14 @@
       { "id": "night", "label": "Night", "startHour": 20, "skyIllumination": "shadowy", "isNaturalSunlight": false }
     ]
   },
+  "restPressure": {
+    "safeRest": false,
+    "ambushChancePerWatch": 0.15,
+    "watchDurationHours": 2,
+    "schemeTickMultiplier": 1,
+    "respawnRateMultiplier": 1,
+    "alarmDecayTurns": 50
+  },
   "spawning": {
     "maxMonstersPerRoom": 2,
     "maxItemsPerRoom": 2,

@@ -74,7 +74,15 @@
         "+": "wooden_door"
       }
     },
-    "environmentType": "indoors"
+    "environmentType": "indoors",
+    "restPressure": {
+      "safeRest": true,
+      "ambushChancePerWatch": 0,
+      "watchDurationHours": 2,
+      "schemeTickMultiplier": 1,
+      "respawnRateMultiplier": 0,
+      "alarmDecayTurns": 25
+    }
   },
   "dungeon_1": {
     "id": "dungeon_1",
@@ -100,7 +108,15 @@
     ],
     "environmentType": "underground",
     "respawnEscalationPerCycle": 3,
-    "maxRespawnEscalation": 15
+    "maxRespawnEscalation": 15,
+    "restPressure": {
+      "safeRest": false,
+      "ambushChancePerWatch": 0.15,
+      "watchDurationHours": 2,
+      "schemeTickMultiplier": 1,
+      "respawnRateMultiplier": 1,
+      "alarmDecayTurns": 50
+    }
   },
   "dungeon_2": {
     "id": "dungeon_2",
@@ -193,7 +209,15 @@
         "o": "bandit"
       }
     },
-    "environmentType": "underground"
+    "environmentType": "underground",
+    "restPressure": {
+      "safeRest": false,
+      "ambushChancePerWatch": 0.25,
+      "watchDurationHours": 2,
+      "schemeTickMultiplier": 2,
+      "respawnRateMultiplier": 1.5,
+      "alarmDecayTurns": 100
+    }
   },
   "shrine_vault_hub": {
     "id": "shrine_vault_hub",

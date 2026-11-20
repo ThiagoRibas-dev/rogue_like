@@ -13,7 +13,8 @@
     "currencyUnit": "gp",
     "tags": [
       "adventuring_gear",
-      "dungeoneering"
+      "dungeoneering",
+      "pry_tool"
     ],
     "spriteId": "item_primitive_key"
   }

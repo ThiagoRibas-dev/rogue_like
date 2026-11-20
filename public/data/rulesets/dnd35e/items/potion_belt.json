@@ -11,9 +11,17 @@
     "weight": 1,
     "baseValue": 1,
     "currencyUnit": "gp",
+    "equippable": {
+      "slot": "leg",
+      "attackBonus": 0,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    },
     "tags": [
       "adventuring_gear",
-      "container"
+      "container",
+      "quick_draw_container"
     ],
     "spriteId": "item_coin_purse"
   }

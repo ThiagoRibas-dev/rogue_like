@@ -4,7 +4,11 @@
  */
 
 import { createToggleQuestsAction } from '../../actions/core.actions.ts';
-import { DEFAULT_ACTOR_TURN_DURATION, RTWP_IDLE_WAIT_DURATION } from '../../constants/scheduler.constants.ts';
+import {
+  DEFAULT_ACTOR_TURN_DURATION,
+  RTWP_IDLE_WAIT_DURATION,
+  RTWP_MS_PER_100_DURATION
+} from '../../constants/scheduler.constants.ts';
 import { ALERT_CRITICAL_HP_RATIO, ALERT_LOW_HP_RATIO } from '../../constants/ui.constants.ts';
 import { getComponent } from '../../core/ecs.ts';
 import { queuePlayerIntent } from '../../core/game-loop.ts';
@@ -31,6 +35,9 @@ import { getEffectiveStats } from '../../utils/stats.ts';
 
 /** Minimum RTwP speed multiplier divisor preventing division-by-zero when formatting cooldown seconds. */
 const MIN_RTWP_SPEED_MULTIPLIER = 0.1;
+
+/** Milliseconds per second (`1000`). */
+const MS_PER_SECOND = 1000;
 
 /**
  * Severity level for RimWorld-style HUD alert ribbons.
@@ -126,7 +133,10 @@ export function buildTurnStatusRibbon(state: GameState, playerId: EntityId): Hud
 
     if (remainingEnergy > RTWP_IDLE_WAIT_DURATION) {
       const speed = Math.max(MIN_RTWP_SPEED_MULTIPLIER, state.rtwpState.speedMultiplier);
-      const remainingSec = (remainingEnergy / DEFAULT_ACTOR_TURN_DURATION / speed).toFixed(1);
+      const remainingSec = (
+        ((remainingEnergy / DEFAULT_ACTOR_TURN_DURATION) * (RTWP_MS_PER_100_DURATION / MS_PER_SECOND)) /
+        speed
+      ).toFixed(1);
       return {
         label: `⏳ Recovering: ${remainingSec}s`,
         detail: `Round ${state.globalTurn} • ${queued ? 'Next action queued...' : 'Waiting for next turn...'}`,

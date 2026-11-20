@@ -1073,6 +1073,24 @@
       "Never hardcode Dungeon Crasher damage multipliers inside UI or generic intent handlers."
     ]
   },
+  "src/rulesets/dnd35e/combat/charge_resolver.ts": {
+    "domain": "D&D 3.5e: Layer 5 — Combat, Maneuvers & Damage",
+    "tier": "tier2_cartridge",
+    "responsibility": "Validates and executes explicit Full-Round Charge actions (line-of-charge geometry, terrain rules, +2 attack, -2 AC charging condition, Pounce/Smite integration).",
+    "canonicalEntryPoints": [
+      "ChargeValidationResult",
+      "validateChargeLine",
+      "initiateDnD35eChargeTargeting",
+      "executeDnD35eChargeAction"
+    ],
+    "ownershipBoundary": {
+      "includes": "Charge line geometry validation, interactive charge targeting initiation, and full-round Charge execution.",
+      "excludes": "Generic spatial stepping mechanics (delegated to src/systems/movement_displacement.ts)."
+    },
+    "antiPatterns": [
+      "Never passively infer Charge status solely from post-move walking distance in melee resolution."
+    ]
+  },
   "src/rulesets/dnd35e/combat/cleave_whirlwind.ts": {
     "domain": "D&D 3.5e: Layer 5 — Combat, Maneuvers & Damage",
     "tier": "tier2_cartridge",
@@ -1184,6 +1202,27 @@
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/combat/damage_vitality.ts."
     ]
   },
+  "src/rulesets/dnd35e/combat/floor_hazard_resolver.ts": {
+    "domain": "D&D 3.5e: Layer 5 — Combat, Maneuvers & Damage",
+    "tier": "tier2_cartridge",
+    "responsibility": "Resolves D&D 3.5e floor hazards (`caltrops`, `marbles`, `grease`, `ice` Balance checks), weapon liquid/poison dipping (`CoatingComponent` with 5% natural-1 mishap), on-hit coating consumption, and Craft (Alchemy) DC 15 potion identification.",
+    "canonicalEntryPoints": [
+      "resolveCaltropsStepHazard",
+      "resolveSlipperyFloorStepHazard",
+      "evaluateActorFloorStepHazards",
+      "resolveDipWeaponCoating",
+      "applyAndConsumeWeaponCoatingOnHit",
+      "resolveCraftAlchemyPotionIdentification",
+      "deployTacticalFloorHazardItem"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/combat/floor_hazard_resolver.ts.",
+      "excludes": "Tier 1 spatial field reaction chemistry (owned by src/systems/field.system.ts)."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/combat/floor_hazard_resolver.ts."
+    ]
+  },
   "src/rulesets/dnd35e/combat/full_attack_sequence.ts": {
     "domain": "D&D 3.5e: Layer 5 — Combat, Maneuvers & Damage",
     "tier": "tier2_cartridge",
@@ -1245,6 +1284,40 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/combat/maneuvers_conditions.ts."
+    ]
+  },
+  "src/rulesets/dnd35e/combat/object_durability_resolver.ts": {
+    "domain": "D&D 3.5e: Layer 5 — Combat, Maneuvers & Damage",
+    "tier": "tier2_cartridge",
+    "responsibility": "Implements pure SRD Smashing an Object math (Object AC 10 + size - 5 - 2, magic +1 = +2 hardness / +10 HP, energy multipliers Acid/Sonic 1x, Fire/Elec 1/2, Cold 1/4, Ranged 1/2, crit/nonlethal immunity, adamantine hardness < 20 bypass, vulnerable 2x, and Break checks with SRD size mods, -2 at <=50% HP, +2 crowbar, and +2/+2 portable ram).",
+    "canonicalEntryPoints": [
+      "SRD_OBJECT_BASE_AC",
+      "SRD_OBJECT_DEX_ZERO_MOD",
+      "SRD_OBJECT_INANIMATE_AC_MOD",
+      "SRD_MAGIC_ENHANCEMENT_HARDNESS_PER_PLUS",
+      "SRD_MAGIC_ENHANCEMENT_HP_PER_PLUS",
+      "SRD_ADAMANTINE_BYPASS_HARDNESS_THRESHOLD",
+      "SRD_HALF_HP_BREAK_DC_MOD",
+      "SRD_CROWBAR_BREAK_BONUS",
+      "SRD_PORTABLE_RAM_BASE_BONUS",
+      "SRD_PORTABLE_RAM_ALLY_BONUS",
+      "SRD_OBJECT_AC_SIZE_MODIFIERS",
+      "SRD_BREAK_CHECK_SIZE_MODIFIERS",
+      "SRD_MATERIAL_HARDNESS_TABLE",
+      "ObjectDamageEvaluationInput",
+      "ObjectDamageEvaluationResult",
+      "computeSrdObjectArmorClass",
+      "resolveEffectiveStructuralStats",
+      "evaluateSrdObjectDamage",
+      "applySrdObjectAttackDamage",
+      "resolveSrdBreakObjectCheck"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/combat/object_durability_resolver.ts.",
+      "excludes": "Tier 1 Console structural door open/close/spiking primitives (owned by src/systems/durability.system.ts)."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/combat/object_durability_resolver.ts."
     ]
   },
   "src/rulesets/dnd35e/combat/pool_ability_resolver.ts": {
@@ -1762,6 +1835,30 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/magic/spell_strike_resolver.ts."
+    ]
+  },
+  "src/rulesets/dnd35e/magic/spellbook_loot.ts": {
+    "domain": "D&D 3.5e: Layer 6 — Vancian Magic & Fields",
+    "tier": "tier2_cartridge",
+    "responsibility": "Resolves spell rarity tiers (`rarity:common|uncommon|rare|forbidden`), spawns enemy arcane caster `wizards_spellbook` loot drops on death, and executes Spellcraft (`DC 15 + SL`) spellbook transcription using `ink_vial` and `inkpen`.",
+    "canonicalEntryPoints": [
+      "SpellRarityTier",
+      "SPELLCRAFT_TRANSCRIBE_BASE_DC",
+      "GLOBAL_TURNS_PER_SCRIBE_HOUR",
+      "SPELLBOOK_ITEM_TAG",
+      "WRITING_GEAR_ITEM_TAG",
+      "SPELL_RARITY_DROP_WEIGHTS",
+      "getSpellRarityTier",
+      "spawnArcaneCasterSpellbookLoot",
+      "getStoredSpellsOnSpellbook",
+      "transcribeSpellFromBook"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/magic/spellbook_loot.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/magic/spellbook_loot.ts."
     ]
   },
   "src/rulesets/dnd35e/magic/spellbook_actions.ts": {
@@ -2310,6 +2407,24 @@
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/skills/dungeon_skill_verbs.ts."
     ]
   },
+  "src/rulesets/dnd35e/skills/monster_lore_tracker.ts": {
+    "domain": "D&D 3.5e: Cartridge Adapters, Core & Validation",
+    "tier": "tier2_cartridge",
+    "responsibility": "Evaluates and persists automatic Monster Lore (`Knowledge` DC 10 + HD/CR) discoveries (DR bypasses, SR, immunities, vulnerabilities, energy resistances) onto `MemoryComponent.knowledge`.",
+    "canonicalEntryPoints": [
+      "MONSTER_LORE_KNOWLEDGE_KEY_PREFIX",
+      "collectCreatureLoreTraitDescriptors",
+      "evaluateAndRecordMonsterLore",
+      "getPersistedMonsterLoreTraits"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/skills/monster_lore_tracker.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/skills/monster_lore_tracker.ts."
+    ]
+  },
   "src/rulesets/dnd35e/skills/skill_constants.ts": {
     "domain": "D&D 3.5e: Cartridge Adapters, Core & Validation",
     "tier": "tier2_cartridge",
@@ -2519,6 +2634,53 @@
     },
     "antiPatterns": [
       "Never branch on race IDs; inspect semantic trait tags (`trait:light_blindness`)."
+    ]
+  },
+  "src/rulesets/dnd35e/spatial/stealth_resolver.ts": {
+    "domain": "D&D 3.5e: Layer 3 — Spatial Geometry & Senses",
+    "tier": "tier2_cartridge",
+    "responsibility": "Resolves symmetric manual Stealth toggling (half-speed default, Fast Stealth -5 toggle), 6-second round cadence & state-change Hide/Move Silently vs Spot/Listen checks, instant break without auto-pause, Darkvision/Low-Light/Scent/Tremorsense/Blindsight counters, and flour_pouch counter-invisibility dust.",
+    "canonicalEntryPoints": [
+      "FAST_STEALTH_PENALTY",
+      "DUSTED_STATUS_ID",
+      "isActorStealthed",
+      "isActorHalfSpeedStealthing",
+      "isActorDusted",
+      "canActorEnterStealth",
+      "toggleActorStealth",
+      "toggleActorFastStealth",
+      "breakActorStealth",
+      "evaluateStealthDetection",
+      "applyFlourPouchDust"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/spatial/stealth_resolver.ts.",
+      "excludes": "Auto-pause signal triggers (stealth breaks instantly without auto-pause) and Tier 1 acoustic BFS."
+    },
+    "antiPatterns": [
+      "Never re-roll opposed stealth on every RTwP tick; enforce the 6-second round cadence plus explicit state transitions."
+    ]
+  },
+  "src/rulesets/dnd35e/spatial/terrain_traversal_resolver.ts": {
+    "domain": "D&D 3.5e: Layer 3 — Spatial Geometry & Senses",
+    "tier": "tier2_cartridge",
+    "responsibility": "Resolves D&D 3.5e symmetric terrain hazards: shallow water penalties and fire extinguishing, deep water Swim checks (2x live M150 ACP, sinking, drowning immunity, CON breath capacity), Jump gap traversal (running vs standing, Reflex DC 15 ledge catch), pit fall damage, Climb checks (+2 climbers_kit), and Use Rope / ladder crossing rigging.",
+    "canonicalEntryPoints": [
+      "extinguishActorFireInWater",
+      "getShallowWaterStealthAndTumblePenalty",
+      "resolveDeepWaterSwimCheck",
+      "applyPitFallConsequences",
+      "resolveGapJumpTraversal",
+      "resolvePitClimbTraversal",
+      "resolveRigCrossingWithGear",
+      "evaluateActorTileHazardOccupation"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/spatial/terrain_traversal_resolver.ts.",
+      "excludes": "Tier 1 Console crossing/breath entity lifecycle (owned by crossing.system.ts and breath.system.ts)."
+    },
+    "antiPatterns": [
+      "Never apply terrain traversal rules asymmetric to player vs monster; evaluate all actors uniformly."
     ]
   },
   "src/rulesets/dnd35e/srd_registry.ts": {

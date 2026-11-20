@@ -18,6 +18,7 @@ import { EngineMode, UIMode } from '../src/types/game-state.types.ts';
 import { IntentType } from '../src/types/intents/intent.enum.ts';
 import type { DnD35ResolvedStrikeProfile } from '../src/rulesets/dnd35e/combat/attack_routine.ts';
 import { resolveBullRushImpact } from '../src/rulesets/dnd35e/combat/bull_rush_resolver.ts';
+import { executeDnD35eChargeAction } from '../src/rulesets/dnd35e/combat/charge_resolver.ts';
 import {
   collectRageAndFrenzyModifiers,
   resolvePrecisionDamageOnHit,
@@ -314,8 +315,18 @@ describe('Milestone 136 — Active ACF Mechanical Pipeline, Relational Flanking 
     );
   });
 
-  test('4. Pounce (Barbarian Spirit Lion Totem ACF): executes full attack after >= 10 ft Charge move', () => {
+  test('4. Pounce (Barbarian Spirit Lion Totem ACF): executes full attack only on explicit Charge, not passive walking', () => {
     let state = buildGameState(campaign);
+    const floorTileId =
+      Object.entries(state.campaign.tiles).find(([, t]) => t.walkable && t.transparent)?.[0] ?? 'stone_floor';
+    const mutableTiles = [...state.map.tiles];
+    for (const x of [3, 4, 5, 6]) {
+      mutableTiles[coordToIndex(x, 5, state.map.width)] = { tileId: floorTileId, explored: true };
+    }
+    const cleanSpatial = new Map(state.spatialIndex);
+    for (const x of [3, 4, 5, 6]) cleanSpatial.delete(`${x},5`);
+    state = { ...state, spatialIndex: cleanSpatial, map: { ...state.map, tiles: mutableTiles } };
+
     const [s1, barbId] = createEntity(state);
     const [s2, orcId] = createEntity(s1);
     const [s3, swordId] = createEntity(s2);
@@ -326,7 +337,7 @@ describe('Milestone 136 — Active ACF Mechanical Pipeline, Relational Flanking 
       itemId: 'longsword',
       instanceId: toItemInstanceId('test-longsword-1')
     });
-    state = addComponent(state, barbId, { type: ComponentType.Position, x: 5, y: 5 });
+    state = addComponent(state, barbId, { type: ComponentType.Position, x: 3, y: 5 });
     state = addComponent(state, barbId, { type: ComponentType.Fighter, hp: 60, maxHp: 60 });
     state = addComponent(state, barbId, { type: ComponentType.Player });
     state = addComponent(state, barbId, {
@@ -344,39 +355,44 @@ describe('Milestone 136 — Active ACF Mechanical Pipeline, Relational Flanking 
       hasPounce: true,
       actionBudget: {
         standardRemaining: 1,
-        moveRemaining: 0,
+        moveRemaining: 1,
         swiftRemaining: 1,
         aooRemaining: 1,
-        movementRemainingFt: 10,
-        distanceMovedThisRoundFt: 10,
-        fiveFootStepAvailable: false,
+        movementRemainingFt: 0,
+        distanceMovedThisRoundFt: 0,
+        fiveFootStepAvailable: true,
         canMoveFurtherThisRound: true,
         immediateUsedOffTurn: false,
-        hasActedThisRound: true
+        hasActedThisRound: false
       }
     });
     state = setDnD35EntityData(state, barbId, barbPounceData);
 
-    const pounceRes = resolveDnD35eMeleeAttack(state, {
-      type: IntentType.MeleeAttack,
-      entityId: barbId,
-      defenderId: orcId
-    });
+    // Explicit Charge action moves 10 ft straight to (5,5) and triggers Pounce full attack (2 iterative strikes)
+    const pounceRes = executeDnD35eChargeAction(state, barbId, orcId);
     expect(pounceRes.success).toBe(true);
-    // Barbarian BAB +6 gives 2 iterative strikes -> both resolved on Pounce charge
+    expect(getComponent(pounceRes.state, barbId, ComponentType.Position)?.x).toBe(5);
     const pounceStrikeLogs = pounceRes.state.messages.filter((m) => m.text.includes('Longsword'));
     expect(pounceStrikeLogs.length).toBe(2);
 
-    // Compare without Pounce: after 10 ft move, only 1 strike executes
-    const barbNoPounce = { ...barbPounceData, activeClassFeatures: [], hasPounce: false };
-    const noPounceState = setDnD35EntityData(state, barbId, barbNoPounce);
-    const singleRes = resolveDnD35eMeleeAttack(noPounceState, {
+    // Plain melee attack after passive 10 ft walking must NOT grant Charge/Pounce full attack
+    let walkedState = addComponent(state, barbId, { type: ComponentType.Position, x: 5, y: 5 });
+    walkedState = setDnD35EntityData(walkedState, barbId, {
+      ...barbPounceData,
+      actionBudget: {
+        ...barbPounceData.actionBudget!,
+        moveRemaining: 0,
+        distanceMovedThisRoundFt: 10
+      }
+    });
+    const passiveWalkAttackRes = resolveDnD35eMeleeAttack(walkedState, {
       type: IntentType.MeleeAttack,
       entityId: barbId,
       defenderId: orcId
     });
-    const singleStrikeLogs = singleRes.state.messages.filter((m) => m.text.includes('Longsword'));
-    expect(singleStrikeLogs.length).toBe(1);
+    const passiveStrikeLogs = passiveWalkAttackRes.state.messages.filter((m) => m.text.includes('Longsword'));
+    expect(passiveStrikeLogs.length).toBe(1);
+    expect(passiveStrikeLogs.some((m) => m.text.includes('[Charge +2]'))).toBe(false);
   });
 
   test('5. Bull Rush Spatial Push & Dungeon Crasher Tiers 1 & 2 wall-slam damage', () => {

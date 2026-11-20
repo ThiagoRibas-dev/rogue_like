@@ -18,7 +18,11 @@ export const TileDefinitionSchema = z.object({
   interactTransition: z.string().optional(),
   interactMessage: z.string().optional(),
   tags: z.array(z.string()).optional(),
-  traversableBy: z.array(z.enum(['fly', 'swim', 'burrow', 'climb'])).optional()
+  traversableBy: z.array(z.enum(['fly', 'swim', 'burrow', 'climb'])).optional(),
+  isSolidObstacle: z.boolean().optional(),
+  hazardKind: z.string().optional(),
+  blocksCharge: z.boolean().optional(),
+  soundAttenuation: z.number().nonnegative().optional()
 });
 /** Inferred type for a tile definition. */
 export type TileDefinition = z.infer<typeof TileDefinitionSchema>;
@@ -73,6 +77,18 @@ export const StaticMapLayoutSchema = z.object({
 });
 /** Inferred type for a static map layout. */
 export type StaticMapLayout = z.infer<typeof StaticMapLayoutSchema>;
+
+/** Zod schema for per-area and campaign-default rest pressure ("Doom Clock") configuration. */
+export const RestPressureConfigSchema = z.object({
+  safeRest: z.boolean().default(false),
+  ambushChancePerWatch: z.number().min(0).max(1).default(0.15),
+  watchDurationHours: z.number().int().positive().default(2),
+  schemeTickMultiplier: z.number().min(0).default(1),
+  respawnRateMultiplier: z.number().min(0).default(1),
+  alarmDecayTurns: z.number().int().nonnegative().default(50)
+});
+/** Inferred type for per-area or campaign-level rest pressure configuration. */
+export type RestPressureConfig = z.infer<typeof RestPressureConfigSchema>;
 
 /** Zod schema outlining an area definition config. */
 export const AreaDefinitionSchema = z.object({
@@ -134,7 +150,15 @@ export const AreaDefinitionSchema = z.object({
   ambientIllumination: AreaIlluminationEnum.optional().describe(
     'Explicit baseline illumination override for indoors or underground areas.'
   ),
-  hotPathRadius: z.number().int().nonnegative().optional().describe('Overrides the auto-calculated hot path thickness.')
+  hotPathRadius: z
+    .number()
+    .int()
+    .nonnegative()
+    .optional()
+    .describe('Overrides the auto-calculated hot path thickness.'),
+  restPressure: RestPressureConfigSchema.optional().describe(
+    'Per-area override for camp rest ambush risk, watch duration, scheme acceleration, and respawn scaling.'
+  )
 });
 /** Inferred type for an area definition. */
 export type AreaDefinition = z.infer<typeof AreaDefinitionSchema>;
@@ -149,10 +173,32 @@ export const FieldDefinitionSchema = z.object({
   spriteId: z.string().optional(),
   blocksSight: z.boolean().default(false),
   damagePerTurn: z.number().int().nonnegative().optional(),
-  statusEffectId: z.string().optional()
+  statusEffectId: z.string().optional(),
+  tags: z.array(z.string()).optional()
 });
 /** Inferred type for an area field definition. */
 export type FieldDefinition = z.infer<typeof FieldDefinitionSchema>;
+
+/** Zod enum for Tier 1 crossing surface types. */
+export const CrossingKindEnum = z.enum(['bridge', 'rope_line', 'ladder_span', 'frozen_surface']);
+
+/** Zod schema for a declarative tag-driven field chemistry / transmutation rule. */
+export const FieldInteractionRuleSchema = z.object({
+  id: z.string(),
+  incomingTags: z.array(z.string()).min(1),
+  targetTags: z.array(z.string()).min(1),
+  spawnFieldType: z.string().optional(),
+  spawnFieldDuration: z.number().int().positive().optional(),
+  spawnFieldIntensity: z.number().int().positive().optional(),
+  spawnCrossingKind: CrossingKindEnum.optional(),
+  spawnCrossingDuration: z.number().int().positive().optional(),
+  extinguishTarget: z.boolean().optional(),
+  chainSpreadOrthogonal: z.boolean().optional(),
+  shockDamageDice: z.string().optional(),
+  message: z.string().optional()
+});
+/** Inferred type for a declarative field interaction rule. */
+export type FieldInteractionRule = z.infer<typeof FieldInteractionRuleSchema>;
 
 /** Zod schema for global narrative world events pools. */
 export const WorldEventsConfigSchema = z.object({

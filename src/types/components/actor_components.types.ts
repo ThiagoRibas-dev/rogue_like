@@ -32,6 +32,8 @@ export interface ActorComponent {
   readonly type: ComponentType.Actor;
   readonly speed: number;
   readonly movementModes?: MovementModes | undefined;
+  /** Energy accumulated since the actor's last 100-energy full-round turn-start tick. */
+  readonly rtwpRoundEnergyElapsed?: number | undefined;
 }
 
 /**
@@ -55,6 +57,9 @@ export interface FighterComponent {
   readonly xpGiven: number;
 }
 
+/** Canonical Tier 1 acoustic alertness states for AI actors. */
+export type AIAlertnessState = 'unaware' | 'suspicious' | 'alerted';
+
 /**
  * Component representing the AI behavior profile of an entity.
  */
@@ -65,6 +70,12 @@ export interface AIComponent {
   readonly wanders?: boolean;
   /** Map of effectId or ability name to remaining turns on cooldown */
   readonly cooldowns?: Readonly<Record<string, number>>;
+  /** Acoustic alertness tier driven by sound ripples and detection checks. */
+  readonly alertnessState?: AIAlertnessState | undefined;
+  /** Last heard noise coordinate the AI is investigating when suspicious/alerted. */
+  readonly lastHeardPos?: { readonly x: number; readonly y: number } | undefined;
+  /** Turns remaining before alertness steps down toward unaware. */
+  readonly alertnessDecayTurns?: number | undefined;
 }
 
 /**
@@ -90,6 +101,8 @@ export interface ActiveStatusEffect {
   readonly effectId: string;
   readonly duration: number;
   readonly sourceEntityId?: EntityId;
+  readonly elapsedTurns?: number | undefined;
+  readonly secondaryResolved?: boolean | undefined;
 }
 
 /**
@@ -294,8 +307,20 @@ export interface ImmediateReactionPolicy {
 }
 
 /**
+ * Serializable per-actor symmetric Stealth state governed by the 6-second round cadence.
+ */
+export interface StealthStanceState {
+  readonly isStealthed: boolean;
+  readonly fastStealth: boolean;
+  readonly lastHideRoll?: number | undefined;
+  readonly lastMoveSilentlyRoll?: number | undefined;
+  readonly nextStealthCheckRound: number;
+  readonly reStealthCooldownRound: number;
+}
+
+/**
  * Component storing active tactical stances and combat trade-offs (Power Attack, Combat Expertise, Fighting Defensively)
- * as well as data-driven doctrine settings, weapon grip mode, and armed off-turn reaction policies.
+ * as well as data-driven doctrine settings, weapon grip mode, armed off-turn reaction policies, and stealth stance state.
  */
 export interface TacticalDoctrineComponent {
   readonly type: ComponentType.TacticalDoctrine;
@@ -313,4 +338,6 @@ export interface TacticalDoctrineComponent {
   readonly triggeredUsesThisRound?: Readonly<Record<string, number>> | undefined;
   /** Armed off-turn Immediate Action reaction policies keyed by pool/ability ID. */
   readonly reactionPolicies?: Readonly<Record<string, ImmediateReactionPolicy>> | undefined;
+  /** Symmetric manual Stealth stance and 6-second check cadence state. */
+  readonly stealth?: StealthStanceState | undefined;
 }

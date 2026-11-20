@@ -1,8 +1,8 @@
-import { ComponentType } from '../types/components.types.ts';
+import { type ActorComponent, ComponentType } from '../types/components.types.ts';
 import { EngineMode, type EntityId, type GameState, UIMode } from '../types/game-state.types.ts';
 import { IntentType } from '../types/intents/intent.enum.ts';
 import type { Intent } from '../types/intents/intent.union.ts';
-import { getComponent } from './ecs.ts';
+import { addComponent, getComponent } from './ecs.ts';
 import { recordIntent } from './replay.ts';
 import { recordAISample } from './performance.ts';
 import { addActor, lockEngine, setTurnDuration, unlockEngine } from './scheduler.ts';
@@ -122,13 +122,39 @@ export function queuePlayerIntent(intent: Intent): void {
   }
 }
 
+function shouldTriggerRoundStartForActor(state: GameState, entityId: EntityId): boolean {
+  const actor = getComponent(state, entityId, ComponentType.Actor) as ActorComponent | undefined;
+  if (!actor) return false;
+  if (actor.rtwpRoundEnergyElapsed === undefined) return true;
+  return actor.rtwpRoundEnergyElapsed >= DEFAULT_ACTOR_TURN_DURATION;
+}
+
+function resetActorRoundEnergyCounter(state: GameState, entityId: EntityId): GameState {
+  const actor = getComponent(state, entityId, ComponentType.Actor) as ActorComponent | undefined;
+  if (!actor) return state;
+  const prev = actor.rtwpRoundEnergyElapsed ?? 0;
+  const remainder = prev >= DEFAULT_ACTOR_TURN_DURATION ? prev - DEFAULT_ACTOR_TURN_DURATION : prev;
+  return addComponent(state, entityId, { ...actor, rtwpRoundEnergyElapsed: remainder });
+}
+
+function addActorRoundEnergyElapsed(state: GameState, entityId: EntityId, delta: number): GameState {
+  if (delta <= 0) return state;
+  const actor = getComponent(state, entityId, ComponentType.Actor) as ActorComponent | undefined;
+  if (!actor) return state;
+  return addComponent(state, entityId, {
+    ...actor,
+    rtwpRoundEnergyElapsed: (actor.rtwpRoundEnergyElapsed ?? 0) + delta
+  });
+}
+
 function concludeSkippedTurn(state: GameState, entityId: EntityId): GameState {
   const waitCost = resolveActorActionEnergyCost(
     state,
     { type: IntentType.Wait, entityId },
     DEFAULT_ACTOR_TURN_DURATION
   );
-  return waitCost.state;
+  const used = waitCost.energyCost > 0 ? waitCost.energyCost : DEFAULT_ACTOR_TURN_DURATION;
+  return addActorRoundEnergyElapsed(waitCost.state, entityId, used);
 }
 
 function settleRemainingActorTurn(
@@ -143,7 +169,7 @@ function settleRemainingActorTurn(
   let nextState = waitCost.state;
   let energyCost = waitCost.energyCost > 0 ? waitCost.energyCost : DEFAULT_ACTOR_TURN_DURATION;
   const actor = getComponent(nextState, entityId, ComponentType.Actor);
-  if (actor) {
+  if (actor && waitCost.alreadySpeedScaled !== true) {
     const stats = getEffectiveStats(nextState, entityId);
     const speed = Math.max(1, stats.speed);
     energyCost = Math.max(1, Math.round((energyCost * DEFAULT_ACTOR_TURN_DURATION) / speed));
@@ -171,10 +197,13 @@ export function processTurn(entityId: EntityId): void {
   if (turnStartProcessedForActor !== entityId) {
     turnStartProcessedForActor = entityId;
     intraTurnActionCount = 0;
-    const stateAfterTurnStart = runActorTurnStart(state, entityId);
-    if (stateAfterTurnStart !== state) {
-      updateState(stateAfterTurnStart);
-      state = stateAfterTurnStart;
+    if (shouldTriggerRoundStartForActor(state, entityId)) {
+      const counterResetState = resetActorRoundEnergyCounter(state, entityId);
+      const stateAfterTurnStart = runActorTurnStart(counterResetState, entityId);
+      if (stateAfterTurnStart !== state) {
+        updateState(stateAfterTurnStart);
+        state = stateAfterTurnStart;
+      }
     }
   }
 
@@ -227,6 +256,7 @@ export function processTurn(entityId: EntityId): void {
             turnStartProcessedForActor = null;
             intraTurnActionCount = 0;
             nextState = processHungerTick(nextState, entityId, result.energyCost);
+            nextState = addActorRoundEnergyElapsed(nextState, entityId, result.energyCost);
             setTurnDuration(result.energyCost);
           } else {
             setTurnDuration(0);
@@ -252,7 +282,8 @@ export function processTurn(entityId: EntityId): void {
     turnStartProcessedForActor = null;
     intraTurnActionCount = 0;
     setTurnDuration(RTWP_IDLE_WAIT_DURATION);
-    const nextState = processHungerTick(state, entityId, RTWP_IDLE_WAIT_DURATION);
+    let nextState = processHungerTick(state, entityId, RTWP_IDLE_WAIT_DURATION);
+    nextState = addActorRoundEnergyElapsed(nextState, entityId, RTWP_IDLE_WAIT_DURATION);
     updateState(nextState);
     return;
   }
@@ -311,7 +342,8 @@ export function processTurn(entityId: EntityId): void {
         finalActionResult.energyCost > 0 ? finalActionResult.energyCost : DEFAULT_ACTOR_TURN_DURATION;
       turnStartProcessedForActor = null;
       intraTurnActionCount = 0;
-      const nextState = processHungerTick(finalActionResult.state, entityId, finalDuration);
+      let nextState = processHungerTick(finalActionResult.state, entityId, finalDuration);
+      nextState = addActorRoundEnergyElapsed(nextState, entityId, finalDuration);
       if (nextState !== state) {
         updateState(nextState);
       }
@@ -333,7 +365,8 @@ export function processTurn(entityId: EntityId): void {
 
     turnStartProcessedForActor = null;
     intraTurnActionCount = 0;
-    const nextState = processHungerTick(endState, entityId, endDuration);
+    let nextState = processHungerTick(endState, entityId, endDuration);
+    nextState = addActorRoundEnergyElapsed(nextState, entityId, endDuration);
     if (nextState !== state) {
       updateState(nextState);
     }

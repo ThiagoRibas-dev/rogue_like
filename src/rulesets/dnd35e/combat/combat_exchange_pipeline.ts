@@ -19,8 +19,10 @@ import {
   resolveSmiteAndChargeContext,
   resolveSneakAttackDiceCount
 } from './combat_acf_riders.ts';
+import { applyAndConsumeWeaponCoatingOnHit } from './floor_hazard_resolver.ts';
 import { summarizeConditionEffects } from './maneuvers_conditions.ts';
 import { applyPostStrikeRetaliationPhase } from './retaliation_resolver.ts';
+import { breakActorStealth } from '../spatial/stealth_resolver.ts';
 
 /** Parameters for executing a single strike exchange through the 5-phase combat pipeline. */
 export interface StrikeExchangeParams {
@@ -80,7 +82,7 @@ export function executeCombatStrikeExchange(params: StrikeExchangeParams): Strik
     cleavesUsedThisTurn
   } = params;
 
-  let runningState = state;
+  let runningState = breakActorStealth(state, attackerId, 'attacked');
   let currentDefenderHp = params.defenderHpRemaining;
   let cleavesCount = cleavesUsedThisTurn;
 
@@ -97,7 +99,8 @@ export function executeCombatStrikeExchange(params: StrikeExchangeParams): Strik
     attackerSelfTags,
     defenderSelfTags,
     attackerEval,
-    defenderEval
+    defenderEval,
+    params.isChargeAttack
   );
 
   const targetAC = defenderEval.dagResult.acBreakdown.fullAC;
@@ -250,6 +253,13 @@ export function executeCombatStrikeExchange(params: StrikeExchangeParams): Strik
     type: ComponentType.Damage,
     instances: existingDamage ? [...existingDamage.instances, ...newInstances] : newInstances
   });
+
+  if (!strike.isNaturalOrUnarmed) {
+    const coatingOutcome = applyAndConsumeWeaponCoatingOnHit(runningState, attackerId, defenderId, defenderSelfTags);
+    runningState = coatingOutcome.state;
+    totalRiderDamage += coatingOutcome.bonusDamage;
+    riderText += coatingOutcome.riderText;
+  }
 
   currentDefenderHp -= multipliedBaseDamage + totalRiderDamage;
   const critText = rollResult.isCriticalConfirmed ? ' CRITICAL HIT!' : '';

@@ -13,7 +13,8 @@
     "currencyUnit": "gp",
     "tags": [
       "class_tool",
-      "skill_kit"
+      "skill_kit",
+      "repair_tool"
     ],
     "spriteId": "dcss_item_weapon_hammer_1_new"
   }

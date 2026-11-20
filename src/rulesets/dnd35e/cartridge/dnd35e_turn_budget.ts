@@ -1,7 +1,11 @@
+import { DEFAULT_ACTOR_TURN_DURATION, HALF_ROUND_ENERGY_COST } from '../../../constants/scheduler.constants.ts';
 import { getComponent } from '../../../core/ecs.ts';
 import {
   ComponentType,
+  type EquipmentComponent,
   type FighterComponent,
+  type InventoryComponent,
+  type ItemComponent,
   type PositionComponent,
   type PropertyOverlayComponent,
   type ResourcePoolComponent
@@ -11,6 +15,8 @@ import { IntentType } from '../../../types/intents/intent.enum.ts';
 import type { Intent } from '../../../types/intents/intent.union.ts';
 import { assertNever } from '../../../utils/assert.ts';
 import { coordToIndex } from '../../../utils/grid.ts';
+import { resolveEffectiveItemDefinition } from '../equipment/item_inheritance.ts';
+import type { DnD35ItemDefinition } from '../types/dnd35e_system.types.ts';
 import {
   consumeMoveActionFromBudget,
   consumeMovementStepFt,
@@ -22,6 +28,7 @@ import { resolveTypedModifiersWithBreakdown } from '../modifiers/stacking_engine
 import { resolveResourcePoolActionCost } from '../progression/ledger_resource_pools.ts';
 import { computeTacticalLandSpeedWithArmor, resolveDnD35eActorSpatialProfile } from '../spatial/footprint_resolver.ts';
 import { FEET_PER_GRID_SQUARE } from '../spatial/grid_geometry.ts';
+import { isActorHalfSpeedStealthing } from '../spatial/stealth_resolver.ts';
 import { getDnD35EntityData, setDnD35EntityData } from '../srd_registry.ts';
 import type { DnD35ActionBudget, StatModifier } from '../types/dnd35e.types.ts';
 import { getDnD35SystemContent } from '../types/dnd35e_system.types.ts';
@@ -42,11 +49,14 @@ function isFreeTradeModeIntent(state: GameState, intent: Intent): boolean {
   return state.uiMode === UIMode.Trade && intent.type === IntentType.Apply && TRADE_MODE_FREE_VERBS.has(intent.verb);
 }
 
-/** Standard full round energy cost (`100`). */
-export const FULL_ROUND_ENERGY_COST = 100;
+/** Standard full round energy cost (`100` = 6.0s in RTwP). */
+export const FULL_ROUND_ENERGY_COST = DEFAULT_ACTOR_TURN_DURATION;
 
 /** Baseline D&D 3.5e land speed in feet (`30 ft` = `6` five-foot squares per Move action). */
 const BASELINE_LAND_SPEED_FT = 30;
+
+/** Overloaded tactical speed (`5 ft` stagger) when carrying more than Heavy Load maximum. */
+const OVERLOADED_TACTICAL_SPEED_FT = 5;
 
 /** Tile registry baseline movement cost representing unobstructed normal terrain (`100`). */
 const NORMAL_TILE_MOVEMENT_COST = 100;
@@ -56,6 +66,48 @@ const DIFFICULT_TERRAIN_MOVEMENT_MULTIPLIER = 2;
 
 /** Movement cost multiplier while squeezing (`2x`, stacks multiplicatively with Difficult Terrain). */
 const SQUEEZING_MOVEMENT_MULTIPLIER = 2;
+
+/** Declarative tag identifying quick-draw belt/bandoleer containers (`bandoleer`, `potion_belt`, `masterwork_*`). */
+const QUICK_DRAW_CONTAINER_TAG = 'quick_draw_container';
+
+/** Maximum item weight (lbs) retrievable as a free action from a quick-draw container (`3` lbs). */
+const QUICK_DRAW_CONTAINER_MAX_ITEM_WEIGHT_LBS = 3;
+
+/**
+ * Checks whether an actor currently has at least one equipped item carrying the declarative
+ * `'quick_draw_container'` tag (e.g. `bandoleer`, `potion_belt`, `masterwork_bandoleer`, `masterwork_potion_belt`).
+ */
+export function hasEquippedQuickDrawContainer(state: GameState, entityId: EntityId): boolean {
+  const equipment = getComponent(state, entityId, ComponentType.Equipment) as EquipmentComponent | undefined;
+  if (!equipment) return false;
+  for (const slot of equipment.slots) {
+    if (slot.equippedItem === null || slot.suppressed === true) continue;
+    const itemComp = getComponent(state, slot.equippedItem, ComponentType.Item) as ItemComponent | undefined;
+    if (!itemComp) continue;
+    const rawDef = state.campaign.items[itemComp.itemId] as DnD35ItemDefinition | undefined;
+    if (!rawDef) continue;
+    const itemDef = resolveEffectiveItemDefinition(rawDef, state.campaign.items, itemComp);
+    if ((itemDef.tags ?? []).includes(QUICK_DRAW_CONTAINER_TAG)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function isItemEligibleForQuickDrawContainer(state: GameState, entityId: EntityId, itemIndex: number): boolean {
+  const inv = getComponent(state, entityId, ComponentType.Inventory) as InventoryComponent | undefined;
+  const itemEntityId = inv?.items[itemIndex];
+  if (itemEntityId === undefined) return false;
+  const itemComp = getComponent(state, itemEntityId, ComponentType.Item) as ItemComponent | undefined;
+  if (!itemComp) return false;
+  const rawDef = state.campaign.items[itemComp.itemId] as DnD35ItemDefinition | undefined;
+  if (!rawDef) return false;
+  const itemDef = resolveEffectiveItemDefinition(rawDef, state.campaign.items, itemComp);
+  const tags = itemDef.tags ?? [];
+  if (itemDef.armorStats !== undefined) return false;
+  if (itemDef.equippable?.slot === 'two_handed' || tags.includes('two_handed')) return false;
+  return (itemDef.weight ?? 0) <= QUICK_DRAW_CONTAINER_MAX_ITEM_WEIGHT_LBS;
+}
 
 function sumExtraActionModifier(
   mods: ReadonlyArray<StatModifier>,
@@ -123,7 +175,8 @@ export function hydrateEntityRoundActionBudget(state: GameState, entityId: Entit
   });
 }
 
-function computeActorTacticalLandSpeedFt(
+/** Computes an actor's effective tactical land speed in feet after armor/encumbrance and speed bonuses. */
+export function computeActorTacticalLandSpeedFt(
   state: GameState,
   entityId: EntityId,
   baseLandSpeedFt: number | undefined
@@ -131,19 +184,33 @@ function computeActorTacticalLandSpeedFt(
   const actor = getComponent(state, entityId, ComponentType.Actor);
   const overlay = getComponent(state, entityId, ComponentType.PropertyOverlay) as PropertyOverlayComponent | undefined;
   const dagEval = evaluateDnD35eEntityDAG(state, entityId);
+  const selfTags = dagEval?.selfTags ?? [];
+  if (selfTags.includes('load:overloaded')) {
+    return OVERLOADED_TACTICAL_SPEED_FT;
+  }
   const baseActorSpeed = actor?.speed ?? FULL_ROUND_ENERGY_COST;
   const resolvedSpeed = dagEval?.dagResult.speed ?? baseActorSpeed;
   const speedBonusFt = resolvedSpeed - baseActorSpeed;
   const effectiveLandFt = overlay?.movementModesOverride?.land ?? baseLandSpeedFt ?? BASELINE_LAND_SPEED_FT;
   const unadjustedSpeedFt = effectiveLandFt + speedBonusFt;
-  const selfTags = dagEval?.selfTags ?? [];
   const isMediumOrHeavyArmor =
     selfTags.includes('armor:medium') ||
     selfTags.includes('armor:heavy') ||
     selfTags.includes('load:medium') ||
     selfTags.includes('load:heavy');
   const hasUnencumberedSpeedTrait = selfTags.includes('trait:unencumbered_speed');
-  return computeTacticalLandSpeedWithArmor(unadjustedSpeedFt, isMediumOrHeavyArmor, hasUnencumberedSpeedTrait);
+  const armorAdjustedFt = computeTacticalLandSpeedWithArmor(
+    unadjustedSpeedFt,
+    isMediumOrHeavyArmor,
+    hasUnencumberedSpeedTrait
+  );
+  if (isActorHalfSpeedStealthing(state, entityId)) {
+    return Math.max(
+      FEET_PER_GRID_SQUARE,
+      Math.floor(armorAdjustedFt / 2 / FEET_PER_GRID_SQUARE) * FEET_PER_GRID_SQUARE
+    );
+  }
+  return armorAdjustedFt;
 }
 
 function hasAnyRoundActionsRemaining(budget: DnD35ActionBudget): boolean {
@@ -182,9 +249,49 @@ export function finalizeBudgetAfterAction(
   return { state: nextState, energyCost: 0 };
 }
 
+function finalizeBudgetForEngineMode(
+  state: GameState,
+  entityId: EntityId,
+  dndData: ReturnType<typeof getDnD35EntityData>,
+  preBudget: DnD35ActionBudget,
+  postBudget: DnD35ActionBudget,
+  stepEnergyCost?: number
+): { readonly state: GameState; readonly energyCost: number } {
+  if (state.engineMode === EngineMode.TurnBased) {
+    return finalizeBudgetAfterAction(state, entityId, dndData, postBudget);
+  }
+
+  const stdSpent = Math.max(0, preBudget.standardRemaining - postBudget.standardRemaining);
+  const moveSpent = Math.max(0, preBudget.moveRemaining - postBudget.moveRemaining);
+  const isMinimumMovementFullRound = stdSpent > 0 && moveSpent > 0 && !hasAnyRoundActionsRemaining(postBudget);
+
+  let energyCost: number;
+  if (isMinimumMovementFullRound || (stdSpent > 0 && moveSpent > 0 && stepEnergyCost === undefined)) {
+    energyCost = FULL_ROUND_ENERGY_COST;
+  } else if (stepEnergyCost !== undefined) {
+    energyCost = stepEnergyCost;
+  } else if (stdSpent > 0 || moveSpent > 0) {
+    energyCost = HALF_ROUND_ENERGY_COST;
+  } else {
+    energyCost = 0;
+  }
+
+  if (!hasAnyRoundActionsRemaining(postBudget)) {
+    const nextState = setDnD35EntityData(state, entityId, { ...dndData, actionBudget: undefined });
+    return { state: nextState, energyCost };
+  }
+
+  const nextState = setDnD35EntityData(state, entityId, {
+    ...dndData,
+    actionBudget: postBudget.hasActedThisRound === true ? postBudget : { ...postBudget, hasActedThisRound: true }
+  });
+  return { state: nextState, energyCost };
+}
+
 /**
- * Resolves D&D 3.5e 5-tier action budget consumption and energy cost symmetrically for ALL actors in TurnBased mode.
- * Returns `energyCost: 0` while movement or actions remain in the round, or `100` when the round completes.
+ * Resolves D&D 3.5e 5-tier action budget consumption and energy cost symmetrically for ALL actors across TB & RTwP.
+ * In TurnBased mode returns `0` while round actions remain or `100` when the round ends;
+ * in RTwP mode returns sub-round energy slices (`50` for Standard/Move, proportional move steps summing to `50` per Move).
  */
 export function resolveDnD35eActionEnergyCost(
   state: GameState,
@@ -192,7 +299,7 @@ export function resolveDnD35eActionEnergyCost(
   baseEnergyCost: number,
   preActionState?: GameState
 ): { readonly state: GameState; readonly energyCost: number } {
-  if (state.engineMode !== EngineMode.TurnBased || baseEnergyCost <= 0) {
+  if (baseEnergyCost <= 0) {
     return { state, energyCost: baseEnergyCost };
   }
 
@@ -203,6 +310,9 @@ export function resolveDnD35eActionEnergyCost(
     dndData.actionBudget !== undefined &&
     preDndData?.actionBudget !== dndData.actionBudget;
   const currentBudget = dndData.actionBudget ?? hydrateEntityRoundActionBudget(state, intent.entityId);
+  const preActionBudget =
+    preDndData?.actionBudget ??
+    (preActionState ? hydrateEntityRoundActionBudget(preActionState, intent.entityId) : currentBudget);
 
   switch (intent.type) {
     case IntentType.Wait:
@@ -266,20 +376,42 @@ export function resolveDnD35eActionEnergyCost(
         isDiagonal
       );
       if (!stepResult.allowed) return clearBudgetAndEndRound(state, intent.entityId, dndData);
-      return finalizeBudgetAfterAction(state, intent.entityId, dndData, stepResult.budget);
+      const prevMoveEnergy = currentBudget.rtwpMoveEnergySpentThisRound ?? 0;
+      const targetCumulativeEnergy = Math.round(
+        (stepResult.budget.distanceMovedThisRoundFt / Math.max(FEET_PER_GRID_SQUARE, actorSpeedFt)) *
+          HALF_ROUND_ENERGY_COST
+      );
+      const stepEnergyCost = Math.max(1, targetCumulativeEnergy - prevMoveEnergy);
+      const postBudgetWithEnergy: DnD35ActionBudget = {
+        ...stepResult.budget,
+        rtwpMoveEnergySpentThisRound: prevMoveEnergy + stepEnergyCost
+      };
+      return finalizeBudgetForEngineMode(
+        state,
+        intent.entityId,
+        dndData,
+        currentBudget,
+        postBudgetWithEnergy,
+        stepEnergyCost
+      );
     }
 
     case IntentType.UseAbility:
-      if (state.targetingMode?.active && state.targetingMode.context?.verb === 'abrupt_jaunt') {
+      if (
+        state.targetingMode?.active &&
+        (state.targetingMode.context?.verb === 'abrupt_jaunt' || state.targetingMode.context?.verb === 'charge')
+      ) {
         return hasAnyRoundActionsRemaining(currentBudget)
           ? { state, energyCost: 0 }
           : clearBudgetAndEndRound(state, intent.entityId, dndData);
       }
-      if (budgetAlreadyMutated) return finalizeBudgetAfterAction(state, intent.entityId, dndData, currentBudget);
+      if (budgetAlreadyMutated) {
+        return finalizeBudgetForEngineMode(state, intent.entityId, dndData, preActionBudget, currentBudget);
+      }
       {
         const stdRes = consumeStandardActionFromBudget(currentBudget);
         return stdRes.allowed
-          ? finalizeBudgetAfterAction(state, intent.entityId, dndData, stdRes.budget)
+          ? finalizeBudgetForEngineMode(state, intent.entityId, dndData, currentBudget, stdRes.budget)
           : clearBudgetAndEndRound(state, intent.entityId, dndData);
       }
 
@@ -289,21 +421,47 @@ export function resolveDnD35eActionEnergyCost(
       if (isFreeTradeModeIntent(state, intent)) {
         return { state, energyCost: 0 };
       }
-      if (budgetAlreadyMutated) return finalizeBudgetAfterAction(state, intent.entityId, dndData, currentBudget);
+      if (budgetAlreadyMutated) {
+        return finalizeBudgetForEngineMode(state, intent.entityId, dndData, preActionBudget, currentBudget);
+      }
       const stdRes = consumeStandardActionFromBudget(currentBudget);
       return stdRes.allowed
-        ? finalizeBudgetAfterAction(state, intent.entityId, dndData, stdRes.budget)
+        ? finalizeBudgetForEngineMode(state, intent.entityId, dndData, currentBudget, stdRes.budget)
+        : clearBudgetAndEndRound(state, intent.entityId, dndData);
+    }
+
+    case IntentType.EquipItem: {
+      if (budgetAlreadyMutated) {
+        return finalizeBudgetForEngineMode(state, intent.entityId, dndData, preActionBudget, currentBudget);
+      }
+      const checkState = preActionState ?? state;
+      if (
+        currentBudget.quickDrawContainerUsedThisRound !== true &&
+        hasEquippedQuickDrawContainer(checkState, intent.entityId) &&
+        isItemEligibleForQuickDrawContainer(checkState, intent.entityId, intent.itemIndex)
+      ) {
+        const freeEquipBudget: DnD35ActionBudget = {
+          ...currentBudget,
+          quickDrawContainerUsedThisRound: true,
+          hasActedThisRound: true
+        };
+        return finalizeBudgetForEngineMode(state, intent.entityId, dndData, currentBudget, freeEquipBudget);
+      }
+      const moveRes = consumeMoveActionFromBudget(currentBudget);
+      return moveRes.allowed
+        ? finalizeBudgetForEngineMode(state, intent.entityId, dndData, currentBudget, moveRes.budget)
         : clearBudgetAndEndRound(state, intent.entityId, dndData);
     }
 
     case IntentType.PickUp:
-    case IntentType.EquipItem:
     case IntentType.UnequipItem:
     case IntentType.Interact: {
-      if (budgetAlreadyMutated) return finalizeBudgetAfterAction(state, intent.entityId, dndData, currentBudget);
+      if (budgetAlreadyMutated) {
+        return finalizeBudgetForEngineMode(state, intent.entityId, dndData, preActionBudget, currentBudget);
+      }
       const moveRes = consumeMoveActionFromBudget(currentBudget);
       return moveRes.allowed
-        ? finalizeBudgetAfterAction(state, intent.entityId, dndData, moveRes.budget)
+        ? finalizeBudgetForEngineMode(state, intent.entityId, dndData, currentBudget, moveRes.budget)
         : clearBudgetAndEndRound(state, intent.entityId, dndData);
     }
 
@@ -348,9 +506,8 @@ export function resolveDnD35eActionEnergyCost(
   }
 }
 
-/** Checks whether an entity's current `DnD35ActionBudget` permits executing `intent` in TurnBased mode. */
+/** Checks whether an entity's current `DnD35ActionBudget` permits executing `intent` in either TB or RTwP mode. */
 export function canDnD35eActorPerformIntent(state: GameState, intent: Intent): boolean {
-  if (state.engineMode !== EngineMode.TurnBased) return true;
   const budget = getDnD35EntityData(state, intent.entityId).actionBudget;
   if (!budget) return true;
 
@@ -361,6 +518,9 @@ export function canDnD35eActorPerformIntent(state: GameState, intent: Intent): b
         (budget.movementRemainingFt >= FEET_PER_GRID_SQUARE || budget.moveRemaining > 0 || budget.standardRemaining > 0)
       );
     case IntentType.UseAbility: {
+      if (intent.effectId === 'action:charge') {
+        return budget.standardRemaining >= 1 && budget.moveRemaining >= 1 && budget.distanceMovedThisRoundFt === 0;
+      }
       const poolId = intent.effectId.startsWith('pool:') ? intent.effectId.slice('pool:'.length) : undefined;
       const poolComp = poolId
         ? (getComponent(state, intent.entityId, ComponentType.ResourcePool) as ResourcePoolComponent | undefined)
@@ -372,17 +532,33 @@ export function canDnD35eActorPerformIntent(state: GameState, intent: Intent): b
       return isSwift ? budget.swiftRemaining >= 1 : budget.standardRemaining >= 1;
     }
     case IntentType.MeleeAttack:
+      return budget.standardRemaining >= 1;
     case IntentType.Apply:
       if (isFreeTradeModeIntent(state, intent)) {
         return true;
       }
+      if (intent.verb === 'charge') {
+        return budget.standardRemaining >= 1 && budget.moveRemaining >= 1 && budget.distanceMovedThisRoundFt === 0;
+      }
       return budget.standardRemaining >= 1;
     case IntentType.FireAimed:
-      return state.targetingMode?.active && state.targetingMode.context?.verb === 'abrupt_jaunt'
-        ? budget.swiftRemaining >= 1
-        : budget.standardRemaining >= 1;
-    case IntentType.PickUp:
+      if (state.targetingMode?.active && state.targetingMode.context?.verb === 'abrupt_jaunt') {
+        return budget.swiftRemaining >= 1;
+      }
+      if (state.targetingMode?.active && state.targetingMode.context?.verb === 'charge') {
+        return budget.standardRemaining >= 1 && budget.moveRemaining >= 1 && budget.distanceMovedThisRoundFt === 0;
+      }
+      return budget.standardRemaining >= 1;
     case IntentType.EquipItem:
+      if (
+        budget.quickDrawContainerUsedThisRound !== true &&
+        hasEquippedQuickDrawContainer(state, intent.entityId) &&
+        isItemEligibleForQuickDrawContainer(state, intent.entityId, intent.itemIndex)
+      ) {
+        return true;
+      }
+      return budget.moveRemaining > 0 || budget.standardRemaining > 0;
+    case IntentType.PickUp:
     case IntentType.UnequipItem:
     case IntentType.Interact:
       return budget.moveRemaining > 0 || budget.standardRemaining > 0;

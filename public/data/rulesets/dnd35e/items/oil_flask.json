@@ -14,7 +14,8 @@
     "tags": [
       "adventuring_gear",
       "fuel",
-      "alchemical"
+      "alchemical",
+      "flammable_oil"
     ],
     "throwable": {
       "range": 3,

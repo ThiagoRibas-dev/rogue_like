@@ -789,6 +789,16 @@
     "color": "#f1c40f",
     "description": "Continual illumination without fuel."
   },
+  "refuelable_oil": {
+    "category": "item",
+    "color": "#f39c12",
+    "description": "Oil-burning lantern or lamp refuelable via lamp oil flasks."
+  },
+  "counter_invisibility_dust": {
+    "category": "item",
+    "color": "#ecf0f1",
+    "description": "Fine powder or dust that coats unseen creatures and reduces invisibility concealment."
+  },
   "restraints": {
     "category": "item",
     "color": "#7f8c8d",
@@ -838,5 +848,95 @@
     "category": "item",
     "color": "#bdc3c7",
     "description": "Ink, parchment, paper, and writing instruments."
+  },
+  "quick_draw_container": {
+    "category": "item",
+    "color": "#d35400",
+    "description": "Worn bandoleer or belt allowing 1 free light item draw per round."
+  },
+  "medical_kit": {
+    "category": "item",
+    "color": "#2ecc71",
+    "description": "Bandages, salves, and splints used for Heal skill checks and Long-Term Care."
+  },
+  "door_spike": {
+    "category": "item",
+    "color": "#7f8c8d",
+    "description": "Heavy spike driven into a door frame to wedge a door shut."
+  },
+  "hammer_tool": {
+    "category": "item",
+    "color": "#95a5a6",
+    "description": "Utility hammer used to drive pitons and door spikes."
+  },
+  "reach_probe": {
+    "category": "item",
+    "color": "#af601a",
+    "description": "Long pole capable of probing tiles and traps from 10 feet away."
+  },
+  "pry_tool": {
+    "category": "item",
+    "color": "#7f8c8d",
+    "description": "Levering bar granting a +2 circumstance bonus on Strength Break checks."
+  },
+  "battering_ram": {
+    "category": "item",
+    "color": "#a04000",
+    "description": "Portable battering beam granting a +2 circumstance bonus (+2 with an assisting ally) on door Break checks."
+  },
+  "repair_tool": {
+    "category": "item",
+    "color": "#95a5a6",
+    "description": "Honing stone or artisan tool kit used to maintain and repair damaged or ruined gear."
+  },
+  "scribing_pen": {
+    "category": "item",
+    "color": "#d35400",
+    "description": "Writing pen required to transcribe arcane formulas into a spellbook."
+  },
+  "scribing_ink": {
+    "category": "item",
+    "color": "#34495e",
+    "description": "Magical or archival ink consumed when scribing spells into a spellbook."
+  },
+  "caltrops_hazard": {
+    "category": "item",
+    "color": "#7f8c8d",
+    "description": "Four-pronged floor spikes that pierce feet and inflict a half-speed limp."
+  },
+  "marbles_hazard": {
+    "category": "item",
+    "color": "#85c1e9",
+    "description": "Rolling spheres that force a Balance check or knock movers prone."
+  },
+  "flammable_oil": {
+    "category": "item",
+    "color": "#d68910",
+    "description": "Combustible oil used for lantern fuel, weapon coating, or ignitable floor pools."
+  },
+  "smoke_emitter": {
+    "category": "item",
+    "color": "#95a5a6",
+    "description": "Alchemical device that emits vision-obscuring smoke."
+  },
+  "grappling_anchor": {
+    "category": "item",
+    "color": "#7f8c8d",
+    "description": "Multi-pronged hook used with rope to rig crossings across pits and ledges."
+  },
+  "climbing_kit": {
+    "category": "item",
+    "color": "#d35400",
+    "description": "Harness and pitons granting a +2 circumstance bonus on Climb checks."
+  },
+  "supple_rope": {
+    "category": "item",
+    "color": "#f7dc6f",
+    "description": "High-grade supple silk rope granting a +2 circumstance bonus on Use Rope checks."
+  },
+  "crossing_ladder": {
+    "category": "item",
+    "color": "#af601a",
+    "description": "Rigid ladder capable of spanning a chasm or pit."
   }
 }

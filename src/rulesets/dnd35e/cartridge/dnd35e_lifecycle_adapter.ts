@@ -8,6 +8,8 @@ import {
   type PositionComponent
 } from '../../../types/components.types.ts';
 import type { EntityId, GameState } from '../../../types/game-state.types.ts';
+import type { DisplacementContext } from '../../../types/ruleset.types.ts';
+import { evaluateActorFloorStepHazards } from '../combat/floor_hazard_resolver.ts';
 import { evaluateAdjacentEnemyReactionsOnMove } from '../combat/immediate_reactions.ts';
 import { resolveAuraFirstEntrySaveAndSr } from '../magic/spell_aura_resolver.ts';
 import { aggregateProgressionChassis } from '../progression.ts';
@@ -16,9 +18,12 @@ import {
   removeStatusEffectById,
   syncSpatialFlankingGraph
 } from '../spatial/flanking_graph.ts';
+import { resolveTileLightReading } from '../spatial/cover_senses.ts';
 import { syncDnD35eActorSpatialFootprint } from '../spatial/footprint_resolver.ts';
 import { FEET_PER_GRID_SQUARE } from '../spatial/grid_geometry.ts';
 import { evaluateActorLightExposure } from '../spatial/light_exposure.ts';
+import { evaluateStealthDetection, isActorStealthed } from '../spatial/stealth_resolver.ts';
+import { evaluateActorTileHazardOccupation } from '../spatial/terrain_traversal_resolver.ts';
 import { getDnD35EntityData, setDnD35EntityData } from '../srd_registry.ts';
 import { getDnD35SystemContent } from '../types/dnd35e_system.types.ts';
 import { evaluateDnD35eEntityDAG } from './dnd35e_dag_adapter.ts';
@@ -171,7 +176,7 @@ export function evaluateActorAuraEntrySaves(state: GameState, occupantId: Entity
 /**
  * D&D 3.5e Ruleset Turn-Start hook:
  * 1. Hydrates a fresh per-entity 6-second `DnD35ActionBudget` (`hydrateEntityRoundActionBudget`).
- * 2. Evaluates active aura entry saves for the actor.
+ * 2. Evaluates active aura entry saves and water/pit occupation hazards for the actor.
  *
  * @param state Current immutable GameState.
  * @param entityId The actor whose turn is starting.
@@ -182,23 +187,34 @@ export function onDnD35eActorTurnStart(state: GameState, entityId: EntityId): Ga
   nextState = evaluateActorLightExposure(nextState, entityId, 'turn_start');
   const dndData = getDnD35EntityData(nextState, entityId);
   const freshBudget = hydrateEntityRoundActionBudget(nextState, entityId);
+  const refreshedConditions = (dndData.conditions ?? []).filter((c) => c !== 'charging');
 
   nextState = setDnD35EntityData(nextState, entityId, {
     ...dndData,
+    conditions: refreshedConditions,
     actionBudget: freshBudget
   });
+
+  const actorPos = getComponent(nextState, entityId, ComponentType.Position) as PositionComponent | undefined;
+  if (actorPos) {
+    nextState = evaluateActorTileHazardOccupation(nextState, entityId, actorPos.x, actorPos.y);
+  }
 
   for (const otherId of nextState.entities) {
     nextState = removeStatusEffectById(nextState, otherId, DISTRACTED_FLANKED_STATUS_ID, entityId);
   }
   nextState = syncSpatialFlankingGraph(nextState);
 
+  if (isActorStealthed(nextState, entityId)) {
+    nextState = evaluateStealthDetection(nextState, entityId, 'round_cadence').state;
+  }
+
   return evaluateActorAuraEntrySaves(nextState, entityId);
 }
 
 /**
  * D&D 3.5e Ruleset Movement-Step hook:
- * 1. Triggers automatic aura entry saves for the moving actor at the destination tile.
+ * 1. Triggers automatic aura entry saves, water/pit terrain checks, and floor step hazards (`caltrops`, `marbles`, `grease`) at the destination tile.
  * 2. If the moving actor carries any anchored emanation fields, sweeps all occupants now
  *    within the relocated field's radius so newly engulfed creatures immediately roll their
  *    first-entry save / Spell Resistance check.
@@ -207,15 +223,29 @@ export function onDnD35eActorTurnStart(state: GameState, entityId: EntityId): Ga
  * @param entityId The moving entity.
  * @param _fromPos Origin coordinates.
  * @param toPos Destination coordinates.
+ * @param displacementContext Optional Tier 1 displacement policy metadata.
  * @returns Updated GameState.
  */
 export function onDnD35eActorMovementStep(
   state: GameState,
   entityId: EntityId,
-  _fromPos: { readonly x: number; readonly y: number },
-  toPos: { readonly x: number; readonly y: number }
+  fromPos: { readonly x: number; readonly y: number },
+  toPos: { readonly x: number; readonly y: number },
+  displacementContext?: DisplacementContext
 ): GameState {
   let nextState = evaluateActorAuraEntrySaves(state, entityId);
+  nextState = evaluateActorTileHazardOccupation(nextState, entityId, toPos.x, toPos.y);
+  nextState = evaluateActorFloorStepHazards(nextState, entityId, toPos.x, toPos.y);
+
+  if (isActorStealthed(nextState, entityId)) {
+    const fromLight = resolveTileLightReading(nextState, fromPos.x, fromPos.y).level;
+    const toLight = resolveTileLightReading(nextState, toPos.x, toPos.y).level;
+    const rank = (lvl: 'darkness' | 'shadowy' | 'bright'): number =>
+      lvl === 'darkness' ? 0 : lvl === 'shadowy' ? 1 : 2;
+    if (rank(toLight) > rank(fromLight)) {
+      nextState = evaluateStealthDetection(nextState, entityId, 'light_band_change').state;
+    }
+  }
 
   let maxAnchoredRadiusTiles = -1;
   for (const candId of nextState.entities) {
@@ -240,11 +270,17 @@ export function onDnD35eActorMovementStep(
     }
   }
 
-  if (hasRelevantFlankingNeighborForStep(nextState, entityId, _fromPos, toPos)) {
+  if (hasRelevantFlankingNeighborForStep(nextState, entityId, fromPos, toPos)) {
     nextState = syncSpatialFlankingGraph(nextState);
   }
   nextState = evaluateActorLightExposure(nextState, entityId, 'move_or_field');
-  nextState = evaluateAdjacentEnemyReactionsOnMove(nextState, entityId, toPos);
+
+  const skipAdjacentReactions =
+    (displacementContext?.isForced === true && !displacementContext.provokesAoO) ||
+    displacementContext?.mode === 'teleport';
+  if (!skipAdjacentReactions) {
+    nextState = evaluateAdjacentEnemyReactionsOnMove(nextState, entityId, toPos);
+  }
 
   return nextState;
 }

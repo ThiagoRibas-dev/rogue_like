@@ -15,8 +15,16 @@
     "tags": [
       "adventuring_gear",
       "light_source",
-      "light_radius_ft:60"
+      "light_radius_ft:60",
+      "refuelable_oil"
     ],
+    "lightSource": {
+      "radiusFt": 60,
+      "shadowyRadiusFt": 120,
+      "coneAngleDeg": 60,
+      "fuelTurns": 3600,
+      "requiresIgnition": true
+    },
     "spriteId": "dcss_item_misc_magic_lamp"
   }
 }

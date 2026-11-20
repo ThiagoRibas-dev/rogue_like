@@ -1,7 +1,16 @@
-import type { TacticalDoctrineComponent } from '../../../types/components.types.ts';
+import { getComponent } from '../../../core/ecs.ts';
+import {
+  ComponentType,
+  type EquipmentComponent,
+  type InventoryComponent,
+  type ItemComponent,
+  type TacticalDoctrineComponent
+} from '../../../types/components.types.ts';
+import type { EntityId, GameState } from '../../../types/game-state.types.ts';
+import { resolveEffectiveItemDefinition } from '../equipment/item_inheritance.ts';
 import { dndFloor } from '../math/multipliers.ts';
 import type { CreatureSizeCategory } from '../types/dnd35e.types.ts';
-import type { DnD35FeatDefinition } from '../types/dnd35e_system.types.ts';
+import type { DnD35FeatDefinition, DnD35ItemDefinition } from '../types/dnd35e_system.types.ts';
 import type { AttackRollParams } from './attack_roll.ts';
 
 /** Minimum whole ranks in Tumble required for enhanced defensive fighting (+3 / +6 Dodge AC). */
@@ -246,6 +255,19 @@ const BIPED_SIZE_CARRY_MULTIPLIER: Readonly<Record<CreatureSizeCategory, number>
   colossal: 16
 };
 
+/** Size multipliers for carrying capacity (quadrupeds, PHB p. 162). */
+const QUADRUPED_SIZE_CARRY_MULTIPLIER: Readonly<Record<CreatureSizeCategory, number>> = {
+  fine: 0.25,
+  diminutive: 0.5,
+  tiny: 0.75,
+  small: 1,
+  medium: 1.5,
+  large: 3,
+  huge: 6,
+  gargantuan: 12,
+  colossal: 24
+};
+
 /** Base heavy load table for Strength 1–20 in pounds. */
 const BASE_STR_HEAVY_LOAD: Readonly<Record<number, number>> = {
   1: 10,
@@ -270,14 +292,67 @@ const BASE_STR_HEAVY_LOAD: Readonly<Record<number, number>> = {
   20: 400
 };
 
+/** SRD Strength increment (`10`) at which carrying capacity quadruples (`x4`) above 20. */
+const HIGH_STR_DECADE_STEP = 10;
+
+/** SRD high-Strength carrying capacity multiplier (`4`) per decade above 20. */
+const HIGH_STR_DECADE_MULTIPLIER = 4;
+
+/** Maximum Strength covered directly by the base carrying table (`20`). */
+const MAX_TABLE_STRENGTH = 20;
+
+/** Tag marking starter clothing outfits where 1 worn/carried outfit weighs 0 lb per SRD. */
+const STARTER_OUTFIT_TAG = 'starter_outfit';
+
 /**
- * Computes Light/Medium/Heavy carrying capacity thresholds and effective encumbrance constraints.
+ * Computes total carried weight in pounds for an actor by deduplicating items across
+ * `InventoryComponent` and `EquipmentComponent` slots, resolving `baseItemId` inheritance,
+ * multiplying by `quantity`, and excluding up to 1 `starter_outfit` per SRD (PHB p. 131).
+ *
+ * @param state Current immutable GameState.
+ * @param entityId Target actor EntityId.
+ * @returns Total carried weight in pounds (`>= 0`).
+ */
+export function computeActorCarriedWeightLbs(state: GameState, entityId: EntityId): number {
+  const seenItemIds = new Set<EntityId>();
+  const inventory = getComponent(state, entityId, ComponentType.Inventory) as InventoryComponent | undefined;
+  const equipment = getComponent(state, entityId, ComponentType.Equipment) as EquipmentComponent | undefined;
+  for (const id of inventory?.items ?? []) {
+    seenItemIds.add(id);
+  }
+  for (const slot of equipment?.slots ?? []) {
+    if (slot.equippedItem !== null) {
+      seenItemIds.add(slot.equippedItem);
+    }
+  }
+
+  let totalLbs = 0;
+  let excludedStarterOutfit = false;
+  for (const itemEntityId of seenItemIds) {
+    const itemComp = getComponent(state, itemEntityId, ComponentType.Item) as ItemComponent | undefined;
+    if (!itemComp) continue;
+    const rawDef = state.campaign.items[itemComp.itemId] as DnD35ItemDefinition | undefined;
+    if (!rawDef) continue;
+    const itemDef = resolveEffectiveItemDefinition(rawDef, state.campaign.items, itemComp);
+    if (!excludedStarterOutfit && (itemDef.tags ?? []).includes(STARTER_OUTFIT_TAG)) {
+      excludedStarterOutfit = true;
+      continue;
+    }
+    totalLbs += itemDef.weight ?? 0;
+  }
+  return totalLbs;
+}
+
+/**
+ * Computes Light/Medium/Heavy carrying capacity thresholds and effective encumbrance constraints,
+ * supporting Strength scores above 20 (`x4` per `+10` STR) and quadruped carry multipliers.
  */
 export function computeEncumbranceState(
   strScore: number,
   sizeCategory: CreatureSizeCategory,
   carriedWeightLb: number,
-  baseSpeedFt = 30
+  baseSpeedFt = 30,
+  isQuadruped = false
 ): {
   readonly loadTier: 'light' | 'medium' | 'heavy' | 'overloaded';
   readonly lightMaxLb: number;
@@ -287,9 +362,16 @@ export function computeEncumbranceState(
   readonly acp: number;
   readonly effectiveSpeedFt: number;
 } {
-  const clampedStr = Math.max(1, Math.min(20, dndFloor(strScore)));
-  const baseHeavy = BASE_STR_HEAVY_LOAD[clampedStr] ?? 100;
-  const sizeMult = BIPED_SIZE_CARRY_MULTIPLIER[sizeCategory];
+  const wholeStr = Math.max(1, dndFloor(strScore));
+  const decadesOver20 =
+    wholeStr > MAX_TABLE_STRENGTH
+      ? Math.floor((wholeStr - (MAX_TABLE_STRENGTH - HIGH_STR_DECADE_STEP + 1)) / HIGH_STR_DECADE_STEP)
+      : 0;
+  const lookupStr = wholeStr > MAX_TABLE_STRENGTH ? wholeStr - decadesOver20 * HIGH_STR_DECADE_STEP : wholeStr;
+  const baseHeavy = (BASE_STR_HEAVY_LOAD[lookupStr] ?? 100) * HIGH_STR_DECADE_MULTIPLIER ** decadesOver20;
+  const sizeMult = isQuadruped
+    ? QUADRUPED_SIZE_CARRY_MULTIPLIER[sizeCategory]
+    : BIPED_SIZE_CARRY_MULTIPLIER[sizeCategory];
   const heavyMaxLb = dndFloor(baseHeavy * sizeMult);
   const lightMaxLb = dndFloor(heavyMaxLb / 3);
   const mediumMaxLb = dndFloor((heavyMaxLb * 2) / 3);

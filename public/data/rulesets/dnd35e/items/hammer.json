@@ -13,7 +13,8 @@
     "currencyUnit": "sp",
     "tags": [
       "adventuring_gear",
-      "dungeoneering"
+      "dungeoneering",
+      "hammer_tool"
     ],
     "spriteId": "dcss_item_weapon_hammer_2_new"
   }

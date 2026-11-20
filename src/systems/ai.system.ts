@@ -2,7 +2,7 @@ import type { GameState, EntityId } from '../types/game-state.types.ts';
 import type { Intent } from '../types/intents/intent.union.ts';
 import { executeSay } from './message.system.ts';
 import { ComponentType } from '../types/components.types.ts';
-import { getComponent } from '../core/ecs.ts';
+import { addComponent, getComponent } from '../core/ecs.ts';
 import { IntentType } from '../types/intents/intent.enum.ts';
 import { rng } from '../core/rng.ts';
 import { type AIBehaviorFn } from '../types/ai.types.ts';
@@ -11,7 +11,7 @@ import { wanderBehavior } from '../ai/wander.behavior.ts';
 import { fleeBehavior } from '../ai/flee.behavior.ts';
 import { rangedBehavior } from '../ai/ranged.behavior.ts';
 import { spellBehavior } from '../ai/spell.behavior.ts';
-import { followBehavior } from '../ai/follow.behavior.ts';
+import { computeNextStepToward, followBehavior } from '../ai/follow.behavior.ts';
 import { sanitizeCompanionControllerLink } from '../ai/companion_targeting.ts';
 import { canActorPerformIntent, hasActorActedThisTurn } from './lifecycle.system.ts';
 
@@ -97,8 +97,49 @@ export function processAITurn(state: GameState, entityId: EntityId): { intent: I
 
   let nextState = sanitizeCompanionControllerLink(state, entityId);
 
-  // Run behavior pipeline in prioritized order
+  // Run behavior pipeline in prioritized order (acoustic investigation preempts idle wander)
+  const tryAcousticInvestigation = (): { readonly intent: Intent | null; readonly state: GameState } | null => {
+    const latestAi = getComponent(nextState, entityId, ComponentType.AI);
+    if (
+      !latestAi ||
+      (latestAi.alertnessState !== 'suspicious' && latestAi.alertnessState !== 'alerted') ||
+      latestAi.lastHeardPos === undefined
+    ) {
+      return null;
+    }
+    if (pos.x === latestAi.lastHeardPos.x && pos.y === latestAi.lastHeardPos.y) {
+      const { lastHeardPos: _reached, ...restAi } = latestAi;
+      nextState = addComponent(nextState, entityId, restAi);
+      return { intent: null, state: nextState };
+    }
+    const step = computeNextStepToward(
+      nextState,
+      entityId,
+      pos.x,
+      pos.y,
+      latestAi.lastHeardPos.x,
+      latestAi.lastHeardPos.y
+    );
+    if (!step) return null;
+    const investigateMove: Intent = {
+      type: IntentType.Move,
+      entityId,
+      dx: step.dx,
+      dy: step.dy
+    };
+    if (canActorPerformIntent(nextState, investigateMove)) {
+      return { intent: investigateMove, state: nextState };
+    }
+    return null;
+  };
+
   for (const { entry } of evaluatedBehaviors) {
+    if (entry.behaviorId === 'wander') {
+      const investigation = tryAcousticInvestigation();
+      if (investigation !== null) {
+        return investigation;
+      }
+    }
     const behaviorFn = BEHAVIOR_REGISTRY[entry.behaviorId];
     if (behaviorFn) {
       // Merge component overrides with profile params
@@ -133,6 +174,11 @@ export function processAITurn(state: GameState, entityId: EntityId): { intent: I
         return { intent, state: nextState };
       }
     }
+  }
+
+  const fallbackInvestigation = tryAcousticInvestigation();
+  if (fallbackInvestigation !== null) {
+    return fallbackInvestigation;
   }
 
   // Otherwise, wait

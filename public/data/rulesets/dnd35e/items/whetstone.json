@@ -12,7 +12,8 @@
     "baseValue": 2,
     "currencyUnit": "cp",
     "tags": [
-      "adventuring_gear"
+      "adventuring_gear",
+      "repair_tool"
     ],
     "spriteId": "dcss_item_misc_misc_stone_old"
   }

@@ -1,5 +1,5 @@
 import { addComponent, createEntity, getComponent } from '../../core/ecs.ts';
-import { canTraverseTile } from '../../systems/movement.system.ts';
+import { evaluateTileTraversal } from '../../systems/movement_displacement.ts';
 import { buildAnatomyEquipmentSlots } from '../../systems/inventory.system.ts';
 import type { AnatomyBodyPlan } from '../../systems/inventory/equipment_slots.ts';
 import {
@@ -226,7 +226,9 @@ function findAdjacentCompanionSpawnTile(
     const cy = masterPos.y + dy;
     if (!isInBounds(cx, cy, state.map.width, state.map.height)) continue;
     const tile = state.map.tiles[coordToIndex(cx, cy, state.map.width)];
-    if (!tile || !canTraverseTile(state.campaign.tiles[tile.tileId], dndData.movementModes)) continue;
+    if (!tile) continue;
+    const traversal = evaluateTileTraversal(state.campaign.tiles[tile.tileId], dndData.movementModes, state, cx, cy);
+    if (traversal.passability !== 'unimpeded' && traversal.passability !== 'difficult') continue;
     const occupants = state.spatialIndex.get(`${cx},${cy}`) ?? [];
     const blocked = occupants.some(
       (id) =>

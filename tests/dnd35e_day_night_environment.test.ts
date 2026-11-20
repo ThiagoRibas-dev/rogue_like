@@ -58,15 +58,16 @@ describe('World Clock, Area Environment, Condition Effects, Hunger Scaling & D&D
   const sharedCryptCampaign = loadCampaignFromDisk('dnd35e-crypt');
   const sysContent = getDnD35SystemContent(sharedCryptCampaign)!;
 
-  test('Phase 0: 19 declarative conditionEffects JSONs match exact mechanics and dazzled penalizes Attack/Spot/Search', () => {
+  test('Phase 0: 21 declarative conditionEffects JSONs match exact mechanics and dazzled penalizes Attack/Spot/Search', () => {
     const condReg = sysContent.conditionEffects;
-    expect(Object.keys(condReg).length).toBe(19);
+    expect(Object.keys(condReg).length).toBe(21);
 
     const expected: Record<
       DnD35ConditionId,
       { atk: number; ac: number; losesDex: boolean; str: number; dex: number; act: boolean }
     > = {
       blinded: { atk: 0, ac: -2, losesDex: true, str: 0, dex: 0, act: true },
+      bound: { atk: 0, ac: -4, losesDex: true, str: 0, dex: 0, act: false },
       dazzled: { atk: -1, ac: 0, losesDex: false, str: 0, dex: 0, act: true },
       entangled: { atk: -2, ac: 0, losesDex: false, str: 0, dex: 4, act: true },
       fatigued: { atk: 0, ac: 0, losesDex: false, str: 2, dex: 2, act: true },
@@ -84,7 +85,8 @@ describe('World Clock, Area Environment, Condition Effects, Hunger Scaling & D&D
       deafened: { atk: 0, ac: 0, losesDex: false, str: 0, dex: 0, act: true },
       grappled: { atk: 0, ac: 0, losesDex: false, str: 0, dex: 0, act: true },
       nauseated: { atk: 0, ac: 0, losesDex: false, str: 0, dex: 0, act: true },
-      staggered: { atk: 0, ac: 0, losesDex: false, str: 0, dex: 0, act: true }
+      staggered: { atk: 0, ac: 0, losesDex: false, str: 0, dex: 0, act: true },
+      charging: { atk: 0, ac: -2, losesDex: false, str: 0, dex: 0, act: true }
     };
 
     for (const [condId, exp] of Object.entries(expected)) {

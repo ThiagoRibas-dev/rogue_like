@@ -1,125 +1,52 @@
 import { addComponent, getComponent, resolveEntityDisplayName } from '../core/ecs.ts';
-import {
-  ComponentType,
-  type MovementModes,
-  type PositionComponent,
-  type PropertyOverlayComponent
-} from '../types/components.types.ts';
+import { ComponentType, type MovementModes, type PositionComponent } from '../types/components.types.ts';
 import type { TileDefinition } from '../types/campaign/world.ts';
-import { GameEventType } from '../types/events.types.ts';
-import type { EntityId, GameState } from '../types/game-state.types.ts';
-
 import type { GameEvent } from '../types/events.types.ts';
+import type { GameState } from '../types/game-state.types.ts';
 import { IntentType } from '../types/intents/intent.enum.ts';
 import type { MoveIntent } from '../types/intents/movement.intents.ts';
 import { getFactionRelation } from '../utils/faction.ts';
 import { coordToIndex, isInBounds } from '../utils/grid.ts';
-import { processMeleeAttackIntent } from './combat.system.ts';
 import { processApplyIntent } from './apply.system.ts';
-import { addMessage, MessageLogCategory } from './message.system.ts';
+import { processMeleeAttackIntent } from './combat.system.ts';
+import { isPlayerControlledCompanion } from './companion_commands.system.ts';
 import { processInteractIntent } from './intent.system.ts';
 import { runActorMovementStep } from './lifecycle.system.ts';
-import { isPlayerControlledCompanion } from './companion_commands.system.ts';
+import { addMessage, MessageLogCategory } from './message.system.ts';
+import {
+  buildUpdatedPositionComponent,
+  displaceEntityStep,
+  evaluateTileTraversal,
+  getEntityMovementModes
+} from './movement_displacement.ts';
 import { evaluateFootprintOccupancy, resolveMovementFootprintPlacement } from './movement_footprint.ts';
-import type { ActorSpatialProfile } from '../types/ruleset.types.ts';
-import type { CardinalFacing } from '../types/components/world_components.types.ts';
-
-function buildUpdatedPositionComponent(
-  anchorX: number,
-  anchorY: number,
-  width: number,
-  height: number,
-  facing: CardinalFacing | undefined,
-  isSqueezing: boolean,
-  profile: ActorSpatialProfile,
-  existingFacing?: CardinalFacing
-): PositionComponent {
-  const effectiveFacing = profile.baseWidth !== profile.baseHeight ? (facing ?? existingFacing) : undefined;
-  const isMultiTile = width > 1 || height > 1;
-  return {
-    type: ComponentType.Position,
-    x: anchorX,
-    y: anchorY,
-    ...(isMultiTile ? { footprintWidth: width, footprintHeight: height } : {}),
-    ...(effectiveFacing !== undefined ? { facing: effectiveFacing } : {}),
-    ...(isSqueezing ? { isSqueezing: true } : {}),
-    ...(profile.sizeRankIndex !== 0 ? { sizeRankIndex: profile.sizeRankIndex } : {}),
-    ...(profile.canShareTile ? { canShareTile: true } : {}),
-    ...(profile.subTileScale !== 1 ? { subTileScale: profile.subTileScale } : {})
-  };
-}
-
-/**
- * Resolves active movement modes on an entity from PropertyOverlayComponent or RulesetDataComponent.
- */
-function getEntityMovementModes(state: GameState, entityId: EntityId): MovementModes | undefined {
-  const overlay = getComponent(state, entityId, ComponentType.PropertyOverlay) as PropertyOverlayComponent | undefined;
-  if (overlay?.movementModesOverride) {
-    return overlay.movementModesOverride;
-  }
-  const rulesetComp = getComponent(state, entityId, ComponentType.RulesetData);
-  if (rulesetComp && rulesetComp.rulesetId === 'dnd35e' && rulesetComp.payload) {
-    const dndData = rulesetComp.payload as { movementModes?: MovementModes };
-    if (dndData.movementModes) {
-      return dndData.movementModes;
-    }
-  }
-  return undefined;
-}
 
 /**
  * Canonical Single Source of Truth for tile traversal validation across movement modes.
- * Walking creatures can traverse walkable tiles.
- * Flying creatures (fly > 0) can traverse chasms, pits, and tiles marked traversable by 'fly'.
- * Swimming creatures (swim > 0) can traverse water, liquid, and tiles marked traversable by 'swim'.
- * Burrowing creatures (burrow > 0) can traverse burrowable tiles.
+ * Delegates to `evaluateTileTraversal`, permitting `unimpeded` and `difficult` tiles for voluntary walking/flying/swimming/burrowing.
  *
  * @param tileDef TileDefinition of the target tile.
  * @param movementModes Optional MovementModes of the moving entity.
- * @returns True if the entity can traverse the tile.
+ * @param state Optional GameState used to check world-owned `CrossingComponent` entities at `(x, y)`.
+ * @param x Optional grid X coordinate.
+ * @param y Optional grid Y coordinate.
+ * @returns True if the entity can voluntarily traverse the tile.
  */
 export function canTraverseTile(
   tileDef: TileDefinition | undefined,
-  movementModes?: MovementModes | undefined
+  movementModes?: MovementModes | undefined,
+  state?: Readonly<GameState>,
+  x?: number,
+  y?: number
 ): boolean {
-  if (!tileDef) return false;
-  if (tileDef.walkable) return true;
-
-  const tags = tileDef.tags ?? [];
-  const traversableBy = tileDef.traversableBy ?? [];
-
-  if (
-    (tags.includes('chasm') || tags.includes('pit') || traversableBy.includes('fly')) &&
-    movementModes?.fly !== undefined &&
-    movementModes.fly > 0
-  ) {
-    return true;
-  }
-
-  if (
-    (tags.includes('water') || tags.includes('liquid') || traversableBy.includes('swim')) &&
-    movementModes?.swim !== undefined &&
-    movementModes.swim > 0
-  ) {
-    return true;
-  }
-
-  if (
-    (tags.includes('burrowable') || traversableBy.includes('burrow')) &&
-    movementModes?.burrow !== undefined &&
-    movementModes.burrow > 0
-  ) {
-    return true;
-  }
-
-  return false;
+  const evalRes = evaluateTileTraversal(tileDef, movementModes, state, x, y);
+  return evalRes.passability === 'unimpeded' || evalRes.passability === 'difficult';
 }
 
 /**
  * Processes a MoveIntent.
  * Checks for collision against walls, hazard tiles (accounting for multi-mode movement modes),
- * and entities using the spatial index.
- * Returns updated GameState if movement was successful, or the original GameState (plus a message) if blocked.
+ * and entities using the spatial index, then delegates displacement to the Tier 1 kernel.
  * @param state The current GameState.
  * @param intent The MoveIntent to process.
  * @returns The new or original GameState.
@@ -130,7 +57,7 @@ export function processMoveIntent(
 ): { state: GameState; success: boolean; events?: readonly GameEvent[] } {
   const { entityId, dx, dy } = intent;
 
-  const position = getComponent(state, entityId, ComponentType.Position);
+  const position = getComponent(state, entityId, ComponentType.Position) as PositionComponent | undefined;
   if (position === undefined) {
     return { state, success: false };
   }
@@ -156,7 +83,7 @@ export function processMoveIntent(
     fromPos: position,
     dx,
     dy,
-    canTraverse: (def) => canTraverseTile(def, movementModes)
+    canTraverse: (def, tx, ty) => canTraverseTile(def, movementModes, state, tx, ty)
   });
 
   if (!placement.valid) {
@@ -198,10 +125,17 @@ export function processMoveIntent(
 
     if (isPlayer) {
       const tileDef = placement.blockedByObstacleDef ?? directTileDef;
+      const evalBlocked = evaluateTileTraversal(tileDef, movementModes);
       const obstacleName =
-        tileDef?.tags?.includes('chasm') || tileDef?.tags?.includes('pit')
+        evalBlocked.hazardKind === 'pit' ||
+        evalBlocked.hazardKind === 'chasm' ||
+        tileDef?.tags?.includes('chasm') ||
+        tileDef?.tags?.includes('pit')
           ? 'a deep chasm'
-          : tileDef?.tags?.includes('liquid') || tileDef?.tags?.includes('water')
+          : evalBlocked.hazardKind === 'water' ||
+              evalBlocked.hazardKind === 'deep_water' ||
+              tileDef?.tags?.includes('liquid') ||
+              tileDef?.tags?.includes('water')
             ? 'deep water'
             : 'a wall';
       return {
@@ -238,7 +172,8 @@ export function processMoveIntent(
       const interactable = getComponent(state, blockedByEntityId, ComponentType.Interactable);
       const originTile = state.map.tiles[coordToIndex(position.x, position.y, state.map.width)];
       const originTileDef = originTile ? state.campaign.tiles[originTile.tileId] : undefined;
-      const blockerPos = getComponent(state, blockedByEntityId, ComponentType.Position);
+      const blockerPos = getComponent(state, blockedByEntityId, ComponentType.Position) as
+        PositionComponent | undefined;
       const moverIsSingleTile = (position.footprintWidth ?? 1) === 1 && (position.footprintHeight ?? 1) === 1;
       const blockerIsSingleTile =
         blockerPos !== undefined && (blockerPos.footprintWidth ?? 1) === 1 && (blockerPos.footprintHeight ?? 1) === 1;
@@ -251,22 +186,19 @@ export function processMoveIntent(
           getFactionRelation(state, entityId, blockedByEntityId) === 'friendly') &&
         canTraverseTile(originTileDef, getEntityMovementModes(state, blockedByEntityId));
 
-      if (canFriendlySwap) {
-        const moverProfile = placement.profile;
-        let nextState = addComponent(
-          state,
-          entityId,
-          buildUpdatedPositionComponent(
-            placement.anchorX,
-            placement.anchorY,
-            placement.width,
-            placement.height,
-            placement.facing,
-            placement.isSqueezing,
-            moverProfile,
-            position.facing
-          )
+      if (canFriendlySwap && blockerPos) {
+        const swapContext = { mode: 'swap' as const, isForced: false, provokesAoO: true };
+        const moverPosComp = buildUpdatedPositionComponent(
+          placement.anchorX,
+          placement.anchorY,
+          placement.width,
+          placement.height,
+          placement.facing,
+          placement.isSqueezing,
+          placement.profile,
+          position.facing
         );
+        let nextState = addComponent(state, entityId, moverPosComp);
         nextState = addComponent(nextState, blockedByEntityId, {
           ...blockerPos,
           type: ComponentType.Position,
@@ -277,13 +209,15 @@ export function processMoveIntent(
           nextState,
           entityId,
           { x: position.x, y: position.y },
-          { x: placement.anchorX, y: placement.anchorY }
+          { x: placement.anchorX, y: placement.anchorY },
+          swapContext
         );
         nextState = runActorMovementStep(
           nextState,
           blockedByEntityId,
           { x: placement.anchorX, y: placement.anchorY },
-          { x: position.x, y: position.y }
+          { x: position.x, y: position.y },
+          { mode: 'swap', isForced: false, provokesAoO: false }
         );
 
         const isPlayerMover = getComponent(nextState, entityId, ComponentType.Player) !== undefined;
@@ -324,49 +258,26 @@ export function processMoveIntent(
     return { state, success: false };
   }
 
-  // 3. Apply Movement
-  const moverProfile = placement.profile;
-  const nextPosition = buildUpdatedPositionComponent(
-    placement.anchorX,
-    placement.anchorY,
-    placement.width,
-    placement.height,
-    placement.facing,
-    placement.isSqueezing,
-    moverProfile,
-    position.facing
-  );
-
-  let nextState = addComponent(state, entityId, nextPosition);
-  nextState = runActorMovementStep(
-    nextState,
+  // 3. Apply Movement via Atomic Tier 1 Displacement Kernel
+  const dispRes = displaceEntityStep({
+    state,
     entityId,
-    { x: position.x, y: position.y },
-    { x: placement.anchorX, y: placement.anchorY }
-  );
+    targetX: placement.anchorX,
+    targetY: placement.anchorY,
+    context: { mode: 'voluntary_walk', isForced: false, provokesAoO: true },
+    precomputedPlacement: placement,
+    skipOccupancyCheck: true
+  });
 
+  let nextState = dispRes.state;
   const isPlayer = getComponent(nextState, entityId, ComponentType.Player) !== undefined;
-  if (isPlayer) {
-    nextState = { ...nextState, fovNeedsUpdate: true };
-    if (placement.isSqueezing && position.isSqueezing !== true) {
-      nextState = addMessage(
-        nextState,
-        'You squeeze into the narrow space (-4 attack, -4 AC, double movement cost).',
-        MessageLogCategory.System
-      );
-    }
+  if (isPlayer && placement.isSqueezing && position.isSqueezing !== true) {
+    nextState = addMessage(
+      nextState,
+      'You squeeze into the narrow space (-4 attack, -4 AC, double movement cost).',
+      MessageLogCategory.System
+    );
   }
 
-  const enteredTile =
-    nextState.map.tiles[coordToIndex(placement.anchorX, placement.anchorY, nextState.map.width)] ?? targetTile;
-  const tileTags = nextState.campaign.tiles[enteredTile.tileId]?.tags ?? [enteredTile.tileId];
-  const events = tileTags.map((tag) => ({
-    type: GameEventType.TileEntered as const,
-    entityId,
-    x: placement.anchorX,
-    y: placement.anchorY,
-    tileTag: tag
-  }));
-
-  return { state: nextState, success: true, events };
+  return { state: nextState, success: dispRes.moved, events: dispRes.events };
 }

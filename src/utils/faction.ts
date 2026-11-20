@@ -1,5 +1,10 @@
 import { type GameState, type EntityId } from '../types/game-state.types.ts';
-import { ComponentType, type FactionComponent, type AttitudeComponent } from '../types/components.types.ts';
+import {
+  ComponentType,
+  type FactionComponent,
+  type AttitudeComponent,
+  type IdentityMaskComponent
+} from '../types/components.types.ts';
 import { getComponent } from '../core/ecs.ts';
 
 /**
@@ -37,8 +42,21 @@ export function getFactionRelation(
   const subjectFactionCmp = getComponent(state, subject, ComponentType.Faction) as FactionComponent | undefined;
   const targetFactionCmp = getComponent(state, target, ComponentType.Faction) as FactionComponent | undefined;
 
-  const subjectFaction = subjectFactionCmp?.factionId ?? 'neutral';
-  const targetFaction = targetFactionCmp?.factionId ?? 'neutral';
+  const subjectMask = getComponent(state, subject, ComponentType.IdentityMask) as IdentityMaskComponent | undefined;
+  const targetMask = getComponent(state, target, ComponentType.IdentityMask) as IdentityMaskComponent | undefined;
+
+  const subjectFaction =
+    subjectMask && subjectMask.suspicion < subjectMask.maxSuspicion
+      ? subjectMask.disguisedAsFactionId
+      : (subjectFactionCmp?.factionId ?? 'neutral');
+  const targetFaction =
+    targetMask && targetMask.suspicion < targetMask.maxSuspicion
+      ? targetMask.disguisedAsFactionId
+      : (targetFactionCmp?.factionId ?? 'neutral');
+
+  if (subjectFaction === targetFaction && subjectFaction !== 'neutral') {
+    return 'friendly';
+  }
 
   const relations = state.campaign.factions[subjectFaction];
   if (!relations) {

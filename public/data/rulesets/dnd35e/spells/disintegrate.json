@@ -58,7 +58,8 @@
       "transmutation",
       "ray",
       "disintegrate",
-      "high_damage"
+      "high_damage",
+      "rarity:rare"
     ]
   }
 }

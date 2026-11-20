@@ -32,6 +32,7 @@ import { evaluateCheatDeath } from './nemesis.system.ts';
 import { rng } from '../core/rng.ts';
 import { getEntityBarks } from './nemesis.system.ts';
 import { getActiveRuleset } from '../rulesets/registry.ts';
+import { spawnCorpseForSlainEntity } from './corpse.system.ts';
 
 /**
  * Removes non-positioned inventory orphans and unpositioned merchant stock entities when an entity dies.
@@ -321,6 +322,13 @@ export function processDeathSystem(state: GameState): GameState {
             }
           }
         }
+
+        // 4. Invoke ruleset death hook (e.g. spawning arcane caster's wizards_spellbook) and physical corpse drop
+        const activeRuleset = getActiveRuleset(nextState);
+        if (activeRuleset.onEntityDied) {
+          nextState = activeRuleset.onEntityDied(nextState, entityId, pos.x, pos.y, deathComp.killerId);
+        }
+        nextState = spawnCorpseForSlainEntity(nextState, entityId, pos.x, pos.y).state;
       }
 
       // Emit SchemeNodeDisrupted if the dead entity was a minion

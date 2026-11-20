@@ -13,7 +13,8 @@
     "currencyUnit": "sp",
     "tags": [
       "adventuring_gear",
-      "dungeoneering"
+      "dungeoneering",
+      "door_spike"
     ],
     "spriteId": "item_primitive_key"
   }

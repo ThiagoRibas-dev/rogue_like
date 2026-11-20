@@ -1,6 +1,7 @@
 import * as ROT from 'rot-js';
 import { getComponent } from '../core/ecs.ts';
-import { canTraverseTile, processMoveIntent } from '../systems/movement.system.ts';
+import { processMoveIntent } from '../systems/movement.system.ts';
+import { evaluateTileTraversal, getEntityMovementModes } from '../systems/movement_displacement.ts';
 import {
   computeRectDistanceTiles,
   getEntitySpatialProfile,
@@ -8,7 +9,7 @@ import {
   SIZE_DIFF_PASS_THROUGH_THRESHOLD
 } from '../systems/movement_footprint.ts';
 import { shouldSkipTurn } from '../systems/status-effect.system.ts';
-import { ComponentType, type MovementModes, type PropertyOverlayComponent } from '../types/components.types.ts';
+import { ComponentType, type MovementModes } from '../types/components.types.ts';
 import type { EntityId, GameState } from '../types/game-state.types.ts';
 import type { ActorSpatialProfile } from '../types/ruleset.types.ts';
 import { IntentType } from '../types/intents/intent.enum.ts';
@@ -27,24 +28,6 @@ const CARDINAL_AND_DIAGONAL_OFFSETS: ReadonlyArray<{ readonly dx: number; readon
   { dx: -1, dy: 1 },
   { dx: 1, dy: 1 }
 ];
-
-/**
- * Resolves movement modes for pathfinding traversal checks.
- */
-function getMovementModes(state: GameState, entityId: EntityId): MovementModes | undefined {
-  const overlay = getComponent(state, entityId, ComponentType.PropertyOverlay) as PropertyOverlayComponent | undefined;
-  if (overlay?.movementModesOverride) {
-    return overlay.movementModesOverride;
-  }
-  const rulesetComp = getComponent(state, entityId, ComponentType.RulesetData);
-  if (rulesetComp && rulesetComp.rulesetId === 'dnd35e' && rulesetComp.payload) {
-    const dndData = rulesetComp.payload as { movementModes?: MovementModes };
-    if (dndData.movementModes) {
-      return dndData.movementModes;
-    }
-  }
-  return undefined;
-}
 
 /**
  * Checks whether a tile is unoccupied by another Fighter or Actor entity.
@@ -129,7 +112,8 @@ function isStepPassable(
       const tile = state.map.tiles[coordToIndex(tx, ty, state.map.width)];
       if (!tile) return false;
       const tileDef = state.campaign.tiles[tile.tileId];
-      if (!canTraverseTile(tileDef, movementModes)) return false;
+      const traversal = evaluateTileTraversal(tileDef, movementModes, state, tx, ty);
+      if (traversal.passability !== 'unimpeded' && traversal.passability !== 'difficult') return false;
       if (isTileBlockedByActor(state, tx, ty, entityId, profile, profileCache)) return false;
     }
   }
@@ -157,7 +141,7 @@ export function computeNextStepToward(
   goalX: number,
   goalY: number
 ): { readonly dx: number; readonly dy: number } | null {
-  const movementModes = getMovementModes(state, entityId);
+  const movementModes = getEntityMovementModes(state, entityId);
   const profileCache = new Map<EntityId, ActorSpatialProfile>();
   const selfProfile = getCachedSpatialProfile(state, entityId, profileCache);
 

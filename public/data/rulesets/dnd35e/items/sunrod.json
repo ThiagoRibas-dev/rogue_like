@@ -17,6 +17,12 @@
       "light_radius_ft:30",
       "alchemical"
     ],
+    "lightSource": {
+      "radiusFt": 30,
+      "shadowyRadiusFt": 60,
+      "fuelTurns": 3600,
+      "requiresIgnition": false
+    },
     "spriteId": "dcss_item_rod_rod_0_new"
   }
 }

@@ -198,6 +198,20 @@ export function buildActorHotbarSlots(
     }
   }
 
+  if (state && entityId !== undefined && getComponent(state, entityId, ComponentType.Fighter) !== undefined) {
+    const budget = dndData.actionBudget;
+    const chargeDisabled =
+      budget !== undefined &&
+      (budget.standardRemaining < 1 || budget.moveRemaining < 1 || budget.distanceMovedThisRoundFt > 0);
+    pushCand(
+      'Charge',
+      '⚡',
+      'Charge (Full-Round Action): Move up to 2x speed in a straight line and strike (+2 Attack, -2 AC until next turn).',
+      { kind: 'ability', id: 'charge', verb: 'charge' },
+      chargeDisabled
+    );
+  }
+
   for (const [poolId, entry] of Object.entries((resourcePools ?? dndData.resourcePools)?.pools ?? {})) {
     if (entry.max <= 0) continue;
     const displayName = entry.label ?? poolId.replace(/_/g, ' ');

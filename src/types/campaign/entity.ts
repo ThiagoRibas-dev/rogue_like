@@ -175,6 +175,10 @@ export const StatusEffectDefinitionSchema = z.object({
     .optional(),
   perTurnDamage: z.number().int().nonnegative().optional(),
   perTurnHeal: z.number().int().nonnegative().optional(),
+  secondaryTriggerAfterTurns: z.number().int().positive().optional(),
+  secondaryDamage: z.number().int().nonnegative().optional(),
+  secondarySaveDc: z.number().int().positive().optional(),
+  resistedByStatusIds: z.array(z.string()).optional(),
   flags: z
     .object({
       skipTurn: z.boolean().optional(),
@@ -190,6 +194,7 @@ export const AIBehaviorEntrySchema = z.discriminatedUnion('behaviorId', [
   z.object({
     behaviorId: z.literal('hunt'),
     aggroRadius: z.number().int().positive().optional(),
+    allowCharge: z.boolean().optional(),
     weightModifiers: z.record(z.string(), z.number()).optional()
   }),
   z.object({

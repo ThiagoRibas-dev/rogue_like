@@ -897,8 +897,77 @@ Per `AGENTS.md` Rule 21 (Zero Content-ID or Bespoke-Property Branching) and [`do
 3. **Scaled Multi-Tile Canvas Presentation (`viewport_snapshot.ts`, `tactical_snapshot.ts`, `tactical_overlay.ui.ts`)**:
    - Renders multi-tile tactical bounding frames, full-width HP bars, and proportional glyph/sprite scaling across multi-cell entities and sub-tile `Tiny`–`Fine` actors.
 
+### 9.24 Tier 1 Spatial Displacement Kernel & Explicit Triggered Charge (Milestone 152)
+
+1. **Three-Tier Passability & Atomic Displacement (`src/systems/movement_displacement.ts`, `movement_footprint.ts`)**:
+   - `evaluateTileTraversal` classifies tiles into `'unimpeded' | 'difficult' | 'hazardous' | 'solid_obstacle'` driven declaratively by `TileDefinition` metadata and active `MovementModes` (queried cleanly via `RulesetContract.getEntityMovementModes`).
+   - `displaceEntityStep` and `displaceEntityAlongVector` unify `'voluntary_walk'`, `'charge_step'`, `'forced_push'`, `'forced_pull'`, `'teleport'`, and `'swap'` modes, preserving multi-tile footprints, perpendicular-axis squeezing, `spatialIndex` & `fovNeedsUpdate` synchronization, `TileEntered` events, and mode-aware `runActorMovementStep` reaction/AoO hooks (`DisplacementContext`).
+   - Bull Rush (`bull_rush_resolver.ts`) stops cleanly inside pits (`stopReason === 'hazard_halted'`) and triggers Dungeon Crasher wall slams strictly on `stopReason === 'solid_obstacle'`, while `executeAbruptJauntTeleport` (`immediate_reactions.ts`) routes teleports safely through the kernel without provoking movement AoOs.
+2. **Explicit Triggered Charge Action (`src/rulesets/dnd35e/combat/charge_resolver.ts`, `dnd35e_combat_adapter.ts`, `public/data/rulesets/dnd35e/conditions/charging.json`)**:
+   - Replaced passive distance-based Charge detection with an explicit Full-Round targeted Charge (`validateChargeLine`, `initiateDnD35eChargeTargeting`, `executeDnD35eChargeAction`, hotbar slot `'Charge'`, and opt-in `allowCharge` AI `huntBehavior`), granting `+2` on the Charge strike(s) (supporting Pounce & Charging Smite) and applying the declarative `charging` condition (`-2` AC until the start of the charger's next turn).
+
+### 9.25 Per-Area Rest Pressure ("Doom Clock"), Bulk Schemes, Watch Ambushes & Logistics (Milestone 153)
+
+1. **Tier 1 Per-Area Rest Pressure & Bulk Scheme Advancement (`src/types/campaign/{world,meta}.ts`, `world_clock.system.ts`, `world_time_skip.ts`, `map_wake_respawn.ts`)**:
+   - `RestPressureConfigSchema` defines campaign defaults in `rules.restPressure` and per-area overrides in `AreaDefinition.restPressure` (`safeRest`, `ambushChancePerWatch`, `watchDurationHours`, `schemeTickMultiplier`, `respawnRateMultiplier`, `alarmDecayTurns`).
+   - `stepBulkMacroCadence` ticks `processSchemeTurn` across active `SchemeComponent` masterminds scaled by `schemeTickMultiplier` and records `SchemeAdvanced` / `SchemeMutatedArea` digest summaries, while `computeEffectiveRespawnTimerTurns` scales area respawn cadences by `respawnRateMultiplier`.
+2. **Watch-Chunked Rest Ambushes & Symmetric Sleeping Awareness (`src/systems/rest.system.ts`, `src/rulesets/dnd35e/magic/rest_recovery.ts`)**:
+   - `executeWatchChunkedBulkRest` and `executeWatchChunkedBulkRestAsync` divide multi-hour rests into `watchDurationHours` chunks, reducing ambush probability via `evaluatePartyCampPreparedness` (`bedroll`, `winter_blanket`, `tent`, and active `'campfire'` fields), spawning ambush patrols via `spawnCampAmbushPatrol`, and gating surprise (`RulesetContract.onAmbushSurprise` -> `'flat_footed'`) via `evaluateHighestPartyWatchAwareness` (mirrored symmetrically for sleeping NPCs via `evaluateSleepingActorAwareness` with the SRD `-10` sleeping perception penalty).
+3. **Quick-Draw Containers, Two-Stage Poison, `healers_kit` & Captive Restraints (`dnd35e_turn_budget.ts`, `status-effect.system.ts`, `apply.system.ts`, `dungeon_skill_verbs.ts`, `public/data/rulesets/dnd35e/conditions/bound.json`)**:
+   - Actors wearing a `'quick_draw_container'` (`bandoleer` / `potion_belt`) receive 1 free `IntentType.EquipItem` per round for items `<= 3 lbs` (non-armor, non-2H).
+   - `processStatusEffectsTick` triggers 2-stage secondary poison saving throws (`secondaryTriggerAfterTurns: 10`) via `RulesetContract.resolveStatusSecondaryStage` (honoring `antitoxin` `+5` alchemical Fortitude bonuses); `healers_kit` (`'medical_kit'`) provides its declarative `+2` Heal bonus, `2×` Long-Term Care rest recovery (`DC 15` Take-10), `DC 15` `limping` cure, and pending secondary poison neutralization; and `'restraints'` (`manacles` DC 30/26, `masterwork_manacles` DC 35/28) bind helpless/sleeping targets (`bound.json` -> `attemptEscapeOrBreakRestraints`).
+
+---
+
+### 9.26 Symmetric Terrain Traversal, World-Owned Crossings, Field Transmutations & `dip` Floor Hazards (Milestone 154)
+
+1. **World-Owned Crossing Entities & `BreathComponent` (`src/systems/crossing.system.ts`, `src/systems/breath.system.ts`)**:
+   - `CrossingComponent` (`'bridge' | 'rope_line' | 'ladder_span' | 'frozen_surface'`) lives on world entities at `(x, y)` in `spatialIndex`. `evaluateTileTraversal` downgrades `'hazardous'` water/pit tiles with an active crossing to `'unimpeded'` (`'bridge'`) or `'difficult'` (rope/ladder/ice), while `destroyCrossingEntity` / `processCrossingsTick` invokes `RulesetContract.onCrossingCollapsedForOccupant` for any occupant standing on a destroyed or melted span.
+   - `BreathComponent` tracks underwater submersion countdowns at Turn Start (`processActorBreathTick`), delegating drowning immunity (`trait:water_breathing`, `type:undead`, `type:construct`) and max breath capacity (`2 * CON` rounds) to `RulesetContract`.
+2. **Symmetric D&D 3.5e Terrain Hazards (`src/rulesets/dnd35e/spatial/terrain_traversal_resolver.ts`)**:
+   - Evaluates `shallow_water`/`bog` (`2×` movement cost, `-2` Move Silently/Tumble via `getShallowWaterStealthAndTumblePenalty`, non-magical fire extinguishing via `extinguishActorFireInWater`), `deep_water` (`resolveDeepWaterSwimCheck` DC 10/15 with `2×` live M150 ACP, sinking & breath activation on failure), gap `Jump` checks (`resolveGapJumpTraversal` DC 5/5ft running or `2×` standing with `JUMP_LEDGE_CATCH_REFLEX_DC = 15`), pit falls (`applyPitFallConsequences` dealing `1d6` per 10 ft + `'prone'`), pit `Climb` (`resolvePitClimbTraversal` with `+2` `climbers_kit`), and `Use Rope` / ladder rigging (`resolveRigCrossingWithGear`).
+3. **Tag-Driven Field Transmutations, `dip` (`CoatingComponent`) & SRD Floor Hazards (`src/systems/field.system.ts`, `src/rulesets/dnd35e/combat/floor_hazard_resolver.ts`)**:
+   - `evaluateFieldInteractionsAtTile` runs declarative `FieldInteractionRule`s (`oil` + `fire` with orthogonal BFS chain ignition, `water` + `cold` freezing into a temporary `'frozen_surface'` crossing, `water` + `electricity` shock, `fire` + `water` steam cloud with `blocksSight: true`).
+   - `applyItemCoatingViaDip` applies weapon coatings (`ComponentType.Coating`, 5% natural-1 mishap without `poison_use`, consumed on hit in `combat_exchange_pipeline.ts`), `resolveCraftAlchemyIdentifyPotion` identifies potions via `Craft (Alchemy)` DC 15, and `evaluateActorTileHazardOccupation` triggers symmetric `caltrops` (BAB `+0` vs flat-footed unarmored foot AC -> `1` dmg + `'limping'`), `marbles` (`Balance` DC 10), and `grease` (`Balance`/Reflex DC 15).
+
+---
+
+### 9.27 Acoustic Sound Ripples, Dynamic `LightEmitterComponent` & Symmetric 6s-Cadence Stealth (Milestone 155)
+
+1. **Acoustic Sound Ripple System & AI Alertness (`src/systems/sound.system.ts`, `src/systems/ai.system.ts`)**:
+   - `propagateSoundField` executes a bounded BFS from `(originX, originY)` at `dbLevel`, subtracting per-tile acoustic attenuation (`resolveTileSoundAttenuation`: open air `-10` dB, closed door `-25` dB, opaque wall `-45` dB).
+   - `emitSoundEvent` evaluates listeners within effective range: when the source is stealthed, listeners roll `Listen` vs. the source's `Move Silently` result; otherwise sounds exceeding `SOUND_SUSPICIOUS_THRESHOLD_DB` (`20` dB) or `SOUND_ALERTED_THRESHOLD_DB` (`45` dB) transition `AIComponent.alertnessState` (`'unaware' -> 'suspicious' -> 'alerted'`) and record `lastHeardPos`, while `describeSoundDirection` logs directional audio cues for unseen sources outside `state.cachedFov`.
+2. **Dynamic Radial & Directional Light Emitters (`src/systems/light_emitter.system.ts`, `src/rulesets/dnd35e/spatial/cover_senses.ts`)**:
+   - `LightEmitterComponent` (`radiusFt`, `shadowyRadiusFt`, `coneAngleDeg`, `facing`, `fuelTurns`, `maxFuelTurns`, `isLit`, `requiresIgnition`) is hydrated from declarative `ItemDefinition.lightSource` metadata (`torch`, `hooded_lantern`, `bullseye_lantern`, `sunrod`) and works symmetrically on ground entities and items carried/equipped by players, companions, and NPC guards (`getActiveLightEmitters`).
+   - `evaluateDynamicLightAtTile` checks radial distance, directional cone aperture (`isPointWithinEmitterCone`), and line-of-sight transparency, upgrading `resolveTileLightReading` to `'bright'` or `'shadowy'` (unless suppressed by magical `[Darkness]`). `igniteLightEmitter` (`'fire_starter'`: `flint_and_steel`, `tindertwig`), `refuelLightEmitter` (`'fuel'` + `'refuelable_oil'`: `oil_flask`), and `processActorLightEmittersTick` manage ignition and fuel consumption.
+3. **Symmetric 6s-Cadence Stealth & Sensory Counters (`src/rulesets/dnd35e/spatial/stealth_resolver.ts`, `dnd35e_turn_budget.ts`, `combat_exchange_phases.ts`)**:
+   - `TacticalDoctrineComponent.stealth` (`StealthStanceState`) tracks `isStealthed`, `fastStealth`, `lastHideRoll`, `lastMoveSilentlyRoll`, `nextStealthCheckRound`, and `reStealthCooldownRound`. Engaging Stealth (`toggleActorStealth`) defaults to half movement speed (`0.5×` in `dnd35e_turn_budget.ts`, avoiding the `-5` `Move Silently` penalty) unless `toggleActorFastStealth` is active.
+   - `evaluateStealthDetection` runs opposed `Hide` (size modifier, armor check penalty, invisibility `+20`/`+40`) vs. `Spot` and `Move Silently` (live M150 ACP, shallow water `-2`, fast stealth `-5`) vs. `Listen` once per 6-second round (`round_cadence`) plus immediate state-change triggers (`enter_stealth`, `light_band_change`, `door_opened`, `loud_noise`, `new_observer_los`), accounting for Darkvision, Low-Light Vision, Scent (30 ft pinpointing), and Tremorsense.
+   - Stealth breaks immediately (`breakActorStealth`) **without triggering auto-pause** upon attacking, failing an opposed check, or losing cover/concealment while observed, and enforces a 1-round cooldown before manual re-entry. `applyFlourPouchDust` (`'counter_invisibility_dust'`) applies `'dusted'`, negating `Hide` and reducing invisibility concealment miss chance from `50%` to `20%`.
+
+---
+
+### 9.28 Baseline SRD Object/Durability Engine, Structural Doors, Spellbook Rarity, Auto Monster Lore & Corpse/Religion/Disguise Ecology (Milestone 156)
+
+1. **SRD *Smashing an Object* Durability Engine & Opt-In Console Wear (`src/systems/durability.system.ts`, `src/rulesets/dnd35e/combat/object_durability_resolver.ts`, `DurabilityConfigSchema`)**:
+   - `StructuralComponent` (`materialTag`, `hardness`, `hp`, `maxHp`, `breakDc`, `objectSize`, `enhancementBonus`, `ruined`, `isDoor`, `isOpen`, `spikedCount`, `storedSpellIds`) models inanimate objects, doors, chests, weapons, shields, and armor across Tier 1 and Tier 2.
+   - `computeSrdObjectArmorClass` computes object AC (`10 + sizeMod - 5 [Dex 0] - 2 [inanimate]` or `+7` when held); `resolveEffectiveStructuralStats` adds `+2` Hardness and `+10` Max HP per `+1` magic enhancement bonus; `evaluateSrdObjectDamage` enforces SRD pre-hardness multipliers (Acid/Sonic `1×`, Fire/Electricity `0.5×`, Cold `0.25×`, Ranged `0.5×`), critical/nonlethal immunity, piercing-weapon zeroing against solid objects, and Adamantine hardness bypass (`hardness <= 20`).
+   - Objects or gear reduced to `0 HP` enter a **repairable `ruined: true` state** (`applyStructuralDamage` -> `repairRuinedItem` with `whetstone`/`artisan_tools`) rather than being silently deleted. Optional campaign wear events (`evaluateOptInCombatWear` reading `DurabilityConfigSchema`) default to `0%` (`enableFumbleWearChance: 0`, `enableHardArmorWearChance: 0`, `enableCritArmorWearChance: 0`).
+2. **Structural Doors & Dungeon Engineering (`durability.system.ts`, `object_durability_resolver.ts`, `dungeon_skill_verbs.ts`)**:
+   - `openStructuralDoor` and `closeStructuralDoor` dynamically toggle map tile transparency/walkability (`'floor'` vs. `'door'`) and refuse to open locked or spiked doors; `spikeDoorWithWedge` consumes 1 `iron_spike` (requiring a `hammer` tool) to increase `spikedCount` (`+2` Break DC per spike).
+   - `resolveSrdBreakObjectCheck` resolves Strength checks (`1d20 + STR_mod + toolBonus [crowbar/portable_ram +2]`) against `breakDc + spikedCount * 2 - (hp <= maxHp * 0.5 ? 2 : 0)` and emits `SOUND_DB_DOOR_KICK` (`75` dB). `probeTrapWithReachTool` enables range-2 trap probing with a `pole_10ft` (`'reach_probe'`).
+3. **Spellbook Rarity Tags, Enemy Wizard Grimoires & Auto Monster Lore (`src/rulesets/dnd35e/magic/spellbook_loot.ts`, `src/rulesets/dnd35e/skills/monster_lore_tracker.ts`, `skill_verbs.ts`)**:
+   - `getSpellRarityTier` classifies spells from declarative `tags` (`rarity:common` default, `rarity:uncommon`, `rarity:rare`, `rarity:forbidden`). Upon death (`RulesetContract.onEntityDied`), `spawnArcaneCasterSpellbookLoot` drops an inspectable `wizards_spellbook` carrying the caster's known/prepared spells plus rarity-weighted bonus spell rolls.
+   - `transcribeSpellFromBook` validates `inkpen` + `ink_vial` (consuming 1 ink charge), checks `Spellcraft (DC 15 + spellLevel)`, adds the spell to `knownSpells` and `spellbooksByClass.wizard`, and advances `globalTurn` by study hours.
+   - `evaluateAndRecordMonsterLore` automatically rolls or takes-10 on `Knowledge (DC 10 + CR/HD)` upon sighting or inspecting a creature (`projectDnD35eInspectLoreLines`), persisting unlocked DR, SR, immunities, resistances, and vulnerabilities in `MemoryComponent.knowledge`.
+4. **Physical Corpse Economy, Piety & Active Disguise (`src/systems/corpse.system.ts`, `src/systems/religion.system.ts`, `src/systems/disguise.system.ts`, `src/utils/faction.ts`)**:
+   - `spawnCorpseForSlainEntity` spawns a physical `CorpseComponent` (`freshnessTurns`, `harvestableTags` derived from creature type) on actor death (`handleEntityDeaths`), `harvestCorpseTag` yields meat/pelts/essences with a dagger/skinning knife, and `tickCorpseDecay` decomposes expired corpses into skeletal remains.
+   - `ReligionComponent` tracks `deityId`, `favor`, `pietyTier` (`'exalted' | 'favored' | 'neutral' | 'penitent' | 'excommunicated'`), and `sinsCount` (`recordDeityFavorDelta`, `recordTabooViolation`, `atonePenanceAtAltar`).
+   - `IdentityMaskComponent` (`disguisedAsFactionId`, `disguisedAsRaceId`, `disguiseCheckResult`, `suspicion`, `maxSuspicion`) integrates directly with `getFactionRelation` (`isDisguiseSuppressingHostility`) so disguised actors are treated as members of `disguisedAsFactionId` until opposed `Spot` vs. `Disguise` checks (`evaluateDisguiseSuspicion`) fill the suspicion meter and blow the disguise.
+
 ---
 
 ## 10. Key Design Decisions
 
 > **📋 Key design decisions and their detailed rationale are documented in [DECISIONS.md](./DECISIONS.md).**
+

@@ -14,8 +14,15 @@
     "tags": [
       "adventuring_gear",
       "light_source",
-      "light_radius_ft:30"
+      "light_radius_ft:30",
+      "refuelable_oil"
     ],
+    "lightSource": {
+      "radiusFt": 30,
+      "shadowyRadiusFt": 60,
+      "fuelTurns": 3600,
+      "requiresIgnition": true
+    },
     "spriteId": "dcss_item_misc_misc_lantern"
   }
 }

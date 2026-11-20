@@ -1,4 +1,5 @@
 import { queryActiveFieldsAtPosition } from '../../../systems/field.system.ts';
+import { evaluateDynamicLightAtTile } from '../../../systems/light_emitter.system.ts';
 import { resolveAreaEnvironmentProfile } from '../../../systems/world_clock.system.ts';
 import type { GameState } from '../../../types/game-state.types.ts';
 import { measureDnD35DistanceFt } from './grid_geometry.ts';
@@ -219,6 +220,7 @@ export function evaluateConcealmentAndSenses(
     readonly targetInvisible?: boolean;
     readonly targetBlurred?: boolean;
     readonly targetGrounded?: boolean;
+    readonly targetDusted?: boolean;
   }
 ): {
   readonly visible: boolean;
@@ -262,7 +264,8 @@ export function evaluateConcealmentAndSenses(
 
   let missChance: 0 | 20 | 50 = 0;
   if (options?.targetInvisible === true) {
-    missChance = TOTAL_CONCEALMENT_MISS_CHANCE_PERCENT;
+    missChance =
+      options.targetDusted === true ? CONCEALMENT_MISS_CHANCE_PERCENT : TOTAL_CONCEALMENT_MISS_CHANCE_PERCENT;
   } else if (illumination === 'darkness' && !isDarkClearedByDarkvision) {
     missChance = TOTAL_CONCEALMENT_MISS_CHANCE_PERCENT;
   } else if (
@@ -375,7 +378,19 @@ export function resolveTileLightReading(
   const envProfile = resolveAreaEnvironmentProfile(state);
   const baselineLevel = ambientOverride ?? envProfile.illumination;
   const winner = resolveWinningFieldIlluminationOverride(state, x, y);
-  const level = winner?.level ?? baselineLevel;
+  let level: IlluminationLevel = winner?.level ?? baselineLevel;
+
+  // Dynamic LightEmitterComponent sources brighten non-magical darkness/shadowy tiles symmetrically
+  const hasMagicalDarknessOverride = winner !== undefined && winner.level !== 'bright';
+  if (!hasMagicalDarknessOverride && level !== 'bright') {
+    const dynamicLevel = evaluateDynamicLightAtTile(state, x, y);
+    if (dynamicLevel === 'bright') {
+      level = 'bright';
+    } else if (dynamicLevel === 'shadowy' && level === 'darkness') {
+      level = 'shadowy';
+    }
+  }
+
   const isBright = level === 'bright';
 
   const fieldGrantsSunlight =

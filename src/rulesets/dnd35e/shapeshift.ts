@@ -199,7 +199,7 @@ export function executeDruidShapeshift(
   }
 
   let nextBudget = dndData.actionBudget;
-  if (state.engineMode === EngineMode.TurnBased) {
+  if (state.engineMode === EngineMode.TurnBased || nextBudget !== undefined) {
     const dexMod = Math.floor(((dndData.abilityScores?.dex?.base ?? 10) - 10) / 2);
     const activeBudget =
       nextBudget ??

@@ -1,19 +1,191 @@
-import type { EntityId, GameState } from '../types/game-state.types.ts';
+import { addComponent, createEntity, getComponent, removeEntity } from '../core/ecs.ts';
+import { rng } from '../core/rng.ts';
+import type { FieldDefinition, FieldInteractionRule } from '../types/campaign/world.ts';
 import {
   ComponentType,
-  type FieldComponent,
-  type PositionComponent,
   type DamageComponent,
+  type FieldComponent,
+  type FighterComponent,
+  type PositionComponent,
   type RenderableComponent
 } from '../types/components.types.ts';
-import { getComponent, addComponent, removeEntity, createEntity } from '../core/ecs.ts';
-import { rng } from '../core/rng.ts';
+import type { EntityId, GameState } from '../types/game-state.types.ts';
+import { coordToIndex, isInBounds } from '../utils/grid.ts';
+import { destroyCrossingEntity, queryCrossingAtPosition, spawnCrossingEntity } from './crossing.system.ts';
+import { addMessage, MessageLogCategory } from './message.system.ts';
 import { applyStatusEffect } from './status-effect.system.ts';
 
-/**
- * Helper to spawn a field at a given position.
- */
-export function spawnField(
+/** Maximum BFS radius for orthogonal chain reactions (`32` tiles) to prevent runaway map loops. */
+const MAX_FIELD_CHAIN_BFS_TILES = 32;
+
+/** Default duration for transmuted fields (`5` turns). */
+const DEFAULT_TRANSMUTED_FIELD_DURATION = 5;
+
+/** Default duration for frozen ice crossings (`10` turns). */
+const DEFAULT_FROZEN_CROSSING_DURATION = 10;
+
+/** Canonical baseline field interaction rules applied when `rules.fieldInteractions` is not overridden. */
+export const DEFAULT_FIELD_INTERACTION_RULES: ReadonlyArray<FieldInteractionRule> = [
+  {
+    id: 'oil_fire_ignition',
+    incomingTags: ['fire'],
+    targetTags: ['oil', 'flammable'],
+    spawnFieldType: 'fire',
+    spawnFieldDuration: 5,
+    spawnFieldIntensity: 2,
+    extinguishTarget: true,
+    chainSpreadOrthogonal: true,
+    message: 'The flammable oil ignites in a flash of fire!'
+  },
+  {
+    id: 'water_cold_freeze',
+    incomingTags: ['cold', 'ice'],
+    targetTags: ['water', 'liquid', 'deep_water', 'shallow_water'],
+    spawnCrossingKind: 'frozen_surface',
+    spawnCrossingDuration: DEFAULT_FROZEN_CROSSING_DURATION,
+    message: 'Bitter cold freezes the water into a solid ice sheet!'
+  },
+  {
+    id: 'ice_fire_melt',
+    incomingTags: ['fire'],
+    targetTags: ['frozen_surface', 'ice'],
+    extinguishTarget: true,
+    message: 'Intense heat melts the frozen ice sheet!'
+  },
+  {
+    id: 'water_electricity_shock',
+    incomingTags: ['electricity', 'lightning'],
+    targetTags: ['water', 'liquid', 'deep_water', 'shallow_water'],
+    chainSpreadOrthogonal: true,
+    shockDamageDice: '2d6',
+    message: 'Electricity arcs violently across the conductive water!'
+  },
+  {
+    id: 'fire_water_steam',
+    incomingTags: ['water', 'liquid'],
+    targetTags: ['fire'],
+    spawnFieldType: 'steam_cloud',
+    spawnFieldDuration: 4,
+    spawnFieldIntensity: 1,
+    extinguishTarget: true,
+    message: 'Water douses the flames in a dense cloud of scalding steam!'
+  }
+];
+
+function parseSimpleDiceTotal(diceExpr: string): number {
+  const match = /^(\d+)d(\d+)(?:([+-]\d+))?$/i.exec(diceExpr.trim());
+  if (!match) return 4;
+  const count = Number(match[1]);
+  const sides = Number(match[2]);
+  const flat = match[3] ? Number(match[3]) : 0;
+  let total = flat;
+  for (let i = 0; i < count; i++) {
+    total += Math.floor(rng.getUniform() * sides) + 1;
+  }
+  return Math.max(1, total);
+}
+
+function ensureFieldDefinitionExists(state: GameState, fieldType: string): GameState {
+  if (state.campaign.fields[fieldType]) return state;
+  const fallbackDef: FieldDefinition =
+    fieldType === 'steam_cloud' || fieldType === 'smoke'
+      ? {
+          id: fieldType,
+          name: fieldType === 'steam_cloud' ? 'Steam Cloud' : 'Smoke Cloud',
+          glyph: '8',
+          fg: '#ecf0f1',
+          bg: '#7f8c8d',
+          blocksSight: true,
+          tags: [fieldType, 'obscurement', 'vapor']
+        }
+      : fieldType === 'oil'
+        ? {
+            id: 'oil',
+            name: 'Oil Slick',
+            glyph: '~',
+            fg: '#d35400',
+            bg: 'transparent',
+            blocksSight: false,
+            tags: ['oil', 'flammable', 'liquid']
+          }
+        : {
+            id: fieldType,
+            name: fieldType.replace(/_/g, ' '),
+            glyph: '^',
+            fg: '#e74c3c',
+            bg: 'transparent',
+            blocksSight: false,
+            damagePerTurn: fieldType === 'fire' ? 4 : 0,
+            tags: [fieldType]
+          };
+  return {
+    ...state,
+    campaign: {
+      ...state.campaign,
+      fields: {
+        ...state.campaign.fields,
+        [fieldType]: fallbackDef
+      }
+    }
+  };
+}
+
+function collectTargetTagsAtTile(
+  state: GameState,
+  x: number,
+  y: number
+): {
+  readonly tags: ReadonlySet<string>;
+  readonly matchingFieldEntityIds: ReadonlyArray<EntityId>;
+  readonly frozenCrossingEntityId: EntityId | undefined;
+} {
+  const tags = new Set<string>();
+  const matchingFieldEntityIds: EntityId[] = [];
+  let frozenCrossingEntityId: EntityId | undefined;
+
+  if (isInBounds(x, y, state.map.width, state.map.height)) {
+    const tile = state.map.tiles[coordToIndex(x, y, state.map.width)];
+    const tileDef = tile ? state.campaign.tiles[tile.tileId] : undefined;
+    if (tileDef) {
+      for (const t of tileDef.tags ?? []) tags.add(t);
+      if (tileDef.hazardKind) tags.add(tileDef.hazardKind);
+    }
+  }
+
+  const crossing = queryCrossingAtPosition(state, x, y);
+  if (crossing) {
+    tags.add(crossing.crossing.crossingKind);
+    if (crossing.crossing.crossingKind === 'frozen_surface') {
+      tags.add('ice');
+      frozenCrossingEntityId = crossing.entityId;
+    }
+  }
+
+  const entitiesAt = state.spatialIndex.get(`${x},${y}`) ?? [];
+  for (const eid of entitiesAt) {
+    const f = getComponent(state, eid, ComponentType.Field) as FieldComponent | undefined;
+    if (!f) continue;
+    matchingFieldEntityIds.push(eid);
+    tags.add(f.fieldType);
+    const fDef = state.campaign.fields[f.fieldType];
+    for (const t of fDef?.tags ?? []) tags.add(t);
+    if (f.fieldType.includes('oil')) {
+      tags.add('oil');
+      tags.add('flammable');
+    }
+    if (f.fieldType.includes('fire')) {
+      tags.add('fire');
+    }
+    if (f.fieldType.includes('water')) {
+      tags.add('water');
+      tags.add('liquid');
+    }
+  }
+
+  return { tags, matchingFieldEntityIds, frozenCrossingEntityId };
+}
+
+function spawnFieldRaw(
   state: GameState,
   fieldType: string,
   x: number,
@@ -22,13 +194,10 @@ export function spawnField(
   duration: number,
   spreadRuleId?: string
 ): [GameState, EntityId] {
-  const def = state.campaign.fields[fieldType];
-  if (!def) {
-    console.warn(`Attempted to spawn unknown field: ${fieldType}`);
-    return [state, -1 as unknown as EntityId];
-  }
+  const readyState = ensureFieldDefinitionExists(state, fieldType);
+  const def = readyState.campaign.fields[fieldType]!;
 
-  const [createdState, entityId] = createEntity(state);
+  const [createdState, entityId] = createEntity(readyState);
   let nextState = createdState;
 
   const pos: PositionComponent = { type: ComponentType.Position, x, y };
@@ -44,7 +213,7 @@ export function spawnField(
     fieldType,
     intensity,
     duration,
-    spreadRuleId
+    ...(spreadRuleId !== undefined ? { spreadRuleId } : {})
   };
 
   nextState = addComponent(nextState, entityId, pos);
@@ -52,7 +221,7 @@ export function spawnField(
   nextState = addComponent(nextState, entityId, field);
   nextState = addComponent(nextState, entityId, {
     type: ComponentType.Tags,
-    tags: ['field', `field:${fieldType}`]
+    tags: ['field', `field:${fieldType}`, ...(def.tags ?? [])]
   });
 
   if (def.blocksSight) {
@@ -60,6 +229,197 @@ export function spawnField(
   }
 
   return [nextState, entityId];
+}
+
+/**
+ * Evaluates declarative `FieldInteractionRule` chemistry at `(x, y)` for an incoming elemental/alchemical tag set
+ * (e.g. `['fire']`, `['cold']`, `['electricity']`, `['water']`), supporting orthogonal BFS chain propagation
+ * (`oil` + `fire` ignition, `water` + `electricity` conductive shock, `water` + `cold` -> `frozen_surface` crossing,
+ * `frozen_surface` + `fire` thaw/collapse, and `fire` + `water` -> `steam_cloud` with `blocksSight: true`).
+ *
+ * @param state Current immutable GameState.
+ * @param originX Grid X coordinate.
+ * @param originY Grid Y coordinate.
+ * @param incomingTags Incoming energy or substance tags.
+ * @returns Updated GameState after resolving all matching field interactions.
+ */
+export function evaluateFieldInteractionsAtTile(
+  state: GameState,
+  originX: number,
+  originY: number,
+  incomingTags: ReadonlyArray<string>
+): GameState {
+  if (incomingTags.length === 0 || !isInBounds(originX, originY, state.map.width, state.map.height)) {
+    return state;
+  }
+
+  const rules =
+    state.campaign.rules.fieldInteractions && state.campaign.rules.fieldInteractions.length > 0
+      ? state.campaign.rules.fieldInteractions
+      : DEFAULT_FIELD_INTERACTION_RULES;
+
+  let nextState = state;
+  const incomingSet = new Set(incomingTags);
+
+  for (const rule of rules) {
+    const incomingMatches = rule.incomingTags.some((t) => incomingSet.has(t));
+    if (!incomingMatches) continue;
+
+    const originTarget = collectTargetTagsAtTile(nextState, originX, originY);
+    const targetMatches = rule.targetTags.some((t) => originTarget.tags.has(t));
+    if (!targetMatches) continue;
+
+    // Collect affected coordinates (single tile or orthogonal BFS connected component)
+    const visited = new Set<string>();
+    const queue: Array<{ readonly x: number; readonly y: number }> = [{ x: originX, y: originY }];
+    const affectedCoords: Array<{ readonly x: number; readonly y: number }> = [];
+
+    while (queue.length > 0 && affectedCoords.length < MAX_FIELD_CHAIN_BFS_TILES) {
+      const curr = queue.shift()!;
+      const key = `${curr.x},${curr.y}`;
+      if (visited.has(key)) continue;
+      visited.add(key);
+
+      const tileTarget = collectTargetTagsAtTile(nextState, curr.x, curr.y);
+      if (!rule.targetTags.some((t) => tileTarget.tags.has(t))) continue;
+
+      affectedCoords.push(curr);
+
+      if (rule.chainSpreadOrthogonal === true) {
+        const neighbors = [
+          { x: curr.x + 1, y: curr.y },
+          { x: curr.x - 1, y: curr.y },
+          { x: curr.x, y: curr.y + 1 },
+          { x: curr.x, y: curr.y - 1 }
+        ];
+        for (const n of neighbors) {
+          if (isInBounds(n.x, n.y, nextState.map.width, nextState.map.height) && !visited.has(`${n.x},${n.y}`)) {
+            queue.push(n);
+          }
+        }
+      }
+    }
+
+    if (affectedCoords.length === 0) continue;
+
+    if (rule.message) {
+      nextState = addMessage(nextState, rule.message, MessageLogCategory.System);
+    }
+
+    for (const coord of affectedCoords) {
+      const latestTarget = collectTargetTagsAtTile(nextState, coord.x, coord.y);
+
+      if (rule.extinguishTarget === true) {
+        if (latestTarget.frozenCrossingEntityId !== undefined) {
+          nextState = destroyCrossingEntity(nextState, latestTarget.frozenCrossingEntityId);
+        }
+        for (const fId of latestTarget.matchingFieldEntityIds) {
+          const fComp = getComponent(nextState, fId, ComponentType.Field) as FieldComponent | undefined;
+          if (!fComp) continue;
+          const fDef = nextState.campaign.fields[fComp.fieldType];
+          const fTags = new Set<string>([fComp.fieldType, ...(fDef?.tags ?? [])]);
+          if (fComp.fieldType.includes('oil')) fTags.add('oil');
+          if (fComp.fieldType.includes('fire')) fTags.add('fire');
+          if (rule.targetTags.some((t) => fTags.has(t))) {
+            if (fDef?.blocksSight) nextState = { ...nextState, fovNeedsUpdate: true };
+            nextState = removeEntity(nextState, fId);
+          }
+        }
+      }
+
+      if (rule.spawnCrossingKind !== undefined) {
+        const [withCrossing] = spawnCrossingEntity({
+          state: nextState,
+          x: coord.x,
+          y: coord.y,
+          crossingKind: rule.spawnCrossingKind,
+          durationTurns: rule.spawnCrossingDuration ?? DEFAULT_FROZEN_CROSSING_DURATION
+        });
+        nextState = withCrossing;
+      }
+
+      if (rule.spawnFieldType !== undefined) {
+        const [withField] = spawnFieldRaw(
+          nextState,
+          rule.spawnFieldType,
+          coord.x,
+          coord.y,
+          rule.spawnFieldIntensity ?? 1,
+          rule.spawnFieldDuration ?? DEFAULT_TRANSMUTED_FIELD_DURATION
+        );
+        nextState = withField;
+      }
+
+      if (rule.shockDamageDice !== undefined) {
+        const occupants = nextState.spatialIndex.get(`${coord.x},${coord.y}`) ?? [];
+        for (const occId of occupants) {
+          const fighter = getComponent(nextState, occId, ComponentType.Fighter) as FighterComponent | undefined;
+          if (!fighter || fighter.hp <= 0) continue;
+          const dmgAmount = parseSimpleDiceTotal(rule.shockDamageDice);
+          const existingDmg = getComponent(nextState, occId, ComponentType.Damage) as DamageComponent | undefined;
+          const instances = existingDmg ? [...existingDmg.instances] : [];
+          instances.push({
+            amount: dmgAmount,
+            tags: ['electricity', 'energy', 'field', 'conductive_water']
+          });
+          nextState = addComponent(nextState, occId, {
+            type: ComponentType.Damage,
+            instances
+          });
+        }
+      }
+    }
+  }
+
+  return nextState;
+}
+
+/**
+ * Helper to spawn a field at a given position and evaluate any immediate declarative `FieldInteractionRule` reactions.
+ */
+export function spawnField(
+  state: GameState,
+  fieldType: string,
+  x: number,
+  y: number,
+  intensity: number,
+  duration: number,
+  spreadRuleId?: string
+): [GameState, EntityId] {
+  const def = state.campaign.fields[fieldType];
+  if (
+    !def &&
+    ![
+      'steam_cloud',
+      'smoke',
+      'oil',
+      'fire',
+      'caltrops',
+      'marbles',
+      'grease',
+      'ice',
+      'water',
+      'cold',
+      'electricity',
+      'acid',
+      'web'
+    ].includes(fieldType)
+  ) {
+    console.warn(`Attempted to spawn unknown field: ${fieldType}`);
+    return [state, -1 as unknown as EntityId];
+  }
+
+  const incomingTags: string[] = [fieldType, ...(def?.tags ?? [])];
+  if (fieldType.includes('fire')) incomingTags.push('fire');
+  if (fieldType.includes('cold') || fieldType.includes('ice')) incomingTags.push('cold', 'ice');
+  if (fieldType.includes('elec') || fieldType.includes('lightning')) incomingTags.push('electricity');
+  if (fieldType.includes('water')) incomingTags.push('water', 'liquid');
+
+  // If the incoming field triggers a transmutation with existing surface/field at (x, y) that replaces it
+  // (e.g., water dousing fire into steam_cloud, or fire igniting oil), evaluate interactions after spawning.
+  const [spawnedState, entityId] = spawnFieldRaw(state, fieldType, x, y, intensity, duration, spreadRuleId);
+  const reactedState = evaluateFieldInteractionsAtTile(spawnedState, x, y, incomingTags);
+  return [reactedState, entityId];
 }
 
 /**

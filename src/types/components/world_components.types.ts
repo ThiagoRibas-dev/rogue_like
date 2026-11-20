@@ -278,3 +278,111 @@ export interface RulesetDataComponent {
   readonly rulesetId: 'classic' | 'dnd35e';
   readonly payload: Readonly<Record<string, unknown>>;
 }
+
+/** Canonical Tier 1 surface crossing classification (`bridge`, `rope_line`, `ladder_span`, `frozen_surface`). */
+export type CrossingKind = 'bridge' | 'rope_line' | 'ladder_span' | 'frozen_surface';
+
+/**
+ * Tier 1 Console world-owned crossing entity spanning a hazardous tile (`deep_water`, `pit`, `chasm`).
+ * Traversable symmetrically by players, companions, and monsters; destroying, cutting, or melting
+ * the crossing entity immediately drops any non-flying occupants into the underlying hazard tile.
+ */
+export interface CrossingComponent {
+  readonly type: ComponentType.Crossing;
+  readonly crossingKind: CrossingKind;
+  readonly requiredSkill?: string | undefined;
+  readonly skillDc?: number | undefined;
+  readonly maxWeightLbs?: number | undefined;
+  readonly anchorTileCoords?: ReadonlyArray<{ readonly x: number; readonly y: number }> | undefined;
+  readonly durationTurns?: number | undefined;
+}
+
+/**
+ * Tier 1 Console breath capacity and submersion countdown component for underwater/suffocation survival.
+ */
+export interface BreathComponent {
+  readonly type: ComponentType.Breath;
+  readonly remainingTurns: number;
+  readonly maxTurns: number;
+  readonly isSubmerged: boolean;
+}
+
+/**
+ * Tier 1 Console dynamic radial or directional cone light source component (torches, lanterns, sunrods).
+ * Works symmetrically on world-placed entities and carried/equipped items of players, companions, and NPCs.
+ */
+export interface LightEmitterComponent {
+  readonly type: ComponentType.LightEmitter;
+  readonly radiusFt: number;
+  readonly shadowyRadiusFt?: number | undefined;
+  readonly coneAngleDeg?: number | undefined;
+  readonly facing?: CardinalFacing | undefined;
+  readonly fuelTurns?: number | undefined;
+  readonly maxFuelTurns?: number | undefined;
+  readonly isLit: boolean;
+  readonly requiresIgnition?: boolean | undefined;
+}
+
+/** Canonical object size scale for structural doors, containers, and items. */
+export type StructuralObjectSize =
+  'fine' | 'diminutive' | 'tiny' | 'small' | 'medium' | 'large' | 'huge' | 'gargantuan' | 'colossal';
+
+/**
+ * Tier 1 Console structural durability component for objects, doors, chests, and equipment.
+ * Models material hardness, structural hit points, Break DCs, door open/spiked/jammed state,
+ * and the non-destructive `ruined: true` state at `0 HP` (repairable via Craft + tools).
+ */
+export interface StructuralComponent {
+  readonly type: ComponentType.Structural;
+  readonly materialTag: string;
+  readonly hardness: number;
+  readonly hp: number;
+  readonly maxHp: number;
+  readonly breakDc: number;
+  readonly objectSize: StructuralObjectSize;
+  readonly enhancementBonus?: number | undefined;
+  readonly ruined?: boolean | undefined;
+  readonly jammed?: boolean | undefined;
+  readonly spikedByEntityId?: EntityId | undefined;
+  readonly isOpen?: boolean | undefined;
+  readonly isDoor?: boolean | undefined;
+  readonly storedSpellIds?: ReadonlyArray<string> | undefined;
+}
+
+/**
+ * Tier 1 Console decaying physical corpse component dropped by slain corporeal actors.
+ * Supports harvesting (`harvestableTags`), necromancy husk consumption, and fire denial symmetrically.
+ */
+export interface CorpseComponent {
+  readonly type: ComponentType.Corpse;
+  readonly sourceTemplateId: string;
+  readonly creatureName: string;
+  readonly creatureType?: string | undefined;
+  readonly decayTurn: number;
+  readonly harvestableTags: ReadonlyArray<string>;
+  readonly harvestedTags?: ReadonlyArray<string> | undefined;
+}
+
+/**
+ * Tier 1 Console deity/patron piety and taboo ledger component interacting with shrines and altars.
+ */
+export interface ReligionComponent {
+  readonly type: ComponentType.Religion;
+  readonly deityOrPatronId: string;
+  readonly favorScore: number;
+  readonly penanceDebt: number;
+  readonly taboosViolated: ReadonlyArray<string>;
+}
+
+/**
+ * Tier 1 Console active disguise and faction identity mask component.
+ * Suppresses baseline faction hostility until `suspicion` reaches `maxSuspicion` via close observation or contradictory actions.
+ */
+export interface IdentityMaskComponent {
+  readonly type: ComponentType.IdentityMask;
+  readonly disguisedAsFactionId: string;
+  readonly disguisedAsRaceId?: string | undefined;
+  readonly disguiseCheckTotal: number;
+  readonly suspicion: number;
+  readonly maxSuspicion: number;
+}

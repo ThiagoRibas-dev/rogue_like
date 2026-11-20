@@ -9,7 +9,12 @@ import {
 } from '../constants/world_clock.constants.ts';
 import { getComponent } from '../core/ecs.ts';
 import { getRuleset } from '../rulesets/registry.ts';
-import type { AreaEnvironmentType, AreaIllumination, WorldClockConfig } from '../types/campaign.types.ts';
+import type {
+  AreaEnvironmentType,
+  AreaIllumination,
+  RestPressureConfig,
+  WorldClockConfig
+} from '../types/campaign.types.ts';
 import { ComponentType, type FighterComponent, type PositionComponent } from '../types/components.types.ts';
 import type { EntityId, GameState } from '../types/game-state.types.ts';
 import { isHostile } from '../utils/faction.ts';
@@ -17,6 +22,31 @@ import { coordToIndex } from '../utils/grid.ts';
 
 /** Fallback proximity radius (tiles) used when `cachedFov` is unpopulated in headless unit tests. */
 const HEADLESS_VISIBLE_THREAT_RADIUS = 8;
+
+/** Default camp ambush probability per watch chunk in unprotected dungeon areas (`15%`). */
+const DEFAULT_REST_AMBUSH_CHANCE_PER_WATCH = 0.15;
+
+/** Default watch duration per rest check chunk in hours (`2h`). */
+const DEFAULT_REST_WATCH_DURATION_HOURS = 2;
+
+/** Default scheme advancement speed multiplier during rest/wait (`1x`). */
+const DEFAULT_REST_SCHEME_TICK_MULTIPLIER = 1;
+
+/** Default area respawn rate multiplier during elapsed world time (`1x`). */
+const DEFAULT_REST_RESPAWN_RATE_MULTIPLIER = 1;
+
+/** Default alert/alarm decay turns during calm time (`50`). */
+const DEFAULT_REST_ALARM_DECAY_TURNS = 50;
+
+/** Canonical default Tier 1 Rest Pressure configuration when omitted from `rules.json` and `areas.json`. */
+export const DEFAULT_REST_PRESSURE_CONFIG: RestPressureConfig = {
+  safeRest: false,
+  ambushChancePerWatch: DEFAULT_REST_AMBUSH_CHANCE_PER_WATCH,
+  watchDurationHours: DEFAULT_REST_WATCH_DURATION_HOURS,
+  schemeTickMultiplier: DEFAULT_REST_SCHEME_TICK_MULTIPLIER,
+  respawnRateMultiplier: DEFAULT_REST_RESPAWN_RATE_MULTIPLIER,
+  alarmDecayTurns: DEFAULT_REST_ALARM_DECAY_TURNS
+};
 
 /** Canonical default SRD diurnal clock schedule (24h day starting 08:00 AM, Dawn 05:00, Day 07:00, Dusk 18:00, Night 20:00). */
 export const DEFAULT_WORLD_CLOCK_CONFIG: WorldClockConfig = {
@@ -57,6 +87,37 @@ export interface AreaEnvironmentProfile {
  */
 export function getEffectiveWorldClockConfig(state: GameState): WorldClockConfig {
   return state.campaign.rules.worldClock ?? DEFAULT_WORLD_CLOCK_CONFIG;
+}
+
+/**
+ * Resolves the effective `RestPressureConfig` ("Doom Clock") for `areaIdOverride ?? state.currentAreaId`,
+ * layering area overrides on top of campaign `rules.restPressure` and safe-zone defaults.
+ *
+ * @param state Current immutable GameState.
+ * @param areaIdOverride Optional target area identifier.
+ * @returns Resolved `RestPressureConfig`.
+ */
+export function resolveAreaRestPressure(state: GameState, areaIdOverride?: string): RestPressureConfig {
+  const area = state.campaign.areas[areaIdOverride ?? state.currentAreaId];
+  const campaignDefault = state.campaign.rules.restPressure;
+  const base = campaignDefault ?? DEFAULT_REST_PRESSURE_CONFIG;
+
+  if (area?.restPressure) {
+    return {
+      ...base,
+      ...area.restPressure
+    };
+  }
+
+  if (area?.tags?.includes('safe')) {
+    return {
+      ...base,
+      safeRest: true,
+      ambushChancePerWatch: 0
+    };
+  }
+
+  return base;
 }
 
 /**

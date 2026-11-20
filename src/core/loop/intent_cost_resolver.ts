@@ -56,7 +56,7 @@ export function applyIntentWithCost(state: GameState, intent: Intent): ActionRes
   nextState = costResult.state;
   let energyCost = costResult.energyCost;
 
-  if (energyCost > 0) {
+  if (energyCost > 0 && costResult.alreadySpeedScaled !== true) {
     const actor = getComponent(state, intent.entityId, ComponentType.Actor);
     if (actor) {
       const stats = getEffectiveStats(state, intent.entityId);

@@ -1,6 +1,6 @@
-import { addComponent, getComponent } from '../../core/ecs.ts';
+import { addComponent, getComponent, resolveEntityDisplayName } from '../../core/ecs.ts';
 import { addMessage, MessageLogCategory } from '../../systems/message.system.ts';
-import { ComponentType, type FighterComponent } from '../../types/components.types.ts';
+import { ComponentType, type FighterComponent, type StatusEffectsComponent } from '../../types/components.types.ts';
 import type { EntityId, GameState } from '../../types/game-state.types.ts';
 import type {
   HudVitalsDTO,
@@ -8,9 +8,16 @@ import type {
   RulesetSystemFileDescriptor,
   ViewGroup
 } from '../../types/ruleset.types.ts';
+import { isHostile } from '../../utils/faction.ts';
 import { processDnD35eDamage, resolveDnD35eMeleeAttack } from './cartridge/dnd35e_combat_adapter.ts';
-import { computeDnD35eEffectiveStats } from './cartridge/dnd35e_dag_adapter.ts';
+import { computeDnD35eEffectiveStats, evaluateDnD35eEntityDAG } from './cartridge/dnd35e_dag_adapter.ts';
 import { onDnD35eEntitySpawned } from './cartridge/dnd35e_spawn_hydrator.ts';
+import {
+  executeDnD35eChargeAction,
+  initiateDnD35eChargeTargeting,
+  validateChargeLine
+} from './combat/charge_resolver.ts';
+import { resolveSavingThrow } from './combat/damage_vitality.ts';
 import { DND35E_DEFAULT_CURRENCY_CONFIG } from './currency.ts';
 import { checkDnD35eRuleset } from './dnd35e_validator.ts';
 import { resolveDnD35eItemHandRequirement } from './equipment_physics.ts';
@@ -30,12 +37,15 @@ import {
   getDnD35eTradeSocialActions,
   resolveDnD35eTradeSocialSkill
 } from './skills/trade_social_checks.ts';
-import { getDnD35EntityData } from './srd_registry.ts';
+import { getDnD35EntityData, setDnD35EntityData } from './srd_registry.ts';
 import { executeAbruptJauntTeleport } from './combat/immediate_reactions.ts';
 import { executeDnD35eResourcePoolAbility } from './combat/pool_ability_resolver.ts';
 import { executeDruidShapeshift, type DnD35ShapeshiftFormId } from './shapeshift.ts';
 import { resolveDnD35eActorSpatialProfile, syncDnD35eActorSpatialFootprint } from './spatial/footprint_resolver.ts';
+import { toggleActorFastStealth, toggleActorStealth } from './spatial/stealth_resolver.ts';
+import { evaluateActorTileHazardOccupation } from './spatial/terrain_traversal_resolver.ts';
 import { executeDnD35eSpellCast } from './magic/spell_cast_resolver.ts';
+import { spawnArcaneCasterSpellbookLoot } from './magic/spellbook_loot.ts';
 import { DND35E_SYSTEM_CONTENT_FILES } from './system_content_files.ts';
 import { getDnD35SystemContent, parseDnD35SystemContent } from './types/dnd35e_system.types.ts';
 
@@ -171,6 +181,12 @@ export const dnd35eRulesetContract: RulesetContract = {
   projectInspectLoreLines: projectDnD35eInspectLoreLines,
   onActorTurnStart: onDnD35eActorTurnStart,
   onActorMovementStep: onDnD35eActorMovementStep,
+  getEntityMovementModes(state, entityId) {
+    return getDnD35EntityData(state, entityId).movementModes;
+  },
+  evaluateCombatChargeIntent(state, attackerId, defenderId) {
+    return validateChargeLine(state, attackerId, defenderId).valid;
+  },
   resolveActionEnergyCost: resolveDnD35eActionEnergyCost,
   canActorPerformIntent: canDnD35eActorPerformIntent,
   hasActorActedThisTurn: hasDnD35eActorActedThisTurn,
@@ -189,9 +205,40 @@ export const dnd35eRulesetContract: RulesetContract = {
     if (context.verb === 'abrupt_jaunt') {
       return executeAbruptJauntTeleport(state, actorId, targetPos.x, targetPos.y, true);
     }
+    if (context.verb === 'charge') {
+      const occupants = state.spatialIndex.get(`${targetPos.x},${targetPos.y}`) ?? [];
+      const targetId =
+        occupants.find((id) => {
+          if (id === actorId) return false;
+          const fighter = getComponent(state, id, ComponentType.Fighter) as FighterComponent | undefined;
+          return fighter !== undefined && fighter.hp > 0 && isHostile(state, actorId, id);
+        }) ??
+        occupants.find((id) => {
+          if (id === actorId) return false;
+          const fighter = getComponent(state, id, ComponentType.Fighter) as FighterComponent | undefined;
+          return fighter !== undefined && fighter.hp > 0;
+        });
+      if (targetId === undefined) {
+        return {
+          state: addMessage(state, '[Charge] Select a living target to Charge.', MessageLogCategory.System),
+          success: false
+        };
+      }
+      return executeDnD35eChargeAction(state, actorId, targetId);
+    }
     return { state, success: false };
   },
   resolveUseAbility(state, intent) {
+    if (intent.effectId === 'action:charge') {
+      return initiateDnD35eChargeTargeting(state, intent.entityId);
+    }
+    if (intent.effectId === 'skill:stealth') {
+      const res = toggleActorStealth(state, intent.entityId);
+      return { state: res.state, success: res.reason === undefined };
+    }
+    if (intent.effectId === 'skill:fast_stealth') {
+      return { state: toggleActorFastStealth(state, intent.entityId), success: true };
+    }
     if (intent.effectId.startsWith('pool:')) {
       const poolId = intent.effectId.slice('pool:'.length);
       return executeDnD35eResourcePoolAbility(state, intent.entityId, poolId);
@@ -217,5 +264,73 @@ export const dnd35eRulesetContract: RulesetContract = {
   evaluateDialogueSkillCheck: evaluateDnD35eDialogueSkillCheck,
   getActorSkillModifier: getDnD35eActorSkillModifier,
   onEntitySpawned: onDnD35eEntitySpawned,
-  resolveKillXpReward: resolveDnD35eKillXpReward
+  resolveKillXpReward: resolveDnD35eKillXpReward,
+  onAmbushSurprise(state, surprisedEntityIds) {
+    let nextState = state;
+    for (const entityId of surprisedEntityIds) {
+      const dndData = getDnD35EntityData(nextState, entityId);
+      const conds = dndData.conditions ?? [];
+      const nextConds = conds.includes('flat_footed') ? conds : [...conds, 'flat_footed' as const];
+      const nextBudget = dndData.actionBudget ? { ...dndData.actionBudget, isFlatFooted: true } : undefined;
+      nextState = setDnD35EntityData(nextState, entityId, {
+        ...dndData,
+        conditions: nextConds,
+        ...(nextBudget !== undefined ? { actionBudget: nextBudget } : {})
+      });
+    }
+    return nextState;
+  },
+  resolveStatusSecondaryStage(state, entityId, _activeEffect, statusDef) {
+    const dc = statusDef.secondarySaveDc ?? 14;
+    const dag = evaluateDnD35eEntityDAG(state, entityId);
+    const baseFort = dag?.dagResult.saves.fort ?? 0;
+    const statuses = getComponent(state, entityId, ComponentType.StatusEffects) as StatusEffectsComponent | undefined;
+    const resistedIds = statusDef.resistedByStatusIds ?? [];
+    const hasResistanceStatus =
+      resistedIds.length > 0 && (statuses?.activeEffects.some((e) => resistedIds.includes(e.effectId)) ?? false);
+    const alchemicalBonus = hasResistanceStatus ? 5 : 0;
+
+    const saveRes = resolveSavingThrow({
+      saveType: 'fort',
+      baseSave: baseFort,
+      abilityModifier: 0,
+      miscBonus: alchemicalBonus,
+      dc
+    });
+    const name = resolveEntityDisplayName(state, entityId, 'Someone');
+    const bonusNote = alchemicalBonus > 0 ? ` (+${alchemicalBonus} alchemical)` : '';
+    const msg = saveRes.success
+      ? `${name} resists secondary ${statusDef.name} damage (Fortitude ${saveRes.total}${bonusNote} vs DC ${dc})!`
+      : `${name} fails to resist secondary ${statusDef.name} damage (Fortitude ${saveRes.total}${bonusNote} vs DC ${dc})!`;
+    return {
+      state: addMessage(state, msg, saveRes.success ? MessageLogCategory.System : MessageLogCategory.CombatHit),
+      resisted: saveRes.success
+    };
+  },
+  isActorImmuneToDrowning(state, entityId) {
+    const dndData = getDnD35EntityData(state, entityId);
+    if (dndData.abilityScores?.con?.base === null) return true;
+    const dag = evaluateDnD35eEntityDAG(state, entityId);
+    if (!dag) return false;
+    if (dag.dagResult.abilityBreakdowns?.con?.effectiveScore === null) return true;
+    return (
+      dag.selfTags.includes('trait:water_breathing') ||
+      dag.selfTags.includes('type:undead') ||
+      dag.selfTags.includes('type:construct')
+    );
+  },
+  getActorMaxBreathTurns(state, entityId) {
+    const dag = evaluateDnD35eEntityDAG(state, entityId);
+    const conScore =
+      dag?.dagResult.abilityBreakdowns?.con?.effectiveScore ??
+      getDnD35EntityData(state, entityId).abilityScores?.con?.base ??
+      10;
+    return Math.max(1, (conScore ?? 10) * 2);
+  },
+  onCrossingCollapsedForOccupant(state, occupantId, x, y) {
+    return evaluateActorTileHazardOccupation(state, occupantId, x, y);
+  },
+  onEntityDied(state, victimId, x, y) {
+    return spawnArcaneCasterSpellbookLoot(state, victimId, x, y).state;
+  }
 };

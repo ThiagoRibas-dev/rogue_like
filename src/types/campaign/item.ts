@@ -95,6 +95,16 @@ export const ItemDefinitionSchema = z.object({
       effectId: z.string(),
       charges: z.number().int().positive().optional()
     })
+    .optional(),
+  lightSource: z
+    .object({
+      radiusFt: z.number().nonnegative(),
+      shadowyRadiusFt: z.number().nonnegative().optional(),
+      coneAngleDeg: z.number().min(1).max(360).optional(),
+      fuelTurns: z.number().int().nonnegative().optional(),
+      requiresIgnition: z.boolean().optional(),
+      defaultLit: z.boolean().optional()
+    })
     .optional()
 });
 /** Inferred type for an item definition. */

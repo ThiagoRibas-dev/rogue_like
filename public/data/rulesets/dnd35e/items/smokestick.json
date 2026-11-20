@@ -12,7 +12,8 @@
     "baseValue": 20,
     "currencyUnit": "gp",
     "tags": [
-      "alchemical"
+      "alchemical",
+      "smoke_emitter"
     ],
     "throwable": {
       "range": 3,

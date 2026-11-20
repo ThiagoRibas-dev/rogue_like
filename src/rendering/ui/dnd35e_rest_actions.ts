@@ -9,7 +9,11 @@ import { BULK_REST_PROGRESS_DOTS, CLOCK_PHASE_ICONS } from '../../constants/worl
 import { EIGHT_HOURS_IN_ROUNDS } from '../../rulesets/dnd35e/magic/aoe_rest.ts';
 import { finalizeEightHourRestRecovery } from '../../rulesets/dnd35e/magic/rest_recovery.ts';
 import { addMessage, MessageLogCategory } from '../../systems/message.system.ts';
-import { evaluateActorRestSafety, finalizeWaitUntilPhase } from '../../systems/rest.system.ts';
+import {
+  evaluateActorRestSafety,
+  executeWatchChunkedBulkRestAsync,
+  finalizeWaitUntilPhase
+} from '../../systems/rest.system.ts';
 import { computeTurnsUntilPhase, getClockPhaseLabel } from '../../systems/world_clock.system.ts';
 import { advanceWorldTimeBulkAsync } from '../../systems/world_time_skip.ts';
 import type { EntityId, GameState } from '../../types/game-state.types.ts';
@@ -35,10 +39,10 @@ export async function applyRestActionAsync(
   showLoadingOverlay('Resting for 8 Hours...');
   let dotIdx = 0;
   try {
-    const bulkRes = await advanceWorldTimeBulkAsync(
+    const bulkRes = await executeWatchChunkedBulkRestAsync(
       state,
-      EIGHT_HOURS_IN_ROUNDS,
       playerId,
+      EIGHT_HOURS_IN_ROUNDS,
       (fraction) => {
         const dots = BULK_REST_PROGRESS_DOTS[dotIdx % BULK_REST_PROGRESS_DOTS.length] ?? '...';
         dotIdx++;

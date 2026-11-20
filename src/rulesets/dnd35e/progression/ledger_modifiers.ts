@@ -268,6 +268,7 @@ export interface ResolvedActiveCombatRules {
   readonly hasCleave: boolean;
   readonly hasGreatCleave: boolean;
   readonly hasExoticWeaponProficiency: boolean;
+  readonly chargeIgnoresDifficultTerrain: boolean;
   readonly combatOverrides: {
     readonly secondaryNaturalPenalty?: number | undefined;
     readonly twfPrimaryPenalty?: number | undefined;
@@ -297,6 +298,9 @@ export function buildCombatRuleOverridesFromActiveRules(
   );
   const hasExoticWeaponProficiency = ruleOverrides.some(
     (r) => r.ruleKey === 'exotic_weapon_proficiency' && r.value === true
+  );
+  const chargeIgnoresDifficultTerrain = ruleOverrides.some(
+    (r) => r.ruleKey === 'charge_ignores_difficult_terrain' && r.value === true
   );
 
   let secondaryNaturalPenalty: number | undefined;
@@ -337,6 +341,7 @@ export function buildCombatRuleOverridesFromActiveRules(
     hasCleave,
     hasGreatCleave,
     hasExoticWeaponProficiency,
+    chargeIgnoresDifficultTerrain,
     combatOverrides: {
       ...(secondaryNaturalPenalty !== undefined ? { secondaryNaturalPenalty } : {}),
       ...(twfPrimaryPenalty !== undefined ? { twfPrimaryPenalty } : {}),

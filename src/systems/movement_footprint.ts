@@ -158,9 +158,16 @@ function isHardCornerWallTile(state: GameState, x: number, y: number): boolean {
   if (!tile) return true;
   const tileDef = state.campaign.tiles[tile.tileId];
   if (!tileDef || tileDef.walkable) return false;
+  if (tileDef.isSolidObstacle === true) return true;
   // SRD: You can move diagonally past impassable obstacles such as pits/chasms, only not past wall corners.
   const tags = tileDef.tags ?? [];
-  if (tags.includes('pit') || tags.includes('chasm') || tags.includes('water') || tags.includes('liquid')) {
+  if (
+    tileDef.hazardKind !== undefined ||
+    tags.includes('pit') ||
+    tags.includes('chasm') ||
+    tags.includes('water') ||
+    tags.includes('liquid')
+  ) {
     return false;
   }
   return true;
@@ -190,7 +197,7 @@ function checkRectTilesTraversable(
   anchorY: number,
   width: number,
   height: number,
-  canTraverse: (tileDef: TileDefinition | undefined) => boolean
+  canTraverse: (tileDef: TileDefinition | undefined, tx: number, ty: number) => boolean
 ): { readonly ok: boolean; readonly firstBlockedDef: TileDefinition | undefined } {
   for (let dy = 0; dy < height; dy++) {
     for (let dx = 0; dx < width; dx++) {
@@ -201,7 +208,7 @@ function checkRectTilesTraversable(
       }
       const tile = state.map.tiles[coordToIndex(tx, ty, state.map.width)];
       const tileDef = tile ? state.campaign.tiles[tile.tileId] : undefined;
-      if (!canTraverse(tileDef)) {
+      if (!canTraverse(tileDef, tx, ty)) {
         return { ok: false, firstBlockedDef: tileDef };
       }
     }
@@ -219,13 +226,19 @@ export function resolveMovementFootprintPlacement(params: {
   readonly fromPos: PositionComponent;
   readonly dx: number;
   readonly dy: number;
-  readonly canTraverse: (tileDef: TileDefinition | undefined) => boolean;
+  readonly canTraverse: (tileDef: TileDefinition | undefined, tx: number, ty: number) => boolean;
 }): FootprintPlacementResult {
   const { state, entityId, fromPos, dx, dy, canTraverse } = params;
   const nextFacing = resolveCardinalFacing(dx, dy, fromPos.facing);
   const profile = getEntitySpatialProfile(state, entityId, nextFacing);
-  const curW = Math.max(1, fromPos.footprintWidth ?? profile.baseWidth);
-  const curH = Math.max(1, fromPos.footprintHeight ?? profile.baseHeight);
+  const curW = Math.max(
+    1,
+    fromPos.footprintWidth ?? (fromPos.isSqueezing === true ? Math.ceil(profile.baseWidth / 2) : profile.baseWidth)
+  );
+  const curH = Math.max(
+    1,
+    fromPos.footprintHeight ?? (fromPos.isSqueezing === true ? Math.ceil(profile.baseHeight / 2) : profile.baseHeight)
+  );
   const baseW = profile.baseWidth;
   const baseH = profile.baseHeight;
 
@@ -298,21 +311,15 @@ export function resolveMovementFootprintPlacement(params: {
     }
   }
 
-  // 2. SRD Squeezing: Large+ creatures (`baseW >= 2 || baseH >= 2`) can squeeze into at least half width/height
+  // 2. SRD Squeezing: Large+ creatures (`baseW >= 2 || baseH >= 2`) squeeze perpendicular to travel axis
   if (baseW >= 2 || baseH >= 2) {
     const halfW = Math.ceil(baseW / 2);
     const halfH = Math.ceil(baseH / 2);
     const squeezeCandidates: ReadonlyArray<{ readonly w: number; readonly h: number }> =
       dx !== 0 && dy === 0
-        ? [
-            { w: baseW, h: halfH },
-            { w: halfW, h: halfH }
-          ]
+        ? [{ w: baseW, h: halfH }]
         : dy !== 0 && dx === 0
-          ? [
-              { w: halfW, h: baseH },
-              { w: halfW, h: halfH }
-            ]
+          ? [{ w: halfW, h: baseH }]
           : [
               { w: halfW, h: baseH },
               { w: baseW, h: halfH },
@@ -321,8 +328,9 @@ export function resolveMovementFootprintPlacement(params: {
 
     for (const cand of squeezeCandidates) {
       if (cand.w >= baseW && cand.h >= baseH) continue;
-      const shiftXMax = Math.max(0, curW - cand.w);
-      const shiftYMax = Math.max(0, curH - cand.h);
+      // Never shift forward past an impassable tile along the movement direction (prevents skipping 1-tile walls)
+      const shiftXMax = dx > 0 ? 0 : Math.max(0, curW - cand.w);
+      const shiftYMax = dy > 0 ? 0 : Math.max(0, curH - cand.h);
       for (let sy = 0; sy <= shiftYMax; sy++) {
         for (let sx = 0; sx <= shiftXMax; sx++) {
           const check = checkRectTilesTraversable(state, targetX + sx, targetY + sy, cand.w, cand.h, canTraverse);

@@ -13,7 +13,8 @@
     "currencyUnit": "gp",
     "tags": [
       "class_tool",
-      "skill_kit"
+      "skill_kit",
+      "climbing_kit"
     ],
     "effectBundle": {
       "bundleId": "item_climbers_kit",

@@ -9,9 +9,15 @@ import { executeBuyItem, executeSellItem, executeTradeSocialAction } from './sho
 import { processSocialIntent } from './social.system.ts';
 import { processReactions, getValidReactionsForTarget } from './reaction.system.ts';
 import { VERBS, type Verb } from '../constants/verbs.constants.ts';
-import { ComponentType, type ItemComponent, type TemplateComponent } from '../types/components.types.ts';
-import { getComponent } from '../core/ecs.ts';
+import {
+  ComponentType,
+  type InventoryComponent,
+  type ItemComponent,
+  type TemplateComponent
+} from '../types/components.types.ts';
+import { addComponent, getComponent, removeEntity, resolveEntityDisplayName } from '../core/ecs.ts';
 import { getActiveRuleset } from '../rulesets/registry.ts';
+import { applyItemEffect } from './effects.system.ts';
 import { processQuestEvent } from './quest.system.ts';
 import type { EntityId } from '../types/game-state.types.ts';
 import type { ApplyIntentTarget, VerbOption } from '../types/intents/interaction.intents.ts';
@@ -22,6 +28,7 @@ import {
   processCompanionVerbIntent
 } from './companion_commands.system.ts';
 import { startDialogue } from './dialogue.system.ts';
+import { igniteLightEmitter, refuelLightEmitter } from './light_emitter.system.ts';
 /**
  * Emits an 'interact' quest event when the player successfully interacts with an entity target.
  */
@@ -141,6 +148,127 @@ export function processApplyIntent(
     };
   }
 
+  if (intent.verb === 'ignite') {
+    const targetItemId =
+      intent.target.type === 'item'
+        ? intent.target.itemEntityId
+        : intent.target.type === 'entity'
+          ? intent.target.entityId
+          : undefined;
+    if (targetItemId !== undefined) {
+      const igniteRes = igniteLightEmitter(state, intent.entityId, targetItemId, intent.toolEntityId);
+      if (igniteRes.success) {
+        const resolvedEvent: ApplyResolvedEvent = {
+          type: GameEventType.ApplyResolved,
+          entityId: intent.entityId,
+          verb: intent.verb,
+          target: intent.target,
+          toolEntityId: intent.toolEntityId
+        };
+        return { state: igniteRes.state, success: true, events: [resolvedEvent] };
+      }
+      return { state: igniteRes.state, success: false };
+    }
+  }
+
+  if (intent.verb === 'dip' && intent.toolEntityId !== undefined) {
+    const targetItemEntityId =
+      intent.target.type === 'item'
+        ? intent.target.itemEntityId
+        : intent.target.type === 'entity'
+          ? intent.target.entityId
+          : undefined;
+    if (targetItemEntityId !== undefined) {
+      const refuelRes = refuelLightEmitter(state, intent.entityId, targetItemEntityId, intent.toolEntityId);
+      if (refuelRes.success) {
+        const resolvedEvent: ApplyResolvedEvent = {
+          type: GameEventType.ApplyResolved,
+          entityId: intent.entityId,
+          verb: intent.verb,
+          target: intent.target,
+          toolEntityId: intent.toolEntityId
+        };
+        return { state: refuelRes.state, success: true, events: [resolvedEvent] };
+      }
+      const toolItem = getComponent(state, intent.toolEntityId, ComponentType.Item) as ItemComponent | undefined;
+      const targetItem = getComponent(state, targetItemEntityId, ComponentType.Item) as ItemComponent | undefined;
+      if (toolItem && targetItem) {
+        const statusId = toolItem.itemId.includes('poison') ? 'poison' : 'burning';
+        let nextState = addComponent(state, targetItemEntityId, {
+          type: ComponentType.Coating,
+          statusId,
+          charges: 1,
+          duration: 50,
+          coatingItemId: toolItem.itemId
+        });
+        nextState = addMessage(
+          nextState,
+          `You dip ${targetItem.itemId.replace(/_/g, ' ')} into ${toolItem.itemId.replace(/_/g, ' ')}.`,
+          MessageLogCategory.System
+        );
+        const resolvedEvent: ApplyResolvedEvent = {
+          type: GameEventType.ApplyResolved,
+          entityId: intent.entityId,
+          verb: intent.verb,
+          target: intent.target,
+          toolEntityId: intent.toolEntityId
+        };
+        return {
+          state: nextState,
+          success: true,
+          events: [resolvedEvent]
+        };
+      }
+    }
+  }
+
+  if (intent.verb === 'apply' || intent.verb === 'drink') {
+    const consumableEntityId = intent.target.type === 'item' ? intent.target.itemEntityId : intent.toolEntityId;
+    if (consumableEntityId !== undefined) {
+      const itemComp = getComponent(state, consumableEntityId, ComponentType.Item) as ItemComponent | undefined;
+      const itemDef = itemComp ? state.campaign.items[itemComp.itemId] : undefined;
+      if (itemComp && itemDef?.consumable) {
+        const targetActorId = intent.target.type === 'entity' ? intent.target.entityId : intent.entityId;
+        const itemName = resolveEntityDisplayName(state, consumableEntityId, itemDef.name);
+        let nextState = addMessage(state, `You use the ${itemName}.`, MessageLogCategory.System);
+        if (!nextState.identifiedItems.has(itemComp.itemId)) {
+          const nextIdentified = new Set(nextState.identifiedItems);
+          nextIdentified.add(itemComp.itemId);
+          nextState = { ...nextState, identifiedItems: nextIdentified };
+        }
+        nextState = applyItemEffect(nextState, targetActorId, itemDef.consumable.effectId, itemName, targetActorId);
+
+        const remainingCharges = (itemComp.charges ?? itemDef.consumable.charges ?? 1) - 1;
+        if (remainingCharges <= 0) {
+          const inv = getComponent(nextState, intent.entityId, ComponentType.Inventory) as
+            InventoryComponent | undefined;
+          if (inv && inv.items.includes(consumableEntityId)) {
+            nextState = addComponent(nextState, intent.entityId, {
+              ...inv,
+              items: inv.items.filter((id) => id !== consumableEntityId)
+            });
+          }
+          nextState = removeEntity(nextState, consumableEntityId);
+        } else {
+          nextState = addComponent(nextState, consumableEntityId, { ...itemComp, charges: remainingCharges });
+        }
+
+        const resolvedEvent: ApplyResolvedEvent = {
+          type: GameEventType.ApplyResolved,
+          entityId: intent.entityId,
+          verb: intent.verb,
+          target: intent.target,
+          toolEntityId: intent.toolEntityId
+        };
+        return {
+          state: nextState,
+          success: true,
+          events: [resolvedEvent]
+        };
+      }
+    }
+  }
+
   const failedEvent: ApplyFailedEvent = {
     type: GameEventType.ApplyFailed,
     entityId: intent.entityId,
@@ -179,6 +307,20 @@ export function getValidVerbsForTarget(
       if (itemDef) {
         if (itemDef.throwable) validVerbs.add('throw');
         if (itemDef.zappable) validVerbs.add('zap');
+        if (itemDef.consumable) {
+          validVerbs.add('apply');
+          validVerbs.add('drink');
+        }
+        const tags = itemDef.tags ?? [];
+        if (
+          tags.includes('liquid') ||
+          tags.includes('poison') ||
+          tags.includes('flammable_oil') ||
+          tags.includes('fuel') ||
+          (tags.includes('holy') && tags.includes('splash_weapon'))
+        ) {
+          validVerbs.add('dip');
+        }
       }
     }
   }

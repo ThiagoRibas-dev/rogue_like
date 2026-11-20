@@ -58,6 +58,15 @@
     "message": "{target} felt incredibly fast!",
     "tags": ["potion", "magic"]
   },
+  "antitoxin_dose": {
+    "id": "antitoxin_dose",
+    "type": "apply_status",
+    "value": 0,
+    "statusId": "antitoxin",
+    "duration": 600,
+    "message": "{target} gains +5 alchemical resistance against poison for 1 hour!",
+    "tags": ["alchemical"]
+  },
   "scroll_identify": {
     "id": "scroll_identify",
     "type": "identify",

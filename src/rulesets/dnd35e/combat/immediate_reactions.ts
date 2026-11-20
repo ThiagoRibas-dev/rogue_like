@@ -1,6 +1,12 @@
-import { addComponent, consumeResourcePool, getComponent, resolveEntityDisplayName } from '../../../core/ecs.ts';
+import { consumeResourcePool, getComponent, resolveEntityDisplayName } from '../../../core/ecs.ts';
 import { addFloatingText } from '../../../systems/damage.system.ts';
 import { addMessage, MessageLogCategory } from '../../../systems/message.system.ts';
+import {
+  displaceEntityStep,
+  evaluateTileTraversal,
+  getEntityMovementModes
+} from '../../../systems/movement_displacement.ts';
+import { evaluateFootprintOccupancy } from '../../../systems/movement_footprint.ts';
 import { applyStatusEffect } from '../../../systems/status-effect.system.ts';
 import {
   ComponentType,
@@ -8,17 +14,15 @@ import {
   type PositionComponent,
   type ResourcePoolComponent,
   type StatusEffectsComponent,
-  type TacticalDoctrineComponent,
-  type TagsComponent
+  type TacticalDoctrineComponent
 } from '../../../types/components.types.ts';
-import { EngineMode, type EntityId, type GameState } from '../../../types/game-state.types.ts';
+import type { EntityId, GameState } from '../../../types/game-state.types.ts';
 import { coordToIndex, isInBounds } from '../../../utils/grid.ts';
 import { isHostile } from '../../../utils/faction.ts';
 import { useImmediateAction } from '../action_economy_reactions.ts';
 import { evaluateDnD35eEntityDAG } from '../cartridge/dnd35e_dag_adapter.ts';
 import { hydrateEntityRoundActionBudget } from '../cartridge/dnd35e_turn_budget.ts';
 import { evaluateCover } from '../spatial/cover_senses.ts';
-import { syncSpatialFlankingGraph } from '../spatial/flanking_graph.ts';
 import { measureFootprintToFootprintDistanceFt } from '../spatial/footprint_resolver.ts';
 import { FEET_PER_GRID_SQUARE, SIZE_METRICS } from '../spatial/grid_geometry.ts';
 import { getDnD35EntityData, setDnD35EntityData } from '../srd_registry.ts';
@@ -48,18 +52,31 @@ function isTileValidJauntDestination(
   if (!isInBounds(targetX, targetY, state.map.width, state.map.height)) return false;
   const distTiles = Math.max(Math.abs(targetX - actorPos.x), Math.abs(targetY - actorPos.y));
   if (distTiles < 1 || distTiles > ABRUPT_JAUNT_MAX_TILES) return false;
-  const tile = state.map.tiles[coordToIndex(targetX, targetY, state.map.width)];
-  if (!tile || !state.campaign.tiles[tile.tileId]?.walkable) return false;
-
-  const occupants = state.spatialIndex.get(`${targetX},${targetY}`) ?? [];
-  for (const occId of occupants) {
-    if (occId === actorId) continue;
-    const isActor =
-      getComponent(state, occId, ComponentType.Fighter) !== undefined ||
-      getComponent(state, occId, ComponentType.Actor) !== undefined;
-    const tags = (getComponent(state, occId, ComponentType.Tags) as TagsComponent | undefined)?.tags ?? [];
-    if (isActor || tags.includes('solid')) return false;
+  const movementModes = getEntityMovementModes(state, actorId);
+  const w = Math.max(1, actorPos.footprintWidth ?? 1);
+  const h = Math.max(1, actorPos.footprintHeight ?? 1);
+  for (let oy = 0; oy < h; oy++) {
+    for (let ox = 0; ox < w; ox++) {
+      const cx = targetX + ox;
+      const cy = targetY + oy;
+      if (!isInBounds(cx, cy, state.map.width, state.map.height)) return false;
+      const tile = state.map.tiles[coordToIndex(cx, cy, state.map.width)];
+      const tileDef = tile ? state.campaign.tiles[tile.tileId] : undefined;
+      const traversal = evaluateTileTraversal(tileDef, movementModes);
+      if (traversal.passability !== 'unimpeded' && traversal.passability !== 'difficult') return false;
+    }
   }
+
+  const occupancy = evaluateFootprintOccupancy({
+    state,
+    moverId: actorId,
+    moverPos: actorPos,
+    targetX,
+    targetY,
+    targetW: w,
+    targetH: h
+  });
+  if (occupancy.blocked) return false;
 
   const isWallAt = (x: number, y: number): boolean => {
     if (!isInBounds(x, y, state.map.width, state.map.height)) return true;
@@ -86,7 +103,7 @@ function tryConsumeImmediatePoolAndAction(
   const dndData = getDnD35EntityData(state, actorId);
   const activeBudget = dndData.actionBudget ?? hydrateEntityRoundActionBudget(state, actorId);
   const immRes = useImmediateAction(activeBudget, isOnTurn);
-  if (!immRes.allowed && state.engineMode === EngineMode.TurnBased) {
+  if (!immRes.allowed) {
     return {
       state: addMessage(state, `${abilityName}: No Swift or Immediate Action available.`, MessageLogCategory.System),
       allowed: false
@@ -148,7 +165,7 @@ export function initiateAbruptJauntTargeting(
   }
   const activeBudget =
     getDnD35EntityData(state, actorId).actionBudget ?? hydrateEntityRoundActionBudget(state, actorId);
-  if (!useImmediateAction(activeBudget, true).allowed && state.engineMode === EngineMode.TurnBased) {
+  if (!useImmediateAction(activeBudget, true).allowed) {
     const msg = 'Abrupt Jaunt: No Swift or Immediate Action available.';
     return { state: addMessage(state, msg, MessageLogCategory.System), success: false };
   }
@@ -192,14 +209,20 @@ export function executeAbruptJauntTeleport(
   const consumed = tryConsumeImmediatePoolAndAction(state, actorId, 'abrupt_jaunt', 'Abrupt Jaunt', isOnTurn);
   if (!consumed.allowed) return { state: consumed.state, success: false };
 
-  let next = addComponent(consumed.state, actorId, {
-    ...actorPos,
-    type: ComponentType.Position,
-    x: targetX,
-    y: targetY
+  const teleportRes = displaceEntityStep({
+    state: consumed.state,
+    entityId: actorId,
+    targetX,
+    targetY,
+    context: {
+      mode: 'teleport',
+      isForced: false,
+      provokesAoO: false,
+      sourceEntityId: actorId
+    },
+    skipOccupancyCheck: true
   });
-  if (getComponent(next, actorId, ComponentType.Player) !== undefined) next = { ...next, fovNeedsUpdate: true };
-  next = syncSpatialFlankingGraph(next);
+  let next = teleportRes.state;
   const name = resolveEntityDisplayName(next, actorId, 'Actor');
   const distFt = Math.max(Math.abs(targetX - actorPos.x), Math.abs(targetY - actorPos.y)) * FEET_PER_GRID_SQUARE;
   next = addFloatingText(next, actorId, 'JAUNT!', '#74b9ff');

@@ -1,0 +1,483 @@
+import { getComponent, resolveEntityDisplayName } from '../../../core/ecs.ts';
+import { addMessage, MessageLogCategory } from '../../../systems/message.system.ts';
+import {
+  displaceEntityAlongVector,
+  evaluateTileTraversal,
+  getEntityMovementModes
+} from '../../../systems/movement_displacement.ts';
+import {
+  computeRectNearestDelta,
+  evaluateFootprintOccupancy,
+  resolveMovementFootprintPlacement
+} from '../../../systems/movement_footprint.ts';
+import type { TileDefinition } from '../../../types/campaign/world.ts';
+import {
+  ComponentType,
+  type FighterComponent,
+  type MovementModes,
+  type PositionComponent,
+  type PropertyOverlayComponent
+} from '../../../types/components.types.ts';
+import type { EntityId, GameState } from '../../../types/game-state.types.ts';
+import { IntentType } from '../../../types/intents/intent.enum.ts';
+import { isInBounds } from '../../../utils/grid.ts';
+import { resolveDnD35eMeleeAttack } from '../cartridge/dnd35e_combat_adapter.ts';
+import { evaluateDnD35eEntityDAG } from '../cartridge/dnd35e_dag_adapter.ts';
+import { computeActorTacticalLandSpeedFt } from '../cartridge/dnd35e_turn_budget.ts';
+import {
+  measureFootprintToFootprintDistanceFt,
+  resolveDnD35eActorSpatialProfile
+} from '../spatial/footprint_resolver.ts';
+import { FEET_PER_GRID_SQUARE } from '../spatial/grid_geometry.ts';
+import { getDnD35EntityData, setDnD35EntityData } from '../srd_registry.ts';
+import { resolveEffectiveEntityDataWithOverlays } from '../wild_shape.ts';
+import { CHARGE_MOVEMENT_MIN_FT } from './combat_acf_riders.ts';
+import { applyConditionWithEscalation } from './maneuvers_conditions.ts';
+
+/** Standard Charge full-round speed multiplier (`2x` tactical speed, PHB p. 154). */
+const CHARGE_SPEED_MULTIPLIER = 2;
+
+/** Minimum number of grid squares moved required for a Charge (`2` squares = `10 ft`, PHB p. 154). */
+const CHARGE_MIN_STEPS = 2;
+
+/** Alternating even-diagonal grid cost in feet (`10 ft`). */
+const EVEN_DIAGONAL_COST_FT = 10;
+
+/** Condition tags/IDs that physically prevent executing a Charge action. */
+const CHARGE_BLOCKING_CONDITIONS: ReadonlySet<string> = new Set([
+  'prone',
+  'paralyzed',
+  'helpless',
+  'stunned',
+  'unconscious',
+  'grappled',
+  'panicked'
+]);
+
+/** Structured validation output produced by `validateChargeLine`. */
+export interface ChargeValidationResult {
+  readonly valid: boolean;
+  readonly reason?: string | undefined;
+  readonly stepDeltas: ReadonlyArray<{ readonly dx: number; readonly dy: number }>;
+  readonly totalDistanceFt: number;
+  readonly ignoresDifficultTerrainForCharge: boolean;
+  readonly landingPos?: { readonly x: number; readonly y: number } | undefined;
+}
+
+function canChargeTraverseTile(
+  tileDef: TileDefinition | undefined,
+  movementModes: MovementModes | undefined,
+  ignoresDifficultTerrain: boolean
+): boolean {
+  const evalRes = evaluateTileTraversal(tileDef, movementModes);
+  if (evalRes.passability === 'unimpeded') return true;
+  if (evalRes.passability === 'difficult') {
+    return ignoresDifficultTerrain && tileDef?.blocksCharge !== true;
+  }
+  return false;
+}
+
+function computeBresenhamSteps(
+  startX: number,
+  startY: number,
+  endX: number,
+  endY: number
+): ReadonlyArray<{ readonly dx: number; readonly dy: number }> {
+  const steps: Array<{ readonly dx: number; readonly dy: number }> = [];
+  let x = startX;
+  let y = startY;
+  const totalDx = Math.abs(endX - startX);
+  const totalDy = Math.abs(endY - startY);
+  const sx = startX < endX ? 1 : -1;
+  const sy = startY < endY ? 1 : -1;
+  let err = totalDx - totalDy;
+
+  const maxIter = Math.max(totalDx, totalDy) + 2;
+  for (let i = 0; i < maxIter && (x !== endX || y !== endY); i++) {
+    const e2 = 2 * err;
+    let stepDx = 0;
+    let stepDy = 0;
+    if (e2 > -totalDy) {
+      err -= totalDy;
+      stepDx = sx;
+    }
+    if (e2 < totalDx) {
+      err += totalDx;
+      stepDy = sy;
+    }
+    if (stepDx === 0 && stepDy === 0) break;
+    x += stepDx;
+    y += stepDy;
+    steps.push({ dx: stepDx, dy: stepDy });
+  }
+  return steps;
+}
+
+/**
+ * Evaluates whether `attackerId` can legally execute an explicit Full-Round **Charge** action
+ * against `defenderId`, checking Full-Round action availability, straight-line clear path (`charge_step`),
+ * difficult terrain rules (or declarative `charge_ignores_difficult_terrain`), creature blockers,
+ * minimum `10 ft` (`2` squares) distance, and maximum `2x` tactical speed range.
+ */
+export function validateChargeLine(
+  state: GameState,
+  attackerId: EntityId,
+  defenderId: EntityId
+): ChargeValidationResult {
+  const fail = (reason: string): ChargeValidationResult => ({
+    valid: false,
+    reason,
+    stepDeltas: [],
+    totalDistanceFt: 0,
+    ignoresDifficultTerrainForCharge: false
+  });
+
+  if (attackerId === defenderId) {
+    return fail('Cannot Charge yourself.');
+  }
+
+  const attackerFighter = getComponent(state, attackerId, ComponentType.Fighter) as FighterComponent | undefined;
+  const defenderFighter = getComponent(state, defenderId, ComponentType.Fighter) as FighterComponent | undefined;
+  const attackerPos = getComponent(state, attackerId, ComponentType.Position) as PositionComponent | undefined;
+  const defenderPos = getComponent(state, defenderId, ComponentType.Position) as PositionComponent | undefined;
+
+  if (!attackerFighter || attackerFighter.hp <= 0 || !attackerPos) {
+    return fail('Attacker cannot act.');
+  }
+  if (!defenderFighter || defenderFighter.hp <= 0 || !defenderPos) {
+    return fail('Charge requires a living target.');
+  }
+
+  const attackerOverlay = getComponent(state, attackerId, ComponentType.PropertyOverlay) as
+    PropertyOverlayComponent | undefined;
+  const attackerData = resolveEffectiveEntityDataWithOverlays(getDnD35EntityData(state, attackerId), attackerOverlay);
+  if (attackerData.conditions.some((c) => CHARGE_BLOCKING_CONDITIONS.has(c))) {
+    return fail('Current condition prevents executing a Charge.');
+  }
+
+  const budget = attackerData.actionBudget;
+  if (budget) {
+    if (budget.standardRemaining < 1 || budget.moveRemaining < 1 || budget.distanceMovedThisRoundFt > 0) {
+      return fail('Charge requires a Full-Round Action with no prior movement this round.');
+    }
+  }
+
+  const attackerEval = evaluateDnD35eEntityDAG(state, attackerId);
+  if (attackerEval && !attackerEval.canAttack) {
+    return fail('Cannot Charge while in Total Defense stance.');
+  }
+
+  const ignoresDifficultTerrain =
+    attackerEval?.chargeIgnoresDifficultTerrain === true ||
+    (attackerEval?.selfTags.includes('trait:charge_ignores_difficult_terrain') ?? false);
+  const attackerProfile = resolveDnD35eActorSpatialProfile(state, attackerId, attackerPos.facing);
+  const reachFt = Math.max(FEET_PER_GRID_SQUARE, attackerProfile.naturalReachTiles * FEET_PER_GRID_SQUARE);
+
+  const atkW = Math.max(1, attackerPos.footprintWidth ?? attackerProfile.baseWidth);
+  const atkH = Math.max(1, attackerPos.footprintHeight ?? attackerProfile.baseHeight);
+  const defW = Math.max(1, defenderPos.footprintWidth ?? 1);
+  const defH = Math.max(1, defenderPos.footprintHeight ?? 1);
+
+  const startDistFt = measureFootprintToFootprintDistanceFt(
+    attackerPos.x,
+    attackerPos.y,
+    atkW,
+    atkH,
+    defenderPos.x,
+    defenderPos.y,
+    defW,
+    defH
+  );
+  if (startDistFt <= reachFt) {
+    return fail('Too close to Charge; requires moving at least 10 ft in a straight line.');
+  }
+
+  const tacticalSpeedFt = computeActorTacticalLandSpeedFt(state, attackerId, attackerData.movementModes?.land);
+  const maxChargeDistanceFt = tacticalSpeedFt * CHARGE_SPEED_MULTIPLIER;
+  const movementModes = getEntityMovementModes(state, attackerId);
+
+  const nearestDelta = computeRectNearestDelta(
+    attackerPos.x,
+    attackerPos.y,
+    atkW,
+    atkH,
+    defenderPos.x,
+    defenderPos.y,
+    defW,
+    defH
+  );
+  const rawSteps = computeBresenhamSteps(
+    attackerPos.x,
+    attackerPos.y,
+    attackerPos.x + nearestDelta.dx,
+    attackerPos.y + nearestDelta.dy
+  );
+
+  const validSteps: Array<{ readonly dx: number; readonly dy: number }> = [];
+  let simPos: PositionComponent = attackerPos;
+  let totalDistanceFt = 0;
+  let diagonalCount = 0;
+
+  for (const step of rawSteps) {
+    const nextX = simPos.x + step.dx;
+    const nextY = simPos.y + step.dy;
+    if (!isInBounds(nextX, nextY, state.map.width, state.map.height)) {
+      return fail('Charge path leaves the map.');
+    }
+
+    const placement = resolveMovementFootprintPlacement({
+      state,
+      entityId: attackerId,
+      fromPos: simPos,
+      dx: step.dx,
+      dy: step.dy,
+      canTraverse: (tileDef) => canChargeTraverseTile(tileDef, movementModes, ignoresDifficultTerrain)
+    });
+    if (!placement.valid) {
+      return fail('Charge line is blocked by an obstacle or difficult terrain.');
+    }
+    if (placement.isSqueezing) {
+      return fail('Cannot Charge while squeezing through a narrow space.');
+    }
+
+    const occupancy = evaluateFootprintOccupancy({
+      state,
+      moverId: attackerId,
+      moverPos: simPos,
+      targetX: placement.anchorX,
+      targetY: placement.anchorY,
+      targetW: placement.width,
+      targetH: placement.height
+    });
+    if (occupancy.blocked) {
+      return fail('Charge line is obstructed by another creature.');
+    }
+
+    const isDiag = step.dx !== 0 && step.dy !== 0;
+    const stepCostFt = isDiag && diagonalCount % 2 === 1 ? EVEN_DIAGONAL_COST_FT : FEET_PER_GRID_SQUARE;
+    if (isDiag) diagonalCount += 1;
+    totalDistanceFt += stepCostFt;
+    validSteps.push(step);
+
+    simPos = {
+      ...simPos,
+      x: placement.anchorX,
+      y: placement.anchorY,
+      footprintWidth: placement.width,
+      footprintHeight: placement.height,
+      ...(placement.facing !== undefined ? { facing: placement.facing } : {})
+    };
+
+    const currentDistFt = measureFootprintToFootprintDistanceFt(
+      simPos.x,
+      simPos.y,
+      placement.width,
+      placement.height,
+      defenderPos.x,
+      defenderPos.y,
+      defW,
+      defH
+    );
+    if (currentDistFt <= reachFt) {
+      break;
+    }
+  }
+
+  const endDistFt = measureFootprintToFootprintDistanceFt(
+    simPos.x,
+    simPos.y,
+    simPos.footprintWidth ?? atkW,
+    simPos.footprintHeight ?? atkH,
+    defenderPos.x,
+    defenderPos.y,
+    defW,
+    defH
+  );
+  if (endDistFt > reachFt) {
+    return fail('Charge target cannot be reached along a clear straight line.');
+  }
+  if (validSteps.length < CHARGE_MIN_STEPS || totalDistanceFt < CHARGE_MOVEMENT_MIN_FT) {
+    return fail('Charge requires moving at least 10 ft (2 squares) in a straight line.');
+  }
+  if (totalDistanceFt > maxChargeDistanceFt) {
+    return fail(`Charge distance (${totalDistanceFt} ft) exceeds 2x tactical speed (${maxChargeDistanceFt} ft).`);
+  }
+
+  return {
+    valid: true,
+    stepDeltas: validSteps,
+    totalDistanceFt,
+    ignoresDifficultTerrainForCharge: ignoresDifficultTerrain,
+    landingPos: { x: simPos.x, y: simPos.y }
+  };
+}
+
+/**
+ * Initiates interactive two-step targeting mode (`verb: 'charge'`) up to `2x` tactical speed range.
+ */
+export function initiateDnD35eChargeTargeting(
+  state: GameState,
+  actorId: EntityId
+): { readonly state: GameState; readonly success: boolean } {
+  const pos = getComponent(state, actorId, ComponentType.Position) as PositionComponent | undefined;
+  if (!pos) return { state, success: false };
+
+  const dndData = getDnD35EntityData(state, actorId);
+  const budget = dndData.actionBudget;
+  if (budget && (budget.standardRemaining < 1 || budget.moveRemaining < 1 || budget.distanceMovedThisRoundFt > 0)) {
+    return {
+      state: addMessage(
+        state,
+        'Charge requires a Full-Round Action with no prior movement this round.',
+        MessageLogCategory.System
+      ),
+      success: false
+    };
+  }
+
+  const tacticalSpeedFt = computeActorTacticalLandSpeedFt(state, actorId, dndData.movementModes?.land);
+  const maxRangeTiles = Math.floor((tacticalSpeedFt * CHARGE_SPEED_MULTIPLIER) / FEET_PER_GRID_SQUARE) + 1;
+  const targetingMode = {
+    active: true,
+    x: pos.x,
+    y: pos.y,
+    maxRangeTiles,
+    context: { verb: 'charge' }
+  };
+
+  return {
+    state: addMessage(
+      { ...state, targetingMode },
+      `Charge active (range up to ${tacticalSpeedFt * CHARGE_SPEED_MULTIPLIER} ft). Select target creature and confirm.`,
+      MessageLogCategory.System
+    ),
+    success: true
+  };
+}
+
+function consumeFullRoundChargeBudget(state: GameState, actorId: EntityId): GameState {
+  const dndData = getDnD35EntityData(state, actorId);
+  if (!dndData.actionBudget) return state;
+  return setDnD35EntityData(state, actorId, {
+    ...dndData,
+    actionBudget: {
+      ...dndData.actionBudget,
+      standardRemaining: 0,
+      moveRemaining: 0,
+      movementRemainingFt: 0,
+      fiveFootStepAvailable: false,
+      canMoveFurtherThisRound: false,
+      hasActedThisRound: true
+    }
+  });
+}
+
+/**
+ * Executes an explicit Full-Round **Charge** action (`PHB p. 154`) symmetrically for any actor:
+ * 1. Validates straight-line Charge geometry, terrain, blockers, and Full-Round budget.
+ * 2. Displaces the charger step-by-step via `displaceEntityAlongVector(..., { mode: 'charge_step', provokesAoO: true })`.
+ * 3. Applies the `'charging'` condition (`-2 AC` until the start of the charger's next turn).
+ * 4. Resolves melee strike(s) with `isChargeAttack: true` (`+2` charge attack bonus, Charging Smite, Pounce).
+ * 5. Consumes the actor's Full-Round action budget.
+ */
+export function executeDnD35eChargeAction(
+  state: GameState,
+  attackerId: EntityId,
+  defenderId: EntityId
+): { readonly state: GameState; readonly success: boolean } {
+  const validation = validateChargeLine(state, attackerId, defenderId);
+  if (!validation.valid) {
+    return {
+      state: addMessage(
+        state,
+        `[Charge] ${validation.reason ?? 'Cannot Charge target.'}`,
+        MessageLogCategory.CombatMiss
+      ),
+      success: false
+    };
+  }
+
+  const dispRes = displaceEntityAlongVector({
+    state,
+    entityId: attackerId,
+    maxSteps: validation.stepDeltas.length,
+    stepDeltas: validation.stepDeltas,
+    context: {
+      mode: 'charge_step',
+      isForced: false,
+      provokesAoO: true,
+      sourceEntityId: attackerId,
+      ignoresDifficultTerrainForCharge: validation.ignoresDifficultTerrainForCharge
+    }
+  });
+
+  let nextState = dispRes.state;
+  const postAtkFighter = getComponent(nextState, attackerId, ComponentType.Fighter) as FighterComponent | undefined;
+  const postAtkPos = getComponent(nextState, attackerId, ComponentType.Position) as PositionComponent | undefined;
+  const postDefFighter = getComponent(nextState, defenderId, ComponentType.Fighter) as FighterComponent | undefined;
+  const postDefPos = getComponent(nextState, defenderId, ComponentType.Position) as PositionComponent | undefined;
+
+  if (
+    !postAtkFighter ||
+    postAtkFighter.hp <= 0 ||
+    !postAtkPos ||
+    !postDefFighter ||
+    postDefFighter.hp <= 0 ||
+    !postDefPos
+  ) {
+    nextState = consumeFullRoundChargeBudget(nextState, attackerId);
+    return { state: nextState, success: dispRes.moved };
+  }
+
+  const postProfile = resolveDnD35eActorSpatialProfile(nextState, attackerId, postAtkPos.facing);
+  const reachFt = Math.max(FEET_PER_GRID_SQUARE, postProfile.naturalReachTiles * FEET_PER_GRID_SQUARE);
+  const postDistFt = measureFootprintToFootprintDistanceFt(
+    postAtkPos.x,
+    postAtkPos.y,
+    postAtkPos.footprintWidth ?? postProfile.baseWidth,
+    postAtkPos.footprintHeight ?? postProfile.baseHeight,
+    postDefPos.x,
+    postDefPos.y,
+    postDefPos.footprintWidth ?? 1,
+    postDefPos.footprintHeight ?? 1
+  );
+  if (postDistFt > reachFt) {
+    nextState = consumeFullRoundChargeBudget(nextState, attackerId);
+    nextState = addMessage(
+      nextState,
+      '[Charge] Movement was interrupted before reaching melee range!',
+      MessageLogCategory.CombatMiss
+    );
+    return { state: nextState, success: true };
+  }
+
+  const curDnd = getDnD35EntityData(nextState, attackerId);
+  nextState = setDnD35EntityData(nextState, attackerId, {
+    ...curDnd,
+    conditions: applyConditionWithEscalation(curDnd.conditions, 'charging')
+  });
+
+  const atkName = resolveEntityDisplayName(nextState, attackerId, 'Attacker');
+  const defName = resolveEntityDisplayName(nextState, defenderId, 'Target');
+  nextState = addMessage(
+    nextState,
+    `[Charge] ${atkName} charges ${validation.totalDistanceFt} ft into ${defName} (+2 attack, -2 AC until next turn)!`,
+    MessageLogCategory.CombatHit
+  );
+
+  const meleeRes = resolveDnD35eMeleeAttack(
+    nextState,
+    {
+      type: IntentType.MeleeAttack,
+      entityId: attackerId,
+      defenderId
+    },
+    { isChargeAttack: true }
+  );
+  nextState = consumeFullRoundChargeBudget(meleeRes.state, attackerId);
+
+  return {
+    state: nextState,
+    success: true
+  };
+}

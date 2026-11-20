@@ -223,7 +223,7 @@ export const dnd35eUIDefinition: CartridgeUIDefinition = {
       queuePlayerIntent({
         type: IntentType.UseAbility,
         entityId: playerId,
-        effectId: `pool:${payload.id}`,
+        effectId: payload.verb === 'charge' ? 'action:charge' : `pool:${payload.id}`,
         abilityName: slot.label
       });
       markAllDomainsDirty();

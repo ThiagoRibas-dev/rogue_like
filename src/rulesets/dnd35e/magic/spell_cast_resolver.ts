@@ -12,7 +12,7 @@ import {
   type PositionComponent,
   type ResourcePoolComponent
 } from '../../../types/components.types.ts';
-import type { EntityId, GameState } from '../../../types/game-state.types.ts';
+import { EngineMode, type EntityId, type GameState } from '../../../types/game-state.types.ts';
 import { evaluateSpellEffectUnitsForTarget } from './spell_effects.ts';
 import { applyResolvedSpellEffectsToTarget } from './spell_cast_effects.ts';
 import { evaluateReactiveCounterspellInterrupt } from './counterspell_interrupt.ts';
@@ -31,6 +31,7 @@ import { resolveCastPipeline } from './spellcasting.ts';
 import { isHostile } from '../../../utils/faction.ts';
 import { processDnD35eDamage } from '../cartridge/dnd35e_combat_adapter.ts';
 import { evaluateDnD35eEntityDAG } from '../cartridge/dnd35e_dag_adapter.ts';
+import { hydrateEntityRoundActionBudget } from '../cartridge/dnd35e_turn_budget.ts';
 import { rollD20 } from '../math/dice.ts';
 import { aggregateProgressionChassis } from '../progression.ts';
 import {
@@ -134,8 +135,12 @@ export function executeDnD35eSpellCast(
     metamagicPool !== undefined &&
     metamagicPool.current >= 1;
 
+  const effectiveBudget =
+    casterDag.dndData.actionBudget ??
+    (state.engineMode === EngineMode.RTwP ? hydrateEntityRoundActionBudget(state, casterId) : undefined);
+
   const actionRes = consumeSpellActionBudget(
-    casterDag.dndData.actionBudget,
+    effectiveBudget,
     spell.castingTime,
     book.castingMode === 'spontaneous',
     meta,

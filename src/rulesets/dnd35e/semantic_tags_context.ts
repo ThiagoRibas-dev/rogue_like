@@ -10,6 +10,7 @@ import {
   type TacticalDoctrineComponent
 } from '../../types/components.types.ts';
 import type { EntityId, GameState } from '../../types/game-state.types.ts';
+import { computeActorCarriedWeightLbs, computeEncumbranceState } from './combat/tactical_doctrine.ts';
 import { computeMaterialEquipmentStats } from './equipment/special_materials.ts';
 import { resolveEffectiveItemDefinition } from './equipment/item_inheritance.ts';
 import { resolveTileLightReading, type TileLightReading } from './spatial/cover_senses.ts';
@@ -21,7 +22,7 @@ export interface SituationalTagContext {
   readonly armorCategory?: 'none' | 'light' | 'medium' | 'heavy' | undefined;
   readonly hasShield?: boolean | undefined;
   readonly isMetalArmorOrShield?: boolean | undefined;
-  readonly loadCategory?: 'light' | 'medium' | 'heavy' | undefined;
+  readonly loadCategory?: 'light' | 'medium' | 'heavy' | 'overloaded' | undefined;
   readonly doctrine?: TacticalDoctrineComponent | undefined;
   readonly activeStatusEffectIds?: ReadonlyArray<string> | undefined;
   readonly environmentType?: AreaEnvironmentType | undefined;
@@ -161,11 +162,21 @@ export function resolveEntitySituationalTagContext(
         isSunlight: envProfile.illumination === 'bright' && envProfile.isNaturalSunlight
       };
 
+  const carriedWeightLb = computeActorCarriedWeightLbs(state, entityId);
+  const baseStrScore = dndData.abilityScores?.str?.base ?? 10;
+  const loadCategory = computeEncumbranceState(
+    baseStrScore,
+    dndData.sizeCategory,
+    carriedWeightLb,
+    undefined,
+    dndData.anatomyBodyPlan === 'quadruped'
+  ).loadTier;
+
   return {
     armorCategory,
     hasShield,
     isMetalArmorOrShield,
-    loadCategory: 'light',
+    loadCategory,
     environmentType: envProfile.environmentType,
     phaseId: envProfile.clock.phaseId,
     lightReading,

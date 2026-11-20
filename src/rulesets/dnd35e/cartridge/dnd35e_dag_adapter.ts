@@ -7,6 +7,7 @@ import {
   type FieldComponent,
   type FighterComponent,
   type IdentityComponent,
+  type InventoryComponent,
   type ItemComponent,
   type PositionComponent,
   type PropertyOverlayComponent,
@@ -25,6 +26,7 @@ import {
   resolveActorAttackRoutine
 } from '../combat/attack_resolver.ts';
 import { collectRageAndFrenzyModifiers } from '../combat/combat_acf_riders.ts';
+import { computeActorCarriedWeightLbs, computeEncumbranceState } from '../combat/tactical_doctrine.ts';
 import { evaluateActiveSpellAuraContributions } from '../magic/spell_aura_resolver.ts';
 import { summarizeConditionEffects } from '../combat/maneuvers_conditions.ts';
 import {
@@ -74,6 +76,7 @@ export interface DnD35EntityDAGResult {
   readonly hasBlindFight: boolean;
   readonly hasCleave: boolean;
   readonly hasGreatCleave: boolean;
+  readonly chargeIgnoresDifficultTerrain?: boolean | undefined;
   readonly statModifiers?: ReadonlyArray<StatModifier> | undefined;
 }
 
@@ -98,6 +101,8 @@ interface CachedEntityDAGEntry {
   readonly statusRef: StatusEffectsComponent | undefined;
   readonly equipmentRef: EquipmentComponent | undefined;
   readonly equippedItemRefs: ReadonlyArray<ItemComponent | undefined>;
+  readonly inventoryRef: InventoryComponent | undefined;
+  readonly inventoryItemRefs: ReadonlyArray<ItemComponent | undefined>;
   readonly templateRef: TemplateComponent | undefined;
   readonly identityName: string | undefined;
   readonly factionRef: FactionComponent | undefined;
@@ -198,6 +203,20 @@ function collectEquippedItemRefs(
   return refs;
 }
 
+function collectInventoryItemRefs(
+  state: GameState,
+  inventory: InventoryComponent | undefined
+): ReadonlyArray<ItemComponent | undefined> {
+  if (!inventory || !Array.isArray(inventory.items) || inventory.items.length === 0) return [];
+  return inventory.items.map((itemId) => getComponent(state, itemId, ComponentType.Item) as ItemComponent | undefined);
+}
+
+function minDefined(a: number | undefined, b: number | undefined): number | undefined {
+  if (a === undefined) return b;
+  if (b === undefined) return a;
+  return Math.min(a, b);
+}
+
 function mergeTransientDndData(base: DnD35EntityData, fresh: DnD35EntityData | undefined): DnD35EntityData {
   if (!fresh || fresh === base) return base;
   const next: Record<string, unknown> = { ...base };
@@ -248,6 +267,8 @@ export function evaluateDnD35eEntityDAG(
   const statusRef = getComponent(state, entityId, ComponentType.StatusEffects) as StatusEffectsComponent | undefined;
   const equipmentRef = getComponent(state, entityId, ComponentType.Equipment) as EquipmentComponent | undefined;
   const equippedItemRefs = collectEquippedItemRefs(state, equipmentRef);
+  const inventoryRef = getComponent(state, entityId, ComponentType.Inventory) as InventoryComponent | undefined;
+  const inventoryItemRefs = collectInventoryItemRefs(state, inventoryRef);
   const templateRef = getComponent(state, entityId, ComponentType.Template) as TemplateComponent | undefined;
   const identityRef = getComponent(state, entityId, ComponentType.Identity) as IdentityComponent | undefined;
   const factionRef = getComponent(state, entityId, ComponentType.Faction) as FactionComponent | undefined;
@@ -274,6 +295,7 @@ export function evaluateDnD35eEntityDAG(
     cached.doctrineRef === doctrineRef &&
     cached.statusRef === statusRef &&
     cached.equipmentRef === equipmentRef &&
+    cached.inventoryRef === inventoryRef &&
     cached.templateRef === templateRef &&
     cached.identityName === identityRef?.name &&
     cached.isSqueezing === isSqueezing &&
@@ -285,6 +307,7 @@ export function evaluateDnD35eEntityDAG(
     (!hasAnyFields || (cached.factionRef === factionRef && cached.posX === posX && cached.posY === posY)) &&
     areFieldSnapshotsEqual(cached.fieldEntries, fieldEntries) &&
     areEquippedItemsEqual(cached.equippedItemRefs, equippedItemRefs) &&
+    areEquippedItemsEqual(cached.inventoryItemRefs, inventoryItemRefs) &&
     isSameStructuralDndData(cached.rawDndData, rawDndData)
   ) {
     if (!cached.result || cached.rawDndData === rawDndData) {
@@ -316,6 +339,8 @@ export function evaluateDnD35eEntityDAG(
     statusRef,
     equipmentRef,
     equippedItemRefs,
+    inventoryRef,
+    inventoryItemRefs,
     templateRef,
     identityName: identityRef?.name,
     factionRef,
@@ -421,7 +446,7 @@ function evaluateDnD35eEntityDAGInternal(
   if (resolvedWeapons.offHandWeapons.length > 0) {
     stanceTags.push('wielding:two_weapons');
   }
-  const mergedSelfTags = Array.from(
+  let mergedSelfTags = Array.from(
     new Set([
       ...selfTags,
       ...itemContrib.grantedTags,
@@ -432,11 +457,15 @@ function evaluateDnD35eEntityDAGInternal(
   );
   extraModifiers.push(...collectRageAndFrenzyModifiers(mergedSelfTags, doctrine));
 
-  const dagContext: StatQueryContext = {
+  let dagContext: StatQueryContext = {
     ...contextOverride,
     selfTags: mergedSelfTags
   };
-  const buildDagInput = (mods: ReadonlyArray<StatModifier>): Parameters<typeof evaluateDnD35ActorStatDAG>[0] => ({
+  const buildDagInput = (
+    mods: ReadonlyArray<StatModifier>,
+    ctx: StatQueryContext,
+    maxDexCap: number | undefined
+  ): Parameters<typeof evaluateDnD35ActorStatDAG>[0] => ({
     baseSize: dndData.sizeCategory,
     rawAbilities: {
       str: {
@@ -458,7 +487,7 @@ function evaluateDnD35eEntityDAGInternal(
       ? dndData.armorBonus
       : Math.max(dndData.armorBonus, equipArmorBonus),
     shieldBonus: dndData.shieldBonus,
-    maxDexBonus: itemContrib.maxDexBonusCap,
+    maxDexBonus: maxDexCap,
     baseMaxHp: fighter.maxHp > 0 ? fighter.maxHp : undefined,
     baseSpeed: actor?.speed ?? DND35E_DEFAULT_SPEED,
     isIncorporeal,
@@ -467,10 +496,35 @@ function evaluateDnD35eEntityDAGInternal(
         (!mergedSelfTags.includes('self:balancing') || mergedSelfTags.includes('trait:balance_uncanny_flat_footed'))) ||
       mergedSelfTags.includes('feature:uncanny_dodge'),
     statModifiers: mods,
-    context: dagContext
+    context: ctx
   });
 
-  let dagResult = evaluateDnD35ActorStatDAG(buildDagInput(extraModifiers));
+  let dagResult = evaluateDnD35ActorStatDAG(buildDagInput(extraModifiers, dagContext, itemContrib.maxDexBonusCap));
+
+  const carriedWeightLb = computeActorCarriedWeightLbs(state, entityId);
+  const effectiveStrScore = dagResult.effectiveAbilities.str.base ?? 10;
+  const effectiveEncumbrance = computeEncumbranceState(
+    effectiveStrScore,
+    dagResult.effectiveSize,
+    carriedWeightLb,
+    undefined,
+    dndData.anatomyBodyPlan === 'quadruped'
+  );
+  const effectiveMaxDexCap = minDefined(itemContrib.maxDexBonusCap, effectiveEncumbrance.maxDexBonus);
+  const effectiveAcp = Math.min(itemContrib.armorCheckPenalty, effectiveEncumbrance.acp);
+  const effectiveLoadTag = `load:${effectiveEncumbrance.loadTier}`;
+  const loadTierChanged = !mergedSelfTags.includes(effectiveLoadTag);
+
+  if (loadTierChanged || effectiveMaxDexCap !== itemContrib.maxDexBonusCap) {
+    if (loadTierChanged) {
+      mergedSelfTags = [...mergedSelfTags.filter((t) => !t.startsWith('load:')), effectiveLoadTag];
+      dagContext = {
+        ...contextOverride,
+        selfTags: mergedSelfTags
+      };
+    }
+    dagResult = evaluateDnD35ActorStatDAG(buildDagInput(extraModifiers, dagContext, effectiveMaxDexCap));
+  }
 
   const resolvedSkills = resolveActorSkillsSnapshot({
     skillRanks: dndData.skillRanks ?? {},
@@ -478,7 +532,7 @@ function evaluateDnD35eEntityDAGInternal(
     isConNonability: dndData.abilityScores.con.base === null,
     statModifiers: extraModifiers,
     conditions: dndData.conditions,
-    armorCheckPenalty: itemContrib.armorCheckPenalty,
+    armorCheckPenalty: effectiveAcp,
     minSkillRanksFloor: getBardicKnackFloor(dndData),
     skillRegistry: sysContent?.skills,
     conditionRegistry: sysContent?.conditionEffects,
@@ -498,7 +552,7 @@ function evaluateDnD35eEntityDAGInternal(
     );
     if (kdMods.length > 0) {
       extraModifiers.push(...kdMods);
-      dagResult = evaluateDnD35ActorStatDAG(buildDagInput(extraModifiers));
+      dagResult = evaluateDnD35ActorStatDAG(buildDagInput(extraModifiers, dagContext, effectiveMaxDexCap));
     }
   }
 
@@ -549,10 +603,11 @@ function evaluateDnD35eEntityDAGInternal(
     resolvedWeapons: finalWeapons,
     attackRoutine,
     resolvedSkills,
-    armorCheckPenalty: itemContrib.armorCheckPenalty,
+    armorCheckPenalty: effectiveAcp,
     hasBlindFight: activeCombatRules.hasBlindFight,
     hasCleave: activeCombatRules.hasCleave,
     hasGreatCleave: activeCombatRules.hasGreatCleave,
+    chargeIgnoresDifficultTerrain: activeCombatRules.chargeIgnoresDifficultTerrain,
     statModifiers: extraModifiers
   };
 }

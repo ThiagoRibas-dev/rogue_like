@@ -100,7 +100,8 @@
       "transmutation",
       "haste",
       "speed_buff",
-      "extra_attack"
+      "extra_attack",
+      "rarity:uncommon"
     ]
   }
 }

@@ -1,0 +1,15 @@
+{
+  "bound": {
+    "id": "bound",
+    "name": "Bound",
+    "description": "A bound character is secured in manacles or ropes, treated as helpless, denied Dexterity bonus to AC (-4 AC penalty), and unable to perform physical actions until freed via Escape Artist or Break check.",
+    "grantedTags": ["condition:bound", "condition:helpless"],
+    "modifiers": [
+      { "id": "bound_ac", "target": "ac", "value": -4, "type": "untyped" }
+    ],
+    "ruleOverrides": [
+      { "id": "bound_loses_dex", "ruleKey": "loses_dex_to_ac", "value": true, "priority": 10 },
+      { "id": "bound_no_actions", "ruleKey": "can_take_actions", "value": false, "priority": 10 }
+    ]
+  }
+}

@@ -13,7 +13,8 @@
     "currencyUnit": "gp",
     "tags": [
       "adventuring_gear",
-      "dungeoneering"
+      "dungeoneering",
+      "battering_ram"
     ],
     "spriteId": "dcss_item_weapon_giant_club_new"
   }

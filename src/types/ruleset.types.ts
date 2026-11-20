@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { Verb } from '../constants/verbs.constants.ts';
-import type { CampaignData, CurrencyConfig } from './campaign.types.ts';
+import type { CampaignData, CurrencyConfig, StatusEffectDefinition } from './campaign.types.ts';
+import type { ActiveStatusEffect, MovementModes } from './components.types.ts';
 import type { CardinalFacing } from './components/world_components.types.ts';
 import type { GameEvent } from './events.types.ts';
 import type { EntityId, GameState, TargetingContext } from './game-state.types.ts';
@@ -85,6 +86,43 @@ export interface ActorSpatialProfile {
   readonly isIncorporeal: boolean;
   readonly isFlying: boolean;
   readonly isCompletelyFillingSpace: boolean;
+}
+
+/** 3-tier passability classification for a map tile under an entity's active movement modes. */
+export type TilePassabilityTier = 'unimpeded' | 'difficult' | 'hazardous' | 'solid_obstacle';
+
+/** Canonical displacement modes processed by the Tier 1 spatial displacement kernel. */
+export type DisplacementMode = 'voluntary_walk' | 'charge_step' | 'forced_push' | 'forced_pull' | 'teleport' | 'swap';
+
+/** Declarative evaluation of a tile's traversal tier and cost under active movement modes. */
+export interface TileTraversalEvaluation {
+  readonly passability: TilePassabilityTier;
+  readonly moveCostMultiplier: number;
+  readonly triggersSolidCollision: boolean;
+  readonly blocksCharge: boolean;
+  readonly hazardKind?: string | undefined;
+}
+
+/** Policy and provenance metadata attached to a spatial displacement step. */
+export interface DisplacementContext {
+  readonly mode: DisplacementMode;
+  readonly isForced: boolean;
+  readonly provokesAoO: boolean;
+  readonly sourceEntityId?: EntityId | undefined;
+  readonly ignoresDifficultTerrainForCharge?: boolean | undefined;
+}
+
+/** Result of executing an atomic spatial displacement step or multi-step vector displacement. */
+export interface DisplacementResult {
+  readonly state: GameState;
+  readonly moved: boolean;
+  readonly stepsMoved: number;
+  readonly finalPos: { readonly x: number; readonly y: number };
+  readonly stopReason:
+    'completed' | 'solid_obstacle' | 'entity_blocker' | 'hazard_halted' | 'difficult_terrain_blocked' | 'out_of_bounds';
+  readonly collidedTileId?: string | undefined;
+  readonly collidedEntityId?: EntityId | undefined;
+  readonly events: ReadonlyArray<GameEvent>;
 }
 
 /**
@@ -261,14 +299,31 @@ export interface RulesetContract {
    * @param entityId The moving entity ID.
    * @param fromPos Origin tile coordinate.
    * @param toPos Destination tile coordinate.
+   * @param displacementContext Optional Tier 1 displacement policy metadata (forced/teleport/charge/walk).
    * @returns Updated GameState.
    */
   onActorMovementStep?(
     state: GameState,
     entityId: EntityId,
     fromPos: { readonly x: number; readonly y: number },
-    toPos: { readonly x: number; readonly y: number }
+    toPos: { readonly x: number; readonly y: number },
+    displacementContext?: DisplacementContext
   ): GameState;
+
+  /**
+   * Optional hook returning the ruleset-specific `MovementModes` profile for an entity.
+   * @param state The current GameState.
+   * @param entityId The actor entity ID.
+   */
+  getEntityMovementModes?(state: GameState, entityId: EntityId): MovementModes | undefined;
+
+  /**
+   * Optional hook checking whether an AI actor can and should execute an explicit Charge action against `defenderId`.
+   * @param state The current GameState.
+   * @param attackerId The charging actor entity ID.
+   * @param defenderId The hostile target entity ID.
+   */
+  evaluateCombatChargeIntent?(state: GameState, attackerId: EntityId, defenderId: EntityId): boolean;
 
   /**
    * Optional hook resolving ruleset-specific action budget consumption and turn energy cost (`0` if turn continues, `> 0` if turn ends).
@@ -430,6 +485,43 @@ export interface RulesetContract {
    * Optional hook computing kill XP reward according to ruleset laws (e.g. DMG Table 2-6 CR vs ECL).
    */
   resolveKillXpReward?(state: Readonly<GameState>, killerId: EntityId, victimId: EntityId): number;
+
+  /**
+   * Optional hook invoked when a party or camp is surprised during an ambush (e.g., applying `'flat_footed'`).
+   */
+  onAmbushSurprise?(state: GameState, surprisedEntityIds: ReadonlyArray<EntityId>): GameState;
+
+  /**
+   * Optional hook resolving a secondary saving throw stage on an active multi-stage status effect (e.g., 10-turn poison secondary damage).
+   */
+  resolveStatusSecondaryStage?(
+    state: GameState,
+    entityId: EntityId,
+    activeEffect: ActiveStatusEffect,
+    statusDef: StatusEffectDefinition
+  ): { readonly state: GameState; readonly resisted: boolean };
+
+  /**
+   * Optional hook checking whether an actor is exempt from underwater breath depletion / drowning
+   * (e.g., `trait:water_breathing`, `type:undead`, `type:construct`, or nonability CON).
+   */
+  isActorImmuneToDrowning?(state: Readonly<GameState>, entityId: EntityId): boolean;
+
+  /**
+   * Optional hook computing an actor's maximum breath-holding capacity in rounds (e.g., `2 * CON` in D&D 3.5e).
+   */
+  getActorMaxBreathTurns?(state: Readonly<GameState>, entityId: EntityId): number;
+
+  /**
+   * Optional hook invoked when a world-owned crossing entity beneath an occupant is cut, destroyed, or melted,
+   * dropping the non-flying occupant into the underlying hazard tile (`x, y`).
+   */
+  onCrossingCollapsedForOccupant?(state: GameState, occupantId: EntityId, x: number, y: number): GameState;
+
+  /**
+   * Optional hook invoked when a non-player entity dies at `(x, y)` before removal (e.g., spawning an arcane caster's spellbook).
+   */
+  onEntityDied?(state: GameState, victimId: EntityId, x: number, y: number, killerId?: EntityId): GameState;
 }
 
 /** Context passed to `RulesetContract.evaluateTradePriceModifier`. */

@@ -11,11 +11,13 @@ import {
 import {
   LOCAL_NARRATIVE_TICK_INTERVAL,
   NEMESIS_EVALUATION_INTERVAL,
-  RIVALRY_EVALUATION_INTERVAL
+  RIVALRY_EVALUATION_INTERVAL,
+  SCHEME_CADENCE_INTERVAL
 } from '../constants/scheduler.constants.ts';
-import { addComponent, getComponent, removeEntity } from '../core/ecs.ts';
+import { addComponent, getComponent, queryEntities, removeEntity } from '../core/ecs.ts';
 import { tickControllerLinksAndOverlays } from '../core/ecs/ecs_lifecycle.ts';
 import { ComponentType, type FieldComponent, type StatusEffectsComponent } from '../types/components.types.ts';
+import { type GameEvent, GameEventType } from '../types/events.types.ts';
 import type { EntityId, GameState } from '../types/game-state.types.ts';
 import { cullStaleAndConfirmedRumors, processRumorPropagationEvents, tickPendingRumors } from './gossip.system.ts';
 import { processHungerTick } from './hunger.system.ts';
@@ -23,7 +25,8 @@ import { processKnowledgePropagationEvents, tickPendingKnowledge } from './knowl
 import { processNemesisSystem } from './nemesis.system.ts';
 import { processPersonalitySystem } from './personality.system.ts';
 import { processRivalries } from './rivalry.system.ts';
-import { applyElapsedWorldHours } from './world_clock.system.ts';
+import { processSchemeTurn } from './scheme.system.ts';
+import { applyElapsedWorldHours, resolveAreaRestPressure } from './world_clock.system.ts';
 import { processWorldEvents } from './world_events.system.ts';
 
 /** Result returned after advancing world time in bulk (for rest or waiting). */
@@ -72,9 +75,21 @@ function fastForwardEntityDurations(state: GameState, turnsElapsed: number): Gam
   return fovNeedsUpdate ? { ...nextState, fovNeedsUpdate: true } : nextState;
 }
 
+function formatBulkEventSummary(evt: GameEvent): string | undefined {
+  if (evt.summary) return evt.summary;
+  if (evt.type === GameEventType.SchemeAdvanced) {
+    const areaNote = evt.targetAreaId ? ` targeting ${evt.targetAreaId}` : '';
+    return `Villain scheme "${evt.schemeId}" advanced to phase ${evt.newPhase}${areaNote}.`;
+  }
+  if (evt.type === GameEventType.SchemeMutatedArea) {
+    return `Villain agents shifted conditions in ${evt.areaId}.`;
+  }
+  return undefined;
+}
+
 /**
  * Executes a single GCD-aligned macro-cadence step of up to `BULK_CADENCE_STEP_SIZE` turns,
- * evaluating Narrative, Nemesis, Rivalry, and World Events on their exact interval multiples
+ * evaluating Narrative, Nemesis, Rivalry, Scheme, and World Events on their interval multiples
  * and capturing newly emitted world event summaries.
  */
 function stepBulkMacroCadence(
@@ -87,6 +102,8 @@ function stepBulkMacroCadence(
   const targetTurn = prevTurn + stepTurns;
   const prevBudget = state.dramaTracker.globalBudget;
   const nextBudget = Math.min(MAX_GLOBAL_DRAMA_BUDGET, prevBudget + stepTurns * DRAMA_BUDGET_REGEN_PER_TURN);
+  const schemeMult = resolveAreaRestPressure(state).schemeTickMultiplier;
+  const effectiveSchemeInterval = schemeMult > 0 ? Math.max(1, Math.round(SCHEME_CADENCE_INTERVAL / schemeMult)) : 0;
 
   let nextState: GameState = {
     ...state,
@@ -112,6 +129,11 @@ function stepBulkMacroCadence(
     if (t % RIVALRY_EVALUATION_INTERVAL === 0) {
       stepped = processRivalries(stepped);
     }
+    if (effectiveSchemeInterval > 0 && t % effectiveSchemeInterval === 0) {
+      for (const mastermindId of queryEntities(stepped, [ComponentType.Scheme])) {
+        stepped = processSchemeTurn(stepped, mastermindId);
+      }
+    }
     if (t % WORLD_EVENT_TICK_INTERVAL === 0) {
       stepped = processWorldEvents(stepped);
     }
@@ -120,11 +142,12 @@ function stepBulkMacroCadence(
       stepped = processKnowledgePropagationEvents(stepped);
       stepped = processRumorPropagationEvents(stepped);
       for (const evt of stepped.events) {
-        if (!evt.summary) continue;
-        const evtKey = evt.id ?? evt.summary;
+        const summary = formatBulkEventSummary(evt);
+        if (!summary) continue;
+        const evtKey = evt.id ?? summary;
         if (!seenEventIds.has(evtKey)) {
           seenEventIds.add(evtKey);
-          collectedSummaries.push(evt.summary);
+          collectedSummaries.push(summary);
         }
       }
       stepped = { ...stepped, events: [] };

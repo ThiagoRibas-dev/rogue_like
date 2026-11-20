@@ -56,7 +56,8 @@
             "condition": {
               "selfTagsNone": [
                 "armor:heavy",
-                "load:heavy"
+                "load:heavy",
+                "load:overloaded"
               ]
             }
           }

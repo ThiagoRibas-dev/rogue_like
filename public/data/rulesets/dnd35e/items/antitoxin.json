@@ -11,6 +11,10 @@
     "weight": 0,
     "baseValue": 50,
     "currencyUnit": "gp",
+    "consumable": {
+      "effectId": "antitoxin_dose",
+      "charges": 1
+    },
     "tags": [
       "alchemical"
     ],

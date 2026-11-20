@@ -35,13 +35,17 @@ export interface ItemComponent {
 }
 
 /**
- * Component applied to an item representing a temporary coating or buff (e.g., dipped in poison).
+ * Component applied to an item representing a temporary coating or buff (e.g., dipped in poison, oil, or holy water).
  */
 export interface CoatingComponent {
   readonly type: ComponentType.Coating;
   readonly statusId: string;
   readonly charges: number;
   readonly duration: number;
+  readonly coatingItemId?: string | undefined;
+  readonly bonusDamageDice?: string | undefined;
+  readonly bonusDamageType?: string | undefined;
+  readonly targetConditionTag?: string | undefined;
 }
 
 /**

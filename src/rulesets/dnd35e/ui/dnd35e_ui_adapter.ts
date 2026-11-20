@@ -23,7 +23,7 @@ import type {
 } from '../../../types/ui_adapter.types.ts';
 import { convertCurrency, formatCurrency, resolveCurrencyConfig } from '../../../systems/currency.system.ts';
 import { aggregateProgressionChassis } from '../progression.ts';
-import { computeEncumbranceState } from '../combat/tactical_doctrine.ts';
+import { computeActorCarriedWeightLbs, computeEncumbranceState } from '../combat/tactical_doctrine.ts';
 import { canToggleTwoHandedGrip } from '../equipment_physics.ts';
 import { DND35E_CP_PER_GP, DND35E_DEFAULT_CURRENCY_CONFIG } from '../currency.ts';
 import { evaluateActiveSpellAuraContributions } from '../magic/spell_aura_resolver.ts';
@@ -85,26 +85,15 @@ export class DnD35UIAdapter implements ICartridgeUIAdapter {
     for (const slot of anatomicalSlots) equippedSlots[slot.slotId] = slot.equippedItem;
 
     const stashItems: UIInventoryItem[] = [];
-    let currentWeightLbs = 0;
-    let excludedStarterOutfitWeight = false;
     inventory?.items.forEach((itemEntityId, idx) => {
       if (!state) return;
       const isEquipped = equipment?.slots.some((s) => s.equippedItem === itemEntityId) ?? false;
       const uiItem = mapEntityItemToUI(state, itemEntityId, isEquipped, idx);
-      if (uiItem) {
-        const itemComp = getComponent(state, itemEntityId, ComponentType.Item);
-        const itemDef = itemComp ? state.campaign.items[itemComp.itemId] : undefined;
-        const isFreeStarterOutfit = !excludedStarterOutfitWeight && (itemDef?.tags ?? []).includes('starter_outfit');
-        if (isFreeStarterOutfit) {
-          excludedStarterOutfitWeight = true;
-        } else {
-          currentWeightLbs += uiItem.weightLbs;
-        }
-        if (!isEquipped) {
-          stashItems.push(uiItem);
-        }
+      if (uiItem && !isEquipped) {
+        stashItems.push(uiItem);
       }
     });
+    const currentWeightLbs = state && entityId !== undefined ? computeActorCarriedWeightLbs(state, entityId) : 0;
 
     const balanceBaseUnits =
       inventory?.currencyBalance ?? (dndData.goldCurrency ?? DEFAULT_GOLD_CURRENCY) * DND35E_CP_PER_GP;
@@ -114,7 +103,13 @@ export class DnD35UIAdapter implements ICartridgeUIAdapter {
       convertCurrency(balanceBaseUnits, currencyCfg.baseUnitId, defaultDenomId, currencyCfg)
     );
 
-    const encumbrance = computeEncumbranceState(strScore, dndData.sizeCategory ?? 'medium', currentWeightLbs);
+    const encumbrance = computeEncumbranceState(
+      strScore,
+      dndData.sizeCategory ?? 'medium',
+      currentWeightLbs,
+      undefined,
+      dndData.anatomyBodyPlan === 'quadruped'
+    );
 
     return {
       equippedSlots,

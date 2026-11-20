@@ -3275,6 +3275,25 @@
       "Do not duplicate or bypass exports from src/systems/apply.system.ts."
     ]
   },
+  "src/systems/breath.system.ts": {
+    "domain": "Core Console: ECS Systems & Simulation",
+    "tier": "tier1_console",
+    "responsibility": "Manages actor breath capacity (`BreathComponent`), submersion/suffocation ticking at Turn Start, drowning immunity delegation, and lethal drowning consequences.",
+    "canonicalEntryPoints": [
+      "DEFAULT_MAX_BREATH_TURNS",
+      "isEntityImmuneToDrowning",
+      "resolveEntityMaxBreathTurns",
+      "setActorSubmersionState",
+      "processActorBreathTick"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/systems/breath.system.ts.",
+      "excludes": "Ruleset-specific Swim check math or creature type drowning immunity rules."
+    },
+    "antiPatterns": [
+      "Do not hardcode ruleset-specific creature types inside src/systems/breath.system.ts."
+    ]
+  },
   "src/systems/chronicle.system.ts": {
     "domain": "Core Console: ECS Systems & Simulation",
     "tier": "tier1_console",
@@ -3325,6 +3344,44 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/systems/companion_commands.system.ts."
+    ]
+  },
+  "src/systems/corpse.system.ts": {
+    "domain": "Core Console: ECS Systems & Simulation",
+    "tier": "tier1_console",
+    "responsibility": "Manages physical decaying corpse entities (`CorpseComponent`), harvestable tags (`pelt`, `venom_gland`, `reagent`, `bounty_trophy`, `zombie_husk`), decay ticking, and fire-field corpse destruction.",
+    "canonicalEntryPoints": [
+      "DEFAULT_CORPSE_DECAY_TURNS",
+      "HarvestableCorpseTag",
+      "deriveHarvestableCorpseTags",
+      "spawnCorpseForSlainEntity",
+      "harvestCorpseTag",
+      "tickCorpseDecay"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/systems/corpse.system.ts.",
+      "excludes": "Ruleset-specific necromancy spell slots or crafting formulas."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/systems/corpse.system.ts."
+    ]
+  },
+  "src/systems/crossing.system.ts": {
+    "domain": "Core Console: ECS Systems & Simulation",
+    "tier": "tier1_console",
+    "responsibility": "Manages world-owned tile crossing entities (`CrossingComponent`: bridges, rope lines, ladders, frozen surfaces), duration ticking, and collapse drop callbacks.",
+    "canonicalEntryPoints": [
+      "queryCrossingAtPosition",
+      "spawnCrossingEntity",
+      "destroyCrossingEntity",
+      "processCrossingsTick"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/systems/crossing.system.ts.",
+      "excludes": "Ruleset-specific Use Rope checks or pit/water hazard consequences."
+    },
+    "antiPatterns": [
+      "Never store placed crossing state on the actor who placed it; crossings are world entities at (x, y) in spatialIndex."
     ]
   },
   "src/systems/currency.system.ts": {
@@ -3402,6 +3459,56 @@
       "Do not duplicate or bypass exports from src/systems/dialogue.system.ts."
     ]
   },
+  "src/systems/disguise.system.ts": {
+    "domain": "Core Console: ECS Systems & Simulation",
+    "tier": "tier1_console",
+    "responsibility": "Manages active faction/race disguises (`IdentityMaskComponent`), hostility suppression, close-range Spot vs. Disguise scrutiny, and suspicion accumulation/blowout.",
+    "canonicalEntryPoints": [
+      "DEFAULT_MAX_DISGUISE_SUSPICION",
+      "SPOT_BEATS_DISGUISE_SUSPICION_GAIN",
+      "DISGUISE_SCRUTINY_RADIUS_TILES",
+      "applyIdentityMask",
+      "isDisguiseSuppressingHostility",
+      "evaluateDisguiseSuspicion"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/systems/disguise.system.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/systems/disguise.system.ts."
+    ]
+  },
+  "src/systems/durability.system.ts": {
+    "domain": "Core Console: ECS Systems & Simulation",
+    "tier": "tier1_console",
+    "responsibility": "Manages structural object/item durability (`StructuralComponent`), repairable `ruined: true` state at 0 HP, opt-in campaign combat wear (`DurabilityConfig` defaulting to 0%), structural door open/close/spiking (`iron_spike` + `hammer`), and 10-ft pole range-2 trap probing.",
+    "canonicalEntryPoints": [
+      "REPAIR_TOOL_ITEM_TAG",
+      "DOOR_SPIKE_ITEM_TAG",
+      "HAMMER_TOOL_ITEM_TAG",
+      "REACH_PROBE_ITEM_TAG",
+      "SPIKED_DOOR_BREAK_DC_BONUS",
+      "REACH_PROBE_MAX_RANGE_TILES",
+      "SOUND_DOOR_SPIKE_DB",
+      "DEFAULT_DURABILITY_CONFIG",
+      "resolveDurabilityConfig",
+      "applyStructuralDamage",
+      "repairRuinedItem",
+      "evaluateOptInCombatWear",
+      "openStructuralDoor",
+      "closeStructuralDoor",
+      "spikeDoorWithWedge",
+      "probeTrapWithReachTool"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/systems/durability.system.ts.",
+      "excludes": "Ruleset-specific SRD Object AC, energy hardness multipliers, or Break size modifier tables (owned by object_durability_resolver.ts)."
+    },
+    "antiPatterns": [
+      "Never silently delete an item entity when structural HP reaches 0; mark `ruined: true` so it can be repaired."
+    ]
+  },
   "src/systems/effects.system.ts": {
     "domain": "Core Console: ECS Systems & Simulation",
     "tier": "tier1_console",
@@ -3440,9 +3547,11 @@
   "src/systems/field.system.ts": {
     "domain": "Core Console: ECS Systems & Simulation",
     "tier": "tier1_console",
-    "responsibility": "Helper to spawn a field at a given position.",
+    "responsibility": "Spawns spatial fields, evaluates declarative tag-driven elemental field interactions (with orthogonal BFS chain propagation), and ticks active field effects.",
     "canonicalEntryPoints": [
+      "DEFAULT_FIELD_INTERACTION_RULES",
       "spawnField",
+      "evaluateFieldInteractionsAtTile",
       "processFieldsTick",
       "ActiveFieldQueryResult",
       "queryActiveFieldsAtPosition"
@@ -3641,6 +3750,28 @@
       "Do not branch on rulesetId inside Console lifecycle systems."
     ]
   },
+  "src/systems/light_emitter.system.ts": {
+    "domain": "Core Console: ECS Systems & Simulation",
+    "tier": "tier1_console",
+    "responsibility": "Manages dynamic radial and directional cone LightEmitterComponent sources (carried by any actor or dropped), wall-blocked illumination checks, fuel countdown ticks, ignite, and oil refueling.",
+    "canonicalEntryPoints": [
+      "DEFAULT_OIL_REFUEL_TURNS",
+      "isPointWithinEmitterCone",
+      "buildLightEmitterFromItem",
+      "getActiveLightEmitters",
+      "evaluateDynamicLightAtTile",
+      "igniteLightEmitter",
+      "refuelLightEmitter",
+      "processActorLightEmittersTick"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/systems/light_emitter.system.ts.",
+      "excludes": "Ruleset-specific magical darkness spell priority or Light Blindness reactions."
+    },
+    "antiPatterns": [
+      "Never treat light emitters as player-only; resolve carried emitters symmetrically across players, companions, and NPCs."
+    ]
+  },
   "src/systems/map.system.ts": {
     "domain": "Core Console: ECS Systems & Simulation",
     "tier": "tier1_console",
@@ -3706,6 +3837,25 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/systems/message.system.ts."
+    ]
+  },
+  "src/systems/movement_displacement.ts": {
+    "domain": "Core Console: ECS Systems & Simulation",
+    "tier": "tier1_console",
+    "responsibility": "Provides the unified Tier 1 atomic spatial displacement kernel (3-tier declarative passability evaluation, single-step and vector displacement, mode-aware AoO/lifecycle dispatching).",
+    "canonicalEntryPoints": [
+      "buildUpdatedPositionComponent",
+      "getEntityMovementModes",
+      "evaluateTileTraversal",
+      "displaceEntityStep",
+      "displaceEntityAlongVector"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure spatial displacement pipeline and declarative tile traversal tier classification for src/systems/movement_displacement.ts.",
+      "excludes": "Ruleset-specific maneuver rolls, charge line validation, or Wall-Slam damage math."
+    },
+    "antiPatterns": [
+      "Never mutate PositionComponent directly to teleport, push, pull, or step actors; always route through displaceEntityStep or displaceEntityAlongVector."
     ]
   },
   "src/systems/movement_footprint.ts": {
@@ -3925,6 +4075,25 @@
       "Do not duplicate or bypass exports from src/systems/reaction.system.ts."
     ]
   },
+  "src/systems/religion.system.ts": {
+    "domain": "Core Console: ECS Systems & Simulation",
+    "tier": "tier1_console",
+    "responsibility": "Manages deity/patron piety ledgers (`ReligionComponent`), favor adjustments, taboo violations, and shrine/altar penance atonement.",
+    "canonicalEntryPoints": [
+      "DEFAULT_TABOO_PENANCE_DEBT",
+      "DEFAULT_TABOO_FAVOR_PENALTY",
+      "recordDeityFavorDelta",
+      "recordTabooViolation",
+      "atonePenanceAtAltar"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/systems/religion.system.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/systems/religion.system.ts."
+    ]
+  },
   "src/systems/rest.system.ts": {
     "domain": "Core Console: ECS Systems & Simulation",
     "tier": "tier1_console",
@@ -4085,6 +4254,28 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/systems/social.system.ts."
+    ]
+  },
+  "src/systems/sound.system.ts": {
+    "domain": "Core Console: ECS Systems & Simulation",
+    "tier": "tier1_console",
+    "responsibility": "Propagates wall- and door-attenuated acoustic sound ripples (BFS), updates AI alertnessState/lastHeardPos/decay, and logs directional sound cues for unseen noise.",
+    "canonicalEntryPoints": [
+      "DEFAULT_OPEN_TILE_SOUND_ATTENUATION",
+      "DEFAULT_CLOSED_DOOR_SOUND_ATTENUATION",
+      "DEFAULT_WALL_SOUND_ATTENUATION",
+      "resolveTileSoundAttenuation",
+      "propagateSoundField",
+      "describeSoundDirection",
+      "emitSoundEvent",
+      "tickAIAlertnessDecay"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/systems/sound.system.ts.",
+      "excludes": "Ruleset-specific Hide/Move Silently/Listen check math."
+    },
+    "antiPatterns": [
+      "Do not hardcode ruleset skill formulas inside src/systems/sound.system.ts."
     ]
   },
   "src/systems/stance.system.ts": {

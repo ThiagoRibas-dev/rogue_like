@@ -67,7 +67,10 @@
               "selfTagsNone": [
                 "armor:light",
                 "armor:medium",
-                "armor:heavy"
+                "armor:heavy",
+                "load:medium",
+                "load:heavy",
+                "load:overloaded"
               ]
             }
           }

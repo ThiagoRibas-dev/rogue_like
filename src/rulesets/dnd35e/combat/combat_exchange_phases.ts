@@ -16,6 +16,7 @@ import {
 import { evaluateEntityFlankingTarget } from '../spatial/flanking_graph.ts';
 import { measureFootprintToFootprintDistanceFt } from '../spatial/footprint_resolver.ts';
 import { FEET_PER_GRID_SQUARE, SIZE_METRICS } from '../spatial/grid_geometry.ts';
+import { isActorDusted } from '../spatial/stealth_resolver.ts';
 import { getDnD35EntityData, setDnD35EntityData } from '../srd_registry.ts';
 import type { DnD35DamageType, DnD35EntityData, OnHitRiderDescriptor, SensoryProfile } from '../types/dnd35e.types.ts';
 import { evaluateDnD35eEntityDAG, type DnD35EntityDAGResult } from '../cartridge/dnd35e_dag_adapter.ts';
@@ -28,6 +29,9 @@ import {
   resolveSpecialAbilitySaveDc,
   shouldTriggerOnHitRider
 } from './maneuvers_conditions.ts';
+
+/** Standard untyped Charge attack roll bonus (`+2`, PHB p. 154). */
+export const CHARGE_ATTACK_BONUS = 2;
 
 /** Context resolved during Phase 1 (`PreAttackPhase`) of a strike exchange. */
 export interface PreAttackContext {
@@ -66,7 +70,8 @@ export function resolveStrikePreAttackContext(
   attackerSelfTags: ReadonlyArray<string>,
   defenderSelfTags: ReadonlyArray<string>,
   attackerEval: DnD35EntityDAGResult,
-  defenderEval: DnD35EntityDAGResult
+  defenderEval: DnD35EntityDAGResult,
+  isChargeAttack?: boolean
 ): PreAttackContext {
   const attackerPos = getComponent(state, attackerId, ComponentType.Position) as PositionComponent | undefined;
   const defenderPos = getComponent(state, defenderId, ComponentType.Position) as PositionComponent | undefined;
@@ -104,6 +109,7 @@ export function resolveStrikePreAttackContext(
     };
     const targetInvisible = defenderSelfTags.includes('trait:invisible');
     const targetBlurred = defenderSelfTags.includes('trait:blurred');
+    const targetDusted = isActorDusted(state, defenderId);
     const sensoryConcealment = evaluateConcealmentAndSenses(
       tileIllumination,
       attackerPos,
@@ -111,22 +117,27 @@ export function resolveStrikePreAttackContext(
       observerSenses,
       {
         ...(targetInvisible ? { targetInvisible: true } : {}),
-        ...(targetBlurred ? { targetBlurred: true } : {})
+        ...(targetBlurred ? { targetBlurred: true } : {}),
+        ...(targetDusted ? { targetDusted: true } : {})
       }
     );
     concealmentMissChance = Math.max(concealmentMissChance, sensoryConcealment.missChancePercent);
   }
 
+  const chargeBonus = isChargeAttack === true ? CHARGE_ATTACK_BONUS : 0;
   let strikeLabel = strike.label;
   if (totalStrikes > 1 && strike.attackSource === 'manufactured_primary') {
     strikeLabel = `${strikeLabel} (Iterative ${strikeIndex + 1})`;
+  }
+  if (chargeBonus > 0) {
+    strikeLabel = `${strikeLabel} [Charge +${chargeBonus}]`;
   }
   if (isFlanking) {
     strikeLabel = `${strikeLabel} [Flanking +${flankingBonus}]`;
   }
 
   return {
-    effectiveAttackBonus: strike.attackBonus + flankingBonus,
+    effectiveAttackBonus: strike.attackBonus + flankingBonus + chargeBonus,
     strikeLabel,
     concealmentMissChance,
     isFlanking

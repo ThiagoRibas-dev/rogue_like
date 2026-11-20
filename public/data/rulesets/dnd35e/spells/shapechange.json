@@ -63,7 +63,8 @@
       "transmutation",
       "polymorph",
       "shapechange",
-      "apex"
+      "apex",
+      "rarity:forbidden"
     ]
   }
 }

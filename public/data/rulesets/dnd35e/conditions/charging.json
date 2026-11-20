@@ -1,0 +1,12 @@
+{
+  "charging": {
+    "id": "charging",
+    "name": "Charging",
+    "description": "A charging combatant gains +2 on the charge attack roll and takes a -2 penalty to AC until the start of their next turn.",
+    "grantedTags": ["condition:charging", "stance:charge"],
+    "modifiers": [
+      { "id": "charging_ac_penalty", "target": "ac", "value": -2, "type": "untyped" }
+    ],
+    "ruleOverrides": []
+  }
+}

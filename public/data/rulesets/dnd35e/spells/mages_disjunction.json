@@ -46,7 +46,8 @@
       "abjuration",
       "dispelling",
       "apex",
-      "anti_magic"
+      "anti_magic",
+      "rarity:forbidden"
     ]
   }
 }

@@ -2,10 +2,38 @@
   "poison": {
     "id": "poison",
     "name": "Poisoned",
-    "description": "Takes 2 damage at the start of each turn.",
+    "description": "Takes 2 damage at the start of each turn, plus secondary poison damage after 10 rounds unless a Fortitude save succeeds.",
     "color": "#00d2d3",
     "detrimental": true,
-    "perTurnDamage": 2
+    "perTurnDamage": 2,
+    "secondaryTriggerAfterTurns": 10,
+    "secondarySaveDc": 14,
+    "secondaryDamage": 3,
+    "resistedByStatusIds": ["antitoxin"]
+  },
+  "antitoxin": {
+    "id": "antitoxin",
+    "name": "Antitoxin Protection",
+    "description": "Grants a +5 alchemical bonus on Fortitude saving throws against poison.",
+    "color": "#1abc9c",
+    "detrimental": false
+  },
+  "limping": {
+    "id": "limping",
+    "name": "Limping",
+    "description": "Foot wound reduces movement speed until treated with a DC 15 Heal check or 8-hour rest.",
+    "color": "#e67e22",
+    "detrimental": true
+  },
+  "sleeping": {
+    "id": "sleeping",
+    "name": "Sleeping",
+    "description": "Asleep and helpless (-10 penalty on Listen checks to wake up).",
+    "color": "#9b59b6",
+    "detrimental": true,
+    "flags": {
+      "skipTurn": true
+    }
   },
   "haste": {
     "id": "haste",

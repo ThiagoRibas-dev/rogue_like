@@ -9,10 +9,9 @@ import {
   type TagsComponent
 } from '../../../types/components.types.ts';
 import { GameEventType } from '../../../types/events.types.ts';
-import type { EntityId, GameState } from '../../../types/game-state.types.ts';
+import { EngineMode, type EntityId, type GameState } from '../../../types/game-state.types.ts';
 import type { MeleeAttackIntent } from '../../../types/intents/combat.intents.ts';
 import { consumeStandardActionFromBudget } from '../action_economy.ts';
-import { CHARGE_MOVEMENT_MIN_FT } from '../combat/combat_acf_riders.ts';
 import { executeCombatStrikeExchange } from '../combat/combat_exchange_pipeline.ts';
 import { evaluateVitalityStatus, mitigateIncomingDamage } from '../combat/damage_vitality.ts';
 import { evaluateOffTurnImmediateReactions } from '../combat/immediate_reactions.ts';
@@ -21,6 +20,7 @@ import { getDnD35EntityData, resolveDamageTypeFromTags, setDnD35EntityData } fro
 import { getDnD35SystemContent } from '../types/dnd35e_system.types.ts';
 import { resolveEffectiveEntityDataWithOverlays } from '../wild_shape.ts';
 import { evaluateDnD35eEntityDAG } from './dnd35e_dag_adapter.ts';
+import { hydrateEntityRoundActionBudget } from './dnd35e_turn_budget.ts';
 
 /** Maximum distance in feet (`5`) moved in a round that still allows a Full-Attack action (PHB p. 144). */
 const FIVE_FOOT_STEP_MAX_DISTANCE_FT = 5;
@@ -36,7 +36,8 @@ const FIVE_FOOT_STEP_MAX_DISTANCE_FT = 5;
  */
 export function resolveDnD35eMeleeAttack(
   state: GameState,
-  intent: MeleeAttackIntent
+  intent: MeleeAttackIntent,
+  options?: { readonly isChargeAttack?: boolean | undefined }
 ): { state: GameState; success: boolean } {
   const { entityId: attackerId, defenderId } = intent;
   const attackerFighter = getComponent(state, attackerId, ComponentType.Fighter);
@@ -127,14 +128,16 @@ export function resolveDnD35eMeleeAttack(
     };
   }
 
-  const actionBudget = attackerData.actionBudget;
+  const actionBudget =
+    attackerData.actionBudget ??
+    (activeState.engineMode === EngineMode.RTwP ? hydrateEntityRoundActionBudget(activeState, attackerId) : undefined);
   if (actionBudget && actionBudget.standardRemaining < 1) {
     return { state: activeState, success: false };
   }
 
   const distanceMovedFt = actionBudget?.distanceMovedThisRoundFt ?? 0;
   const hasPounce = attackerSelfTags.includes('special_attack:pounce') || attackerData.hasPounce === true;
-  const isChargeAttack = distanceMovedFt >= CHARGE_MOVEMENT_MIN_FT;
+  const isChargeAttack = options?.isChargeAttack === true;
   const isFullAttack =
     (isChargeAttack && hasPounce) ||
     (distanceMovedFt <= FIVE_FOOT_STEP_MAX_DISTANCE_FT && (actionBudget ? actionBudget.moveRemaining >= 1 : true));
@@ -147,10 +150,11 @@ export function resolveDnD35eMeleeAttack(
   // Consume Standard (or Full-Round) action in actionBudget if present
   let updatedAttackerData = attackerData;
   if (actionBudget) {
-    const nextStd = isFullAttack ? 0 : Math.max(0, actionBudget.standardRemaining - 1);
-    const nextMove = isFullAttack ? 0 : actionBudget.moveRemaining;
+    const consumesFullRound = isFullAttack || isChargeAttack;
+    const nextStd = consumesFullRound ? 0 : Math.max(0, actionBudget.standardRemaining - 1);
+    const nextMove = consumesFullRound ? 0 : actionBudget.moveRemaining;
     const movedBeforeAttack = distanceMovedFt > 0;
-    const nextRemainingFt = isFullAttack || movedBeforeAttack ? 0 : actionBudget.movementRemainingFt;
+    const nextRemainingFt = consumesFullRound || movedBeforeAttack ? 0 : actionBudget.movementRemainingFt;
     updatedAttackerData = {
       ...attackerData,
       actionBudget: {
@@ -159,7 +163,8 @@ export function resolveDnD35eMeleeAttack(
         moveRemaining: nextMove,
         movementRemainingFt: nextRemainingFt,
         fiveFootStepAvailable: false,
-        canMoveFurtherThisRound: !isFullAttack && (nextMove > 0 || !movedBeforeAttack) && (nextMove > 0 || nextStd > 0),
+        canMoveFurtherThisRound:
+          !consumesFullRound && (nextMove > 0 || !movedBeforeAttack) && (nextMove > 0 || nextStd > 0),
         hasActedThisRound: true
       }
     };

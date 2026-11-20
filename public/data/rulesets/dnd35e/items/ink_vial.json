@@ -13,7 +13,8 @@
     "currencyUnit": "gp",
     "tags": [
       "adventuring_gear",
-      "writing_gear"
+      "writing_gear",
+      "scribing_ink"
     ],
     "spriteId": "dcss_item_potion_black_new"
   }

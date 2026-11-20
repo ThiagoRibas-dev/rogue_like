@@ -13,7 +13,8 @@
     "currencyUnit": "gp",
     "tags": [
       "class_tool",
-      "skill_kit"
+      "skill_kit",
+      "medical_kit"
     ],
     "effectBundle": {
       "bundleId": "item_healers_kit",

@@ -3,6 +3,7 @@ import { type Intent } from '../types/intents/intent.union.ts';
 import { IntentType } from '../types/intents/intent.enum.ts';
 import { ComponentType } from '../types/components.types.ts';
 import { getComponent } from '../core/ecs.ts';
+import { getActiveRuleset } from '../rulesets/registry.ts';
 import { DEFAULT_AI_AGGRO_RADIUS, resolveAITarget } from './companion_targeting.ts';
 import { computeNextStepToward } from './follow.behavior.ts';
 import { canActorPerformIntent, hasActorMovementInProgress } from '../systems/lifecycle.system.ts';
@@ -12,8 +13,8 @@ import { getEntitySpatialProfile } from '../systems/movement_footprint.ts';
  * Hunt behavior: finds the highest-priority hostile entity within aggroRadius
  * (respecting companion stances, focus-target orders, and leash bounds).
  * If adjacent, returns a MeleeAttackIntent (when attack action is available).
- * If further (and not holding position), returns a path-aware MoveIntent towards the target
- * only when the actor can still attack upon arrival or is continuing an active Move pool.
+ * If further (and not holding position), checks explicit Charge eligibility via `RulesetContract`
+ * or returns a path-aware MoveIntent towards the target when the actor can still attack or finish stepping.
  */
 export function huntBehavior(
   state: GameState,
@@ -45,6 +46,22 @@ export function huntBehavior(
   const canStillAttack = canActorPerformIntent(state, attackIntent);
   if (!canStillAttack && !hasActorMovementInProgress(state, entityId)) {
     return null;
+  }
+
+  const activeRuleset = getActiveRuleset(state);
+  if (
+    params.allowCharge === true &&
+    activeRuleset.evaluateCombatChargeIntent?.(state, entityId, resolved.targetId) === true
+  ) {
+    const chargeIntent: Intent = {
+      type: IntentType.Apply,
+      entityId,
+      verb: 'charge',
+      target: { type: 'entity', entityId: resolved.targetId }
+    };
+    if (canActorPerformIntent(state, chargeIntent)) {
+      return chargeIntent;
+    }
   }
 
   const pos = getComponent(state, entityId, ComponentType.Position);

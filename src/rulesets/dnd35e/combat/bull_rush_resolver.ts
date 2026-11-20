@@ -1,17 +1,11 @@
 import { addComponent, getComponent, resolveEntityDisplayName } from '../../../core/ecs.ts';
 import { addMessage, MessageLogCategory } from '../../../systems/message.system.ts';
-import {
-  ComponentType,
-  type DamageComponent,
-  type PositionComponent,
-  type TagsComponent
-} from '../../../types/components.types.ts';
+import { displaceEntityAlongVector } from '../../../systems/movement_displacement.ts';
+import { ComponentType, type DamageComponent, type PositionComponent } from '../../../types/components.types.ts';
 import type { EntityId, GameState } from '../../../types/game-state.types.ts';
-import { coordToIndex, isInBounds } from '../../../utils/grid.ts';
 import { evaluateDnD35eEntityDAG } from '../cartridge/dnd35e_dag_adapter.ts';
 import { evaluateDiceExpression } from '../math/dice.ts';
 import { resolveTypedModifiersWithBreakdown } from '../modifiers.ts';
-import { syncSpatialFlankingGraph } from '../spatial/flanking_graph.ts';
 import { FEET_PER_GRID_SQUARE } from '../spatial/grid_geometry.ts';
 import type { StatModifier } from '../types/dnd35e.types.ts';
 import { resolveCombatManeuver } from './maneuvers_conditions.ts';
@@ -65,34 +59,6 @@ export function resolveDungeonCrasherProfile(
     return { diceCount: DUNGEON_CRASHER_T1_DICE, strMultiplier: DUNGEON_CRASHER_T1_STR_MULT };
   }
   return { diceCount: 0, strMultiplier: 0 };
-}
-
-function isBlockingTileOrEntity(
-  state: GameState,
-  x: number,
-  y: number,
-  defenderId: EntityId
-): { readonly blockedByWall: boolean; readonly blockedByEntity: boolean } {
-  if (!isInBounds(x, y, state.map.width, state.map.height)) {
-    return { blockedByWall: true, blockedByEntity: false };
-  }
-  const tile = state.map.tiles[coordToIndex(x, y, state.map.width)];
-  const tileDef = tile ? state.campaign.tiles[tile.tileId] : undefined;
-  if (!tileDef || !tileDef.walkable) {
-    return { blockedByWall: true, blockedByEntity: false };
-  }
-  const occupants = state.spatialIndex.get(`${x},${y}`) ?? [];
-  for (const occId of occupants) {
-    if (occId === defenderId) continue;
-    const isActor =
-      getComponent(state, occId, ComponentType.Fighter) !== undefined ||
-      getComponent(state, occId, ComponentType.Actor) !== undefined;
-    const tags = (getComponent(state, occId, ComponentType.Tags) as TagsComponent | undefined)?.tags ?? [];
-    if (isActor || tags.includes('solid')) {
-      return { blockedByWall: false, blockedByEntity: true };
-    }
-  }
-  return { blockedByWall: false, blockedByEntity: false };
 }
 
 /**
@@ -180,37 +146,29 @@ export function resolveBullRushImpact(
   const dx = Math.sign(defenderPos.x - attackerPos.x);
   const dy = Math.sign(defenderPos.y - attackerPos.y);
 
-  let curX = defenderPos.x;
-  let curY = defenderPos.y;
+  let nextState = state;
   let pushedSquares = 0;
   let collidedWithWall = false;
+  let finalPosition: { readonly x: number; readonly y: number } = { x: defenderPos.x, y: defenderPos.y };
 
   if (dx !== 0 || dy !== 0) {
-    for (let step = 0; step < maxSquares; step++) {
-      const nextX = curX + dx;
-      const nextY = curY + dy;
-      const obstacle = isBlockingTileOrEntity(state, nextX, nextY, defenderId);
-      if (obstacle.blockedByWall) {
-        collidedWithWall = true;
-        break;
+    const pushRes = displaceEntityAlongVector({
+      state,
+      entityId: defenderId,
+      maxSteps: maxSquares,
+      dx,
+      dy,
+      context: {
+        mode: 'forced_push',
+        isForced: true,
+        provokesAoO: false,
+        sourceEntityId: attackerId
       }
-      if (obstacle.blockedByEntity) {
-        break;
-      }
-      curX = nextX;
-      curY = nextY;
-      pushedSquares += 1;
-    }
-  }
-
-  let nextState = state;
-  if (curX !== defenderPos.x || curY !== defenderPos.y) {
-    nextState = addComponent(nextState, defenderId, {
-      type: ComponentType.Position,
-      x: curX,
-      y: curY
     });
-    nextState = syncSpatialFlankingGraph(nextState);
+    nextState = pushRes.state;
+    pushedSquares = pushRes.stepsMoved;
+    collidedWithWall = pushRes.stopReason === 'solid_obstacle';
+    finalPosition = pushRes.finalPos;
   }
 
   const pushedFt = pushedSquares * FEET_PER_GRID_SQUARE;
@@ -256,6 +214,6 @@ export function resolveBullRushImpact(
     pushedSquares,
     collidedWithWall,
     wallCrashDamage,
-    finalPosition: { x: curX, y: curY }
+    finalPosition
   };
 }

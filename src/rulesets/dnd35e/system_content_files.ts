@@ -247,6 +247,8 @@ const RACE_IDS: ReadonlyArray<string> = [
 
 const CONDITION_IDS: ReadonlyArray<string> = [
   'blinded',
+  'bound',
+  'charging',
   'dazzled',
   'deafened',
   'entangled',

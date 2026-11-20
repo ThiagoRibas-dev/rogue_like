@@ -26,24 +26,31 @@ import type {
 } from './components/item_components.types.ts';
 import type {
   AgreementComponent,
+  BreathComponent,
   ClueComponent,
+  CorpseComponent,
+  CrossingComponent,
   DamageComponent,
   DeathComponent,
   DialogueComponent,
   DirectorBudgetComponent,
   EdgeTransitionComponent,
   FieldComponent,
+  IdentityMaskComponent,
   InteractableComponent,
+  LightEmitterComponent,
   LockComponent,
   PersistentComponent,
   PortalComponent,
   PositionComponent,
   QuestLogComponent,
+  ReligionComponent,
   RenderableComponent,
   RulesetDataComponent,
   SchemeComponent,
   ServicesComponent,
   ShopComponent,
+  StructuralComponent,
   TagsComponent,
   TemplateComponent,
   TraitsComponent,
@@ -58,6 +65,7 @@ export type {
   ActorComponent,
   GodModeComponent,
   FighterComponent,
+  AIAlertnessState,
   AIComponent,
   HungerComponent,
   FactionComponent
@@ -84,6 +92,7 @@ export type {
   WeaponGripMode,
   ImmediateReactionTrigger,
   ImmediateReactionPolicy,
+  StealthStanceState,
   TacticalDoctrineComponent
 } from './components/actor_components.types.ts';
 
@@ -102,6 +111,7 @@ export type {
 
 // Re-export World & Narrative Components & Types
 export type {
+  CardinalFacing,
   PositionComponent,
   RenderableComponent,
   InteractableComponent,
@@ -127,7 +137,16 @@ export type {
   ServiceDefinition,
   ServicesComponent,
   DirectorBudgetComponent,
-  RulesetDataComponent
+  RulesetDataComponent,
+  CrossingKind,
+  CrossingComponent,
+  BreathComponent,
+  LightEmitterComponent,
+  StructuralObjectSize,
+  StructuralComponent,
+  CorpseComponent,
+  ReligionComponent,
+  IdentityMaskComponent
 } from './components/world_components.types.ts';
 
 /**
@@ -178,7 +197,14 @@ export const enum ComponentType {
   PropertyOverlay = 'PropertyOverlay',
   ControllerLink = 'ControllerLink',
   ResourcePool = 'ResourcePool',
-  TacticalDoctrine = 'TacticalDoctrine'
+  TacticalDoctrine = 'TacticalDoctrine',
+  Crossing = 'Crossing',
+  Breath = 'Breath',
+  LightEmitter = 'LightEmitter',
+  Structural = 'Structural',
+  Corpse = 'Corpse',
+  Religion = 'Religion',
+  IdentityMask = 'IdentityMask'
 }
 
 /**
@@ -229,4 +255,11 @@ export type Component =
   | PropertyOverlayComponent
   | ControllerLinkComponent
   | ResourcePoolComponent
-  | TacticalDoctrineComponent;
+  | TacticalDoctrineComponent
+  | CrossingComponent
+  | BreathComponent
+  | LightEmitterComponent
+  | StructuralComponent
+  | CorpseComponent
+  | ReligionComponent
+  | IdentityMaskComponent;

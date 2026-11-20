@@ -1,268 +1,310 @@
-# Implementation Plan — Character Creation Final Summary, Identity, Sprite Picker, SRD Starting Kits & Custom Loadout
+# Implementation Plan — Phase 43 Pending Roadmap (Milestones 150–156)
 
-> **Status:** Phase 1, Steps 4–5 — Enhanced Implementation Plan (Awaiting User Approval before Code Execution)
-> **Confirmed Decisions from Research Review:**
-> 1. Move Character Name out of `topRow` into a dedicated final **`Review & Identity`** (`'summary'`) step featuring live DAG-derived character sheet preview, **Name + Randomize Name**, optional **Title / Epithet**, **ASCII Glyph Color Swatches**, optional **Character Traits / Mannerisms**, and **Sprite Picker** (Suggested Race/Class match, DCSS/32rogues Character sheets, plus Full Catalogue browser).
-> 2. Wire the player's chosen sprite into the in-game **`[C]` Character Sheet portrait** (`.crpg-character-portrait` in `console_dossier.ui.ts`) via a Tier 1 Console atlas thumbnail helper while respecting `.dependency-cruiser.cjs` `headless-simulation-purity`.
-> 3. Upgrade the Equipment step into a dedicated **Kit Inspector + Custom Buy Shop**: add all **11 PHB/SRD Class Starting Packages** (retaining the 4 legacy kits), SRD Goods & Services items modeled cleanly with **Root vs. Downstream (`baseItemId`) inheritance**, class starting gold (`average` / `roll` via `startingGoldDice`), free starter outfit selection (`0 lb` weight), and SRD encumbrance readouts via `computeEncumbranceState`.
-> 4. Raise default inventory slot capacity to **`30`** and add **automated referential validation** in `checkDnD35eRuleset` + unit tests so missing starting-kit items or class default kit IDs fail loudly instead of being silently skipped.
-> 5. Defer live runtime encumbrance penalties (`semantic_tags_context.ts` + DAG ACP/Max-Dex/Speed) to a dedicated follow-up milestone so combat/movement test baselines remain stable.
+> **Status:** Phase 1, Steps 4–5 — Enhanced Implementation Plan (Revised with Confirmed Per-Actor Modulated 3.0s RTwP Move Pacing; Ready for Final Approval)
+> **Execution Strategy:** Execute and verify **one milestone at a time sequentially (`M150 -> M151 -> M152 -> M153 -> M154 -> M155 -> M156`)**, running the full 8-stage `./verify.sh` pipeline + `bun scripts/map-codebase.ts` SSOT parity sync after each milestone so every downstream milestone builds on verified live state.
+> **Confirmed M151 RTwP Move Pacing:** `6000 ms` = `1` full 6-second round (`100` energy); a single `Move` action occupies `3.0s` (`50` energy) dynamically modulated per actor by their live `tacticalSpeedFt` (incorporating *Haste*, Barbarian *Fast Movement*, Medium/Heavy Armor & Load penalties, Dwarf `trait:unencumbered_speed`, Difficult Terrain, and Stealth half-speed) using zero-drift cumulative rounding.
 
 ---
 
-## 1. SSOT Ownership & Canonical Responsibilities Table
+## 1. SSOT Ownership & Old-Brain Eviction Table (M150–M156)
 
-| Responsibility | Canonical Owner (After Change) | Tier | Notes |
-|---|---|---|---|
-| Playable character sprite sheet marker schema | `src/types/campaign/meta.ts` (`SpriteSheetSourceSchema`) | `tier1_types` | Optional `isCharacterSpriteSheet` boolean stamped in `pack.json`. |
-| Declarative sprite catalog discovery & Race/Class token matcher | `src/utils/sprite_pack.ts` (`collectCatalogSpriteEntries`, `suggestCharacterSprites`) | `tier1_console` | Pure utilities; supports all loaded packs & legacy prefix fallback. |
-| Active composited atlas snapshot & crisp pixel-art thumbnail slicing | `src/rendering/sprite_atlas.ts` (`setActiveSpriteAtlas`, `getActiveSpriteAtlas`, `renderSpriteToDataUrl`) | `tier1_console` | Populated/refreshed by `configureDisplayForCampaign` (`src/rendering/display.ts`). |
-| Character Sheet portrait visual rendering | `src/rendering/ui/console_dossier.ui.ts` (consuming `UICharacterSheetModel.spriteId` / `glyph` / `glyphColor`) | `tier1_ui` | Zero `rendering/` imports inside `src/rulesets/`. |
-| Default actor inventory slot capacity (`30`) | `src/core/ecs/ecs_spawner_equipment.ts` (`DEFAULT_ACTOR_INVENTORY_CAPACITY = 30`) & campaign `entities.json` | `tier1_console` | Prevents starting packs from spawning full. |
-| SRD Goods & Services items & Class Starting Wealth schemas | `src/rulesets/dnd35e/types/dnd35e_system.types.ts`, `system_content_item_ids.ts`, `public/data/rulesets/dnd35e/items/*.json`, `classes/*.json` | `tier2_types` / `tier3_content` | Composed via `baseItemId` root -> downstream inheritance. |
-| Starting package definitions, wealth calculation & kit cost/weight math | `src/rulesets/dnd35e/builder/starting_packages.ts` | `tier2_cartridge` | Owns 11 SRD class packages + 4 legacy packages + pure buy/weight helpers. |
-| Starting package & class default kit referential validator | `src/rulesets/dnd35e/dnd35e_validator.ts` (`checkDnD35eRuleset`) | `tier2_cartridge` | Hard errors if any package `itemId`, `freeOutfitId`, or class `defaultStartingPackageId` is missing. |
-| Pure character creation hydration & preview state generation | `src/rulesets/dnd35e/builder/builder_hydrator_creation.ts` (`applyCharacterCreationToPlayer`) | `tier2_cartridge` | Persists preset/custom gear, coin balance, `IdentityComponent`, and `RenderableComponent`. |
-| Equipment step UI (Preset Kits Inspector & Custom Buy Shop) | `src/rendering/ui/dnd35e_char_builder_equipment.ui.ts` | `tier2_ui` | Re-exported by `dnd35e_char_builder_steps.ui.ts`. |
-| Final Review & Identity step UI (Hero Preview, Name, Title, ASCII Color, Traits, Sprite Picker, Full Live Sheet) | `src/rendering/ui/dnd35e_char_builder_summary.ui.ts` | `tier2_ui` | Orchestrated as final step `'summary'` in `dnd35e_char_builder.ui.ts`. |
+| Milestone | Responsibility | Canonical Owner (After Change) | Evicted / Replaced Old Brain | Tier |
+|---|---|---|---|---|
+| **M150** | Carried weight sum (equipped + inventory, 1 free `starter_outfit`), STR > 20 & quadruped load tiers | `src/rulesets/dnd35e/combat/tactical_doctrine.ts` (`computeActorCarriedWeightLbs`, `computeEncumbranceState`) | Inline inventory-only weight loop in `dnd35e_ui_adapter.ts`; hardcoded `loadCategory: 'light'` in `semantic_tags_context.ts` | `tier2_cartridge` |
+| **M150** | Horizon 3 `armor:*` / `load:*` tag projection & worst-of ACP/Max-Dex DAG enforcement + inventory cache keys | `src/rulesets/dnd35e/semantic_tags.ts`, `dnd35e_dag_adapter.ts`, `dnd35e_turn_budget.ts` | Missing `load:*` emission & stale DAG cache lacking `inventoryRef` | `tier2_cartridge` |
+| **M151** | Unified 6-second round clock (`6000 ms` = `100` energy) & cross-mode TB/RTwP action budget | `src/constants/scheduler.constants.ts`, `src/core/scheduler.ts`, `src/rulesets/dnd35e/cartridge/dnd35e_turn_budget.ts` | `500 ms` RTwP tick & `engineMode !== TurnBased` budget short-circuit | `tier1_console` / `tier2_cartridge` |
+| **M152** | 3-tier passability (`evaluateTileTraversal`), single atomic displacement (`displaceEntityStep` / `AlongVector`), mode-aware `runActorMovementStep` | `src/systems/movement_displacement.ts`, `src/systems/movement.system.ts`, `src/systems/lifecycle.system.ts`, `src/types/ruleset.types.ts` | Private `isBlockingTileOrEntity` + raw `PositionComponent` overwrites in `bull_rush_resolver.ts` & `immediate_reactions.ts`; `'dnd35e'` check in `movement.system.ts` | `tier1_console` |
+| **M152** | Explicit Triggered Charge action (`+2` atk, `-2` AC condition, straight unobstructed `charge_step`, Pounce/Charging Smite) | `src/rulesets/dnd35e/combat/charge_resolver.ts`, `dnd35e_ruleset.ts` (`verb: 'charge'`) | Passive `distanceMovedFt >= 10` Charge shortcut in `dnd35e_combat_adapter.ts` | `tier2_cartridge` |
+| **M153** | Per-area Rest Pressure (`RestPressureConfigSchema`), bulk `processSchemeTurn`, watch-chunk camp ambushes | `src/types/campaign/{rules,world}.ts`, `src/systems/world_time_skip.ts`, `src/systems/rest.system.ts` | Scheme freeze during bulk rest/wait; single-chunk unguarded rest | `tier1_console` |
+| **M153** | Quick-draw belt action reduction, two-stage poison, `healers_kit` care, captive `manacles` | `src/rulesets/dnd35e/cartridge/dnd35e_turn_budget.ts`, `src/systems/status-effect.system.ts`, `src/rulesets/dnd35e/skills/dungeon_skill_verbs.ts` | Flat container action cost; single-stage poison | `tier1_console` / `tier2_cartridge` |
+| **M154** | World-owned crossings (`CrossingComponent`), `BreathComponent`, tag-driven `FieldInteractionRule`s, generic `dip` (`CoatingComponent`) | `src/systems/crossing.system.ts`, `src/systems/breath.system.ts`, `src/systems/field.system.ts`, `src/systems/apply.system.ts` | Binary impassable water/pits; inert fields; campaign-only `dip` fallthrough | `tier1_console` |
+| **M154** | Water `Swim` (`2×` ACP), Gap `Jump`/`Climb`/`Use Rope`/`Balance`, `caltrops`/`marbles`/`grease`, `Craft (Alchemy)` | `src/rulesets/dnd35e/spatial/terrain_traversal_resolver.ts`, `src/rulesets/dnd35e/combat/floor_hazard_resolver.ts` | Non-interactive water/pit tiles & unactivated M149 hazard items | `tier2_cartridge` |
+| **M155** | Wall-attenuated acoustics (`emitSoundEvent` + AI alertness), `LightEmitterComponent` (fuel/cones), 6s-cadence symmetric Stealth | `src/systems/sound.system.ts`, `src/systems/light_emitter.system.ts`, `src/rulesets/dnd35e/spatial/stealth_resolver.ts` | Omniscient LOS-only AI aggro; static ambient-only `lightGrid` | `tier1_console` / `tier2_cartridge` |
+| **M156** | SRD Object/Durability engine (`StructuralComponent`, repairable `ruined`, `0%` opt-in `durabilityConfig`), structural doors, `CorpseComponent`, `ReligionComponent`, `IdentityMaskComponent` | `src/systems/durability.system.ts`, `src/systems/corpse.system.ts`, `src/systems/religion.system.ts`, `src/systems/disguise.system.ts`, `src/rulesets/dnd35e/combat/object_durability_resolver.ts` | Unbreakable doors/objects; missing corpse/piety/disguise primitives | `tier1_console` / `tier2_cartridge` |
+| **M156** | Tag-based spell rarity (`rarity:*`), dropped `wizards_spellbook` transcription, live `resolveMonsterLoreCheck`, `UMD` | `src/rulesets/dnd35e/magic/spellbook_loot.ts`, `spellbook_actions.ts`, `src/rulesets/dnd35e/skills/monster_lore_tracker.ts` | Unused `resolveMonsterLoreCheck` on sight; empty mage loot | `tier2_cartridge` |
 
 ---
 
 ## 2. Declarative Purity & Anti-Hardcoding Audit Table (Rule 21)
 
-| Behavior | Rejected Imperative Shortcut | Chosen Declarative Schema / JSON Mechanism | Passes "New Content Mod" Litmus Test? |
+| Milestone & Behavior | Rejected Imperative Shortcut | Chosen Declarative Schema / JSON Mechanism | Passes "New Content Mod" Litmus Test? |
 |---|---|---|---|
-| Discovering selectable character sprites | Hardcoding 156 `dcss_actor_*` / `actor_*` IDs in `.ts` | `isCharacterSpriteSheet: true` on `SpriteSheetSourceSchema` in `dcss/pack.json` (`actors`) and `32rogues/pack.json` (`rogues`) | Yes |
-| Class starting wealth dice & default kit | `switch (classId) { case 'fighter': return '6d4*10'; }` in `.ts` | `startingGoldDice`, `averageStartingGoldGp`, and `defaultStartingPackageId` on `public/data/rulesets/dnd35e/classes/*.json` | Yes |
-| Item pricing, categories, light radius & free outfits | Hardcoded item price/category map inside UI `.ts` | `baseValue`, `currencyUnit`, `weight`, `category`, and `tags` (`starter_outfit`, `light_source`, `skill_kit`, `alchemical`, `ammunition`) on `items/*.json` | Yes |
-| Derived / Masterwork / Special Material variants | Copying full JSON stats per variant item | `baseItemId` composition evaluated recursively by `resolveEffectiveItemDefinition` | Yes |
-| Summary step HP, AC, Saves, BAB, Attack & Skill math | Re-computing D&D formulas inside Summary UI DOM code | Pure `applyCharacterCreationToPlayer` -> `projectCharacterSheetData` DAG evaluation | Yes |
+| **M150:** Free starter outfit weight exclusion & dwarf unencumbered speed | `if (itemId === 'explorers_outfit')` or `if (raceId === 'dwarf')` | `item.tags.includes('starter_outfit')` & `selfTags.includes('trait:unencumbered_speed')` | Yes |
+| **M151:** RTwP action round slices | Hardcoding per-spell or per-item ms timers | Derived purely from `DnD35ActionBudget` action tier (`standard`, `move`, `full_round`, `swift`) × `RTWP_MS_PER_100_DURATION` (`6000 ms`) | Yes |
+| **M152:** Solid obstacle vs. open hazard & Charge terrain exemptions | `if (tileId === 'stone_wall')` or `if (hasFeat('woodland_stride'))` | Optional `TileDefinitionSchema` flags (`isSolidObstacle`, `hazardKind`, `blocksCharge`, `movementCost`) & declarative `RuleOverride` (`charge_ignores_difficult_terrain`) | Yes |
+| **M152:** Charge `-2` AC / `+2` attack & movement modes in Console | Hardcoding `rulesetId === 'dnd35e'` in `movement.system.ts` or ad-hoc `-2` AC branch | `RulesetAdapter.getEntityMovementModes` hook + declarative `charging` condition JSON (`public/data/rulesets/dnd35e/conditions/charging.json`) | Yes |
+| **M153:** Rest pressure & quick-draw container speed | Hardcoding dungeon area IDs or `if (itemId === 'bandoleer')` | `RestPressureConfigSchema` on `rules.json` / `AreaDefinition.restPressure`; `tags: ['quick_draw_container']` on belt/bandoleer items | Yes |
+| **M154:** Field chemistry, crossings, and breath immunity | Hardcoding `if (field === 'fire' && tile === 'oil')` or `if (race === 'skeleton')` | Declarative `FieldInteractionRuleSchema[]` (`incomingTags`, `targetTags`, `resultAction`); `CrossingComponent`; Layer A tags (`trait:water_breathing`, `type:undead`, `type:construct`) | Yes |
+| **M155:** Sound attenuation, light cones, stealth senses | `if (itemId === 'bullseye_lantern')` or `if (race === 'elf')` | `tile.soundAttenuation`; `item.lightSource: { radiusFt, coneAngleDeg?, fuelTurns?, requiresIgnition? }`; Layer A sense tags (`sense:darkvision`, `sense:low_light`, `sense:scent`, `sense:tremorsense`) | Yes |
+| **M156:** Object hardness/vulnerability, wear config, spell rarity | `if (spellId === 'wish')` or `switch (itemId)` for hardness | `materialTag` -> material hardness/HP table in JSON; `rules.durabilityConfig` (`0%` defaults); `rarity:uncommon|rare|forbidden` inside `DnD35SpellDefinitionSchema.tags` | Yes |
 
 ---
 
-## 3. Root vs. Downstream Composed SRD Item Tree (`baseItemId`)
-
-Every downstream item inherits base weight, category, tags, `equippable`, `consumable`, or stats from its root item in `public/data/rulesets/dnd35e/items/` (`validateDnD35eSystemContentIntegrity` already verifies every `baseItemId` reference):
-
-| Group | Root Item IDs (`baseItemId` = omitted) | Downstream Composed IDs (`baseItemId` -> root) |
-|---|---|---|
-| **Adventuring Gear & Containers** | `backpack` (`2 gp`, `back` slot `carryBonus: 5`), `waterskin`, `trail_rations` (`consumable.effectId: "food_ration"`), `bedroll`, `winter_blanket`, `sack`, `belt_pouch`, `bandoleer`, `potion_belt`, `scroll_organizer`, `flint_and_steel`, `map_or_scroll_case`, `parchment_sheet`, `ink_vial`, `inkpen`, `chalk`, `hempen_rope`, `grappling_hook`, `crowbar`, `hammer`, `piton`, `iron_spike`, `pole_10ft`, `caltrops`, `marbles`, `flour_pouch`, `small_steel_mirror`, `manacles`, `portable_ram`, `tent`, `signal_whistle`, `whetstone` | `silk_rope` -> `hempen_rope`; `masterwork_bandoleer` -> `bandoleer`; `masterwork_potion_belt` -> `potion_belt`; `masterwork_manacles` -> `manacles` |
-| **Light Sources & Oil** | `torch` (`1 cp`, `light_radius_ft:20`), `candle` (`1 cp`, `light_radius_ft:5`), `common_lamp` (`1 sp`, `light_radius_ft:15`), `hooded_lantern` (`7 gp`, `light_radius_ft:30`), `oil_flask` (`1 sp`), `sunrod` (`2 gp`, `light_radius_ft:30`), `tindertwig` (`1 gp`) | `everburning_torch` -> `torch` (`110 gp`, `magical`); `bullseye_lantern` -> `hooded_lantern` (`12 gp`, `light_radius_ft:60`) |
-| **Ammunition** | `arrows_20` (`1 gp`, `3 lb`), `crossbow_bolts_10` (`1 gp`, `1 lb`), `sling_bullets_10` (`1 sp`, `5 lb`) | — |
-| **Class Tools & Skill Kits** | `wooden_holy_symbol` (`1 gp`), `holly_and_mistletoe` (`0 gp`), `spell_component_pouch` (`5 gp`), `wizards_spellbook` (`15 gp`), `thieves_tools` (`30 gp`), `healers_kit` (`50 gp`), `climbers_kit` (`80 gp`), `disguise_kit` (`50 gp`), `lute_common` (`5 gp`), `artisan_tools` (`5 gp`), `magnifying_glass` (`100 gp`), `merchants_scale` (`2 gp`) | `silver_holy_symbol` -> `wooden_holy_symbol` (`25 gp`, `specialMaterial: "silver"`); `masterwork_thieves_tools` -> `thieves_tools` (`100 gp`); `lute_masterwork` -> `lute_common` (`100 gp`); `masterwork_artisan_tools` -> `artisan_tools` (`55 gp`) |
-| **Special Alchemical & Substances** | `acid_flask` (`10 gp`), `alchemists_fire` (`20 gp`), `antitoxin` (`50 gp`), `holy_water` (`25 gp`), `smokestick` (`20 gp`), `tanglefoot_bag` (`50 gp`), `thunderstone` (`30 gp`) | — |
-| **Clothing Outfits** | 7 SRD Free Starter Outfits (`tags: ["clothing_outfit", "starter_outfit"]`): `explorers_outfit`, `travelers_outfit`, `scholars_outfit`, `monks_outfit`, `clerics_vestments`, `entertainers_outfit`, `artisans_outfit`; Non-starter outfits (`tags: ["clothing_outfit"]`): `peasants_outfit`, `cold_weather_outfit`, `courtiers_outfit` | — |
-
-*(Note: `public/data/campaigns/dnd35e-crypt/items.json`'s `backpack` definition will be updated to include `"baseValue": 2, "currencyUnit": "gp"` so campaign-level overrides match SRD pricing.)*
+## 3. Detailed Step-by-Step Implementation Plan & Code Snippets (M150–M156)
 
 ---
 
-## 4. Detailed Step-by-Step Implementation Plan & Code Snippets
+### Milestone 150 — Live Symmetric Weight-Based Encumbrance Enforcement & DAG Inventory Cache Invalidation
 
-### Phase 1 — Tier 1 Console: Sprite Atlas Thumbnails, Declarative Catalog & Character Sheet Portrait
+#### Step 150.1 — Canonical Carried Weight & STR > 20 / Quadruped Scaling (`src/rulesets/dnd35e/combat/tactical_doctrine.ts`, `src/rulesets/dnd35e/ui/dnd35e_ui_adapter.ts`)
+- Extend `computeEncumbranceState` to support `strScore > 20` (SRD `×4` per `+10` STR) and optional `isQuadruped = false` (SRD quadruped size carry multipliers: Fine `×1/4`, Diminutive `×1/2`, Tiny `×3/4`, Small `×1`, Medium `×1.5`, Large `×3`, Huge `×6`, Gargantuan `×12`, Colossal `×24`).
+- Add canonical `computeActorCarriedWeightLbs(state: GameState, entityId: EntityId): number`:
+```ts
+// src/rulesets/dnd35e/combat/tactical_doctrine.ts
+export function computeActorCarriedWeightLbs(state: GameState, entityId: EntityId): number {
+  const seenItemIds = new Set<EntityId>();
+  const inventory = getComponent(state, entityId, ComponentType.Inventory) as InventoryComponent | undefined;
+  const equipment = getComponent(state, entityId, ComponentType.Equipment) as EquipmentComponent | undefined;
+  for (const id of inventory?.items ?? []) seenItemIds.add(id);
+  for (const slot of equipment?.slots ?? []) {
+    if (slot.equippedItem !== null) seenItemIds.add(slot.equippedItem);
+  }
 
-1. **Mark character sheets in `src/types/campaign/meta.ts` & `pack.json`:**
-   ```ts
-   // src/types/campaign/meta.ts (inside SpriteSheetSourceSchema)
-   isCharacterSpriteSheet: z
-     .boolean()
-     .optional()
-     .describe('Marks sheets whose sprites represent playable character avatars'),
-   ```
-   Set `"isCharacterSpriteSheet": true` on `dcss/pack.json` (`spriteSheets.actors`) and `32rogues/pack.json` (`spriteSheets.rogues`).
+  let totalLbs = 0;
+  let excludedStarterOutfit = false;
+  for (const itemEntityId of seenItemIds) {
+    const itemComp = getComponent(state, itemEntityId, ComponentType.Item) as ItemComponent | undefined;
+    if (!itemComp) continue;
+    const rawDef = state.campaign.items[itemComp.itemId] as DnD35ItemDefinition | undefined;
+    if (!rawDef) continue;
+    const itemDef = resolveEffectiveItemDefinition(rawDef, state.campaign.items, itemComp);
+    if (!excludedStarterOutfit && (itemDef.tags ?? []).includes('starter_outfit')) {
+      excludedStarterOutfit = true;
+      continue;
+    }
+    const qty = Math.max(1, itemComp.quantity ?? 1);
+    totalLbs += (itemDef.weight ?? 0) * qty;
+  }
+  return totalLbs;
+}
+```
+- Update `dnd35e_ui_adapter.ts` `getInventoryData` to call `computeActorCarriedWeightLbs(state, entityId)` instead of its inline inventory-only loop.
 
-2. **Add catalog discovery & smart Race/Class suggestion in `src/utils/sprite_pack.ts`:**
-   ```ts
-   export interface SpriteCatalogEntry {
-     readonly spriteId: string;
-     readonly label: string;
-     readonly sheetId: string;
-     readonly packId: string;
-     readonly isCharacterSprite: boolean;
-   }
+#### Step 150.2 — Horizon 3 `armor:*` & `load:*` Tag Projection Ordering (`semantic_tags_context.ts`, `semantic_tags.ts`)
+- Expand `SituationalTagContext.loadCategory` to `'light' | 'medium' | 'heavy' | 'overloaded'`.
+- Compute live `loadCategory` inside `resolveEntitySituationalTagContext` from `computeActorCarriedWeightLbs` + `computeEncumbranceState` (passing `dndData.anatomyBodyPlan === 'quadruped'`).
+- In `projectDnD35ActorSemanticTags` (`semantic_tags.ts`): move `armor:<category>` emission **above** the `activeClassFeatures` loop (line `182`) and emit `load:<category>` right beside it so `barbarian.json` (`Fast Movement`), `druid.json`, Monk, and Ranger feature `activationCondition` checks see live `armor:*` and `load:*` tags!
 
-   export function collectCatalogSpriteEntries(
-     theme: Pick<ThemeConfig, 'spritePacks' | 'loadedSpritePacks' | 'spriteSheets'> | undefined
-   ): ReadonlyArray<SpriteCatalogEntry> { ... }
-
-   export function suggestCharacterSprites(
-     entries: ReadonlyArray<SpriteCatalogEntry>,
-     hintTokens: ReadonlyArray<string>
-   ): ReadonlyArray<SpriteCatalogEntry> { ... }
-   ```
-   - `collectCatalogSpriteEntries` iterates `theme.loadedSpritePacks` (ordered by `theme.spritePacks`) and `theme.spriteSheets`, skipping `__alt_*` / `__rare_*` sub-variants, deduplicating by `spriteId`, and setting `isCharacterSprite = sheet.isCharacterSpriteSheet === true || /^((dcss_)?actor_|hero_)/.test(spriteId)`.
-   - `suggestCharacterSprites` scores character-sprite entries against expanded synonyms for the actor's race + class (e.g., `dwarf`, `elf`, `cleric` -> `cleric|priest|templar`, `wizard` -> `wizard|mage|sage`, `fighter` -> `fighter|knight|swordsman`) and returns matching heroes ranked highest.
-
-3. **Cache active composited atlas & render pixel-art thumbnails in `src/rendering/sprite_atlas.ts` and `src/rendering/display.ts`:**
-   ```ts
-   export interface ActiveSpriteAtlasSnapshot {
-     readonly atlas: HTMLCanvasElement;
-     readonly tileMap: Readonly<Record<string, readonly [number, number]>>;
-     readonly tileWidth: number;
-     readonly tileHeight: number;
-     readonly revision: number;
-   }
-
-   export function setActiveSpriteAtlas(snapshot: Omit<ActiveSpriteAtlasSnapshot, 'revision'> | null): void;
-   export function getActiveSpriteAtlas(): ActiveSpriteAtlasSnapshot | null;
-   export function renderSpriteToDataUrl(spriteId: string, sizePx = 64): string | undefined;
-   ```
-   - `renderSpriteToDataUrl` draws `[coords[0], coords[1], tileWidth, tileHeight]` onto an offscreen canvas with `ctx.imageSmoothingEnabled = false` and caches `(revision, spriteId, sizePx) -> dataUrl` cleanly for smooth modal scrolling across hundreds of sprites.
-   - `configureDisplayForCampaign` (`src/rendering/display.ts`) updates `setActiveSpriteAtlas` on tile/procedural atlas creation and clears `setActiveSpriteAtlas(null)` when switching to ASCII `rect` mode.
-
-4. **Wire Character Sheet Portrait cleanly across Tier 1 / Tier 2 (`ui_adapter.types.ts`, `dnd35e_ui_char_sheet.ts`, `console_dossier.ui.ts`, `console_prototype.css`):**
-   - Extend `UICharacterSheetModel` (`src/types/ui_adapter.types.ts`):
-     ```ts
-     readonly spriteId?: string;
-     readonly glyph?: string;
-     readonly glyphColor?: string;
-     ```
-   - Populate `spriteId`, `glyph`, `glyphColor` inside `projectCharacterSheetData` (`src/rulesets/dnd35e/ui/dnd35e_ui_char_sheet.ts`) from `RenderableComponent` and `IdentityComponent.colorOverride`.
-   - Render inside `renderIdentityDefensesColumn` (`src/rendering/ui/console_dossier.ui.ts`):
-     ```ts
-     const resolvedPortraitUrl = sheet.portraitUrl ?? (sheet.spriteId ? renderSpriteToDataUrl(sheet.spriteId, 64) : undefined);
-     portrait.textContent = resolvedPortraitUrl ? '' : (sheet.glyph ?? '👤');
-     if (resolvedPortraitUrl) {
-       portrait.style.backgroundImage = `url(${resolvedPortraitUrl})`;
-     } else if (sheet.glyphColor) {
-       portrait.style.color = sheet.glyphColor;
-     }
-     ```
-   - Add `image-rendering: pixelated;` to `.crpg-character-portrait` in `src/styles/console_prototype.css`.
+#### Step 150.3 — DAG Enforcement, Effective STR Re-Check & Inventory Cache Invalidation (`dnd35e_dag_adapter.ts`, `dnd35e_turn_budget.ts`)
+- Add `inventoryRef: InventoryComponent | undefined` and `inventoryItemRefs: ReadonlyArray<ItemComponent | undefined>` to `CachedEntityDAGEntry` (`dnd35e_dag_adapter.ts:87-115`) and compare them in the cache hit check (lines `264-289`).
+- In `evaluateDnD35eEntityDAGInternal`: after Stage 1–2 resolves `dagResult.effectiveAbilityScores.str` and `dagResult.effectiveSize`, compute effective `encumbrance = computeEncumbranceState(effectiveStr, effectiveSize, carriedWeightLb, baseSpeedFt, isQuadruped)`.
+  - Merge non-stacking SRD constraints:
+    - `effectiveMaxDexCap = minDefined(itemContrib.maxDexBonusCap, encumbrance.maxDexBonus)`
+    - `effectiveAcp = Math.min(itemContrib.armorCheckPenalty, encumbrance.acp)`
+  - If the effective `loadTier` differs from the initial raw-STR `loadCategory` (e.g., *Ray of Enfeeblement* or *Bull's Strength* shifted load tier), update `load:*` tag and re-run DAG Stage 3–4 + skills once.
+- In `dnd35e_turn_budget.ts:140-146`: return `5` ft when `selfTags.includes('load:overloaded')`, and keep `load:medium` / `load:heavy` speed reduction respecting `trait:unencumbered_speed`.
+- **Verification (M150):** Add unit tests in `tests/dnd35e_encumbrance.test.ts` covering Light/Medium/Heavy/Overloaded tiers, worst-of armor+load ACP/Max-Dex, Dwarf `trait:unencumbered_speed`, Barbarian `Fast Movement` disabled in Heavy Load, *Ray of Enfeeblement* mid-combat overload, STR > 20 & quadruped scaling, and pickup/drop DAG cache invalidation. Run `./verify.sh`.
 
 ---
 
-### Phase 2 — Tier 3 System Content & Default Capacity `30`
+### Milestone 151 — Unified 6-Second Round Clock across TB & RTwP
 
-5. **Class Starting Wealth & Default Kit Schema (`src/rulesets/dnd35e/types/dnd35e_system.types.ts` + `public/data/rulesets/dnd35e/classes/*.json`):**
-   - Extend `DnD35ClassDefinitionSchema`:
-     ```ts
-     startingGoldDice: z.string().optional(),
-     averageStartingGoldGp: z.number().nonnegative().optional(),
-     defaultStartingPackageId: z.string().optional(),
-     ```
-   - Populate all 11 PC base classes (per PHB p. 111) + 5 NPC classes:
-     - `barbarian` (`"4d4*10"`, `100`, `"pkg_barbarian"`), `bard` (`"4d4*10"`, `100`, `"pkg_bard"`), `cleric` (`"5d4*10"`, `125`, `"pkg_cleric"`), `druid` (`"2d4*10"`, `50`, `"pkg_druid"`), `fighter` (`"6d4*10"`, `150`, `"pkg_fighter"`), `monk` (`"5d4"`, `13`, `"pkg_monk"`), `paladin` (`"6d4*10"`, `150`, `"pkg_paladin"`), `ranger` (`"6d4*10"`, `150`, `"pkg_ranger"`), `rogue` (`"5d4*10"`, `125`, `"pkg_rogue"`), `sorcerer` (`"3d4*10"`, `75`, `"pkg_sorcerer"`), `wizard` (`"3d4*10"`, `75`, `"pkg_wizard"`).
+#### Step 151.1 — 6-Second Real-Time Round Baseline (`src/constants/scheduler.constants.ts`, `src/core/scheduler.ts`)
+- Update `RTWP_MS_PER_100_DURATION = 6000` (with named constant `DND_ROUND_DURATION_MS = 6000`, `FULL_ROUND_ENERGY_COST = 100`, `HALF_ROUND_ENERGY_COST = 50`).
+- Ensure `MAX_ACCUMULATED_RTWP_TIME` and RTwP speed multipliers (`0.5×`, `1×`, `2×`, `4×`) remain crisp and responsive.
 
-6. **Create SRD Goods & Services JSON files in `public/data/rulesets/dnd35e/items/` & register in `ITEM_IDS`:**
-   - Author ~69 modular item JSONs covering every Root and Downstream item from Section 3 (assigning existing sprite IDs verified in `dcss` / `32rogues`, e.g., `item_torch` / `item_candle` / `dcss_item_misc_misc_lantern` / `item_bag` / `dcss_item_food_bread_ration_new` / `dcss_item_potion_*` / `dcss_item_book_*` / `dcss_item_weapon_ranged_*`).
-   - Add every ID in sorted order to `ITEM_IDS` (`src/rulesets/dnd35e/system_content_item_ids.ts`).
-   - Update `public/data/campaigns/dnd35e-crypt/items.json` (`backpack` -> `"baseValue": 2, "currencyUnit": "gp"`) and `public/data/campaigns/dnd35e-crypt/entities.json` (`player.inventoryConfig.baseCapacity: 30`), and set `DEFAULT_ACTOR_INVENTORY_CAPACITY = 30` in `src/core/ecs/ecs_spawner_equipment.ts`.
+#### Step 151.2 — Cross-Mode Action Budget & Sub-Round Proportional Energy (`src/rulesets/dnd35e/cartridge/dnd35e_turn_budget.ts`)
+- Remove the `if (state.engineMode !== EngineMode.TurnBased)` early exit in `resolveDnD35eActionEnergyCost` and `canDnD35eActorPerformIntent`:
+```ts
+// src/rulesets/dnd35e/cartridge/dnd35e_turn_budget.ts
+export const HALF_ROUND_ENERGY_COST = 50;
 
----
-
-### Phase 3 — Tier 2 Builder: 11 SRD Packages, Custom Kit Shop Math, Validator Guards & Pure Hydration
-
-7. **Expand `src/rulesets/dnd35e/builder/starting_packages.ts`:**
-   ```ts
-   export interface StartingPackageItemEntry {
-     readonly itemId: string;
-     readonly quantity?: number | undefined;
-     readonly equipSlot?: 'main_hand' | 'off_hand' | 'torso' | 'body' | 'hand' | 'back' | undefined;
-   }
-
-   export interface StartingEquipmentPackage {
-     readonly id: string;
-     readonly name: string;
-     readonly description: string;
-     readonly recommendedClassIds?: ReadonlyArray<string> | undefined;
-     readonly freeOutfitId?: string | undefined;
-     readonly items: ReadonlyArray<StartingPackageItemEntry>;
-     readonly weaponDice: string;
-     readonly weaponDamageType: 'slashing' | 'piercing' | 'bludgeoning';
-     readonly armorBonus: number;
-     readonly shieldBonus: number;
-     readonly startingGoldGp: number;
-   }
-   ```
-   - Define `COMMON_ADVENTURER_GEAR_ITEMS` (`backpack` equipped to `'back'`, `waterskin`, `trail_rations`, `bedroll`, `sack`, `flint_and_steel`, `torch` ×3).
-   - Add all **11 SRD Class Starting Packages** (`pkg_barbarian` .. `pkg_wizard`) matching the exact PHB/SRD gear & remaining gp, plus keep the 4 legacy kits (`martial_vanguard`, `skirmisher_scout`, `divine_templar`, `arcane_scholar`) — ensuring every item in those 4 legacy kits (`wooden_holy_symbol`, etc.) now exists!
-   - Export pure wealth, cost, encumbrance-weight, and kit-conversion helpers:
-     - `resolveClassStartingWealthCp(classDef, currencyCfg): number`
-     - `rollClassStartingWealthCp(classDef, currencyCfg): number`
-     - `computeCustomKitCostCp(entries, itemRegistry, currencyCfg): number`
-     - `computeKitTotalWeightLbs(entries, itemRegistry, freeOutfitId): number` (excludes `freeOutfitId` weight per PHB rules)
-     - `buildCustomItemsFromPackage(pkg): ReadonlyArray<StartingPackageItemEntry>`
-
-8. **Extend `CharacterCreationDraft`, Validation & Hydration (`builder_core.ts`, `character_builder.ts`, `builder_validation.ts`, `builder_hydrator_creation.ts`):**
-   - New optional fields on `CharacterCreationDraft` (`exactOptionalPropertyTypes: true` compliant):
-     ```ts
-     readonly characterTitle?: string | undefined;
-     readonly spriteId?: string | undefined;
-     readonly spriteManuallySelected?: boolean | undefined;
-     readonly glyphColor?: string | undefined;
-     readonly mannerisms?: ReadonlyArray<string> | undefined;
-     readonly equipmentMode?: 'preset' | 'custom' | undefined;
-     readonly customStartingBudgetCp?: number | undefined;
-     readonly customStartingBudgetRolled?: boolean | undefined;
-     readonly customEquipmentItems?: ReadonlyArray<StartingPackageItemEntry> | undefined;
-     readonly customFreeOutfitId?: string | undefined;
-     ```
-   - `sanitizeDraftOnRaceOrClassChange`: if `!draft.customStartingBudgetRolled` updates budget to the new class's `resolveClassStartingWealthCp`, and if `equipmentMode !== 'custom'` updates `equipmentPackageId` to `classDef.defaultStartingPackageId` (only when `classId` actually changed or current package doesn't exist).
-   - `validateCharacterCreationStep`:
-     - Extend `stepId` union with `'summary'`.
-     - For `'equipment'`: in `'custom'` mode, validate `spentCp <= budgetCp` (blocking overspend with a clear remaining-coin deficit message).
-     - For `'summary'`: validate `characterName` length `<= 32` (`valid: true`).
-   - `applyCharacterCreationToPlayer` (`src/rulesets/dnd35e/builder/builder_hydrator_creation.ts`):
-     - Spawns preset or custom `items` (repeating `entry.quantity ?? 1` times) plus the free starter outfit (`freeOutfitId`), auto-equips any entry specifying `equipSlot` into matching open anatomical slots (`main_hand`, `off_hand`, `torso`/`body`, `back`), credits `remainingCp`, and ensures `baseCapacity = Math.max(latestInventory.baseCapacity, DEFAULT_ACTOR_INVENTORY_CAPACITY, latestInventory.items.length + spawnedItemIds.length + 5)`.
-     - Persists `IdentityComponent` (`name`, optional `title`, `mannerisms`, optional `colorOverride`) and updates `RenderableComponent` (`spriteId`, `fg`). Remains 100% pure/immutable with zero RNG calls.
-
-9. **Add Automated Validation Guard & Fix UI Weight Ceiling (`dnd35e_validator.ts`, `dnd35e_ui_adapter.ts`):**
-   - In `checkDnD35eRuleset` (`src/rulesets/dnd35e/dnd35e_validator.ts`):
-     - Build `mergedItems = { ...sys.items, ...campaign.items }`.
-     - Assert every item in every `STARTING_EQUIPMENT_PACKAGES` (`items[*].itemId` and `freeOutfitId`) exists in `mergedItems`.
-     - Assert every class `defaultStartingPackageId` references a valid package in `STARTING_EQUIPMENT_PACKAGES`.
-   - In `src/rulesets/dnd35e/ui/dnd35e_ui_adapter.ts`:
-     - Replace `strScore * LIGHT_LOAD_MULTIPLIER_LBS` with `computeEncumbranceState(strScore, dndData.sizeCategory ?? 'medium', currentWeightLbs).heavyMaxLb`.
+function resolveSubRoundRtwpEnergyCost(
+  preBudget: DnD35ActionBudget,
+  postBudget: DnD35ActionBudget,
+  tacticalSpeedFt: number,
+  stepCostFt: number
+): number {
+  const stdSpent = preBudget.standardRemaining - postBudget.standardRemaining;
+  const moveSpent = preBudget.moveRemaining - postBudget.moveRemaining;
+  if (stdSpent > 0 && moveSpent > 0) return FULL_ROUND_ENERGY_COST; // Full-round action = 6.0s
+  if (stdSpent > 0) return HALF_ROUND_ENERGY_COST; // Standard action = 3.0s
+  if (stepCostFt > 0) {
+    const squaresPerMove = Math.max(1, tacticalSpeedFt / FEET_PER_GRID_SQUARE);
+    return Math.max(1, Math.round((HALF_ROUND_ENERGY_COST * (stepCostFt / FEET_PER_GRID_SQUARE)) / squaresPerMove));
+  }
+  if (moveSpent > 0) return HALF_ROUND_ENERGY_COST;
+  return 0; // Swift / Free action
+}
+```
+- When `state.engineMode === EngineMode.TurnBased`: unchanged (`0` while round actions remain, `100` when round ends).
+- When `state.engineMode === EngineMode.RTwP`: commit updated `actionBudget` onto the actor (clearing when round actions exhaust) and return `resolveSubRoundRtwpEnergyCost(...)` so the scheduler advances the actor's next turn by the exact sub-round time slice! Switching TB ↔ RTwP mid-round preserves `actionBudget` verbatim.
+- **Verification (M151):** Add `tests/unified_round_clock.test.ts` verifying 6-second round duration, proportional Move (`3s` for 30 ft = `50` energy) + Standard (`3s` = `50` energy) = `6s`, speed-scaled movement (`Haste` / Heavy Load), and mid-round TB ↔ RTwP toggle parity. Run `./verify.sh`.
 
 ---
 
-### Phase 4 — Character Creation Wizard UI Overhaul
+### Milestone 152 — Centralized Tier 1 Spatial Displacement Kernel & Explicit Triggered Charge Action
 
-10. **New `src/rendering/ui/dnd35e_char_builder_equipment.ui.ts` (re-exported from `dnd35e_char_builder_steps.ui.ts`):**
-    - Top mode switch: **📦 Preset Starting Kits** vs. **🛒 Custom Gear Shop**.
-    - **Preset Mode:** Left pane groups **Recommended Class Kit (`★`)**, remaining **10 Class Starting Kits**, and **4 Adventurer Kits**. Right pane renders a complete **Kit Inspector** showing Weapon/Armor/Shield stats, ACP/ASF, Free Outfit, itemized pack contents with quantities/weights, carry weight vs SRD Light/Medium/Heavy load bar (`computeEncumbranceState`), starting coin, and a **"✏ Customize This Kit →"** button (converts the kit via `buildCustomItemsFromPackage` into Custom mode!).
-    - **Custom Mode:** Header bar shows Starting Wealth, **🎲 Roll Starting Gold** button (`rollClassStartingWealthCp`), Remaining Budget (`formatCurrency`), Free Starter Outfit `<select>` (0 gp, 0 lb carried), and live SRD Encumbrance meter (`Light` / `Medium` / `Heavy` / `Overloaded`). Left pane browses all non-artifact items filterable by Category tabs + Search + Affordable-only toggle + proficiency badge. Right pane manages the player's **Custom Loadout** (`+` / `-` / `Remove`, auto-equip slot selector, **"Add Adventurer Essentials (7 gp)"** shortcut).
+#### Step 152.1 — Declarative Tile Traversal Schema & 3-Tier Passability (`src/types/campaign/world.ts`, `src/systems/movement_displacement.ts`)
+- Extend `TileDefinitionSchema` with optional declarative fields (100% backward compatible):
+```ts
+// src/types/campaign/world.ts (inside TileDefinitionSchema)
+isSolidObstacle: z.boolean().optional(),
+hazardKind: z.string().optional(),
+blocksCharge: z.boolean().optional(),
+soundAttenuation: z.number().nonnegative().optional(),
+```
+- Create `src/systems/movement_displacement.ts` exporting:
+```ts
+export type TilePassabilityTier = 'unimpeded' | 'difficult' | 'hazardous' | 'solid_obstacle';
+export type DisplacementMode = 'voluntary_walk' | 'charge_step' | 'forced_push' | 'forced_pull' | 'teleport' | 'swap';
 
-11. **New `src/rendering/ui/dnd35e_char_builder_summary.ui.ts` & Updated `src/rendering/ui/dnd35e_char_builder.ui.ts` + `src/styles/modals.css`:**
-    - Remove `#char-builder-name-input` from `topRow` in `dnd35e_char_builder.ui.ts`.
-    - Add `'summary'` (`"Review & Identity"`) as the final step in `getActiveWizardSteps` (`Step 7` or `Step 8` depending on spell selection).
-    - Auto-populate `draftState.spriteId` using `suggestCharacterSprites` whenever Race or Class changes and `draftState.spriteManuallySelected !== true` (falling back to template default if no atlas/pack matches).
-    - **Left Pane (`dnd35e_char_builder_summary.ui.ts`):**
-      - Hero Identity Banner (64×64 crisp sprite preview + fallback glyph, formatted Name + Title, Race / Class / Alignment).
-      - **Name** text input + **🎲 Randomize Name** button.
-      - **Title / Epithet** text input + quick-pick chips (`"the Bold"`, `"Shadowstep"`, `"Dawnbringer"`, etc.).
-      - **ASCII Glyph Color** swatches + `<input type="color">`.
-      - **Character Traits / Mannerisms** chips + custom tag input (up to 4 traits -> `IdentityComponent.mannerisms`).
-      - **Sprite Picker** with filter tabs: `Suggested` | `Characters` | `DCSS Actors` | `32rogues Heroes` | `Full Catalogue (All Sprites)` + search box + grid of clickable sprite tiles with batched `"Show More"` pagination for smooth full-catalogue browsing.
-    - **Right Pane (`dnd35e_char_builder_summary.ui.ts`):**
-      - Evaluates `const previewState = applyCharacterCreationToPlayer(state, playerId, previewDraft)` and `const sheet = projectCharacterSheetData({ state: previewState, entityId: playerId })` + `inventory = uiAdapter.getInventoryData({ state: previewState, entityId: playerId })`.
-      - Displays complete authoritative stats: HP, Full / Touch / Flat-Footed AC, Speed, Saves (Fort / Ref / Will), BAB / Initiative / Grapple, 6 Abilities, Attack Routine (`attackGroups`), Class Features / Domains / ACFs / Companion & Familiar, Feats, Invested Skills (with final total modifiers), Known Spells / Prayerbook summary, Equipped Gear & Backpack Loadout (`currentWeightLbs` / Light-Medium-Heavy load), and Starting Coin (`currencyFormatted`).
+export interface TileTraversalEvaluation {
+  readonly passability: TilePassabilityTier;
+  readonly moveCostMultiplier: number;
+  readonly triggersSolidCollision: boolean;
+  readonly blocksCharge: boolean;
+  readonly hazardKind?: string | undefined;
+}
+
+export interface DisplacementContext {
+  readonly mode: DisplacementMode;
+  readonly isForced: boolean;
+  readonly provokesAoO: boolean;
+  readonly sourceEntityId?: EntityId | undefined;
+  readonly ignoresDifficultTerrainForCharge?: boolean | undefined;
+}
+
+export interface DisplacementResult {
+  readonly state: GameState;
+  readonly moved: boolean;
+  readonly stepsMoved: number;
+  readonly finalPos: { readonly x: number; readonly y: number };
+  readonly stopReason: 'completed' | 'solid_obstacle' | 'entity_blocker' | 'hazard_halted' | 'difficult_terrain_blocked' | 'out_of_bounds';
+  readonly collidedTileId?: string | undefined;
+  readonly collidedEntityId?: EntityId | undefined;
+  readonly events: ReadonlyArray<GameEvent>;
+}
+```
+- `evaluateTileTraversal(tileDef, movementModes)` classifies tiles declaratively (using `walkable`, `traversableBy`, `isSolidObstacle`, `hazardKind`, `movementCost`, and legacy `tags` like `pit`/`chasm`/`water`/`liquid` so existing campaigns work unchanged). Keep `canTraverseTile` as a thin wrapper around `evaluateTileTraversal` for backward compatibility while migrating callers.
+
+#### Step 152.2 — Single Atomic Displacement Kernel & Mode-Aware Lifecycle (`src/systems/movement_displacement.ts`, `src/systems/lifecycle.system.ts`, `src/types/ruleset.types.ts`)
+- Add optional `getEntityMovementModes?(state: GameState, entityId: EntityId): MovementModes | undefined` to `RulesetAdapter` (implemented in `dnd35e_ruleset.ts`), removing the `'dnd35e'` check in `movement.system.ts:61`.
+- Extend `runActorMovementStep` and `RulesetAdapter.onActorMovementStep` with optional `displacementContext?: DisplacementContext`. In `dnd35e_lifecycle_adapter.ts`, skip `evaluateAdjacentEnemyReactionsOnMove` when `displacementContext?.isForced === true && !displacementContext.provokesAoO` or `displacementContext?.mode === 'teleport'`, while **always** running anchored field sync, traps, aura entry saves, flanking graph, light exposure, and `TileEntered`.
+- Implement `displaceEntityStep` and `displaceEntityAlongVector` in `src/systems/movement_displacement.ts`:
+  - Stage 1: Passability & policy gate (`voluntary_walk`, `charge_step`, `forced_push`/`forced_pull` entering hazards & stopping on `solid_obstacle`, `teleport` checking destination).
+  - Stage 2: Multi-tile `resolveMovementFootprintPlacement` + `evaluateFootprintOccupancy` preserving all `PositionComponent` fields via `buildUpdatedPositionComponent`.
+  - Stage 3: Atomic `addComponent(Position)` + `fovNeedsUpdate` (if player) + `runActorMovementStep(..., displacementContext)` + `GameEventType.TileEntered` events.
+
+#### Step 152.3 — Migrate Fragmented Callers (`movement.system.ts`, `bull_rush_resolver.ts`, `immediate_reactions.ts`, `follow.behavior.ts`, `companions.ts`)
+- Route `processMoveIntent` (normal walk & Friendly Swap), `bull_rush_resolver.ts` (`forced_push` -> Dungeon Crasher triggers strictly on `res.stopReason === 'solid_obstacle'`, follow-up stops safely at `hazard_halted` ledges), and `immediate_reactions.ts` (`teleport` for Abrupt Jaunt) through `displaceEntityStep` / `displaceEntityAlongVector`.
+- Update `follow.behavior.ts` and `companions.ts` to query `evaluateTileTraversal`.
+
+#### Step 152.4 — Explicit Triggered Charge Action (`src/rulesets/dnd35e/combat/charge_resolver.ts`, `dnd35e_combat_adapter.ts`, `dnd35e_ruleset.ts`, `public/data/rulesets/dnd35e/conditions/charging.json`)
+- Author declarative `public/data/rulesets/dnd35e/conditions/charging.json` (`acPenalty: -2`, expires at start of actor's next turn).
+- Remove passive `const isChargeAttack = distanceMovedFt >= CHARGE_MOVEMENT_MIN_FT` from `dnd35e_combat_adapter.ts:137` (replace with explicit `options?.isChargeAttack === true`).
+- Implement `validateChargeLine` + `executeDnD35eChargeAction(state, attackerId, defenderId)`:
+  - Validates Full-Round Action budget, straight-line distance `>= 10 ft` and `<= 2 × tacticalSpeedFt`, and unobstructed `charge_step` path (respecting declarative `RuleOverride` `charge_ignores_difficult_terrain`).
+  - Displaces attacker adjacent via `displaceEntityAlongVector(..., { mode: 'charge_step', isForced: false, provokesAoO: true })`.
+  - Applies `charging` condition (`-2` AC until next turn) + `+2` untyped charge attack bonus, executes single strike (or full attack if `hasPounce`) with `isChargeAttack: true` (triggering Charging Smite / Powerful Charge), and consumes Full-Round budget.
+- Wire player targeting (`verb: 'charge'` in `dnd35e_ruleset.ts` + hotbar slot in `dnd35e_ui_hotbar.ts`) and AI charge decision in hunt behavior symmetrically.
+- **Verification (M152):** Update any existing tests relying on passive 10-ft Pounce/Charging Smite to invoke `executeDnD35eChargeAction`; add tests for Bull Rush preserving 2×2 footprints, pushing into pits vs. slamming walls, Abrupt Jaunt triggering traps/anchored fields, and Charge line blockage + `-2` AC penalty. Sync SSOT JSONs (`bun scripts/map-codebase.ts`) and run `./verify.sh`.
 
 ---
 
-### Phase 5 — Tests, SSOT Sync & Verification
+### Milestone 153 — Per-Area Rest Pressure ("Doom Clock"), Bulk Scheme Progression, Camp Watch Ambushes & Logistics
 
-12. **Tests (`tests/dnd35e_classes_builder.test.ts`, `tests/hud_rest_and_display_name.test.ts`, `tests/sprite_pack_resolution.test.ts`):**
-    - Test `collectCatalogSpriteEntries` and `suggestCharacterSprites` (curated vs full catalogue & synonym matching).
-    - Test all 15 `STARTING_EQUIPMENT_PACKAGES` spawn every referenced item with zero missing items and validate cleanly via `checkDnD35eRuleset`.
-    - Test Custom Kit budget validation (blocking overspend), class wealth rolling/averaging, free starter outfit 0-lb rule, and inventory slot headroom (`>= 30`).
-    - Test `applyCharacterCreationToPlayer` immutability (safe for live preview) and persistence of `characterTitle`, `mannerisms`, `glyphColor`, `spriteId`, plus `projectCharacterSheetData` projecting `spriteId`/`glyph`/`glyphColor`.
-13. **Documentation & SSOT Registry Parity:**
-    - Update `docs/ssot/ssot_console.json` and `docs/ssot/ssot_dnd35e.json` (adding `dnd35e_char_builder_equipment.ui.ts`, `dnd35e_char_builder_summary.ui.ts`, and new canonical exports), run `bun scripts/map-codebase.ts`, and verify all 8 stages of `./verify.sh` pass with 0 errors and 0 warnings.
+#### Step 153.1 — Tier 1 `RestPressureConfigSchema` (`src/types/campaign/rules.ts`, `src/types/campaign/world.ts`)
+```ts
+export const RestPressureConfigSchema = z.object({
+  safeRest: z.boolean().default(false),
+  ambushChancePerWatch: z.number().min(0).max(1).default(0.15),
+  watchDurationHours: z.number().int().positive().default(2),
+  schemeTickMultiplier: z.number().min(0).default(1),
+  respawnRateMultiplier: z.number().min(0).default(1),
+  alarmDecayTurns: z.number().int().nonnegative().default(50)
+});
+```
+- Attach optional `restPressure: RestPressureConfigSchema.optional()` to both `RulesConfigSchema` (campaign default) and `AreaDefinitionSchema` (per-area override), plus helper `resolveAreaRestPressure(state)`.
+
+#### Step 153.2 — Bulk Scheme Progression & Watch-Shift Camp Ambushes (`world_time_skip.ts`, `rest.system.ts`)
+- In `stepBulkMacroCadence` (`world_time_skip.ts:100-118`): scale Scheme intervals by `restPressure.schemeTickMultiplier` and invoke `processSchemeTurn` for active masterminds, appending scheme progress digest entries (`"Villain scheme advanced..."`).
+- In `rest.system.ts`: split long rests into `watchDurationHours` chunks when `!restPressure.safeRest`:
+  - Evaluate camp gear (`bedroll`/`winter_blanket`/`tent` + active light/campfire) for ambush risk reduction and recovery quality.
+  - Roll `ambushChancePerWatch`; on ambush, spawn `EncounterDirector` patrol and run party highest-Perception watch check (success = awake, failure = `Flat-Footed / Surprised` for 1 round), interrupting rest cleanly with partial time elapsed. Mirror sleeping/waking surprise tags for sleeping NPC/monster camps.
+
+#### Step 153.3 — Quick-Draw Belts, Two-Stage Poison, `healers_kit` & Captive `manacles`
+- **`dnd35e_turn_budget.ts`:** Items retrieved from an equipped slot carrying `tags: ['quick_draw_container']` (`bandoleer`, `potion_belt`, `masterwork_*`) consume Free/Swift action instead of Move action (no AoO).
+- **`status-effect.system.ts` & `dungeon_skill_verbs.ts`:** Support optional `secondaryTriggerAfterTurns: 10` on poison status definitions (granting `+5 alchemical` Fort save when `antitoxin` status is active); wire `healers_kit` long-term rest care (`2×` natural HP/ability recovery) and `Heal DC 15` limp cure; wire `apply` with `manacles` on unconscious/helpless actors applying `bound` condition (`Escape Artist DC 30/35`, Break DC `26/28`).
+- **Verification (M153):** Add unit tests for per-area `safeRest` vs. hostile dungeon ambush watches, bulk `processSchemeTurn` advancement, quick-draw belt vs. backpack action costs, two-stage poison + antitoxin, and manacles binding. Run `./verify.sh`.
 
 ---
 
-## 5. Complete Cascading Effects Matrix (Rule 15)
+### Milestone 154 — Symmetric Terrain Traversal, Field Transmutations & `dip` (`CoatingComponent`) Hazards
 
-| Change | Upstream | Downstream | Lateral |
-|---|---|---|---|
-| `isCharacterSpriteSheet` on `SpriteSheetSourceSchema` (`meta.ts`) | Pack JSON authors (`dcss`, `32rogues`) | `collectCatalogSpriteEntries`, `suggestCharacterSprites`, sprite picker UI | Validated by Zod across all 5 campaigns & 2 packs |
-| Active atlas cache + `renderSpriteToDataUrl` (`sprite_atlas.ts`, `display.ts`) | `configureDisplayForCampaign` (startup & Settings pack switch) | Character Creation sprite picker & preview, Character Sheet portrait (`console_dossier.ui.ts`) | Reusable across Console / future cartridges |
-| `spriteId`, `glyph`, `glyphColor` on `UICharacterSheetModel` (`ui_adapter.types.ts`, `dnd35e_ui_char_sheet.ts`) | `projectCharacterSheetData` reading `RenderableComponent` + `IdentityComponent` | `console_dossier.ui.ts` portrait & Summary step hero card | Respects `.dependency-cruiser.cjs` `headless-simulation-purity` |
-| Class starting wealth & default kit fields (`dnd35e_system.types.ts`, `classes/*.json`) | 11 PC + 5 NPC class JSONs | `resolveClassStartingWealthCp`, `rollClassStartingWealthCp`, `sanitizeDraftOnRaceOrClassChange`, `checkDnD35eRuleset` | Backward compatible (optional fields) |
-| New SRD Root & Downstream items in `items/` + `ITEM_IDS` (`system_content_item_ids.ts`) | `dnd35e_ruleset.ts` loader, `tests/helpers.ts` loader | All 15 starting packages, Custom Buy Shop, loot/shops/inventory | `dnd35e-crypt/items.json` `backpack` price aligned; `run-validator.ts` disk parity & `baseItemId` checks |
-| Starting package validator guard (`dnd35e_validator.ts`) | `STARTING_EQUIPMENT_PACKAGES` + `classes/*.json` | `[8/8] run-validator.ts` across all `dnd35e` campaigns | Blocks missing starting-kit items at build/test time |
-| Default capacity `30` (`dnd35e-crypt/entities.json`, `ecs_spawner_equipment.ts`, `builder_hydrator_creation.ts`) | Actor templates & spawning | `InventoryComponent.baseCapacity` on created characters & save round-trip | Any test asserting hardcoded `baseCapacity === 10` / `20` updated if present |
-| `CharacterCreationDraft` extensions + `applyCharacterCreationToPlayer` + `'summary'` step | `createDefaultDraft`, `createQuickStartHeroDraft`, tests, Wizard steps | `IdentityComponent`, `RenderableComponent`, `InventoryComponent`, `EquipmentComponent`, Summary preview, `save.ts` | Optional fields keep existing test fixtures compiling |
-| `computeEncumbranceState` in `dnd35e_ui_adapter.ts` | `tactical_doctrine.ts` | `UIInventoryModel.maxWeightLbs` in Inventory UI & Equipment step | Live runtime encumbrance penalties deferred as explicit follow-up |
+#### Step 154.1 — World-Owned Crossings & `BreathComponent` (`src/types/components/world_components.types.ts`, `src/systems/crossing.system.ts`, `src/systems/breath.system.ts`)
+- Add `ComponentType.Crossing` (`crossingKind: 'bridge' | 'rope_line' | 'ladder_span' | 'frozen_surface'`, `requiredSkill?`, `skillDc?`, `maxWeightLbs?`, `anchorTileCoords?`) and `ComponentType.Breath` (`remainingTurns`, `maxTurns`, `isSubmerged`).
+- Update `evaluateTileTraversal` (`M152`) to inspect `state.spatialIndex` for live `CrossingComponent` entities at `(x, y)` so placed bridges, anchored ropes, ladders, and frozen ice sheets override underlying `deep_water`/`chasm` hazards symmetrically for players, companions, and AI A* pathfinding — and destroying/melting the crossing immediately drops occupants into the underlying hazard!
+- Tick `BreathComponent` in `runActorTurnStart` for submerged breathing actors (exempting `trait:water_breathing`, `type:undead`, `type:construct`).
+
+#### Step 154.2 — Water Depth Tiers & Gap/Pit Resolvers (`src/rulesets/dnd35e/spatial/terrain_traversal_resolver.ts`)
+- **`shallow_water` / `bog`:** `2×` move cost, `-2` stealth/tumble modifier, extinguishes non-magical fire.
+- **`deep_water`:** Native `swim > 0` unimpeded; others roll `Swim` (`DC 10` calm / `DC 15` rough) applying **`2×` live M150 ACP** on entry & per turn; failure sinks and decrements `2 × CON` breath rounds.
+- **Gaps/Pits (1–2 tiles):** `Jump` check (`DC 5` per 5-ft gap running, `×2` standing) -> failure rolls Reflex ledge-catch save or falls (`1d6` per 10 ft + `prone`); `Climb` (`DC 10–15`, `+2` `climbers_kit`) to enter/exit pits; `Use Rope` (`DC 10`, `+2` `silk_rope`) with `grappling_hook` or `ladder_10ft` spawns a real `CrossingComponent` entity.
+
+#### Step 154.3 — Tag-Driven Field Transmutations, `dip` (`CoatingComponent`) & SRD Floor Hazards (`field.system.ts`, `apply.system.ts`, `floor_hazard_resolver.ts`)
+- Add `FieldInteractionRuleSchema` (`incomingTags`, `targetTags`, `spawnFieldType?`, `spawnCrossingKind?`, `extinguishTarget?`, `chainSpreadOrthogonal?`, `shockDamageDice?`) to `rules.json` / campaign registries and evaluate on `spawnField` and energy spell impacts:
+  - `oil` + `fire` -> connected oil ignition; `water` + `cold` -> `frozen_surface` crossing + slippery ice; `water` + `electricity` -> BFS conductive shock; `fire` + `water` -> `steam_cloud` (`blocksSight: true`); `smokestick` -> smoke obscurement.
+- Wire generic `dip` verb in `apply.system.ts` to attach `ComponentType.Coating` onto weapons/ammo/lanterns (`oil_flask`, `holy_water`, injury poisons — with 5% natural-1 mishap check unless `feature:poison_use`), and consume `CoatingComponent` charges on hit in `dnd35e` combat (`combat_exchange_pipeline.ts`).
+- Wire `caltrops` (BAB `+0` touch-like attack, `1` dmg + half-speed limp halting charges cleanly), `marbles`/`grease`/ice (`Balance DC 10–15` or `prone`), and `Craft (Alchemy)` potion ID (`DC 15`) / brewing.
+- **Verification (M154):** Add tests for crossing placement + cutting/melting mid-crossing, `Swim 2× ACP` + drowning + undead immunity, forced Bull Rush into pit/deep water, oil/fire/water/cold/lightning field chemistry, `dip` coating application/consumption, and caltrops/marbles. Sync SSOT JSONs & run `./verify.sh`.
+
+---
+
+### Milestone 155 — Acoustics (`emitSoundEvent` + AI Alertness), Dynamic `LightEmitterComponent` & Symmetric 6s-Cadence Stealth
+
+#### Step 155.1 — Acoustic Sound Ripple System (`src/systems/sound.system.ts`, `AIComponent`)
+- Extend `AIComponent` with optional `alertnessState?: 'unaware' | 'suspicious' | 'alerted'`, `lastHeardPos?: { x: number; y: number }`, `alertnessDecayTurns?: number`.
+- `emitSoundEvent(state, originX, originY, dbLevel, sourceEntityId)` runs bounded BFS attenuated by `tile.soundAttenuation` (walls/closed doors). Listeners within effective range roll `Listen` vs. `Move Silently` (or auto-hear loud combat/kick/thunderstone events): AI switches `unaware -> suspicious` and investigates `lastHeardPos`; player receives directional sound cues (`"You hear heavy footsteps to the east"`).
+
+#### Step 155.2 — Dynamic `LightEmitterComponent` & Fuel/Cone Grid (`src/systems/light_emitter.system.ts`, `cover_senses.ts`)
+- Add `ComponentType.LightEmitter` (`radiusFt`, `coneAngleDeg?`, `facing?`, `fuelTurns?`, `isLit`, `requiresIgnition?`) and declarative `lightSource` config on `ItemDefinitionSchema`.
+- Wire `ignite` (`flint_and_steel`, `tindertwig`) and `dip` refueling (`oil_flask`); tick fuel in `runActorTurnStart`; integrate active carried/dropped emitters (including NPC guard lanterns!) into `resolveTileLightReading` (`cover_senses.ts`).
+
+#### Step 155.3 — Symmetric 6s-Cadence Stealth (`src/rulesets/dnd35e/spatial/stealth_resolver.ts`, `stance.system.ts`)
+- Add Stealth stance state (`isStealthed`, `fastStealth`, `lastStealthRoll`, `nextStealthCheckRound`, `reStealthCooldownRound`) on `TacticalDoctrineComponent` (or dedicated `StealthComponent`).
+- Manual Stealth skill toggle defaults to **half-speed** (avoiding `-5` `Move Silently` penalty); `fastStealth` toggles full-speed at `-5`.
+- Opposed `Hide` (gated by cover / `light:darkness` / `light:shadowy`, size mod) vs. `Spot` and `Move Silently` (live M150 ACP) vs. `Listen` execute **once per 6-second round** (M151 cadence), plus immediate re-checks on state transitions (brighter light band, new observer LOS, opening a door, loud noise).
+- **Instant break without auto-pause** on attack, failed check, or losing cover/concealment while observed; manual re-stealth requires being unobserved/having concealment (or *Hide in Plain Sight*) + 1-round cooldown.
+- Add Darkvision, Low-Light Vision, Scent (30 ft detection), Tremorsense, and `flour_pouch` (`dusted` tag cutting invisibility miss chance `50% -> 20%` and negating `Hide`).
+- **Verification (M155):** Add tests for door-attenuated sound ripples + AI investigation, fuel-burning radial/cone lights, 6s-cadence stealth (no death-by-a-thousand-rolls in RTwP), instant break without auto-pause, Scent/Darkvision counters, and `flour_pouch`. Sync SSOT JSONs & run `./verify.sh`.
+
+---
+
+### Milestone 156 — Baseline SRD Object/Durability Engine, Structural Doors, Spellbook Rarity, Auto Monster Lore, Corpse Ecology & Piety/Disguise
+
+#### Step 156.1 — Baseline SRD Object/Durability Engine & Opt-In Console Wear (`src/types/components/world_components.types.ts`, `src/types/campaign/rules.ts`, `src/systems/durability.system.ts`, `src/rulesets/dnd35e/combat/object_durability_resolver.ts`)
+- Add `ComponentType.Structural` (`materialTag`, `hardness`, `hp`, `maxHp`, `breakDc`, `objectSize`, `enhancementBonus?`, `ruined?: boolean`, `jammed?: boolean`, `spikedByEntityId?: EntityId`) and opt-in `DurabilityConfigSchema` on `rules.json`:
+```ts
+export const DurabilityConfigSchema = z.object({
+  enableFumbleWearChance: z.number().min(0).max(1).default(0),
+  enableHardArmorWearChance: z.number().min(0).max(1).default(0),
+  enableCritArmorWearChance: z.number().min(0).max(1).default(0),
+  ruinedIsRepairable: z.boolean().default(true)
+});
+```
+- Implement pure SRD *Smashing an Object* math in `object_durability_resolver.ts`:
+  - Object AC = `10 + sizeMod - 5 (Dex 0) - 2 (inanimate)` (animated objects use creature AC).
+  - Magic bonus `+1` adds `+2` hardness & `+10` HP.
+  - Energy multipliers before hardness: Acid/Sonic `1×`, Fire/Electricity `1/2`, Cold `1/4`; Ranged `1/2`; immune to crits & nonlethal; `adamantine` ignores hardness `< 20`; vulnerable materials take `2×` ignoring hardness.
+  - Break checks: `1d20 + STR mod + SRD size mod` (`Fine -16` to `Colossal +16`), `-2` DC when `hp <= maxHp / 2`, `+2` with `crowbar`, `+2` (+`2`/ally) with `portable_ram` (emitting sound ripple).
+  - Reaching `0 HP` sets `ruined: true` (unusable until repaired via `Craft` + `whetstone`/`artisan_tools`, never silently deleting items).
+- Wire `open`/`close`/`kick`/`lock`, door spiking (`iron_spike` + `hammer`), and `pole_10ft` range-2 trap probing symmetrically for all actors.
+
+#### Step 156.2 — Spellbook Rarity Tags, Auto `Knowledge` Monster Lore & UMD (`spellbook_loot.ts`, `spellbook_actions.ts`, `monster_lore_tracker.ts`)
+- Read `rarity:uncommon` / `rarity:rare` / `rarity:forbidden` from `DnD35SpellDefinitionSchema.tags` (default `rarity:common`); tag select high-tier/specialty spells in `public/data/rulesets/dnd35e/spells/*.json`.
+- On arcane caster death (`death.system.ts` hook), spawn a `wizards_spellbook` item populated with the caster's castable spells + rarity-weighted bonus spell rolls scaled by caster level / boss tier. Add `read`/`transcribe` flow in `spellbook_actions.ts` (`Spellcraft DC 15 + SL`, consuming `ink_vial` + `inkpen` + world hours).
+- Auto-invoke `resolveMonsterLoreCheck` (`specialized_skill_checks.ts:107`) on first sighting or `inspect`, persisting discovered monster traits (DR bypasses, immunities, vulnerabilities) onto player knowledge and surfacing them via `projectInspectLoreLines` (`dnd35e_ruleset.ts:171`).
+- Complete `UMD DC 20` check inside `validateWandActivation` / scroll casting for off-list items.
+
+#### Step 156.3 — Physical Corpse Economy, Piety (`ReligionComponent`) & Active Disguise (`IdentityMaskComponent`)
+- **`CorpseComponent` (`corpse.system.ts`, `death.system.ts`):** Slain living/corporeal actors drop decaying tagged corpses (`decayTurn`, `harvestableTags: ['pelt' | 'venom_gland' | 'reagent' | 'bounty_trophy' | 'zombie_husk']`) usable by harvesters, necromancers, and fire denial symmetrically.
+- **`ReligionComponent` (`religion.system.ts`):** Generic `{ deityOrPatronId, favorScore, penanceDebt, taboosViolated }` ledger interacting with shrines/altars.
+- **`IdentityMaskComponent` (`disguise.system.ts`):** Generic faction/race disguise suppressing baseline hostility while accumulating `suspicion` when observed closely or contradicting gear (`Spot` vs. `Disguise`, usable by both player and infiltrator NPCs).
+- **Verification (M156):** Add tests for SRD Object AC/Hardness/Energy/Break DC + repairable `ruined` state + `0%` default wear config, door spiking/kicking, rarity-weighted spellbook drops + `Spellcraft` scribing, auto `Knowledge` lore reveals, `CorpseComponent` decay/harvesting, `ReligionComponent`, and `IdentityMaskComponent`. Sync SSOT JSONs (`bun scripts/map-codebase.ts`), showcase in `default` & `dnd35e-crypt`, and run `./verify.sh`.
+
+---
+
+## 4. Approval Gate (Per `AGENTS.md` §1)
+
+No production code files have been modified yet. All design decisions (including per-actor modulated `3.0s` RTwP Move pacing across *Haste*, Heavy Armor, Dwarf `trait:unencumbered_speed`, Difficult Terrain, and Stealth) are locked in. Click **Proceed** (or confirm in chat) to begin sequential execution starting with **Milestone 150**, running `./verify.sh` (8/8) + SSOT parity sync after each milestone.

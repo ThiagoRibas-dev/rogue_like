@@ -1,7 +1,7 @@
 import { getComponent, queryEntities, spawnEntity, spawnItem } from '../../core/ecs.ts';
 import { rng } from '../../core/rng.ts';
 import { runEncounterDirector } from '../../map/encounter_director.ts';
-import { resolveAreaEnvironmentProfile } from '../world_clock.system.ts';
+import { resolveAreaEnvironmentProfile, resolveAreaRestPressure } from '../world_clock.system.ts';
 import type { AreaDefinition } from '../../types/campaign.types.ts';
 import type { RoomBounds } from '../../types/encounter.types.ts';
 import { GameEventType } from '../../types/events.types.ts';
@@ -167,7 +167,14 @@ export function wakeSavedAreaFloor(
 
   // Check Respawn Timer with elapsed-cycle CR budget escalation
   const areaDef = nextState.campaign.areas[targetAreaId];
-  if (areaDef?.respawnTimerTurns && nextState.globalTurn - targetLastSpawnTurn >= areaDef.respawnTimerTurns) {
+  const effectiveWakeRespawnTimer = areaDef?.respawnTimerTurns
+    ? computeEffectiveRespawnTimerTurns(nextState, targetAreaId, areaDef.respawnTimerTurns)
+    : undefined;
+  if (
+    areaDef &&
+    effectiveWakeRespawnTimer !== undefined &&
+    nextState.globalTurn - targetLastSpawnTurn >= effectiveWakeRespawnTimer
+  ) {
     const existingEntities = Array.from(nextComponents.entries())
       .map(([_id, comps]) => {
         const template = comps[ComponentType.Template] as TemplateComponent | undefined;
@@ -237,6 +244,16 @@ export function wakeSavedAreaFloor(
   };
 }
 
+function computeEffectiveRespawnTimerTurns(
+  state: GameState,
+  areaId: string,
+  baseTimerTurns: number
+): number | undefined {
+  const mult = resolveAreaRestPressure(state, areaId).respawnRateMultiplier;
+  if (mult <= 0) return undefined;
+  return Math.max(1, Math.round(baseTimerTurns / mult));
+}
+
 /**
  * Computes Director context enriched with elapsed-cycle respawn budget escalation so areas
  * spawn stronger or more numerous enemies after long stretches of elapsed world time.
@@ -250,9 +267,11 @@ function buildAreaDirectorContextWithEscalation(
 ): ReturnType<typeof buildAreaDirectorContext> {
   const base = buildAreaDirectorContext(state, targetAreaId, includeReservedTokens);
   if (!areaDef.respawnTimerTurns || areaDef.respawnTimerTurns <= 0) return base;
+  const effectiveTimer = computeEffectiveRespawnTimerTurns(state, targetAreaId, areaDef.respawnTimerTurns);
+  if (effectiveTimer === undefined || effectiveTimer <= 0) return base;
 
   const elapsedTurns = Math.max(0, state.globalTurn - lastSpawnTurn);
-  const elapsedCycles = Math.floor(elapsedTurns / areaDef.respawnTimerTurns);
+  const elapsedCycles = Math.floor(elapsedTurns / effectiveTimer);
   const extraCycles = Math.max(0, elapsedCycles - 1);
   const perCycle = areaDef.respawnEscalationPerCycle ?? 0;
   if (extraCycles <= 0 || perCycle <= 0) return base;
@@ -282,8 +301,12 @@ export function triggerActiveAreaRespawnIfDue(state: GameState): {
   if (!areaDef?.respawnTimerTurns || areaDef.tags?.includes('safe')) {
     return { state, spawnedCount: 0 };
   }
+  const effectiveTimer = computeEffectiveRespawnTimerTurns(state, state.currentAreaId, areaDef.respawnTimerTurns);
+  if (effectiveTimer === undefined) {
+    return { state, spawnedCount: 0 };
+  }
   const elapsed = state.globalTurn - (state.lastSpawnTurn ?? 0);
-  if (elapsed < areaDef.respawnTimerTurns) {
+  if (elapsed < effectiveTimer) {
     return { state, spawnedCount: 0 };
   }
 

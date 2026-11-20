@@ -12,6 +12,12 @@
     "weight": 5,
     "baseValue": 10,
     "currencyUnit": "gp",
+    "tags": [
+      "adventuring_gear",
+      "dungeoneering",
+      "rope",
+      "supple_rope"
+    ],
     "effectBundle": {
       "bundleId": "item_silk_rope",
       "name": "Silk Rope (50 ft.)",

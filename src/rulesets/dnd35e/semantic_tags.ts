@@ -179,6 +179,25 @@ export function projectDnD35ActorSemanticTags(
     tags.add('trait:literate');
   }
 
+  const hasExplicitArmorTag = Array.from(tags).some((t) => t.startsWith('armor:'));
+  if (!hasExplicitArmorTag) {
+    const armorCat =
+      situationalContext?.armorCategory ??
+      (dndData.armorBonus >= HEAVY_ARMOR_BONUS_THRESHOLD
+        ? 'heavy'
+        : dndData.armorBonus >= MEDIUM_ARMOR_BONUS_THRESHOLD
+          ? 'medium'
+          : dndData.armorBonus >= 1
+            ? 'light'
+            : 'none');
+    tags.add(`armor:${armorCat}`);
+  }
+
+  const hasExplicitLoadTag = Array.from(tags).some((t) => t.startsWith('load:'));
+  if (!hasExplicitLoadTag && situationalContext?.loadCategory) {
+    tags.add(`load:${situationalContext.loadCategory}`);
+  }
+
   for (const featId of dndData.activeClassFeatures ?? []) {
     if (classRegistry) {
       const currentTagSnapshot = Array.from(tags);
@@ -265,20 +284,6 @@ export function projectDnD35ActorSemanticTags(
     if (Math.floor(dndData.skillRanks?.['tumble'] ?? 0) >= DEFAULT_ACROBATIC_SKILL_THRESHOLD_RANKS) {
       tags.add('trait:tumble_acrobatic_defense');
     }
-  }
-
-  const hasExplicitArmorTag = Array.from(tags).some((t) => t.startsWith('armor:'));
-  if (!hasExplicitArmorTag) {
-    const armorCat =
-      situationalContext?.armorCategory ??
-      (dndData.armorBonus >= HEAVY_ARMOR_BONUS_THRESHOLD
-        ? 'heavy'
-        : dndData.armorBonus >= MEDIUM_ARMOR_BONUS_THRESHOLD
-          ? 'medium'
-          : dndData.armorBonus >= 1
-            ? 'light'
-            : 'none');
-    tags.add(`armor:${armorCat}`);
   }
 
   for (const comp of dndData.companions ?? []) {

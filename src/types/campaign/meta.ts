@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { RulesetIdSchema } from '../ruleset.types.ts';
-import { AreaIlluminationEnum } from './world.ts';
+import { AreaIlluminationEnum, FieldInteractionRuleSchema, RestPressureConfigSchema } from './world.ts';
 
 /** Zod schema for the campaign manifest. */
 export const CampaignManifestSchema = z.object({
@@ -93,6 +93,16 @@ export const CurrencyConfigSchema = z.object({
 /** Inferred type for currency configuration. */
 export type CurrencyConfig = z.infer<typeof CurrencyConfigSchema>;
 
+/** Zod schema for campaign-wide optional equipment wear rules (defaulting to 0% for pure SRD 3.5e). */
+export const DurabilityConfigSchema = z.object({
+  enableFumbleWearChance: z.number().min(0).max(1).default(0),
+  enableHardArmorWearChance: z.number().min(0).max(1).default(0),
+  enableCritArmorWearChance: z.number().min(0).max(1).default(0),
+  ruinedIsRepairable: z.boolean().default(true)
+});
+/** Inferred type for campaign equipment durability configuration. */
+export type DurabilityConfig = z.infer<typeof DurabilityConfigSchema>;
+
 /** Zod schema for campaign engine configuration rules. */
 export const RulesConfigSchema = z.object({
   map: z.object({
@@ -120,6 +130,9 @@ export const RulesConfigSchema = z.object({
     })
   }),
   worldClock: WorldClockConfigSchema.optional(),
+  restPressure: RestPressureConfigSchema.optional(),
+  durabilityConfig: DurabilityConfigSchema.optional(),
+  fieldInteractions: z.array(FieldInteractionRuleSchema).optional(),
   currency: CurrencyConfigSchema.optional(),
   spawning: z.object({
     maxMonstersPerRoom: z.number().int().nonnegative(),

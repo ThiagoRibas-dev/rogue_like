@@ -16,6 +16,12 @@
       "light_source",
       "light_radius_ft:20"
     ],
+    "lightSource": {
+      "radiusFt": 20,
+      "shadowyRadiusFt": 40,
+      "fuelTurns": 600,
+      "requiresIgnition": true
+    },
     "spriteId": "dcss_dungeon_wall_torches_torch_0"
   }
 }

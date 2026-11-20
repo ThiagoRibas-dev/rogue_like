@@ -125,7 +125,7 @@ export function getActorRemainingScheduleTime(entityId: EntityId): number {
   if (!actor) return 0;
   const scheduledAt = scheduler.getTimeOf(actor);
   if (scheduledAt === undefined) return 0;
-  return Math.max(0, scheduledAt - scheduler.getTime());
+  return Math.max(0, scheduledAt);
 }
 
 /**

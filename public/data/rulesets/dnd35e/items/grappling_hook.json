@@ -13,7 +13,8 @@
     "currencyUnit": "gp",
     "tags": [
       "adventuring_gear",
-      "dungeoneering"
+      "dungeoneering",
+      "grappling_anchor"
     ],
     "spriteId": "dcss_item_misc_misc_disc_new"
   }

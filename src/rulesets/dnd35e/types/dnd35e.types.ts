@@ -120,6 +120,8 @@ export interface DnD35ActionBudget {
   readonly reactorsThisOpportunity: ReadonlyArray<number>;
   readonly movementAoOReactorsThisRound: ReadonlyArray<number>;
   readonly hasActedThisRound?: boolean | undefined;
+  readonly rtwpMoveEnergySpentThisRound?: number | undefined;
+  readonly quickDrawContainerUsedThisRound?: boolean | undefined;
 }
 
 /** Damage Reduction rule (`DR X / bypassTag` or `-` unbypassable). */
@@ -135,6 +137,8 @@ export type VitalityStatus = 'healthy' | 'staggered' | 'disabled' | 'dying' | 's
 /** Canonical D&D 3.5e condition identifiers. */
 export type DnD35ConditionId =
   | 'blinded'
+  | 'bound'
+  | 'charging'
   | 'dazzled'
   | 'deafened'
   | 'entangled'
@@ -242,6 +246,14 @@ export interface DnD35EntityData {
   readonly lightExposure?: 'blinded' | 'acclimated' | undefined;
   /** Effective Challenge Rating stored on creatures/NPCs for DMG Table 2-6 XP computation. */
   readonly cr?: number | undefined;
+  /** Active physical restraint binding parameters when secured by manacles or ropes. */
+  readonly restraintBinding?:
+    | {
+        readonly escapeArtistDc: number;
+        readonly breakDc: number;
+        readonly restraintItemId: string;
+      }
+    | undefined;
 }
 
 /** Relational flanking tracking lists maintained on each combatant entity. */

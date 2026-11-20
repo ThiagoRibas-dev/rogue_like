@@ -5,8 +5,14 @@ import { getRuleset } from '../rulesets/registry.ts';
 import { ComponentType, type AIComponent, type TacticalDoctrineComponent } from '../types/components.types.ts';
 import type { EntityId, GameState } from '../types/game-state.types.ts';
 import type { Intent } from '../types/intents/intent.union.ts';
+import type { DisplacementContext } from '../types/ruleset.types.ts';
+import { processActorBreathTick } from './breath.system.ts';
+import { tickCorpseDecay } from './corpse.system.ts';
+import { processCrossingsTick } from './crossing.system.ts';
 import { syncAnchoredFieldsForEntity } from './field.system.ts';
 import { processLedgerSystem } from './ledger.system.ts';
+import { processActorLightEmittersTick } from './light_emitter.system.ts';
+import { tickAIAlertnessDecay } from './sound.system.ts';
 import { resetTriggeredReactionsForNewRound } from './stance.system.ts';
 import { processStatusEffectsTick } from './status-effect.system.ts';
 import { processTraps } from './trigger.system.ts';
@@ -14,7 +20,7 @@ import { applyElapsedWorldHours } from './world_clock.system.ts';
 
 /**
  * Universal Tier 1 Console Actor Turn-Start lifecycle window:
- * 1. Ticks active status effects on the actor (`processStatusEffectsTick`).
+ * 1. Ticks active status effects and breath/submersion counters on the actor (`processStatusEffectsTick`, `processActorBreathTick`).
  * 2. Runs state stabilization to drain any damage or death consequences.
  * 3. Resets Tier 1 per-round triggered reaction quotas (`resetTriggeredReactionsForNewRound`).
  * 4. Ticks down positive AI action cooldowns.
@@ -26,6 +32,9 @@ import { applyElapsedWorldHours } from './world_clock.system.ts';
  */
 export function runActorTurnStart(state: GameState, entityId: EntityId): GameState {
   let nextState = processStatusEffectsTick(state, entityId);
+  nextState = processActorBreathTick(nextState, entityId);
+  nextState = processActorLightEmittersTick(nextState, entityId);
+  nextState = tickAIAlertnessDecay(nextState, entityId);
   nextState = resolveStateStabilization(nextState);
 
   // 1. Reset Tier 1 per-round triggered reaction quotas (e.g. retaliation riders)
@@ -56,6 +65,8 @@ export function runActorTurnStart(state: GameState, entityId: EntityId): GameSta
   // 3. If this is the Player's turn start, advance the world clock & macro cadences by 1 world turn (TB + RTwP)
   if (getComponent(nextState, entityId, ComponentType.Player) !== undefined) {
     nextState = tickControllerLinksAndOverlays(nextState);
+    nextState = processCrossingsTick(nextState);
+    nextState = tickCorpseDecay(nextState);
     nextState = processTier2LocalCadence(nextState, true);
     const prevGlobalTurn = nextState.globalTurn || 0;
     nextState = processTier3GlobalCadence(nextState, true);
@@ -82,13 +93,15 @@ export function runActorTurnStart(state: GameState, entityId: EntityId): GameSta
  * @param entityId The moving entity.
  * @param fromPos Origin tile coordinates.
  * @param toPos Destination tile coordinates.
+ * @param displacementContext Optional Tier 1 displacement policy metadata (forced/teleport/charge/walk).
  * @returns Updated GameState after movement-step processing.
  */
 export function runActorMovementStep(
   state: GameState,
   entityId: EntityId,
   fromPos: { readonly x: number; readonly y: number },
-  toPos: { readonly x: number; readonly y: number }
+  toPos: { readonly x: number; readonly y: number },
+  displacementContext?: DisplacementContext
 ): GameState {
   // 1. Immediately synchronize any anchored mobile fields
   let nextState = syncAnchoredFieldsForEntity(state, entityId, toPos.x, toPos.y);
@@ -99,7 +112,7 @@ export function runActorMovementStep(
   // 3. Ruleset-specific step hook (e.g. D&D 3.5e aura entry saves and terrain cost)
   const ruleset = getRuleset(nextState.campaign?.manifest?.rulesetId);
   if (ruleset.onActorMovementStep) {
-    nextState = ruleset.onActorMovementStep(nextState, entityId, fromPos, toPos);
+    nextState = ruleset.onActorMovementStep(nextState, entityId, fromPos, toPos, displacementContext);
   }
 
   return nextState;
@@ -121,12 +134,13 @@ export function resolveActorActionEnergyCost(
   intent: Intent,
   baseEnergyCost: number,
   preActionState?: GameState
-): { readonly state: GameState; readonly energyCost: number } {
+): { readonly state: GameState; readonly energyCost: number; readonly alreadySpeedScaled?: boolean } {
   const ruleset = getRuleset(state.campaign?.manifest?.rulesetId);
   if (ruleset.resolveActionEnergyCost) {
-    return ruleset.resolveActionEnergyCost(state, intent, baseEnergyCost, preActionState);
+    const res = ruleset.resolveActionEnergyCost(state, intent, baseEnergyCost, preActionState);
+    return { ...res, alreadySpeedScaled: true };
   }
-  return { state, energyCost: baseEnergyCost };
+  return { state, energyCost: baseEnergyCost, alreadySpeedScaled: false };
 }
 
 /**
