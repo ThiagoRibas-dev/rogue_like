@@ -1,310 +1,1041 @@
-# Implementation Plan — Phase 43 Pending Roadmap (Milestones 150–156)
+# Implementation Plan — M150–M156 Corrective Remediation
 
-> **Status:** Phase 1, Steps 4–5 — Enhanced Implementation Plan (Revised with Confirmed Per-Actor Modulated 3.0s RTwP Move Pacing; Ready for Final Approval)
-> **Execution Strategy:** Execute and verify **one milestone at a time sequentially (`M150 -> M151 -> M152 -> M153 -> M154 -> M155 -> M156`)**, running the full 8-stage `./verify.sh` pipeline + `bun scripts/map-codebase.ts` SSOT parity sync after each milestone so every downstream milestone builds on verified live state.
-> **Confirmed M151 RTwP Move Pacing:** `6000 ms` = `1` full 6-second round (`100` energy); a single `Move` action occupies `3.0s` (`50` energy) dynamically modulated per actor by their live `tacticalSpeedFt` (incorporating *Haste*, Barbarian *Fast Movement*, Medium/Heavy Armor & Load penalties, Dwarf `trait:unencumbered_speed`, Difficult Terrain, and Stealth half-speed) using zero-drift cumulative rounding.
-
----
-
-## 1. SSOT Ownership & Old-Brain Eviction Table (M150–M156)
-
-| Milestone | Responsibility | Canonical Owner (After Change) | Evicted / Replaced Old Brain | Tier |
-|---|---|---|---|---|
-| **M150** | Carried weight sum (equipped + inventory, 1 free `starter_outfit`), STR > 20 & quadruped load tiers | `src/rulesets/dnd35e/combat/tactical_doctrine.ts` (`computeActorCarriedWeightLbs`, `computeEncumbranceState`) | Inline inventory-only weight loop in `dnd35e_ui_adapter.ts`; hardcoded `loadCategory: 'light'` in `semantic_tags_context.ts` | `tier2_cartridge` |
-| **M150** | Horizon 3 `armor:*` / `load:*` tag projection & worst-of ACP/Max-Dex DAG enforcement + inventory cache keys | `src/rulesets/dnd35e/semantic_tags.ts`, `dnd35e_dag_adapter.ts`, `dnd35e_turn_budget.ts` | Missing `load:*` emission & stale DAG cache lacking `inventoryRef` | `tier2_cartridge` |
-| **M151** | Unified 6-second round clock (`6000 ms` = `100` energy) & cross-mode TB/RTwP action budget | `src/constants/scheduler.constants.ts`, `src/core/scheduler.ts`, `src/rulesets/dnd35e/cartridge/dnd35e_turn_budget.ts` | `500 ms` RTwP tick & `engineMode !== TurnBased` budget short-circuit | `tier1_console` / `tier2_cartridge` |
-| **M152** | 3-tier passability (`evaluateTileTraversal`), single atomic displacement (`displaceEntityStep` / `AlongVector`), mode-aware `runActorMovementStep` | `src/systems/movement_displacement.ts`, `src/systems/movement.system.ts`, `src/systems/lifecycle.system.ts`, `src/types/ruleset.types.ts` | Private `isBlockingTileOrEntity` + raw `PositionComponent` overwrites in `bull_rush_resolver.ts` & `immediate_reactions.ts`; `'dnd35e'` check in `movement.system.ts` | `tier1_console` |
-| **M152** | Explicit Triggered Charge action (`+2` atk, `-2` AC condition, straight unobstructed `charge_step`, Pounce/Charging Smite) | `src/rulesets/dnd35e/combat/charge_resolver.ts`, `dnd35e_ruleset.ts` (`verb: 'charge'`) | Passive `distanceMovedFt >= 10` Charge shortcut in `dnd35e_combat_adapter.ts` | `tier2_cartridge` |
-| **M153** | Per-area Rest Pressure (`RestPressureConfigSchema`), bulk `processSchemeTurn`, watch-chunk camp ambushes | `src/types/campaign/{rules,world}.ts`, `src/systems/world_time_skip.ts`, `src/systems/rest.system.ts` | Scheme freeze during bulk rest/wait; single-chunk unguarded rest | `tier1_console` |
-| **M153** | Quick-draw belt action reduction, two-stage poison, `healers_kit` care, captive `manacles` | `src/rulesets/dnd35e/cartridge/dnd35e_turn_budget.ts`, `src/systems/status-effect.system.ts`, `src/rulesets/dnd35e/skills/dungeon_skill_verbs.ts` | Flat container action cost; single-stage poison | `tier1_console` / `tier2_cartridge` |
-| **M154** | World-owned crossings (`CrossingComponent`), `BreathComponent`, tag-driven `FieldInteractionRule`s, generic `dip` (`CoatingComponent`) | `src/systems/crossing.system.ts`, `src/systems/breath.system.ts`, `src/systems/field.system.ts`, `src/systems/apply.system.ts` | Binary impassable water/pits; inert fields; campaign-only `dip` fallthrough | `tier1_console` |
-| **M154** | Water `Swim` (`2×` ACP), Gap `Jump`/`Climb`/`Use Rope`/`Balance`, `caltrops`/`marbles`/`grease`, `Craft (Alchemy)` | `src/rulesets/dnd35e/spatial/terrain_traversal_resolver.ts`, `src/rulesets/dnd35e/combat/floor_hazard_resolver.ts` | Non-interactive water/pit tiles & unactivated M149 hazard items | `tier2_cartridge` |
-| **M155** | Wall-attenuated acoustics (`emitSoundEvent` + AI alertness), `LightEmitterComponent` (fuel/cones), 6s-cadence symmetric Stealth | `src/systems/sound.system.ts`, `src/systems/light_emitter.system.ts`, `src/rulesets/dnd35e/spatial/stealth_resolver.ts` | Omniscient LOS-only AI aggro; static ambient-only `lightGrid` | `tier1_console` / `tier2_cartridge` |
-| **M156** | SRD Object/Durability engine (`StructuralComponent`, repairable `ruined`, `0%` opt-in `durabilityConfig`), structural doors, `CorpseComponent`, `ReligionComponent`, `IdentityMaskComponent` | `src/systems/durability.system.ts`, `src/systems/corpse.system.ts`, `src/systems/religion.system.ts`, `src/systems/disguise.system.ts`, `src/rulesets/dnd35e/combat/object_durability_resolver.ts` | Unbreakable doors/objects; missing corpse/piety/disguise primitives | `tier1_console` / `tier2_cartridge` |
-| **M156** | Tag-based spell rarity (`rarity:*`), dropped `wizards_spellbook` transcription, live `resolveMonsterLoreCheck`, `UMD` | `src/rulesets/dnd35e/magic/spellbook_loot.ts`, `spellbook_actions.ts`, `src/rulesets/dnd35e/skills/monster_lore_tracker.ts` | Unused `resolveMonsterLoreCheck` on sight; empty mage loot | `tier2_cartridge` |
+> **Status:** Phase 1, Steps 4–5 — Enhanced corrective implementation plan; awaiting explicit approval.
+> **Audited baseline:** commit `c83c3830d812c746e88fb850812462be57fd1a66` against its parent.
+> **Research source:** `docs/research_notes.md` contains the verified evidence, stable remediation IDs, provenance design, and audit baseline.
+> **Execution strategy:** Execute the six corrective phases sequentially. Complete every task and regression test in a phase, run the full eight-stage verification pipeline, and restore a clean verification baseline before beginning the next phase.
+> **Current authorization:** Planning artifacts only. No production source, test, data, asset, or documentation implementation is authorized until this plan is explicitly approved.
 
 ---
 
-## 2. Declarative Purity & Anti-Hardcoding Audit Table (Rule 21)
+## 0. Scope, Order, and Completion Criteria
 
-| Milestone & Behavior | Rejected Imperative Shortcut | Chosen Declarative Schema / JSON Mechanism | Passes "New Content Mod" Litmus Test? |
-|---|---|---|---|
-| **M150:** Free starter outfit weight exclusion & dwarf unencumbered speed | `if (itemId === 'explorers_outfit')` or `if (raceId === 'dwarf')` | `item.tags.includes('starter_outfit')` & `selfTags.includes('trait:unencumbered_speed')` | Yes |
-| **M151:** RTwP action round slices | Hardcoding per-spell or per-item ms timers | Derived purely from `DnD35ActionBudget` action tier (`standard`, `move`, `full_round`, `swift`) × `RTWP_MS_PER_100_DURATION` (`6000 ms`) | Yes |
-| **M152:** Solid obstacle vs. open hazard & Charge terrain exemptions | `if (tileId === 'stone_wall')` or `if (hasFeat('woodland_stride'))` | Optional `TileDefinitionSchema` flags (`isSolidObstacle`, `hazardKind`, `blocksCharge`, `movementCost`) & declarative `RuleOverride` (`charge_ignores_difficult_terrain`) | Yes |
-| **M152:** Charge `-2` AC / `+2` attack & movement modes in Console | Hardcoding `rulesetId === 'dnd35e'` in `movement.system.ts` or ad-hoc `-2` AC branch | `RulesetAdapter.getEntityMovementModes` hook + declarative `charging` condition JSON (`public/data/rulesets/dnd35e/conditions/charging.json`) | Yes |
-| **M153:** Rest pressure & quick-draw container speed | Hardcoding dungeon area IDs or `if (itemId === 'bandoleer')` | `RestPressureConfigSchema` on `rules.json` / `AreaDefinition.restPressure`; `tags: ['quick_draw_container']` on belt/bandoleer items | Yes |
-| **M154:** Field chemistry, crossings, and breath immunity | Hardcoding `if (field === 'fire' && tile === 'oil')` or `if (race === 'skeleton')` | Declarative `FieldInteractionRuleSchema[]` (`incomingTags`, `targetTags`, `resultAction`); `CrossingComponent`; Layer A tags (`trait:water_breathing`, `type:undead`, `type:construct`) | Yes |
-| **M155:** Sound attenuation, light cones, stealth senses | `if (itemId === 'bullseye_lantern')` or `if (race === 'elf')` | `tile.soundAttenuation`; `item.lightSource: { radiusFt, coneAngleDeg?, fuelTurns?, requiresIgnition? }`; Layer A sense tags (`sense:darkvision`, `sense:low_light`, `sense:scent`, `sense:tremorsense`) | Yes |
-| **M156:** Object hardness/vulnerability, wear config, spell rarity | `if (spellId === 'wish')` or `switch (itemId)` for hardness | `materialTag` -> material hardness/HP table in JSON; `rules.durabilityConfig` (`0%` defaults); `rarity:uncommon|rare|forbidden` inside `DnD35SpellDefinitionSchema.tags` | Yes |
+### Six-phase scope
+
+| Phase                                             | Goal                                                                                                                     | Remediation IDs |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | --------------- |
+| **1 — Verification Gates**                        | Restore typecheck, format, tests, build, validator, and diff hygiene                                                     | P1.1–P1.4       |
+| **2 — Engine Invariants & Provenance**            | Repair pit/displacement/time/field semantics and introduce complete causal chains                                        | P2.1–P2.8       |
+| **3 — Action Economy, Items, Objects, Traversal** | Correct Charge, coating/weapon identity, consumables, hazards, structural objects/doors, rigging, and spellbook behavior | P3.1–P3.16      |
+| **4 — Production Integrations**                   | Wire disguise, sound/light, corpse, religion, and lore into live paths                                                   | P4.1–P4.9       |
+| **5 — Declarative/Data/SSOT Parity**              | Restore partial overrides, campaign dependencies, Rule 21 compliance, showcase content, docs, and assets                 | P5.1–P5.11      |
+| **6 — Integration Proof & Closure**               | Replace helper-only confidence with real-path tests, complete verification, and final cascading audit                    | P6.1–P6.9       |
+
+### Rules for every implementation task
+
+1. Use the existing canonical utility or schema owner before creating anything new.
+2. Keep each code change small enough to understand, test, and review independently.
+3. Do not branch on Tier 3 content IDs or infer generic behavior from bespoke properties.
+4. Do not use `any`, untyped magic gameplay values, `Math.random`, `Date.now`, or non-serializable ECS state.
+5. Preserve actor symmetry and backward compatibility for existing campaign/save data unless a migration is explicitly documented.
+6. Update the upstream/downstream/lateral matrix when implementation reveals additional impact.
+7. Run focused tests during development and the complete `./verify.sh` pipeline at the phase boundary.
+8. Do not commit or push unless the user separately requests and approves the exact commit.
+
+### Phase completion criteria
+
+A phase is complete only when:
+
+- Its focused regression tests pass.
+- `bun x tsc --noEmit` passes.
+- Formatting, lint, architecture, and dead-code checks pass.
+- The full `bun test` suite passes.
+- `bun run build` passes.
+- `bun run scripts/run-validator.ts` passes.
+- `bun scripts/map-codebase.ts --check` passes when SSOT ownership changes.
+- `git diff --check` passes.
+- The phase's cascading-effects rows and test evidence are updated.
 
 ---
 
-## 3. Detailed Step-by-Step Implementation Plan & Code Snippets (M150–M156)
+## 1. SSOT Ownership & Old-Brain Eviction Table
+
+| Responsibility                                               | Canonical owner after remediation                                                                                    | Old brain replaced or constrained                                                     | Tier             |
+| ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | ---------------- |
+| Runtime interaction-chain types and append/query helpers     | `src/types/interaction_provenance.types.ts`, `src/systems/interaction_provenance.system.ts`                          | Ad-hoc `sourceEntityId`, item/spell IDs, and mutable “current source” assumptions     | Tier 1 Console   |
+| Causal chain on emitted events                               | `src/types/events.types.ts` (`BaseGameEvent`) and event producers                                                    | Events with no causal ancestry                                                        | Tier 1 Console   |
+| Causal chain on delayed/persisted outcomes                   | `DamageInstance`, `DeathComponent`, `ActiveStatusEffect`, `FieldComponent`, projectile/in-flight state as applicable | Delayed effects losing their origin after the initiating action                       | Tier 1 Console   |
+| Static modifier/grant provenance                             | Existing `StatModifier.sourcePath` and effect-bundle index                                                           | Runtime chain being mistaken for modifier provenance                                  | Tier 2 Cartridge |
+| Equipped weapon instance identity                            | `weapon_profile_parser.ts` (`EquippedWeaponProfile.itemEntityId`, slot/limb identity) and `attack_routine.ts`        | Content-only `weaponId` used to locate a coating                                      | Tier 2 Cartridge |
+| Displacement result and footprint commit                     | `src/systems/movement_displacement.ts`                                                                               | Anchor-delta-only `moved`; discarded precomputed placement                            | Tier 1 Console   |
+| Context-aware tile traversal                                 | `evaluateTileTraversal` and all context-aware callers                                                                | Caller-side traversal that omits state/coordinates and misses crossings               | Tier 1 Console   |
+| Pit-entry fall consequence                                   | Terrain traversal resolver, invoked once on a confirmed hazard entry                                                 | Duplicate explicit fall call plus recurring turn-start fall                           | Tier 2 Cartridge |
+| Jaunt validation and commit                                  | Immediate-reaction resolver using the displacement kernel                                                            | Squeezed validation versus expanded execution; skipped occupancy; ignored move result | Tier 2 Cartridge |
+| Normal and bulk elapsed-time semantics                       | Domain-owned elapsed resolvers orchestrated by `world_time_skip.ts`                                                  | Bulk duration subtraction that skips breath, light, crossings, AI, and status stages  | Tier 1 Console   |
+| Secondary status timing                                      | `status-effect.system.ts` shared elapsed resolver                                                                    | Bulk-only duration decrement without elapsed/secondary state                          | Tier 1 Console   |
+| Field transmutation commit                                   | `field.system.ts` interaction transaction                                                                            | Incoming field plus separately transmuted duplicate field                             | Tier 1 Console   |
+| Charge validation, movement, condition, and strike selection | `charge_resolver.ts` plus `dnd35e_combat_adapter.ts`                                                                 | Distance inferred after strike selection; condition applied only on success           | Tier 2 Cartridge |
+| Coating application and per-strike consumption               | Generic coating descriptor/resolver with D&D effect data; `combat_exchange_pipeline.ts`                              | First-coated-item search and item-ID heuristics                                       | Tier 1 + Tier 2  |
+| Consumable charge/item depletion                             | Canonical inventory consumption helper                                                                               | Scattered manual charge/removal implementations                                       | Tier 1 Console   |
+| Hazard deployment                                            | Generic deployment descriptor plus authored field definition                                                         | Runtime field-registry injection and reusable source item                             | Tier 1 + Tier 3  |
+| Floor-hazard movement behavior                               | `floor_hazard_resolver.ts` using movement context                                                                    | Context-free caltrops/marbles logic                                                   | Tier 2 Cartridge |
+| Structural data hydration                                    | Generic entity/item schema plus ECS spawn/promotion paths                                                            | Tests manually attaching `StructuralComponent`                                        | Tier 1 + Tier 3  |
+| Structural durability math                                   | `object_durability_resolver.ts`                                                                                      | Unreachable resolver and base-vs-enhanced HP maxima                                   | Tier 2 Cartridge |
+| Door presentation/passability                                | Existing reaction/consequence engine, invoked by structural door resolver                                            | Component-only open/break state bypassing tag/glyph/intent/FOV transition             | Tier 1 Console   |
+| Crossing installation recipes                                | Tier 3 recipe descriptor plus crossing system                                                                        | Rope-or-anchor shortcut and missing ladder content                                    | Tier 1 + Tier 3  |
+| Spellbook study time                                         | Canonical bulk/world-time advancement                                                                                | Direct `globalTurn += hours`                                                          | Tier 2 Cartridge |
+| Disguise perception and faction relation                     | `utils/faction.ts` with explicit mask precedence                                                                     | Mutating both observer and target allegiances; unconditional Attitude early return    | Tier 1 Console   |
+| Sound perception and sleeping awareness                      | `sound.system.ts` using canonical sleeping awareness                                                                 | Alerted-but-asleep actors and disconnected producers                                  | Tier 1 Console   |
+| Camp illumination                                            | `light_emitter.system.ts` active-emitter query                                                                       | Tag-only light-source check                                                           | Tier 1 Console   |
+| Corpse creation and harvest                                  | `corpse.system.ts`, semantic type projection, declarative yield recipes                                              | Test-only marking with no yield/tool effect                                           | Tier 1 + Tier 3  |
+| Religion ledger and altar integration                        | `religion.system.ts` plus authored altar/reaction data                                                               | Test-only helpers and implicit Pelor default                                          | Tier 1 + Tier 3  |
+| Automatic monster lore persistence                           | `monster_lore_tracker.ts` invoked from sight/inspect integration                                                     | Test-only persistence helper                                                          | Tier 2 Cartridge |
+| Rest-pressure shape                                          | Separate full config and partial override schemas                                                                    | Zod defaults erasing campaign values before inheritance                               | Tier 1 + Tier 3  |
+| Campaign/system consumable dependency validation             | Loader/validator reference pass                                                                                      | Validator accepting an item whose effect/status is absent                             | Tier 1 tooling   |
+| Default feature showcase                                     | `public/data/campaigns/default/` plus smoke scenarios                                                                | Unused schemas and non-functional default content                                     | Tier 3           |
 
 ---
 
-### Milestone 150 — Live Symmetric Weight-Based Encumbrance Enforcement & DAG Inventory Cache Invalidation
+## 2. Declarative Purity & Anti-Hardcoding Audit Table
 
-#### Step 150.1 — Canonical Carried Weight & STR > 20 / Quadruped Scaling (`src/rulesets/dnd35e/combat/tactical_doctrine.ts`, `src/rulesets/dnd35e/ui/dnd35e_ui_adapter.ts`)
-- Extend `computeEncumbranceState` to support `strScore > 20` (SRD `×4` per `+10` STR) and optional `isQuadruped = false` (SRD quadruped size carry multipliers: Fine `×1/4`, Diminutive `×1/2`, Tiny `×3/4`, Small `×1`, Medium `×1.5`, Large `×3`, Huge `×6`, Gargantuan `×12`, Colossal `×24`).
-- Add canonical `computeActorCarriedWeightLbs(state: GameState, entityId: EntityId): number`:
+| Behavior                           | Rejected imperative shortcut                           | Chosen declarative mechanism                                                                | New Content Mod litmus |
+| ---------------------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------- | ---------------------- |
+| Inventory climbing/rigging gear    | `itemId === 'climbers_kit'` or `'ladder_10ft'`         | Semantic tags `climbing_kit`, `ladder`, `supple_rope` on authored items                     | **Pass**               |
+| Charge movement capability         | Hardcoded condition-ID `Set`                           | Generic condition `ruleOverrides`/tags such as `blocks_charge`                              | **Pass**               |
+| Charge speed                       | Land-speed-only calculation                            | Movement mode selected from the actual traversal path                                       | **Pass**               |
+| Charge attack reach                | Size/natural-reach-only calculation                    | Scheduled strike's authored `reachFt` and `strikesAdjacent`                                 | **Pass**               |
+| Coating eligibility                | “Any item with `ItemComponent` is a weapon”            | Generic `weapon`/`ammunition` capability tags or item category profile                      | **Pass**               |
+| Coating damage/status/targets      | Item-ID substring and `alignment:evil` fallback        | Authored coating descriptor, target predicates, status/effect references                    | **Pass**               |
+| Hazard deployment                  | TypeScript-created field registry entries              | Item deployment descriptor referencing an authored field definition                         | **Pass**               |
+| Caltrops/marbles behavior          | Context-free fixed checks                              | Movement-mode/speed context plus authored hazard parameters                                 | **Pass**               |
+| Structural hardness/HP             | Per-item TypeScript branches                           | Authored material/object profile and typed effect data                                      | **Pass**               |
+| Door open/close/break presentation | Hardcoded tile IDs, glyphs, or tag arrays              | Existing declarative reaction consequences                                                  | **Pass**               |
+| Crossing installation              | Rope-or-anchor shortcut                                | Tier 3 recipe with required capabilities, anchor/range rules, and consumed/installed source | **Pass**               |
+| Antitoxin resistance               | `hasResistanceStatus ? 5 : 0`                          | Status-authored save modifier with typed bonus and effect tags                              | **Pass**               |
+| Wand Spell Trigger                 | Hardcoded class-track ID array                         | Wand `spellId` plus spell `levelByClass`/domain/access capability metadata                  | **Pass**               |
+| Religion patron                    | Default missing patron to `pelor`                      | Explicit actor/altar/deity data; no implicit patron                                         | **Pass**               |
+| Rest area override                 | Fully defaulted partial object                         | Separate partial override schema over a complete resolved config                            | **Pass**               |
+| Corpse harvest yield               | Hardcoded tag-to-item switch                           | Declarative harvest recipe mapping tags to item/tool requirements                           | **Pass**               |
+| Corporeal eligibility              | Raw tag-only check                                     | Canonical semantic type/subtype projection or Ruleset hook                                  | **Pass**               |
+| Interaction provenance             | Global mutable source or content-specific frame unions | Generic append-only `InteractionChain` frames and queries                                   | **Pass**               |
+| Modifier provenance                | Runtime chain reused as `sourcePath`                   | Keep static `sourcePath` and runtime chain as separate contracts                            | **Pass**               |
+
+---
+
+## 3. Cascading Effects Matrix — Corrective Implementation Tasks
+
+| Task                                           | Upstream                                                              | Downstream                                                                   | Lateral                                                              |
+| ---------------------------------------------- | --------------------------------------------------------------------- | ---------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| P1.1 semantic gear tags                        | Pit climb/rigging verbs and item registries                           | Typecheck/build, skill bonuses, crossing creation                            | Item fixtures, M154 tests, docs                                      |
+| P1.2 hammer tag                                | Door spike intent and tag registries                                  | Spike success, item consumption                                              | Default/crypt registries, M156 test                                  |
+| P1.3 formatting/EOF                            | Formatter and diff checks                                             | CI acceptance                                                                | Documentation mirrors                                                |
+| P1.4 prompt-kit mirrors                        | Default campaign sources                                              | Validator Stage 8                                                            | AI prompt kit and generated artifacts                                |
+| P2.1 pit entry                                 | Jump, forced displacement, crossing collapse                          | Damage/death/prone/events                                                    | Pit fixtures and M152/M154 tests                                     |
+| P2.2 displacement commit                       | Walk, swap, Bull Rush, Charge, Jaunt, AI pathing                      | Footprint, spatial index, FOV, movement hooks, steps                         | Movement SSOT and tests                                              |
+| P2.3 context-aware traversal                   | All tile/bridge callers                                               | Pathing, Charge, Jaunt, swap                                                 | Crossing fixtures                                                    |
+| P2.4 Jaunt transaction                         | Target selection and pool budget                                      | Occupancy, resources, success/reaction state                                 | Squeezing and reaction tests                                         |
+| P2.5 elapsed local time                        | Turn start, rest, wait, spellbook study                               | Breath, light fuel, crossings, AI, hunger, death                             | Sync/async paths and saves                                           |
+| P2.6 status elapsed time                       | Normal and bulk status processing                                     | Secondary saves/damage, expiry, logs                                         | Poison/antitoxin fixtures                                            |
+| P2.7 field transmutation                       | Field spawn, spell impact, deployment                                 | Field count/damage/FOV/provenance                                            | Field rules and oil/fire fixtures                                    |
+| P2.8 interaction provenance                    | Intents, strikes, items, coatings, spells, reactions, statuses/fields | Damage/death/events/triggers/ledger/saves                                    | `sourcePath`, event fixtures, ECS/SSOT/docs                          |
+| P3.1, P3.2, P3.3, P3.4 Charge                  | Hotbar/AI/Apply, budget, displacement, attack routine                 | Attack count, AC, Pounce, moved distance, reactions                          | Charge condition and M152 tests                                      |
+| P3.5/P3.6 coating identity                     | Weapon profiles, strike construction, dip                             | Correct coating consumption, damage/status chain, source depletion           | Classic coating path and item fixtures                               |
+| P3.7/P3.8 deployment/floor hazards             | Apply, movement mode/speed, Charge                                    | Fields, Balance/attack/limp/halt, inventory                                  | Hazard descriptors and M154 tests                                    |
+| P3.9, P3.10, P3.11 objects/doors               | Spawn, hydration, attack/wear, open/break/repair                      | HP/ruined, tags/glyph/intents, FOV/passability                               | Door/item JSON, default showcase, durability tests                   |
+| P3.12 rigging                                  | Use Rope/ladder intents, inventory, recipes                           | Crossing entities, gear consumption, pathing                                 | Ladder item and crossing recipes                                     |
+| P3.13 study time                               | Transcribe action/UI                                                  | Rest/wait simulation and interruption                                        | World-clock docs/tests                                               |
+| P3.14–P3.16/P5.4 coating and spellbook content | Item descriptors, dip/deploy, spellbook drops/transcription           | Target/effect resolution, field definitions, learned spells/drop eligibility | Poison/oil/holy-water/caltrops content, caster fixtures, mod fixture |
+| P4.1/P4.8 disguise                             | Mask application, observation, faction queries                        | Hostility, ally relations, suspicion, dialogue                               | Shipped bandit/faction data and M156 tests                           |
+| P4.2, P4.3, P4.4 sound/light                   | Movement/combat/thunderstone, ignite/refuel, camp                     | AI alert/sleep/wake, verb UI, light grid, rest                               | Sound/light items and stealth/rest tests                             |
+| P4.5/P4.6 corpse                               | Death, semantic type, harvest                                         | Corpse, yield, inventory, decay, necromancy                                  | Subtype data, recipes, default content                               |
+| P4.7 religion                                  | Shrine/altar/dialogue/reaction intents                                | Favor/penance/atonement and actor state                                      | Deity/altar JSON and showcase                                        |
+| P4.9 lore                                      | Sight/inspect and Knowledge resolver                                  | Memory persistence and inspection projection                                 | Existing on-demand lore and tests                                    |
+| P5.1/P5.2 schemas/references                   | Loader/Zod and runtime resolution                                     | Consumables/statuses/rest config                                             | All campaigns, generator kit, validator                              |
+| P5.3/P5.5–P5.7 declarative providers           | Status/class/condition/religion content                               | Stacking, UMD, Charge, religion                                              | Rule registries and Rule 21 audit                                    |
+| P5.8–P5.11 showcase/docs/assets                | New systems and shared sprite packs                                   | Default playability, rendering, SSOT truth                                   | Default/crypt content, sprite references, milestones                 |
+| P6 integration/closure                         | Every public path                                                     | Regression/build/validator/manual evidence                                   | All mirrors, docs, saves, final matrix audit                         |
+
+## 4. Detailed Corrective Implementation Plan
+
+---
+
+## Phase 1 — Restore Verification Gates
+
+### Step 1.1 — Correct the semantic inventory-gear helper calls (P1.1)
+
+**Files:** `src/rulesets/dnd35e/spatial/terrain_traversal_resolver.ts`, relevant M154 fixtures.
+
+- Keep the existing tag-only helper `actorInventoryHasItemTag`; do not recreate the undefined ID-aware helper.
+- Replace the three invalid calls with semantic capability tags already authored on content:
+  - `climbers_kit` → `climbing_kit`
+  - `ladder_10ft` → `ladder`
+  - `silk_rope` → `supple_rope`
+- Do not special-case item IDs. The authored ladder item is added with the complete rigging recipe in Phase 3.
+
 ```ts
-// src/rulesets/dnd35e/combat/tactical_doctrine.ts
-export function computeActorCarriedWeightLbs(state: GameState, entityId: EntityId): number {
-  const seenItemIds = new Set<EntityId>();
-  const inventory = getComponent(state, entityId, ComponentType.Inventory) as InventoryComponent | undefined;
-  const equipment = getComponent(state, entityId, ComponentType.Equipment) as EquipmentComponent | undefined;
-  for (const id of inventory?.items ?? []) seenItemIds.add(id);
-  for (const slot of equipment?.slots ?? []) {
-    if (slot.equippedItem !== null) seenItemIds.add(slot.equippedItem);
-  }
+const hasClimbersKit = actorInventoryHasItemTag(state, entityId, 'climbing_kit');
+const hasLadder = actorInventoryHasItemTag(state, entityId, 'ladder');
+const hasSilkRope = actorInventoryHasItemTag(state, entityId, 'supple_rope');
+```
 
-  let totalLbs = 0;
-  let excludedStarterOutfit = false;
-  for (const itemEntityId of seenItemIds) {
-    const itemComp = getComponent(state, itemEntityId, ComponentType.Item) as ItemComponent | undefined;
-    if (!itemComp) continue;
-    const rawDef = state.campaign.items[itemComp.itemId] as DnD35ItemDefinition | undefined;
-    if (!rawDef) continue;
-    const itemDef = resolveEffectiveItemDefinition(rawDef, state.campaign.items, itemComp);
-    if (!excludedStarterOutfit && (itemDef.tags ?? []).includes('starter_outfit')) {
-      excludedStarterOutfit = true;
-      continue;
+**Focused proof:**
+
+- Typecheck and build succeed.
+- M154 pit-climb test passes with the authored climber's kit.
+- A new modded climbing tool carrying `climbing_kit` works without TypeScript changes.
+
+### Step 1.2 — Canonicalize the hammer capability tag (P1.2)
+
+**Files:** `src/systems/durability.system.ts`, item/tag registry fixtures.
+
+- Change `HAMMER_TOOL_ITEM_TAG` from `hammer` to the authored `hammer_tool`.
+- Remove the duplicate `'hammer'` fallback.
+- Keep the behavior tag-based so a new hammer item with `hammer_tool` works unchanged.
+
+**Focused proof:** the existing M156 spike-door test succeeds; a no-hammer actor still receives the authored failure message.
+
+### Step 1.3 — Restore formatting and whitespace hygiene (P1.3)
+
+**Files:** the three Prettier failures plus the two EOF-only documentation files.
+
+- Run Prettier on only:
+  - `src/rulesets/dnd35e/combat/floor_hazard_resolver.ts`
+  - `src/rulesets/dnd35e/skills/dungeon_skill_verbs.ts`
+  - `src/systems/durability.system.ts`
+- Remove only the extra EOF blank lines from:
+  - `docs/ARCHITECTURE.md`
+  - `docs/ROGUELIKE_RPG_SYSTEMS_REPORT.md`
+- Do not run whole-repository auto-formatting.
+
+### Step 1.4 — Regenerate and review AI prompt-kit mirrors (P1.4)
+
+**Files:** `ai-prompt-kit/default-campaign/{rules,areas,effects,status}.json`.
+
+- Run the canonical generator:
+
+```bash
+bun scripts/generate-ai-prompt-kit.ts
+```
+
+- Review the generated diff to confirm it mirrors the current default campaign and introduces no schema drift.
+- Re-run `bun run scripts/run-validator.ts`.
+
+### Phase 1 gate
+
+```bash
+bun x tsc --noEmit
+bun run format:check
+bun run lint:check
+bun run lint:arch
+bun run lint:deadcode
+bun test
+bun run build
+bun run scripts/run-validator.ts
+git diff --check
+```
+
+Expected result: all checks pass before Phase 2 begins.
+
+---
+
+## Phase 2 — Repair Engine Invariants and Establish Causal Propagation
+
+### Step 2.1 — Add the canonical interaction-chain contract (P2.8)
+
+**New files:** `src/types/interaction_provenance.types.ts`, `src/systems/interaction_provenance.system.ts`.
+
+**Modified contract files:** `src/types/events.types.ts`, `src/types/components/{actor,world,item}_components.types.ts`, `src/types/ruleset.types.ts`.
+
+Use a generic Tier 1 contract; Tier 2 may supply semantic frame values but must not define the chain's shape.
+
+```ts
+export interface InteractionChain {
+  readonly originatorEntityId: EntityId;
+  readonly frames: ReadonlyArray<InteractionFrame>;
+}
+
+export type InteractionFrame =
+  | {
+      readonly kind: 'intent';
+      readonly intentType: IntentType;
+      readonly actorId: EntityId;
+      readonly targetId?: EntityId | undefined;
     }
-    const qty = Math.max(1, itemComp.quantity ?? 1);
-    totalLbs += (itemDef.weight ?? 0) * qty;
-  }
-  return totalLbs;
-}
+  | { readonly kind: 'action'; readonly actionId: string; readonly actorId: EntityId }
+  | {
+      readonly kind: 'strike';
+      readonly attackerId: EntityId;
+      readonly defenderId: EntityId;
+      readonly strikeIndex: number;
+      readonly attackSource: string;
+    }
+  | {
+      readonly kind: 'item';
+      readonly itemEntityId: EntityId;
+      readonly itemId: string;
+      readonly role: 'weapon' | 'tool' | 'consumable' | 'deployed_source';
+      readonly slotId?: string | undefined;
+    }
+  | {
+      readonly kind: 'effect';
+      readonly effectId: string;
+      readonly effectKind: 'coating' | 'rider' | 'spell' | 'status' | 'reaction' | 'field_interaction';
+      readonly sourcePath?: string | undefined;
+    }
+  | { readonly kind: 'field'; readonly fieldEntityId: EntityId; readonly fieldType: string }
+  | {
+      readonly kind: 'trigger';
+      readonly triggerId: string;
+      readonly triggeringEntityId?: EntityId | undefined;
+    };
 ```
-- Update `dnd35e_ui_adapter.ts` `getInventoryData` to call `computeActorCarriedWeightLbs(state, entityId)` instead of its inline inventory-only loop.
 
-#### Step 150.2 — Horizon 3 `armor:*` & `load:*` Tag Projection Ordering (`semantic_tags_context.ts`, `semantic_tags.ts`)
-- Expand `SituationalTagContext.loadCategory` to `'light' | 'medium' | 'heavy' | 'overloaded'`.
-- Compute live `loadCategory` inside `resolveEntitySituationalTagContext` from `computeActorCarriedWeightLbs` + `computeEncumbranceState` (passing `dndData.anatomyBodyPlan === 'quadruped'`).
-- In `projectDnD35ActorSemanticTags` (`semantic_tags.ts`): move `armor:<category>` emission **above** the `activeClassFeatures` loop (line `182`) and emit `load:<category>` right beside it so `barbarian.json` (`Fast Movement`), `druid.json`, Monk, and Ranger feature `activationCondition` checks see live `armor:*` and `load:*` tags!
+Canonical helpers:
 
-#### Step 150.3 — DAG Enforcement, Effective STR Re-Check & Inventory Cache Invalidation (`dnd35e_dag_adapter.ts`, `dnd35e_turn_budget.ts`)
-- Add `inventoryRef: InventoryComponent | undefined` and `inventoryItemRefs: ReadonlyArray<ItemComponent | undefined>` to `CachedEntityDAGEntry` (`dnd35e_dag_adapter.ts:87-115`) and compare them in the cache hit check (lines `264-289`).
-- In `evaluateDnD35eEntityDAGInternal`: after Stage 1–2 resolves `dagResult.effectiveAbilityScores.str` and `dagResult.effectiveSize`, compute effective `encumbrance = computeEncumbranceState(effectiveStr, effectiveSize, carriedWeightLb, baseSpeedFt, isQuadruped)`.
-  - Merge non-stacking SRD constraints:
-    - `effectiveMaxDexCap = minDefined(itemContrib.maxDexBonusCap, encumbrance.maxDexBonus)`
-    - `effectiveAcp = Math.min(itemContrib.armorCheckPenalty, encumbrance.acp)`
-  - If the effective `loadTier` differs from the initial raw-STR `loadCategory` (e.g., *Ray of Enfeeblement* or *Bull's Strength* shifted load tier), update `load:*` tag and re-run DAG Stage 3–4 + skills once.
-- In `dnd35e_turn_budget.ts:140-146`: return `5` ft when `selfTags.includes('load:overloaded')`, and keep `load:medium` / `load:heavy` speed reduction respecting `trait:unencumbered_speed`.
-- **Verification (M150):** Add unit tests in `tests/dnd35e_encumbrance.test.ts` covering Light/Medium/Heavy/Overloaded tiers, worst-of armor+load ACP/Max-Dex, Dwarf `trait:unencumbered_speed`, Barbarian `Fast Movement` disabled in Heavy Load, *Ray of Enfeeblement* mid-combat overload, STR > 20 & quadruped scaling, and pickup/drop DAG cache invalidation. Run `./verify.sh`.
-
----
-
-### Milestone 151 — Unified 6-Second Round Clock across TB & RTwP
-
-#### Step 151.1 — 6-Second Real-Time Round Baseline (`src/constants/scheduler.constants.ts`, `src/core/scheduler.ts`)
-- Update `RTWP_MS_PER_100_DURATION = 6000` (with named constant `DND_ROUND_DURATION_MS = 6000`, `FULL_ROUND_ENERGY_COST = 100`, `HALF_ROUND_ENERGY_COST = 50`).
-- Ensure `MAX_ACCUMULATED_RTWP_TIME` and RTwP speed multipliers (`0.5×`, `1×`, `2×`, `4×`) remain crisp and responsive.
-
-#### Step 151.2 — Cross-Mode Action Budget & Sub-Round Proportional Energy (`src/rulesets/dnd35e/cartridge/dnd35e_turn_budget.ts`)
-- Remove the `if (state.engineMode !== EngineMode.TurnBased)` early exit in `resolveDnD35eActionEnergyCost` and `canDnD35eActorPerformIntent`:
 ```ts
-// src/rulesets/dnd35e/cartridge/dnd35e_turn_budget.ts
-export const HALF_ROUND_ENERGY_COST = 50;
-
-function resolveSubRoundRtwpEnergyCost(
-  preBudget: DnD35ActionBudget,
-  postBudget: DnD35ActionBudget,
-  tacticalSpeedFt: number,
-  stepCostFt: number
-): number {
-  const stdSpent = preBudget.standardRemaining - postBudget.standardRemaining;
-  const moveSpent = preBudget.moveRemaining - postBudget.moveRemaining;
-  if (stdSpent > 0 && moveSpent > 0) return FULL_ROUND_ENERGY_COST; // Full-round action = 6.0s
-  if (stdSpent > 0) return HALF_ROUND_ENERGY_COST; // Standard action = 3.0s
-  if (stepCostFt > 0) {
-    const squaresPerMove = Math.max(1, tacticalSpeedFt / FEET_PER_GRID_SQUARE);
-    return Math.max(1, Math.round((HALF_ROUND_ENERGY_COST * (stepCostFt / FEET_PER_GRID_SQUARE)) / squaresPerMove));
-  }
-  if (moveSpent > 0) return HALF_ROUND_ENERGY_COST;
-  return 0; // Swift / Free action
-}
+export function createInteractionChain(originatorEntityId: EntityId): InteractionChain;
+export function appendInteractionFrame(chain: InteractionChain, frame: InteractionFrame): InteractionChain;
+export function findLastInteractionFrame<K extends InteractionFrame['kind']>(
+  chain: InteractionChain,
+  kind: K
+): Extract<InteractionFrame, { kind: K }> | undefined;
+export function resolveInteractionOriginator(chain: InteractionChain): EntityId;
 ```
-- When `state.engineMode === EngineMode.TurnBased`: unchanged (`0` while round actions remain, `100` when round ends).
-- When `state.engineMode === EngineMode.RTwP`: commit updated `actionBudget` onto the actor (clearing when round actions exhaust) and return `resolveSubRoundRtwpEnergyCost(...)` so the scheduler advances the actor's next turn by the exact sub-round time slice! Switching TB ↔ RTwP mid-round preserves `actionBudget` verbatim.
-- **Verification (M151):** Add `tests/unified_round_clock.test.ts` verifying 6-second round duration, proportional Move (`3s` for 30 ft = `50` energy) + Standard (`3s` = `50` energy) = `6s`, speed-scaled movement (`Haste` / Heavy Load), and mid-round TB ↔ RTwP toggle parity. Run `./verify.sh`.
 
----
+Add `interaction?: InteractionChain | undefined` to `BaseGameEvent` and to persisted outcome types that can outlive their initiating action:
 
-### Milestone 152 — Centralized Tier 1 Spatial Displacement Kernel & Explicit Triggered Charge Action
+- `DamageInstance`
+- `DeathComponent`
+- `ActiveStatusEffect`
+- `FieldComponent`
+- projectile/in-flight state where a delayed impact must retain its origin
 
-#### Step 152.1 — Declarative Tile Traversal Schema & 3-Tier Passability (`src/types/campaign/world.ts`, `src/systems/movement_displacement.ts`)
-- Extend `TileDefinitionSchema` with optional declarative fields (100% backward compatible):
+The optional fields exist only for legacy save/event compatibility. New actor-driven causal effects must receive a chain explicitly; they must not fall back to an invented source.
+
+Add a generic before-frame interception point to `RulesetContract`:
+
 ```ts
-// src/types/campaign/world.ts (inside TileDefinitionSchema)
-isSolidObstacle: z.boolean().optional(),
-hazardKind: z.string().optional(),
-blocksCharge: z.boolean().optional(),
-soundAttenuation: z.number().nonnegative().optional(),
+beforeInteractionFrame?(
+  state: GameState,
+  chain: InteractionChain,
+  frame: InteractionFrame
+): { readonly state: GameState; readonly prevented: boolean; readonly reason?: string | undefined };
 ```
-- Create `src/systems/movement_displacement.ts` exporting:
+
+After-effect behavior continues through existing domain events, now carrying the complete chain. The hook may modify state or veto the frame; it cannot mutate the immutable chain.
+
+**Migration order:**
+
+1. Add types/helpers with no behavior change.
+2. Add weapon instance identity to strike profiles.
+3. Construct root intent/action chains at Apply/combat entry points.
+4. Append strike/item/effect frames through combat and item resolvers.
+5. Persist chains on damage, death, status, field, and projectile state.
+6. Make reactions/trigger consumers read the chain rather than reconstruct source from unrelated IDs.
+7. Add a generic Ruleset frame hook and after-event assertions.
+8. Remove redundant source reconstruction once all producers use the chain.
+
+**Required invariant:** there is no mutable global “current attacker/source.” Each resolver receives and returns immutable context.
+
+### Step 2.2 — Commit every valid footprint placement and report it accurately (P2.2)
+
+**Files:** `src/systems/movement_displacement.ts`, `src/systems/movement.system.ts`, `src/types/ruleset.types.ts` if result types are shared.
+
+Extend `DisplacementResult` so callers can distinguish anchor travel from a valid in-place placement:
+
 ```ts
-export type TilePassabilityTier = 'unimpeded' | 'difficult' | 'hazardous' | 'solid_obstacle';
-export type DisplacementMode = 'voluntary_walk' | 'charge_step' | 'forced_push' | 'forced_pull' | 'teleport' | 'swap';
-
-export interface TileTraversalEvaluation {
-  readonly passability: TilePassabilityTier;
-  readonly moveCostMultiplier: number;
-  readonly triggersSolidCollision: boolean;
-  readonly blocksCharge: boolean;
-  readonly hazardKind?: string | undefined;
-}
-
-export interface DisplacementContext {
-  readonly mode: DisplacementMode;
-  readonly isForced: boolean;
-  readonly provokesAoO: boolean;
-  readonly sourceEntityId?: EntityId | undefined;
-  readonly ignoresDifficultTerrainForCharge?: boolean | undefined;
-}
-
 export interface DisplacementResult {
   readonly state: GameState;
   readonly moved: boolean;
+  readonly anchorMoved: boolean;
   readonly stepsMoved: number;
   readonly finalPos: { readonly x: number; readonly y: number };
-  readonly stopReason: 'completed' | 'solid_obstacle' | 'entity_blocker' | 'hazard_halted' | 'difficult_terrain_blocked' | 'out_of_bounds';
+  readonly stopReason: DisplacementStopReason;
   readonly collidedTileId?: string | undefined;
   readonly collidedEntityId?: EntityId | undefined;
   readonly events: ReadonlyArray<GameEvent>;
 }
 ```
-- `evaluateTileTraversal(tileDef, movementModes)` classifies tiles declaratively (using `walkable`, `traversableBy`, `isSolidObstacle`, `hazardKind`, `movementCost`, and legacy `tags` like `pit`/`chasm`/`water`/`liquid` so existing campaigns work unchanged). Keep `canTraverseTile` as a thin wrapper around `evaluateTileTraversal` for backward compatibility while migrating callers.
 
-#### Step 152.2 — Single Atomic Displacement Kernel & Mode-Aware Lifecycle (`src/systems/movement_displacement.ts`, `src/systems/lifecycle.system.ts`, `src/types/ruleset.types.ts`)
-- Add optional `getEntityMovementModes?(state: GameState, entityId: EntityId): MovementModes | undefined` to `RulesetAdapter` (implemented in `dnd35e_ruleset.ts`), removing the `'dnd35e'` check in `movement.system.ts:61`.
-- Extend `runActorMovementStep` and `RulesetAdapter.onActorMovementStep` with optional `displacementContext?: DisplacementContext`. In `dnd35e_lifecycle_adapter.ts`, skip `evaluateAdjacentEnemyReactionsOnMove` when `displacementContext?.isForced === true && !displacementContext.provokesAoO` or `displacementContext?.mode === 'teleport'`, while **always** running anchored field sync, traps, aura entry saves, flanking graph, light exposure, and `TileEntered`.
-- Implement `displaceEntityStep` and `displaceEntityAlongVector` in `src/systems/movement_displacement.ts`:
-  - Stage 1: Passability & policy gate (`voluntary_walk`, `charge_step`, `forced_push`/`forced_pull` entering hazards & stopping on `solid_obstacle`, `teleport` checking destination).
-  - Stage 2: Multi-tile `resolveMovementFootprintPlacement` + `evaluateFootprintOccupancy` preserving all `PositionComponent` fields via `buildUpdatedPositionComponent`.
-  - Stage 3: Atomic `addComponent(Position)` + `fovNeedsUpdate` (if player) + `runActorMovementStep(..., displacementContext)` + `GameEventType.TileEntered` events.
+- `moved` means a valid spatial/footprint change was committed.
+- `anchorMoved` means the anchor coordinate changed.
+- A rotation, squeeze change, or facing change at the same anchor is a successful move.
+- Apply a supplied `precomputedPlacement` before the teleport/non-adjacent branch, rather than discarding it.
+- Compare the committed placement with the previous footprint (width, height, facing, squeezing), not only `x/y`.
+- Vector displacement must count a committed same-anchor placement as one completed step and continue to the next bounded step.
+- Preserve full `PositionComponent` fields and update `spatialIndex`/`fovNeedsUpdate` exactly once per committed placement.
 
-#### Step 152.3 — Migrate Fragmented Callers (`movement.system.ts`, `bull_rush_resolver.ts`, `immediate_reactions.ts`, `follow.behavior.ts`, `companions.ts`)
-- Route `processMoveIntent` (normal walk & Friendly Swap), `bull_rush_resolver.ts` (`forced_push` -> Dungeon Crasher triggers strictly on `res.stopReason === 'solid_obstacle'`, follow-up stops safely at `hazard_halted` ledges), and `immediate_reactions.ts` (`teleport` for Abrupt Jaunt) through `displaceEntityStep` / `displaceEntityAlongVector`.
-- Update `follow.behavior.ts` and `companions.ts` to query `evaluateTileTraversal`.
+**Focused proof:** reproduce the 2×1 east-facing Large actor rotating to 1×2 at the same anchor; movement succeeds, the footprint changes, and vector displacement continues.
 
-#### Step 152.4 — Explicit Triggered Charge Action (`src/rulesets/dnd35e/combat/charge_resolver.ts`, `dnd35e_combat_adapter.ts`, `dnd35e_ruleset.ts`, `public/data/rulesets/dnd35e/conditions/charging.json`)
-- Author declarative `public/data/rulesets/dnd35e/conditions/charging.json` (`acPenalty: -2`, expires at start of actor's next turn).
-- Remove passive `const isChargeAttack = distanceMovedFt >= CHARGE_MOVEMENT_MIN_FT` from `dnd35e_combat_adapter.ts:137` (replace with explicit `options?.isChargeAttack === true`).
-- Implement `validateChargeLine` + `executeDnD35eChargeAction(state, attackerId, defenderId)`:
-  - Validates Full-Round Action budget, straight-line distance `>= 10 ft` and `<= 2 × tacticalSpeedFt`, and unobstructed `charge_step` path (respecting declarative `RuleOverride` `charge_ignores_difficult_terrain`).
-  - Displaces attacker adjacent via `displaceEntityAlongVector(..., { mode: 'charge_step', isForced: false, provokesAoO: true })`.
-  - Applies `charging` condition (`-2` AC until next turn) + `+2` untyped charge attack bonus, executes single strike (or full attack if `hasPounce`) with `isChargeAttack: true` (triggering Charging Smite / Powerful Charge), and consumes Full-Round budget.
-- Wire player targeting (`verb: 'charge'` in `dnd35e_ruleset.ts` + hotbar slot in `dnd35e_ui_hotbar.ts`) and AI charge decision in hunt behavior symmetrically.
-- **Verification (M152):** Update any existing tests relying on passive 10-ft Pounce/Charging Smite to invoke `executeDnD35eChargeAction`; add tests for Bull Rush preserving 2×2 footprints, pushing into pits vs. slamming walls, Abrupt Jaunt triggering traps/anchored fields, and Charge line blockage + `-2` AC penalty. Sync SSOT JSONs (`bun scripts/map-codebase.ts`) and run `./verify.sh`.
+### Step 2.3 — Use one context-aware traversal query everywhere (P2.3)
+
+**Files:** `src/systems/movement_displacement.ts`, `src/systems/movement.system.ts`, `src/rulesets/dnd35e/combat/{immediate_reactions,charge_resolver}.ts`, AI pathing callers.
+
+- Every traversal check that can occur over a crossing must pass `state`, `x`, and `y` to `evaluateTileTraversal`.
+- Remove local `canTraverse` wrappers that reconstruct only tile metadata.
+- The kernel and direct callers must agree on bridge, rope, ladder, ice, difficult, hazard, and solid classification.
+- Charge validation and execution must use the same movement-mode/crossing context.
+
+**Focused proof:** Abrupt Jaunt, friendly swap, Charge, voluntary walk, and AI pathing all accept the same active bridge destination.
+
+### Step 2.4 — Make Abrupt Jaunt transactional and footprint-consistent (P2.4)
+
+**Files:** `src/rulesets/dnd35e/combat/immediate_reactions.ts`, displacement kernel.
+
+Use this order:
+
+1. Read the actor and pool availability.
+2. Validate the destination against the exact footprint that will execute.
+3. Attempt displacement on the pre-consumption state.
+4. If the kernel reports failure, return the pre-action state plus a failure message; consume no pool/action.
+5. If displacement succeeds, commit the pool/action charge on the returned state.
+6. Emit the Jaunt event with the interaction chain.
+
+Remove `skipOccupancyCheck: true` from this path. Teleport must validate and execute the same base/squeezed dimensions and must not overlap an actor or occupy a wall.
+
+### Step 2.5 — Assign exactly one pit-entry fall (P2.1)
+
+**Files:** `src/rulesets/dnd35e/spatial/terrain_traversal_resolver.ts`, `src/rulesets/dnd35e/cartridge/dnd35e_lifecycle_adapter.ts`, movement lifecycle hooks.
+
+- Remove the explicit post-displacement `applyPitFallConsequences` call from the failed-Jump path.
+- The movement-entry hook owns pit-entry consequences and compares the prior tile with the entered tile.
+- Turn start must not reapply initial fall damage merely because the actor remains in a pit.
+- Ongoing field/caltrop occupation effects remain valid and are not removed.
+- Falling into a pit from Jump, forced push, crossing collapse, or other displacement uses the same entry transition.
+
+**Focused proof:** one failed Jump creates one fall-damage instance; the following turn creates none unless a new fall occurs.
+
+### Step 2.6 — Share local elapsed-time semantics between normal and bulk time (P2.5)
+
+**Files:** `src/systems/world_time_skip.ts`, `src/systems/lifecycle.system.ts`, `src/systems/{breath,light_emitter,crossing,ai,status-effect}.system.ts`.
+
+Each domain owns its elapsed-time resolver. The bulk orchestrator calls those same resolvers rather than subtracting unrelated durations itself.
+
+```ts
+export interface ActorElapsedTimeResult {
+  readonly state: GameState;
+  readonly turnsAdvanced: number;
+  readonly interruptedReason?: string | undefined;
+}
+```
+
+Required domain resolvers:
+
+- breath/submersion countdown
+- light-emitter fuel and ignition/expiry
+- crossing duration/collapse
+- AI alertness decay
+- status primary/secondary elapsed stages
+- purely passive overlays/links that have no per-turn side effect
+
+Normal turn start calls the relevant resolver with one turn. Bulk rest/wait calls the same resolver with elapsed turns and preserves event/death boundaries. `shouldInterrupt` must observe the state after local timers for the elapsed chunk, not only after the entire wait.
+
+Replace the current blanket `fastForwardEntityDurations` behavior for statuses and fields with domain-owned advancement. Retain an optimized helper only for genuinely passive state with no per-turn consequences.
+
+### Step 2.7 — Use one canonical status elapsed resolver (P2.6)
+
+**Files:** `src/systems/status-effect.system.ts`, `src/systems/world_time_skip.ts`.
+
+- Extract the elapsed-stage logic from the current one-turn status tick into a shared resolver.
+- The resolver increments `elapsedTurns`, evaluates `secondaryTriggerAfterTurns`, resolves the secondary save/effect once, applies per-turn damage/heal in the same ordering as normal turns, and expires the effect at the correct boundary.
+- Normal turn start and bulk advancement call the same resolver.
+- The interaction chain from the status application is retained and extended by the secondary-effect frame.
+
+**Focused proof:** a 20-turn secondary-only status triggered at turn 10 resolves during bulk advancement exactly as it does over ten normal turns.
+
+### Step 2.8 — Commit field transmutation as one transaction (P2.7)
+
+**Files:** `src/systems/field.system.ts`, field interaction descriptors.
+
+- Detect interactions before committing an incoming field.
+- For oil plus fire, commit one fire field representing the transmutation; do not spawn incoming fire and then spawn a second fire.
+- Preserve the interaction chain on the resulting field and append the field-interaction/effect frame.
+- Ensure one incoming fire produces one damage application per occupant/tick.
+
+### Phase 2 gate
+
+- Focused displacement, bridge, Jaunt, pit, elapsed-time, status, field, and provenance tests pass.
+- Full `bun test` passes.
+- Existing save fixtures remain loadable; legacy events without chains remain readable.
+- A new actor-driven attack always emits causal events with a non-empty chain.
+- Run the full eight-stage verification pipeline and update the SSOT map if new source files/owners were added.
+
+## Phase 3 — Correct Action Economy, Items, Objects, and Traversal Mechanics
+
+### Step 3.1 — Repair Charge strike selection, movement accounting, and condition timing (P3.1, P3.2, P3.3, P3.4)
+
+**Files:** `src/rulesets/dnd35e/combat/charge_resolver.ts`, `src/rulesets/dnd35e/cartridge/dnd35e_combat_adapter.ts`, `src/rulesets/dnd35e/equipment/weapon_profile_parser.ts`, `src/rulesets/dnd35e/combat/attack_routine.ts`.
+
+#### Strike selection
+
+A Charge is a Full-Round action. Without Pounce it permits one strike; Pounce permits the attacker's full routine. Distance must not be used to infer a full attack after Charge movement.
+
+```ts
+const isFullAttack = isChargeAttack
+  ? hasPounce
+  : distanceMovedFt <= FIVE_FOOT_STEP_MAX_DISTANCE_FT && actionBudget.moveRemaining >= 1;
+```
+
+- Record actual Charge distance before `resolveDnD35eMeleeAttack` selects strikes.
+- Preserve `distanceMovedThisRoundFt` when `consumeFullRoundChargeBudget` clears the action budget.
+- Compute actual feet travelled from committed displacement steps, not only the originally validated path.
+
+#### Condition timing
+
+- Apply the authored `charging` condition immediately after Charge validation succeeds and before displacement.
+- Retain it on every displacement/interruption path.
+- Remove it at the charger's next turn through the existing condition lifecycle.
+- A Charge that never begins validation must not leave the condition behind.
+
+#### Movement mode and range
+
+- Compute range from the movement mode actually capable of traversing the validated path.
+- A fly-only actor uses fly speed; a land actor cannot borrow an unrelated swim/fly speed merely to extend Charge range.
+- The targeting cursor and validation must use the same range resolver.
+
+#### Equipped-weapon reach
+
+- Carry `reachFt` and `strikesAdjacent` into `DnD35ResolvedStrikeProfile`.
+- Resolve the closest legal attacking position along the straight path using the scheduled strike's authored reach profile.
+- A reach weapon that cannot strike adjacent must stop at its legal distance; a 10-foot reach may remain at 10 feet.
+- After a defensive reaction moves the target, re-evaluate the legal distance before striking.
+
+**Focused proof:**
+
+- Level-11 non-Pounce fighter: one Charge strike, 15 feet recorded.
+- Pounce fighter: full iterative routine.
+- Interrupted Charge: -2 AC remains until next turn.
+- Fly-only Charge uses fly range.
+- Glaive: no adjacent strike and legal 10-foot strike succeeds.
+
+### Step 3.2 — Carry the exact weapon instance through strikes and coating effects (P3.5, P3.6, P2.8)
+
+**Files:** `src/rulesets/dnd35e/equipment/weapon_profile_parser.ts`, `src/rulesets/dnd35e/equipment_physics.ts`, `src/rulesets/dnd35e/combat/attack_routine.ts`, `src/rulesets/dnd35e/combat/combat_exchange_pipeline.ts`, `src/rulesets/dnd35e/combat/floor_hazard_resolver.ts`.
+
+Extend weapon profiles and strikes with instance identity:
+
+```ts
+export interface EquippedWeaponProfile {
+  // existing fields...
+  readonly itemEntityId?: EntityId | undefined;
+  readonly slotId?: string | undefined;
+  readonly limbGroupId?: string | undefined;
+}
+
+export interface DnD35ResolvedStrikeProfile {
+  // existing fields...
+  readonly weaponEntityId?: EntityId | undefined;
+  readonly weaponSlotId?: string | undefined;
+}
+```
+
+- `parseEquippedItem` assigns `slot.equippedItem` as `itemEntityId`.
+- Synthesized off-hand/double-weapon profiles retain the same entity identity but carry a distinct slot/limb identity.
+- The exchange pipeline passes `strike.weaponEntityId` to coating resolution.
+- Natural and unarmed strikes carry no weapon entity and never consume an unrelated equipped weapon's coating.
+- The coating frame records the exact item entity, content ID, slot, and application source.
+- Coating consumption removes/decrements only that item's coating.
+
+### Step 3.3 — Make dip and hazard deployment declarative and consumptive (P3.6, P3.7, P5.4)
+
+**Files:** base item/campaign schemas, D&D item schemas, `src/systems/apply.system.ts`, `src/rulesets/dnd35e/combat/floor_hazard_resolver.ts`, `src/systems/inventory.system.ts`.
+
+Add generic authored descriptors rather than D&D-specific ID checks:
+
+```ts
+export const CoatingDefinitionSchema = z.object({
+  effectId: z.string().optional(),
+  statusId: z.string().optional(),
+  bonusDamage: z.object({ dice: z.string(), damageType: z.string() }).optional(),
+  charges: z.number().int().positive().default(1),
+  durationTurns: z.number().int().positive(),
+  targetCondition: EntityTagConditionSchema.optional(),
+  allowedTargetTags: z.array(z.string()).optional()
+});
+
+export const DeploymentDefinitionSchema = z.object({
+  fieldId: z.string(),
+  placement: z.enum(['target_tile', 'adjacent_tile']),
+  consumeMode: z.enum(['item', 'charge']),
+  radiusTiles: z.number().int().positive().optional()
+});
+```
+
+- Reuse/extract the canonical `EntityTagConditionSchema`; do not create a second target-condition language.
+- Dip requires a generic weapon/ammunition capability. Authored item profiles decide eligibility.
+- On success, consume exactly one source charge/item according to the descriptor. The canonical helper searches the actor's inventory and equipment, decrements charges, and removes the entity when exhausted.
+- On an authored mishap, apply the descriptor's declared outcome; do not silently consume or preserve by accident.
+- Deployment requires the referenced field definition to exist in the loaded registry. Missing definitions fail validation/load rather than being created at runtime.
+- A deployed source is consumed or transferred exactly once. Repeating the same deployment cannot leave the original bag/item available.
+- Remove `itemId.includes('poison'/'venom')`, the generic `alignment:evil` fallback, and hardcoded field IDs/durations/glyphs/colors.
+
+### Step 3.4 — Give floor hazards movement context and correct SRD parameters (P3.8)
+
+**Files:** `src/rulesets/dnd35e/combat/floor_hazard_resolver.ts`, displacement context/mode definitions, DAG projection.
+
+- Pass movement mode, effective speed, and running/charging state into hazard resolution.
+- Caltrops:
+  - half-speed or slower movement is safe;
+  - charging/running movement that is hit halts the actor;
+  - foot attack AC excludes equipment armor, shield, and deflection but includes Dexterity and natural armor;
+  - footwear retains its authored armor contribution.
+- Marbles:
+  - normal Balance DC from authored content;
+  - charging/running DC from authored content;
+  - movement context reaches the Balance resolver.
+- Add a canonical DAG query for the foot-attack AC rather than reconstructing it from unrelated AC fields.
+- Propagate a hazard-halt result through displacement so a charging actor stops immediately.
+
+### Step 3.5 — Hydrate and integrate real structural objects and doors (P3.9, P3.10, P3.11)
+
+**Files:** entity/item schemas, `src/core/ecs/ecs_spawner.ts`, `src/core/ecs/ecs_item_promoter.ts`, `src/systems/durability.system.ts`, `src/rulesets/dnd35e/combat/object_durability_resolver.ts`, D&D melee/projectile adapters, campaign door reactions.
+
+#### Hydration
+
+- Add authored `structural` data to generic entity/item definitions: material/hardness/HP/break DC/object size/door flag/spell storage as applicable.
+- Spawner and item promoter hydrate `StructuralComponent` from that data.
+- Enhancement bonuses use the canonical effective-stat resolver.
+
+#### Object attacks and wear
+
+- Route attacks against a Structural target through `applySrdObjectAttackDamage` before the Fighter-only living-target guard.
+- Apply the authored energy/ranged multipliers, hardness bypasses, wear chance, damage, and break/ruined transition.
+- Cover melee and projectile/energy object targets symmetrically.
+
+#### One effective maximum
+
+- `resolveEffectiveStructuralStats` becomes the single source for effective maximum HP, hardness, and break threshold.
+- Damage, repair, ruin, and break tests use that effective maximum. Repair cannot clamp a +2 item back to its base maximum.
+
+#### Door presentation
+
+- Structural open/close performs its lock/spike/jam guards, updates `StructuralComponent`, then invokes the existing declarative reaction/consequence path.
+- Add an authored broken-door reaction using the existing `impact` verb; its consequences remove solid/opaque, set the broken glyph/tags/intents, and invalidate FOV.
+- Do not hardcode glyphs, tile IDs, or tag arrays in TypeScript.
+- Open, close, break, and repair all leave movement/FOV/render state consistent with the authored door state.
+
+### Step 3.6 — Replace the rigging shortcut with complete recipes (P3.12)
+
+**Files:** crossing schemas/rules, `src/rulesets/dnd35e/spatial/terrain_traversal_resolver.ts`, `src/rulesets/dnd35e/skills/dungeon_skill_verbs.ts`, modular item content.
+
+Add a Tier 3 crossing recipe descriptor:
+
+```ts
+export const CrossingRecipeSchema = z.object({
+  crossingKind: z.string(),
+  requiredTagsAll: z.array(z.string()),
+  requiredTagsAny: z.array(z.string()).optional(),
+  anchorRule: z.object({ maxRangeTiles: z.number().int().positive(), requiresClearAnchor: z.boolean() }),
+  consumeMode: z.enum(['install_item', 'consume_item', 'consume_charge']),
+  skillCheck: z.object({ skillId: z.string(), dc: z.number().int().positive() }).optional()
+});
+```
+
+- A rope crossing requires the authored rope plus grappling-hook capabilities.
+- A ladder crossing requires an authored ladder item; add the missing modular ladder content with semantic tags.
+- Validate the gap/anchor, range, line, and recipe requirements before creating a crossing.
+- Consume or transfer each required item exactly as the recipe declares. Installed gear belongs to the world crossing and cannot be reused.
+- Prevent duplicate crossing creation for the same tile/recipe.
+- Append item, recipe, and crossing frames to the interaction chain.
+
+### Step 3.7 — Validate and route spellbook study/drop behavior (P3.13, P3.15, P3.16)
+
+**Files:** `src/rulesets/dnd35e/magic/spellbook_loot.ts`, death/drop assembly, spellbook UI/intents.
+
+#### Study time
+
+- Replace direct `globalTurn += studyHours * ...` with the canonical bulk/world-time advancement helper.
+- Use the existing hour/round conversion constant; do not duplicate the conversion.
+- Run all Phase 2 local elapsed systems for the study duration.
+- Preserve interruption/partial-study behavior.
+
+#### Transcription selection
+
+- Validate the requested `spellId` against the source book's `storedSpells`.
+- Validate that the actor has an eligible spellbook/class track and that the spell is available to that class (using spell `levelByClass`, domain, or access metadata).
+- Only then add the spell to the actor's class spellbook/known-spell state.
+- Record the source book item and learned spell in the interaction chain.
+
+#### Drop assembly
+
+- Build a spellbook drop only for a deceased actor with an eligible spellbook-bearing caster track.
+- Populate spells from that actor's actual class spellbook/prepared state.
+- Do not treat every known/prepared spell as an arcane book and do not give divine-only casters arbitrary arcane spellbooks.
+- Use authored rarity/bonus rules for the generated book.
+
+### Phase 3 gate
+
+- Charge, coating, deployment, floor-hazard, structural object/door, rigging, and spellbook focused suites pass.
+- Real spawned objects—not manually attached components—take damage, wear, repair, open, break, and affect movement/FOV.
+- Coating consumption targets the exact striking weapon instance.
+- Every consumed/deployed/installed item is present exactly once in its intended location.
+- Every new actor-driven effect carries the complete interaction chain.
+- Run the full eight-stage verification pipeline.
 
 ---
 
-### Milestone 153 — Per-Area Rest Pressure ("Doom Clock"), Bulk Scheme Progression, Camp Watch Ambushes & Logistics
+## Phase 4 — Complete Production Integrations
 
-#### Step 153.1 — Tier 1 `RestPressureConfigSchema` (`src/types/campaign/rules.ts`, `src/types/campaign/world.ts`)
+### Step 4.1 — Wire and correct disguise perception (P4.1, P4.8)
+
+**Files:** `src/utils/faction.ts`, `src/systems/disguise.system.ts`, Apply/skill verb resolvers, observation/AI paths, faction/mask content.
+
+Production paths:
+
+- Apply a disguise through a generic item/apply descriptor, not a test-only helper.
+- Evaluate suspicion when an observer performs Spot/observation or otherwise scrutinizes the disguised actor.
+- Both PCs and NPCs use the same mask application and scrutiny services.
+
+Faction precedence:
+
+1. The subject's own faction/attitude remains its actual state.
+2. Resolve the target's perceived faction from a valid target mask.
+3. Personal knowledge/grudges that identify the target may override the mask.
+4. A valid mask suppresses baseline faction/attitude hostility toward the target.
+5. If the mask is absent, blown, or invalid, use the actual faction/attitude relationship.
+
+Do not mutate the observer's faction and do not treat the observer as disguised merely because the target is.
+
+**Focused proof:** shipped Bandit King hostility is suppressed by a matching bandits mask; the disguised actor remains friendly to its real ally; personal recognition still defeats the mask.
+
+### Step 4.2 — Connect sound, sleeping awareness, and light interactions (P4.2, P4.3, P4.4)
+
+**Files:** `src/systems/sound.system.ts`, `src/systems/rest.system.ts`, movement/combat/thunderstone producers, `src/systems/apply.system.ts`, `src/rendering/ui/verb_menu.ui.ts`, `src/systems/light_emitter.system.ts`, `src/systems/rest.system.ts`.
+
+#### Sound and sleep
+
+- Route hearing through the canonical sleeping-awareness service.
+- A detected sound wakes a sleeping actor and applies the authored sleeping Listen penalty before the perception check.
+- Wire voluntary movement, stealth movement, combat attempts/hits, thunderstones, and existing door/object sounds through `emitSoundEvent`.
+- Pass the interaction chain into sound events.
+
+#### Ignite/refuel verb discovery
+
+- `getValidVerbsForTarget` and `processApplyIntent` must call the same generic fire-start/light predicate.
+- Project `ignite` when a valid light source and fire-start capability are present.
+- Keep lantern refueling reachable through the existing generic dip path.
+
+#### Camp illumination
+
+- Add a canonical active-illumination query in `light_emitter.system.ts`.
+- A camp light must be lit, retain fuel, and illuminate the camp position.
+- Include carried and ground emitters; exclude unlit/depleted emitters.
+- Use that query for camp preparedness and ambush-risk reduction.
+
+### Step 4.3 — Make corpse creation and harvesting real (P4.5, P4.6)
+
+**Files:** `src/systems/corpse.system.ts`, `src/systems/death.system.ts`, semantic type projection/Ruleset hook, Apply/verb UI, harvest recipes and item content.
+
+- Resolve corporeality from canonical semantic type/subtype data. Incorporeal elemental subtypes do not create physical corpses.
+- Add a user-visible `harvest` verb to the central `Verb`/`VERBS` contract and project it for eligible corpses.
+- Add a declarative harvest recipe: corpse tag → item template, quantity, required tool tag, destructive/non-destructive behavior, and source corpse.
+- A successful harvest spawns the yield and transfers it to the actor's inventory or the corpse tile.
+- A required tool must be present and is consumed only when the recipe says so.
+- Mark a non-destructive tag as harvested so it cannot yield twice; a destructive recipe removes the corpse.
+- Record corpse, tool, recipe, yield, and source entity in the interaction chain.
+
+### Step 4.4 — Wire religion and automatic lore persistence (P4.7, P4.9)
+
+**Files:** `src/systems/religion.system.ts`, altar/shrine content and Apply reactions, `src/rulesets/dnd35e/skills/monster_lore_tracker.ts`, sight/inspect paths.
+
+#### Religion
+
+- Add a user-visible `pray` verb/reaction path for altars and shrines.
+- The altar/shrine content supplies the deity/patron, accepted offerings, taboo data, favor adjustments, penance amount, and atonement result.
+- `recordDeityFavorDelta` and taboo recording require an explicit deity/patron. Do not silently create `pelor`.
+- An actor without an established patron cannot accrue favor/penance against an unrelated altar.
+- Wire prayer/offering/taboo actions to the canonical religion component.
+
+#### Lore
+
+- Invoke `evaluateAndRecordMonsterLore` on the first player sighting and on explicit inspection.
+- Retain the existing on-demand Inspect/Dossier lore projection; persistence must not duplicate it.
+- Store the observer's learned knowledge in the canonical Knowledge/Memory components.
+- Use the observer/target interaction chain for the learned-lore event.
+
+### Phase 4 gate
+
+- Every newly integrated mechanic is reachable through a production intent/verb or authored event, not only direct test calls.
+- UI verb discovery and execution use the same validity predicates.
+- PC and NPC paths use the same service implementations where the mechanic applies to both.
+- Full `bun test`, build, and validator pass.
+
+## Phase 5 — Restore Declarative Purity, Campaign Parity, and SSOT Truth
+
+### Step 5.1 — Separate full rest configuration from partial area overrides (P5.2)
+
+**Files:** `src/types/campaign/world.ts`, `src/systems/world_clock.system.ts`, area JSON fixtures.
+
+Define shared field shapes once, then create two schemas:
+
 ```ts
+const RestPressureFields = {
+  safeRest: z.boolean(),
+  ambushChancePerWatch: z.number().min(0).max(1),
+  watchDurationHours: z.number().positive(),
+  schemeTickMultiplier: z.number().positive(),
+  respawnRateMultiplier: z.number().min(0),
+  alarmDecayTurns: z.number().int().nonnegative()
+};
+
 export const RestPressureConfigSchema = z.object({
-  safeRest: z.boolean().default(false),
-  ambushChancePerWatch: z.number().min(0).max(1).default(0.15),
-  watchDurationHours: z.number().int().positive().default(2),
-  schemeTickMultiplier: z.number().min(0).default(1),
-  respawnRateMultiplier: z.number().min(0).default(1),
-  alarmDecayTurns: z.number().int().nonnegative().default(50)
+  safeRest: RestPressureFields.safeRest.default(false),
+  ambushChancePerWatch: RestPressureFields.ambushChancePerWatch.default(0.15),
+  watchDurationHours: RestPressureFields.watchDurationHours.default(2),
+  schemeTickMultiplier: RestPressureFields.schemeTickMultiplier.default(1),
+  respawnRateMultiplier: RestPressureFields.respawnRateMultiplier.default(1),
+  alarmDecayTurns: RestPressureFields.alarmDecayTurns.default(50)
 });
+
+export const RestPressureOverrideSchema = z.object(RestPressureFields).partial();
 ```
-- Attach optional `restPressure: RestPressureConfigSchema.optional()` to both `RulesConfigSchema` (campaign default) and `AreaDefinitionSchema` (per-area override), plus helper `resolveAreaRestPressure(state)`.
 
-#### Step 153.2 — Bulk Scheme Progression & Watch-Shift Camp Ambushes (`world_time_skip.ts`, `rest.system.ts`)
-- In `stepBulkMacroCadence` (`world_time_skip.ts:100-118`): scale Scheme intervals by `restPressure.schemeTickMultiplier` and invoke `processSchemeTurn` for active masterminds, appending scheme progress digest entries (`"Villain scheme advanced..."`).
-- In `rest.system.ts`: split long rests into `watchDurationHours` chunks when `!restPressure.safeRest`:
-  - Evaluate camp gear (`bedroll`/`winter_blanket`/`tent` + active light/campfire) for ambush risk reduction and recovery quality.
-  - Roll `ambushChancePerWatch`; on ambush, spawn `EncounterDirector` patrol and run party highest-Perception watch check (success = awake, failure = `Flat-Footed / Surprised` for 1 round), interrupting rest cleanly with partial time elapsed. Mirror sleeping/waking surprise tags for sleeping NPC/monster camps.
+- `rules.json` uses the complete config schema.
+- `AreaDefinition.restPressure` uses the partial override schema.
+- Runtime resolves `{ ...campaignConfig, ...areaOverride }` only after parsing the area as a true partial object.
 
-#### Step 153.3 — Quick-Draw Belts, Two-Stage Poison, `healers_kit` & Captive `manacles`
-- **`dnd35e_turn_budget.ts`:** Items retrieved from an equipped slot carrying `tags: ['quick_draw_container']` (`bandoleer`, `potion_belt`, `masterwork_*`) consume Free/Swift action instead of Move action (no AoO).
-- **`status-effect.system.ts` & `dungeon_skill_verbs.ts`:** Support optional `secondaryTriggerAfterTurns: 10` on poison status definitions (granting `+5 alchemical` Fort save when `antitoxin` status is active); wire `healers_kit` long-term rest care (`2×` natural HP/ability recovery) and `Heal DC 15` limp cure; wire `apply` with `manacles` on unconscious/helpless actors applying `bound` condition (`Escape Artist DC 30/35`, Break DC `26/28`).
-- **Verification (M153):** Add unit tests for per-area `safeRest` vs. hostile dungeon ambush watches, bulk `processSchemeTurn` advancement, quick-draw belt vs. backpack action costs, two-stage poison + antitoxin, and manacles binding. Run `./verify.sh`.
+**Focused proof:** an area specifying only `safeRest` inherits the campaign's watch duration, ambush chance, scheme multiplier, respawn multiplier, and alarm decay.
 
----
+### Step 5.2 — Promote shared antitoxin dependencies and validate every campaign (P5.1)
 
-### Milestone 154 — Symmetric Terrain Traversal, Field Transmutations & `dip` (`CoatingComponent`) Hazards
+**Files:** `public/data/rulesets/dnd35e/effects.json`, `public/data/rulesets/dnd35e/status.json`, D&D campaign status/effect mirrors, loader/validator.
 
-#### Step 154.1 — World-Owned Crossings & `BreathComponent` (`src/types/components/world_components.types.ts`, `src/systems/crossing.system.ts`, `src/systems/breath.system.ts`)
-- Add `ComponentType.Crossing` (`crossingKind: 'bridge' | 'rope_line' | 'ladder_span' | 'frozen_surface'`, `requiredSkill?`, `skillDc?`, `maxWeightLbs?`, `anchorTileCoords?`) and `ComponentType.Breath` (`remainingTurns`, `maxTurns`, `isSubmerged`).
-- Update `evaluateTileTraversal` (`M152`) to inspect `state.spatialIndex` for live `CrossingComponent` entities at `(x, y)` so placed bridges, anchored ropes, ladders, and frozen ice sheets override underlying `deep_water`/`chasm` hazards symmetrically for players, companions, and AI A* pathfinding — and destroying/melting the crossing immediately drops occupants into the underlying hazard!
-- Tick `BreathComponent` in `runActorTurnStart` for submerged breathing actors (exempting `trait:water_breathing`, `type:undead`, `type:construct`).
+- Add `antitoxin_dose` and `antitoxin` to D&D ruleset base content, which the loader already merges before campaign overrides.
+- Remove redundant D&D campaign copies after the shared base is verified.
+- Every D&D campaign that can load the antitoxin item must resolve the effect and status.
+- Extend validator/reference checks to cover:
+  - system/campaign item consumable → effect;
+  - effect/status → status;
+  - field/deployment descriptor → field definition;
+  - crossing recipe → required item/tag capability;
+  - wand → spell;
+  - spellbook drop → stored spell.
 
-#### Step 154.2 — Water Depth Tiers & Gap/Pit Resolvers (`src/rulesets/dnd35e/spatial/terrain_traversal_resolver.ts`)
-- **`shallow_water` / `bog`:** `2×` move cost, `-2` stealth/tumble modifier, extinguishes non-magical fire.
-- **`deep_water`:** Native `swim > 0` unimpeded; others roll `Swim` (`DC 10` calm / `DC 15` rough) applying **`2×` live M150 ACP** on entry & per turn; failure sinks and decrements `2 × CON` breath rounds.
-- **Gaps/Pits (1–2 tiles):** `Jump` check (`DC 5` per 5-ft gap running, `×2` standing) -> failure rolls Reflex ledge-catch save or falls (`1d6` per 10 ft + `prone`); `Climb` (`DC 10–15`, `+2` `climbers_kit`) to enter/exit pits; `Use Rope` (`DC 10`, `+2` `silk_rope`) with `grappling_hook` or `ladder_10ft` spawns a real `CrossingComponent` entity.
+**Focused proof:** loading Realms of Shroudgarde resolves antitoxin item/effect/status together; drinking it consumes the vial and applies the authored effect.
 
-#### Step 154.3 — Tag-Driven Field Transmutations, `dip` (`CoatingComponent`) & SRD Floor Hazards (`field.system.ts`, `apply.system.ts`, `floor_hazard_resolver.ts`)
-- Add `FieldInteractionRuleSchema` (`incomingTags`, `targetTags`, `spawnFieldType?`, `spawnCrossingKind?`, `extinguishTarget?`, `chainSpreadOrthogonal?`, `shockDamageDice?`) to `rules.json` / campaign registries and evaluate on `spawnField` and energy spell impacts:
-  - `oil` + `fire` -> connected oil ignition; `water` + `cold` -> `frozen_surface` crossing + slippery ice; `water` + `electricity` -> BFS conductive shock; `fire` + `water` -> `steam_cloud` (`blocksSight: true`); `smokestick` -> smoke obscurement.
-- Wire generic `dip` verb in `apply.system.ts` to attach `ComponentType.Coating` onto weapons/ammo/lanterns (`oil_flask`, `holy_water`, injury poisons — with 5% natural-1 mishap check unless `feature:poison_use`), and consume `CoatingComponent` charges on hit in `dnd35e` combat (`combat_exchange_pipeline.ts`).
-- Wire `caltrops` (BAB `+0` touch-like attack, `1` dmg + half-speed limp halting charges cleanly), `marbles`/`grease`/ice (`Balance DC 10–15` or `prone`), and `Craft (Alchemy)` potion ID (`DC 15`) / brewing.
-- **Verification (M154):** Add tests for crossing placement + cutting/melting mid-crossing, `Swim 2× ACP` + drowning + undead immunity, forced Bull Rush into pit/deep water, oil/fire/water/cold/lightning field chemistry, `dip` coating application/consumption, and caltrops/marbles. Sync SSOT JSONs & run `./verify.sh`.
+### Step 5.3 — Model antitoxin as a typed save modifier (P5.3)
 
----
+**Files:** status schema, D&D status JSON, DAG/save resolver, `dnd35e_ruleset.ts`.
 
-### Milestone 155 — Acoustics (`emitSoundEvent` + AI Alertness), Dynamic `LightEmitterComponent` & Symmetric 6s-Cadence Stealth
+Add generic status metadata and modifiers:
 
-#### Step 155.1 — Acoustic Sound Ripple System (`src/systems/sound.system.ts`, `AIComponent`)
-- Extend `AIComponent` with optional `alertnessState?: 'unaware' | 'suspicious' | 'alerted'`, `lastHeardPos?: { x: number; y: number }`, `alertnessDecayTurns?: number`.
-- `emitSoundEvent(state, originX, originY, dbLevel, sourceEntityId)` runs bounded BFS attenuated by `tile.soundAttenuation` (walls/closed doors). Listeners within effective range roll `Listen` vs. `Move Silently` (or auto-hear loud combat/kick/thunderstone events): AI switches `unaware -> suspicious` and investigates `lastHeardPos`; player receives directional sound cues (`"You hear heavy footsteps to the east"`).
-
-#### Step 155.2 — Dynamic `LightEmitterComponent` & Fuel/Cone Grid (`src/systems/light_emitter.system.ts`, `cover_senses.ts`)
-- Add `ComponentType.LightEmitter` (`radiusFt`, `coneAngleDeg?`, `facing?`, `fuelTurns?`, `isLit`, `requiresIgnition?`) and declarative `lightSource` config on `ItemDefinitionSchema`.
-- Wire `ignite` (`flint_and_steel`, `tindertwig`) and `dip` refueling (`oil_flask`); tick fuel in `runActorTurnStart`; integrate active carried/dropped emitters (including NPC guard lanterns!) into `resolveTileLightReading` (`cover_senses.ts`).
-
-#### Step 155.3 — Symmetric 6s-Cadence Stealth (`src/rulesets/dnd35e/spatial/stealth_resolver.ts`, `stance.system.ts`)
-- Add Stealth stance state (`isStealthed`, `fastStealth`, `lastStealthRoll`, `nextStealthCheckRound`, `reStealthCooldownRound`) on `TacticalDoctrineComponent` (or dedicated `StealthComponent`).
-- Manual Stealth skill toggle defaults to **half-speed** (avoiding `-5` `Move Silently` penalty); `fastStealth` toggles full-speed at `-5`.
-- Opposed `Hide` (gated by cover / `light:darkness` / `light:shadowy`, size mod) vs. `Spot` and `Move Silently` (live M150 ACP) vs. `Listen` execute **once per 6-second round** (M151 cadence), plus immediate re-checks on state transitions (brighter light band, new observer LOS, opening a door, loud noise).
-- **Instant break without auto-pause** on attack, failed check, or losing cover/concealment while observed; manual re-stealth requires being unobserved/having concealment (or *Hide in Plain Sight*) + 1-round cooldown.
-- Add Darkvision, Low-Light Vision, Scent (30 ft detection), Tremorsense, and `flour_pouch` (`dusted` tag cutting invisibility miss chance `50% -> 20%` and negating `Hide`).
-- **Verification (M155):** Add tests for door-attenuated sound ripples + AI investigation, fuel-burning radial/cone lights, 6s-cadence stealth (no death-by-a-thousand-rolls in RTwP), instant break without auto-pause, Scent/Darkvision counters, and `flour_pouch`. Sync SSOT JSONs & run `./verify.sh`.
-
----
-
-### Milestone 156 — Baseline SRD Object/Durability Engine, Structural Doors, Spellbook Rarity, Auto Monster Lore, Corpse Ecology & Piety/Disguise
-
-#### Step 156.1 — Baseline SRD Object/Durability Engine & Opt-In Console Wear (`src/types/components/world_components.types.ts`, `src/types/campaign/rules.ts`, `src/systems/durability.system.ts`, `src/rulesets/dnd35e/combat/object_durability_resolver.ts`)
-- Add `ComponentType.Structural` (`materialTag`, `hardness`, `hp`, `maxHp`, `breakDc`, `objectSize`, `enhancementBonus?`, `ruined?: boolean`, `jammed?: boolean`, `spikedByEntityId?: EntityId`) and opt-in `DurabilityConfigSchema` on `rules.json`:
 ```ts
-export const DurabilityConfigSchema = z.object({
-  enableFumbleWearChance: z.number().min(0).max(1).default(0),
-  enableHardArmorWearChance: z.number().min(0).max(1).default(0),
-  enableCritArmorWearChance: z.number().min(0).max(1).default(0),
-  ruinedIsRepairable: z.boolean().default(true)
+export const StatusSaveModifierSchema = z.object({
+  saveType: z.enum(['fort', 'dex', 'con', 'wis', 'int', 'cha']),
+  bonusType: z.string(),
+  value: z.number(),
+  effectTagsAll: z.array(z.string()).optional()
 });
 ```
-- Implement pure SRD *Smashing an Object* math in `object_durability_resolver.ts`:
-  - Object AC = `10 + sizeMod - 5 (Dex 0) - 2 (inanimate)` (animated objects use creature AC).
-  - Magic bonus `+1` adds `+2` hardness & `+10` HP.
-  - Energy multipliers before hardness: Acid/Sonic `1×`, Fire/Electricity `1/2`, Cold `1/4`; Ranged `1/2`; immune to crits & nonlethal; `adamantine` ignores hardness `< 20`; vulnerable materials take `2×` ignoring hardness.
-  - Break checks: `1d20 + STR mod + SRD size mod` (`Fine -16` to `Colossal +16`), `-2` DC when `hp <= maxHp / 2`, `+2` with `crowbar`, `+2` (+`2`/ally) with `portable_ram` (emitting sound ripple).
-  - Reaching `0 HP` sets `ruined: true` (unusable until repaired via `Craft` + `whetstone`/`artisan_tools`, never silently deleting items).
-- Wire `open`/`close`/`kick`/`lock`, door spiking (`iron_spike` + `hammer`), and `pole_10ft` range-2 trap probing symmetrically for all actors.
 
-#### Step 156.2 — Spellbook Rarity Tags, Auto `Knowledge` Monster Lore & UMD (`spellbook_loot.ts`, `spellbook_actions.ts`, `monster_lore_tracker.ts`)
-- Read `rarity:uncommon` / `rarity:rare` / `rarity:forbidden` from `DnD35SpellDefinitionSchema.tags` (default `rarity:common`); tag select high-tier/specialty spells in `public/data/rulesets/dnd35e/spells/*.json`.
-- On arcane caster death (`death.system.ts` hook), spawn a `wizards_spellbook` item populated with the caster's castable spells + rarity-weighted bonus spell rolls scaled by caster level / boss tier. Add `read`/`transcribe` flow in `spellbook_actions.ts` (`Spellcraft DC 15 + SL`, consuming `ink_vial` + `inkpen` + world hours).
-- Auto-invoke `resolveMonsterLoreCheck` (`specialized_skill_checks.ts:107`) on first sighting or `inspect`, persisting discovered monster traits (DR bypasses, immunities, vulnerabilities) onto player knowledge and surfacing them via `projectInspectLoreLines` (`dnd35e_ruleset.ts:171`).
-- Complete `UMD DC 20` check inside `validateWandActivation` / scroll casting for off-list items.
+- Add `tags` and `saveModifiers` to `StatusEffectDefinitionSchema`.
+- Author poison with `tags: ['poison']`.
+- Author antitoxin with a Fortitude/alchemical/+5 modifier scoped to `effectTagsAll: ['poison']`.
+- Project status modifiers into the typed modifier/DAG pipeline with `sourcePath: 'status:<id>'`.
+- Resolve the secondary poison save through the normal save total; remove the manual `hasResistanceStatus ? 5 : 0` branch.
+- Preserve generic `resistedByStatusIds` only if another consumer still uses it; do not use it to carry numeric bonuses.
 
-#### Step 156.3 — Physical Corpse Economy, Piety (`ReligionComponent`) & Active Disguise (`IdentityMaskComponent`)
-- **`CorpseComponent` (`corpse.system.ts`, `death.system.ts`):** Slain living/corporeal actors drop decaying tagged corpses (`decayTurn`, `harvestableTags: ['pelt' | 'venom_gland' | 'reagent' | 'bounty_trophy' | 'zombie_husk']`) usable by harvesters, necromancers, and fire denial symmetrically.
-- **`ReligionComponent` (`religion.system.ts`):** Generic `{ deityOrPatronId, favorScore, penanceDebt, taboosViolated }` ledger interacting with shrines/altars.
-- **`IdentityMaskComponent` (`disguise.system.ts`):** Generic faction/race disguise suppressing baseline hostility while accumulating `suspicion` when observed closely or contradicting gear (`Spot` vs. `Disguise`, usable by both player and infiltrator NPCs).
-- **Verification (M156):** Add tests for SRD Object AC/Hardness/Energy/Break DC + repairable `ruined` state + `0%` default wear config, door spiking/kicking, rarity-weighted spellbook drops + `Spellcraft` scribing, auto `Knowledge` lore reveals, `CorpseComponent` decay/harvesting, `ReligionComponent`, and `IdentityMaskComponent`. Sync SSOT JSONs (`bun scripts/map-codebase.ts`), showcase in `default` & `dnd35e-crypt`, and run `./verify.sh`.
+### Step 5.4 — Make wand activation class-list driven (P5.5)
+
+**Files:** item schema, wand JSON, `src/rulesets/dnd35e/skill_verbs.ts`, `src/systems/zap.system.ts`, `RulesetContract`.
+
+- Add a generic `spellId` to the zappable/wand descriptor and author it on both wands.
+- Change the Ruleset hook to receive the wand item entity ID, or pass the resolved spell ID explicitly.
+- Add a generic class capability such as `spellTrigger: { enabled: true }` to class definitions rather than maintaining a class-ID array in TypeScript.
+- A Spell Trigger actor may activate a wand only when the wand's spell is available to that actor's class/track through authored `levelByClass`, domain, or access metadata.
+- Otherwise use the existing UMD check.
+
+### Step 5.5 — Make Charge-blocking conditions declarative (P5.6)
+
+**Files:** condition schema/content, Charge resolver, condition effect/rule-override resolver.
+
+- Add authored qualitative rule overrides to immobilizing conditions, for example `ruleKey: 'blocks_charge', value: true`.
+- Remove `CHARGE_BLOCKING_CONDITIONS` from `charge_resolver.ts`.
+- Charge validation reads the actor's active condition rule overrides through the canonical condition resolver.
+- A newly authored immobilizing condition can block Charge without TypeScript changes.
+
+### Step 5.6 — Remove implicit religion identities and values (P5.7)
+
+**Files:** `src/systems/religion.system.ts`, deity/altar/shrine content.
+
+- `recordDeityFavorDelta` requires an explicit deity/patron when no religion component exists; it returns failure instead of defaulting to Pelor.
+- Taboo IDs, penalties, and favor values come from authored deity/patron/altar data.
+- `atonePenanceAtAltar` receives the altar's declared favor/penance values rather than relying on a TypeScript default.
+- The generic `apply`/`pray` reaction path supplies the target's authored deity/patron.
+
+### Step 5.7 — Turn the default campaign into a live feature showcase (P5.8)
+
+**Files:** `public/data/campaigns/default/` content and smoke tests.
+
+Add classic-ruleset-appropriate, actively usable content for every new engine feature:
+
+- light source and fire-start capability for real ignition;
+- structural door with passability/FOV behavior;
+- corpse and a harvestable target/tool/yield;
+- shrine/altar and religious interaction;
+- disguise item/capability and an observer path;
+- rope/hook/ladder crossing content;
+- coating/hazard content using generic descriptors;
+- authored Structural/spellbook-adjacent showcase where the classic ruleset supports it.
+
+Each feature must be reachable from the default campaign's starting content, not merely represented by an unused schema.
+
+### Step 5.8 — Reconcile documentation, milestones, decisions, and SSOT (P5.9, P5.11)
+
+**Files:** `docs/ARCHITECTURE.md`, `docs/MILESTONES.md`, `docs/DECISIONS.md`, `docs/SSOT_CONSOLE.md`, `docs/SSOT_DND35E.md`, SSOT JSON registries, `docs/research_notes.md`, this plan.
+
+- Correct current component names to the canonical code contract:
+  - `spikedByEntityId`, not `spikedCount`;
+  - `decayTurn`, not `freshnessTurns`;
+  - `deityOrPatronId`, `favorScore`, `penanceDebt`, `taboosViolated`;
+  - `disguiseCheckTotal`, not `disguiseCheckResult`.
+- Document the interaction-chain contract separately from Rule 19 `sourcePath`.
+- Update ARCHITECTURE only after the implemented behavior matches it.
+- Keep M150–M156 completion status qualified until Phase 6 passes.
+- Add a DECISIONS entry explaining causal-chain ownership, persistence, and generic frame interception.
+- Regenerate SSOT maps after adding or moving source files:
+  - `bun scripts/map-codebase.ts`
+- Correct the `computeActorCarriedWeightLbs` JSDoc to match the current one-item-entity-per-entry model; do not add an unapproved stack model.
+
+### Step 5.9 — Remove or register duplicate campaign sprite sheets (P5.10)
+
+**Files:** the eight added campaign PNG copies and theme/sprite references.
+
+- Confirm that both campaigns reference the shared `32rogues` pack and have no campaign-local sheet consumer.
+- Remove the byte-identical unreferenced copies.
+- If a campaign-local override is intended instead, register it in theme data and add rendering/load tests. Do not retain both unused and active copies.
+
+### Phase 5 gate
+
+- All five campaigns load with valid schemas and complete references.
+- The New Content Mod fixture proves the new declarative paths require no TypeScript edits.
+- Default-campaign smoke scenarios exercise every new feature.
+- Documentation and SSOT describe implemented behavior, not intended behavior.
+- Full eight-stage verification and SSOT parity pass.
 
 ---
 
-## 4. Approval Gate (Per `AGENTS.md` §1)
+## Phase 6 — Integration Proof and Completion Closure
 
-No production code files have been modified yet. All design decisions (including per-actor modulated `3.0s` RTwP Move pacing across *Haste*, Heavy Armor, Dwarf `trait:unencumbered_speed`, Difficult Terrain, and Stealth) are locked in. Click **Proceed** (or confirm in chat) to begin sequential execution starting with **Milestone 150**, running `./verify.sh` (8/8) + SSOT parity sync after each milestone.
+### Step 6.1 — Replace helper-only confidence with real-path regression suites (P6.1, P6.2, P6.3, P6.4, P6.5, P6.6, P6.7)
+
+| Regression suite                                   | Required proof                                                                                                                                                     |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `tests/m152_displacement_charge.test.ts`           | Same-anchor rotation, bridge pathing, squeezed Jaunt, level-11 Charge, Pounce, fly range, reach/adjacency, interruption and -2 AC                                  |
+| `tests/m154_terrain_fields_hazards.test.ts`        | Real pit entry with one damage instance, field transmutation with one fire, caltrops/marbles movement contexts, complete crossing recipes and consumption          |
+| `tests/m156_durability_spellbooks_ecology.test.ts` | Real spawned door/weapon durability, door movement/FOV, valid spellbook transcription/drop eligibility, corpse yield/tool, religion/disguise/lore production paths |
+| `tests/m153_rest_pressure_logistics.test.ts`       | Partial area overrides, submerged rest interruption, local timers, status secondary stages, active camp illumination                                               |
+| `tests/m151_*` provenance suite                    | Actor→action→strike→weapon→effect→outcome ancestry, delayed persistence, hook interception, save/load                                                              |
+| UI/verb tests                                      | Ignite, harvest, pray, disguise, rigging discoverability and execution                                                                                             |
+| Campaign/validator tests                           | Cross-campaign item/effect/status references and New Content Mod fixture                                                                                           |
+
+Do not satisfy an integration requirement by directly invoking a private helper with a manually constructed component. The test must begin from a real spawn/content/apply/attack path.
+
+### Step 6.2 — Verify complete causal-chain behavior (P6.8)
+
+Required scenarios:
+
+1. **Basic attack:** Entity A attacks Entity B with longsword entity L.
+   - Chain contains A's intent/action, the strike, item entity L, damage, and death if applicable.
+2. **Coating:** L is coated; only L's coating is consumed and the coating frame identifies L and the application source.
+3. **Natural attack:** no weapon frame exists and no unrelated coating is consumed.
+4. **Nested effect:** a coating/rider creates a field or status; the delayed entity retains A's ancestry and appends its own effect frame.
+5. **Delayed trigger:** B enters a field originally deployed by A; the chain retains A as responsible originator and records B as triggering entity.
+6. **Reaction:** a reaction triggered by the attack can inspect the full chain before resolving.
+7. **Interception:** the generic before-frame hook can veto one frame without corrupting later chains.
+8. **Persistence:** save/load retains delayed-effect chains; legacy saves without chains still load.
+9. **Separation:** modifier `sourcePath` and runtime interaction chain remain distinct and both remain available.
+
+### Step 6.3 — Prove normal/bulk elapsed-time equivalence (P6.6)
+
+Compare N normal turns with one bulk advance of N turns for:
+
+- breath/submersion and drowning;
+- light fuel and expiry;
+- crossing duration/collapse;
+- AI alertness decay;
+- primary and secondary status stages;
+- death/interruption boundaries;
+- hunger and world-clock display;
+- spellbook study hours.
+
+The resulting components, deaths, messages summarized, and clock value must match except for explicitly summarized log volume.
+
+### Step 6.4 — Extend validation for the repaired data graph (P6.5)
+
+- Validate every loadable campaign's consumables against effect and status registries.
+- Validate deployment and field references.
+- Validate crossing recipe requirements against item/tag capabilities.
+- Validate wand spell references and spell-level metadata.
+- Validate stored spellbook spell references.
+- Validate Structural/harvest recipe item references.
+- Add a temporary New Content Mod fixture containing a new poison/coating, blocking condition, crossing kit, and spell-trigger class capability; remove it after proving the validator and runtime require no TypeScript changes.
+
+### Step 6.5 — Run the complete verification pipeline (P6.9)
+
+Run:
+
+```bash
+./verify.sh
+```
+
+Then explicitly confirm each stage:
+
+1. Strict TypeScript check.
+2. Format check.
+3. Lint check.
+4. Architectural dependency check.
+5. Dead-code/unused-export check.
+6. Full regression suite.
+7. Production build.
+8. Campaign/ruleset/SSOT parity validation.
+
+Also run:
+
+```bash
+bun scripts/map-codebase.ts --check
+git diff --check
+```
+
+Any failure returns work to the owning phase; do not carry a red gate into the next phase.
+
+### Step 6.6 — Manual play-test scenarios (P6.9)
+
+1. **Charge:** A level-11 fighter Charges a fleeing NPC; one attack occurs without Pounce, distance is recorded, and -2 AC remains until the next turn.
+2. **Pit:** A failed Jump over a real pit applies one fall; standing in the pit next turn does not repeat it.
+3. **Provenance:** A poisoned longsword hit creates a damage/status chain that the debug/event inspector displays in order.
+4. **Coatings:** A coated off-hand dagger remains coated when an uncoated primary weapon hits.
+5. **Objects:** A real door can be spiked, opened, broken, repaired, and blocks/unblocks movement and FOV consistently.
+6. **Bulk time:** A submerged eight-hour rest interrupts and drowns correctly; a lit torch burns down during elapsed time.
+7. **Disguise:** A matching disguise suppresses the Bandit King's baseline hostility without changing the disguised actor's relation to its real ally.
+8. **Campaign parity:** Antitoxin works in default-appropriate D&D campaigns and Realms of Shroudgarde.
+9. **Default showcase:** Every new engine feature is reachable and demonstrable from the default campaign.
+
+### Step 6.7 — Final documentation and cascading audit
+
+- Re-read the research ledger and confirm every P1.1–P6.9 ID is closed with evidence.
+- Update both cascading matrices with implementation-discovered effects.
+- Reconcile ARCHITECTURE, DECISIONS, MILESTONES, SSOT maps, and prompt-kit mirrors with the final implementation.
+- Restore M150–M156 completion wording only after all verification and manual scenarios pass.
+- Run the final full pipeline and report its exact results.
+
+---
+
+## 5. Verification and Reporting Contract
+
+For each phase, report:
+
+- files changed and behavior changed;
+- upstream/downstream/lateral effects discovered;
+- focused tests added and their assertions;
+- exact full-pipeline result;
+- remaining known limitations, if any;
+- any plan deviation and its rationale.
+
+No phase may be described as complete based only on compilation or direct helper tests.
+
+---
+
+## 6. Approval Gate
+
+This update changes planning artifacts only. The original M150–M156 implementation is already committed in `c83c383`; this plan defines the corrective work required before those milestones are accurately considered complete.
+
+**No production code, tests, campaign data, assets, architecture claims, or milestone status may be changed until the user explicitly approves this implementation plan.**
+
+Recommended approval scope:
+
+- **Option A — Gate-first (recommended):** approve Phase 1 only, restore a green verification baseline, then review Phase 2's interaction-chain and elapsed-time design before implementation.
+- **Option B — Phases 1–2:** approve the verification gates and engine/provenance foundation, then review before mechanics.
+- **Option C — All six:** approve the complete sequential plan with a mandatory verification gate and rollback to the owning phase after any failure.
+
+After approval, execution begins with **Phase 1, Step 1.1** and proceeds one bounded task at a time.
