@@ -7,6 +7,8 @@ import type { ValidationError } from './validator.types.ts';
  */
 export async function validateItems(campaign: Readonly<CampaignData>): Promise<ValidationError[]> {
   const errors: ValidationError[] = [];
+  const sysSpells = (campaign.systemContent as Record<string, unknown> | undefined)?.['spells'] as
+    Record<string, unknown> | undefined;
 
   for (const item of Object.values(campaign.items)) {
     const isKeyItem = item.tags?.includes('key_item') || item.tags?.includes('unique');
@@ -19,7 +21,29 @@ export async function validateItems(campaign: Readonly<CampaignData>): Promise<V
       });
     }
 
-    // You could also check if any reaction consumes it on impact, but keeping it simple for now
+    if (item.consumable?.effectId && !campaign.effects[item.consumable.effectId]) {
+      errors.push({
+        severity: 'error',
+        message: `Item "${item.id}" references non-existent consumable effectId "${item.consumable.effectId}".`,
+        path: `items.${item.id}.consumable.effectId`
+      });
+    }
+
+    if (item.coating?.statusId && !campaign.status[item.coating.statusId]) {
+      errors.push({
+        severity: 'error',
+        message: `Item "${item.id}" references non-existent coating statusId "${item.coating.statusId}".`,
+        path: `items.${item.id}.coating.statusId`
+      });
+    }
+
+    if (item.zappable?.spellId && sysSpells && !sysSpells[item.zappable.spellId]) {
+      errors.push({
+        severity: 'error',
+        message: `Item "${item.id}" references non-existent zappable spellId "${item.zappable.spellId}".`,
+        path: `items.${item.id}.zappable.spellId`
+      });
+    }
   }
 
   return errors;

@@ -5,6 +5,7 @@ import {
   type CrossingComponent,
   type CrossingKind,
   type FighterComponent,
+  type InteractionChain,
   type PositionComponent,
   type RenderableComponent
 } from '../types/components.types.ts';
@@ -33,6 +34,7 @@ export interface SpawnCrossingParams {
   readonly maxWeightLbs?: number | undefined;
   readonly anchorTileCoords?: ReadonlyArray<{ readonly x: number; readonly y: number }> | undefined;
   readonly durationTurns?: number | undefined;
+  readonly interaction?: InteractionChain | undefined;
 }
 
 /**
@@ -72,7 +74,8 @@ export function spawnCrossingEntity(params: SpawnCrossingParams): [GameState, En
   if (existing && existing.crossing.crossingKind === params.crossingKind) {
     const updatedCrossing: CrossingComponent = {
       ...existing.crossing,
-      ...(params.durationTurns !== undefined ? { durationTurns: params.durationTurns } : {})
+      ...(params.durationTurns !== undefined ? { durationTurns: params.durationTurns } : {}),
+      ...(params.interaction !== undefined ? { interaction: params.interaction } : {})
     };
     return [addComponent(params.state, existing.entityId, updatedCrossing), existing.entityId];
   }
@@ -98,7 +101,8 @@ export function spawnCrossingEntity(params: SpawnCrossingParams): [GameState, En
     ...(params.skillDc !== undefined ? { skillDc: params.skillDc } : {}),
     ...(params.maxWeightLbs !== undefined ? { maxWeightLbs: params.maxWeightLbs } : {}),
     ...(params.anchorTileCoords !== undefined ? { anchorTileCoords: params.anchorTileCoords } : {}),
-    ...(params.durationTurns !== undefined ? { durationTurns: params.durationTurns } : {})
+    ...(params.durationTurns !== undefined ? { durationTurns: params.durationTurns } : {}),
+    ...(params.interaction !== undefined ? { interaction: params.interaction } : {})
   };
 
   nextState = addComponent(nextState, entityId, pos);
@@ -161,18 +165,21 @@ export function destroyCrossingEntity(state: GameState, crossingEntityId: Entity
 }
 
 /**
- * Ticks temporary crossings (such as `frozen_surface` ice sheets with `durationTurns`),
- * melting expired crossings and dropping any non-flying occupants into the underlying hazard.
+ * Advances temporary crossings (such as `frozen_surface` ice sheets with `durationTurns`)
+ * across `turnsElapsed` turns, melting expired crossings and dropping any non-flying occupants
+ * into the underlying hazard.
  *
  * @param state Current immutable GameState.
+ * @param turnsElapsed Number of elapsed turns.
  * @returns Updated GameState.
  */
-export function processCrossingsTick(state: GameState): GameState {
+export function advanceCrossingsByTurns(state: GameState, turnsElapsed: number): GameState {
+  if (turnsElapsed <= 0) return state;
   let nextState = state;
   for (const entityId of [...nextState.entities]) {
     const crossing = getComponent(nextState, entityId, ComponentType.Crossing) as CrossingComponent | undefined;
     if (!crossing || crossing.durationTurns === undefined) continue;
-    const remaining = crossing.durationTurns - 1;
+    const remaining = crossing.durationTurns - turnsElapsed;
     if (remaining <= 0) {
       nextState = destroyCrossingEntity(nextState, entityId, 'The frozen ice sheet thaws and gives way!');
     } else {
@@ -180,4 +187,15 @@ export function processCrossingsTick(state: GameState): GameState {
     }
   }
   return nextState;
+}
+
+/**
+ * Ticks temporary crossings by 1 turn (such as `frozen_surface` ice sheets with `durationTurns`),
+ * melting expired crossings and dropping any non-flying occupants into the underlying hazard.
+ *
+ * @param state Current immutable GameState.
+ * @returns Updated GameState.
+ */
+export function processCrossingsTick(state: GameState): GameState {
+  return advanceCrossingsByTurns(state, 1);
 }

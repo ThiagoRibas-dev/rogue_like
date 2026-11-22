@@ -43,5 +43,13 @@
       "attack": 1
     },
     "flags": {}
+  },
+  "burning": {
+    "id": "burning",
+    "name": "Burning",
+    "description": "Engulfed in open flames, taking fire damage each round until extinguished.",
+    "color": "#e67e22",
+    "detrimental": true,
+    "perTurnDamage": 2
   }
 }

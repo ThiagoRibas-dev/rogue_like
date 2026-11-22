@@ -1,13 +1,23 @@
-import { addComponent, getComponent, removeComponent, resolveEntityDisplayName } from '../../../core/ecs.ts';
+import {
+  addComponent,
+  getComponent,
+  removeComponent,
+  removeEntity,
+  resolveEntityDisplayName
+} from '../../../core/ecs.ts';
 import { queryActiveFieldsAtPosition, spawnField } from '../../../systems/field.system.ts';
+import { appendInteractionFrame, createInteractionChain } from '../../../systems/interaction_provenance.system.ts';
 import { addMessage, MessageLogCategory } from '../../../systems/message.system.ts';
 import { getEntityMovementModes } from '../../../systems/movement_displacement.ts';
 import { applyStatusEffect } from '../../../systems/status-effect.system.ts';
+import type { ItemDefinition } from '../../../types/campaign/item.ts';
 import {
   ComponentType,
   type CoatingComponent,
   type DamageComponent,
   type EquipmentComponent,
+  type InteractionChain,
+  type InventoryComponent,
   type ItemComponent
 } from '../../../types/components.types.ts';
 import type { EntityId, GameState } from '../../../types/game-state.types.ts';
@@ -19,37 +29,131 @@ import type { DnD35ConditionId } from '../types/dnd35e.types.ts';
 import { getDnD35SystemContent } from '../types/dnd35e_system.types.ts';
 
 /** SRD Caltrops base attack bonus (`+0`). */
-export const CALTROPS_ATTACK_BONUS = 0;
+const CALTROPS_ATTACK_BONUS = 0;
 
 /** SRD Caltrops pierce damage (`1`). */
-export const CALTROPS_PIERCE_DAMAGE = 1;
+const CALTROPS_PIERCE_DAMAGE = 1;
 
 /** SRD Caltrops limping wound duration in turns (`14400` = 24 hours unless cured by DC 15 Heal or 8h rest). */
-export const CALTROPS_LIMP_DURATION_TURNS = 14400;
+const CALTROPS_LIMP_DURATION_TURNS = 14400;
+
+/** Default SRD footwear armor bonus (`+2` for shoes or boots). */
+const DEFAULT_FOOTWEAR_ARMOR_BONUS = 2;
 
 /** SRD Marbles / Slippery Ice Balance check DC (`10`). */
-export const MARBLES_BALANCE_DC = 10;
+const MARBLES_BALANCE_DC = 10;
 
 /** SRD Grease Balance / Reflex check DC (`15`). */
-export const GREASE_BALANCE_DC = 15;
+const GREASE_BALANCE_DC = 15;
 
 /** SRD Craft (Alchemy) DC to identify an unknown potion (`15`). */
-export const CRAFT_ALCHEMY_IDENTIFY_POTION_DC = 15;
+const CRAFT_ALCHEMY_IDENTIFY_POTION_DC = 15;
 
 /** SRD Natural-1 roll threshold (5% mishap chance = `1` on 1d20) when applying poison without `poison_use`. */
-export const POISON_APPLICATION_MISHAP_NATURAL_ROLL = 1;
+const POISON_APPLICATION_MISHAP_NATURAL_ROLL = 1;
 
 /** Default coating duration in turns (`50` turns = 5 minutes). */
-export const DEFAULT_COATING_DURATION_TURNS = 50;
+const DEFAULT_COATING_DURATION_TURNS = 50;
 
-function resolveItemTags(state: Readonly<GameState>, itemEntityId: EntityId): ReadonlyArray<string> {
-  const itemComp = getComponent(state, itemEntityId, ComponentType.Item) as ItemComponent | undefined;
-  if (!itemComp) return [];
+/** Movement context flags evaluated when stepping onto floor hazards. */
+export interface FloorStepHazardContext {
+  readonly isHalfSpeedOrSlower?: boolean | undefined;
+  readonly isChargingOrRunning?: boolean | undefined;
+  readonly interaction?: InteractionChain | undefined;
+}
+
+function resolveMergedItemDefinition(state: Readonly<GameState>, itemComp: ItemComponent): ItemDefinition | undefined {
   const sysItems = getDnD35SystemContent(state.campaign)?.items;
   const campaignDef = state.campaign.items[itemComp.itemId];
   const rawSysDef = sysItems?.[itemComp.itemId];
   const sysDef = rawSysDef && sysItems ? resolveEffectiveItemDefinition(rawSysDef, sysItems, itemComp) : undefined;
-  return [...(campaignDef?.tags ?? []), ...(sysDef?.tags ?? [])];
+  if (!campaignDef && !sysDef) return undefined;
+  if (campaignDef && sysDef) {
+    return {
+      ...sysDef,
+      ...campaignDef,
+      tags: Array.from(new Set([...(sysDef.tags ?? []), ...(campaignDef.tags ?? [])]))
+    };
+  }
+  return campaignDef ?? sysDef;
+}
+
+function resolveItemTags(state: Readonly<GameState>, itemEntityId: EntityId): ReadonlyArray<string> {
+  const itemComp = getComponent(state, itemEntityId, ComponentType.Item) as ItemComponent | undefined;
+  if (!itemComp) return [];
+  return resolveMergedItemDefinition(state, itemComp)?.tags ?? [];
+}
+
+function isTargetCoatableWeaponOrAmmo(
+  state: Readonly<GameState>,
+  targetItemEntityId: EntityId,
+  targetItem: ItemComponent
+): boolean {
+  const def = resolveMergedItemDefinition(state, targetItem);
+  if (!def) return false;
+  const tags = def.tags ?? [];
+  return (
+    def.category === 'weapon' ||
+    def.weaponStats !== undefined ||
+    tags.includes('weapon') ||
+    tags.includes('ammunition') ||
+    tags.includes('ammo') ||
+    def.equippable?.slot === 'main_hand' ||
+    def.equippable?.slot === 'off_hand' ||
+    def.equippable?.slot === 'two_handed' ||
+    def.equippable?.slot === 'ranged' ||
+    def.equippable?.slot === 'hand' ||
+    def.equippable?.slot === 'held' ||
+    getComponent(state, targetItemEntityId, ComponentType.Coating) !== undefined
+  );
+}
+
+function consumeOneChargeOrDestroyActorItem(state: GameState, actorId: EntityId, itemEntityId: EntityId): GameState {
+  const itemComp = getComponent(state, itemEntityId, ComponentType.Item) as ItemComponent | undefined;
+  if (!itemComp) return state;
+
+  if (itemComp.charges !== undefined && itemComp.charges > 1) {
+    return addComponent(state, itemEntityId, {
+      ...itemComp,
+      charges: itemComp.charges - 1
+    });
+  }
+
+  let nextState = state;
+  const inv = getComponent(nextState, actorId, ComponentType.Inventory) as InventoryComponent | undefined;
+  if (inv && inv.items.includes(itemEntityId)) {
+    nextState = addComponent(nextState, actorId, {
+      ...inv,
+      items: inv.items.filter((id) => id !== itemEntityId)
+    });
+  }
+
+  const equip = getComponent(nextState, actorId, ComponentType.Equipment) as EquipmentComponent | undefined;
+  if (equip && equip.slots.some((s) => s.equippedItem === itemEntityId)) {
+    nextState = addComponent(nextState, actorId, {
+      ...equip,
+      slots: equip.slots.map((s) => (s.equippedItem === itemEntityId ? { ...s, equippedItem: null } : s))
+    });
+  }
+
+  return removeEntity(nextState, itemEntityId);
+}
+
+function resolveFootwearArmorContribution(state: Readonly<GameState>, entityId: EntityId): number {
+  const equip = getComponent(state, entityId, ComponentType.Equipment) as EquipmentComponent | undefined;
+  if (!equip) return 0;
+  let bonus = 0;
+  for (const slot of equip.slots) {
+    if (slot.slotType !== 'foot' || slot.equippedItem === null) continue;
+    const itemComp = getComponent(state, slot.equippedItem, ComponentType.Item) as ItemComponent | undefined;
+    const def = itemComp ? resolveMergedItemDefinition(state, itemComp) : undefined;
+    const armorBonus =
+      def?.equippable?.defenseBonus !== undefined && def.equippable.defenseBonus > 0
+        ? def.equippable.defenseBonus
+        : DEFAULT_FOOTWEAR_ARMOR_BONUS;
+    bonus = Math.max(bonus, armorBonus);
+  }
+  return bonus;
 }
 
 function addProneCondition(state: GameState, entityId: EntityId): GameState {
@@ -64,46 +168,55 @@ function addProneCondition(state: GameState, entityId: EntityId): GameState {
 
 /**
  * Resolves stepping onto a square containing `caltrops` (either as a floor field or a dropped `caltrops_hazard` item):
- * - Caltrops make a `BAB +0` attack against the mover's **flat-footed / unarmored foot AC**
- *   (`10 + sizeMod + deflectionMod`, ignoring armor, shield, and natural armor per SRD, `+2` if wearing shoes/boots).
- * - On hit, deals `1` piercing damage and applies `'limping'` (`50%` movement speed, halting charge routines).
+ * - Moving at half-speed or slower safely avoids caltrops without triggering an attack roll (`PHB p. 126`).
+ * - Caltrops make a `BAB +0` attack against the mover's **Foot AC** (`dag.dagResult.acBreakdown.footAC + footwearBonus`,
+ *   ignoring armor, shield, and deflection bonuses per SRD, `+2` if wearing shoes/boots).
+ * - On hit, deals `1` piercing damage, applies `'limping'` (`50%` movement speed), and immediately halts
+ *   charging or running movement (`haltMovement: true`).
  *
  * @param state Current immutable GameState.
  * @param entityId Moving actor EntityId.
  * @param x Destination X coordinate.
  * @param y Destination Y coordinate.
  * @param forcedD20 Optional deterministic `1..20` roll override.
- * @returns Updated GameState and whether the caltrops wounded the mover.
+ * @param context Optional movement context (`isHalfSpeedOrSlower`, `isChargingOrRunning`, `interaction`).
+ * @returns Updated GameState, whether caltrops attacked, whether they hit, and whether movement must halt.
  */
 export function resolveCaltropsStepHazard(
   state: GameState,
   entityId: EntityId,
   x: number,
   y: number,
-  forcedD20?: number
-): { readonly state: GameState; readonly triggered: boolean; readonly hit: boolean } {
+  forcedD20?: number,
+  context?: FloorStepHazardContext
+): {
+  readonly state: GameState;
+  readonly triggered: boolean;
+  readonly hit: boolean;
+  readonly haltMovement: boolean;
+} {
+  if (context?.isHalfSpeedOrSlower === true) {
+    return { state, triggered: false, hit: false, haltMovement: false };
+  }
+
   const modes = getEntityMovementModes(state, entityId);
   if (modes?.fly !== undefined && modes.fly > 0) {
-    return { state, triggered: false, hit: false };
+    return { state, triggered: false, hit: false, haltMovement: false };
   }
 
   const activeFields = queryActiveFieldsAtPosition(state, x, y);
-  const hasCaltropField = activeFields.some((f) => f.field.fieldType === 'caltrops');
+  const caltropFieldEntry = activeFields.find((f) => f.field.fieldType === 'caltrops');
   const tileEntities = state.spatialIndex.get(`${x},${y}`) ?? [];
-  const hasCaltropItem = tileEntities.some((eid) => resolveItemTags(state, eid).includes('caltrops_hazard'));
+  const caltropItemId = tileEntities.find((eid) => resolveItemTags(state, eid).includes('caltrops_hazard'));
 
-  if (!hasCaltropField && !hasCaltropItem) {
-    return { state, triggered: false, hit: false };
+  if (!caltropFieldEntry && caltropItemId === undefined) {
+    return { state, triggered: false, hit: false, haltMovement: false };
   }
 
   const dag = evaluateDnD35eEntityDAG(state, entityId);
-  const sizeMod = dag?.dagResult.acBreakdown.sizeContribution ?? 0;
-  const deflectionMod =
-    dag?.dagResult.acResolution.activeModifiers.find((m) => m.bonusType === 'deflection')?.value ?? 0;
-  const equip = getComponent(state, entityId, ComponentType.Equipment) as EquipmentComponent | undefined;
-  const wearingFootwear = equip?.slots.some((s) => s.slotType === 'foot' && s.equippedItem !== null) ?? false;
-  const footwearBonus = wearingFootwear ? 2 : 0;
-  const targetFootAc = 10 + sizeMod + deflectionMod + footwearBonus;
+  const baseFootAc = dag?.dagResult.acBreakdown.footAC ?? 10 + (dag?.dagResult.acBreakdown.sizeContribution ?? 0);
+  const footwearBonus = resolveFootwearArmorContribution(state, entityId);
+  const targetFootAc = baseFootAc + footwearBonus;
 
   const roll = rollD20('attack', CALTROPS_ATTACK_BONUS, forcedD20);
   const actorName = resolveEntityDisplayName(state, entityId, 'The mover');
@@ -117,30 +230,71 @@ export function resolveCaltropsStepHazard(
         MessageLogCategory.CombatMiss
       ),
       triggered: true,
-      hit: false
+      hit: false,
+      haltMovement: false
     };
   }
+
+  const sourceEntityId = caltropFieldEntry?.field.sourceEntityId;
+  const baseChain =
+    caltropFieldEntry?.field.interaction ??
+    context?.interaction ??
+    (sourceEntityId !== undefined && caltropFieldEntry?.entityId !== undefined
+      ? createInteractionChain(sourceEntityId, {
+          kind: 'field',
+          fieldEntityId: caltropFieldEntry.entityId,
+          fieldType: 'caltrops'
+        })
+      : undefined);
 
   const existingDmg = getComponent(state, entityId, ComponentType.Damage) as DamageComponent | undefined;
   const instances = existingDmg ? [...existingDmg.instances] : [];
   instances.push({
     amount: CALTROPS_PIERCE_DAMAGE,
-    tags: ['piercing', 'physical', 'hazard', 'caltrops']
+    ...(sourceEntityId !== undefined ? { sourceEntityId } : {}),
+    tags: ['piercing', 'physical', 'hazard', 'caltrops'],
+    ...(baseChain !== undefined ? { interaction: baseChain } : {})
   });
   let nextState = addComponent(state, entityId, {
     type: ComponentType.Damage,
     instances
   });
-  nextState = applyStatusEffect(nextState, entityId, 'limping', CALTROPS_LIMP_DURATION_TURNS);
+  nextState = applyStatusEffect(
+    nextState,
+    entityId,
+    'limping',
+    CALTROPS_LIMP_DURATION_TURNS,
+    sourceEntityId,
+    baseChain
+  );
   nextState = addMessage(
     nextState,
     `A caltrop pierces ${actorName}'s foot (${roll.total} vs Foot AC ${targetFootAc}) for ${CALTROPS_PIERCE_DAMAGE} damage, causing a half-speed limp!`,
     MessageLogCategory.CombatHit
   );
+
+  let haltMovement = context?.isChargingOrRunning === true;
+  const dndData = getDnD35EntityData(nextState, entityId);
+  if (dndData.actionBudget) {
+    const halvedRemaining = Math.floor(dndData.actionBudget.movementRemainingFt / 2);
+    if (dndData.conditions.includes('charging')) {
+      haltMovement = true;
+    }
+    nextState = setDnD35EntityData(nextState, entityId, {
+      ...dndData,
+      actionBudget: {
+        ...dndData.actionBudget,
+        movementRemainingFt: haltMovement ? 0 : halvedRemaining,
+        ...(haltMovement ? { canMoveFurtherThisRound: false } : {})
+      }
+    });
+  }
+
   return {
     state: nextState,
     triggered: true,
-    hit: true
+    hit: true,
+    haltMovement
   };
 }
 
@@ -215,18 +369,26 @@ export function resolveSlipperyFloorStepHazard(
 /**
  * Evaluates all floor step hazards (`caltrops`, `marbles`, `grease`, `ice`) when an actor steps onto `(x, y)`.
  */
-export function evaluateActorFloorStepHazards(state: GameState, entityId: EntityId, x: number, y: number): GameState {
-  const caltropRes = resolveCaltropsStepHazard(state, entityId, x, y);
+export function evaluateActorFloorStepHazards(
+  state: GameState,
+  entityId: EntityId,
+  x: number,
+  y: number,
+  context?: FloorStepHazardContext
+): GameState {
+  const caltropRes = resolveCaltropsStepHazard(state, entityId, x, y, undefined, context);
   const slipRes = resolveSlipperyFloorStepHazard(caltropRes.state, entityId, x, y);
   return slipRes.state;
 }
 
 /**
- * Resolves dipping or coating a weapon/ammunition item (`targetWeaponEntityId`) with a liquid or poison
+ * Resolves dipping or coating a weapon/ammunition item (`targetItemEntityId`) with a liquid or poison
  * (`coatingSourceEntityId`: `oil_flask`, `holy_water`, or an injury poison):
- * - Attaches `ComponentType.Coating` onto the weapon.
- * - If the source is an injury poison (`tags` includes `'poison'`) and the actor lacks `feature:poison_use`
- *   (or `poison_use` in `activeClassFeatures`), rolls a `1d20` mishap check (`1` = `5%` self-poisoning mishap per SRD).
+ * - Validates that `targetItemEntityId` is a coatable weapon or ammunition entity.
+ * - Resolves coating parameters from declarative `itemDef.coating` metadata or item tags (`poison`, `flammable_oil`, `holy_water`),
+ *   never substring-matching `sourceItem.itemId`.
+ * - Consumes `1` charge/unit of `coatingSourceEntityId` upon application (and upon a natural-1 self-poisoning mishap).
+ * - Attaches `ComponentType.Coating` with `InteractionChain` provenance onto the target weapon.
  *
  * @param params Coating application parameters.
  * @returns Updated GameState, success flag, and whether a poison mishap occurred.
@@ -237,12 +399,21 @@ export function resolveDipWeaponCoating(params: {
   readonly targetItemEntityId: EntityId;
   readonly coatingSourceEntityId: EntityId;
   readonly forcedMishapD20?: number | undefined;
+  readonly interaction?: InteractionChain | undefined;
 }): {
   readonly state: GameState;
   readonly success: boolean;
   readonly poisonMishap: boolean;
 } {
   const { state, actorId, targetItemEntityId, coatingSourceEntityId } = params;
+  if (targetItemEntityId === coatingSourceEntityId) {
+    return {
+      state: addMessage(state, 'Select a distinct weapon and liquid/poison vial to dip.', MessageLogCategory.System),
+      success: false,
+      poisonMishap: false
+    };
+  }
+
   const targetItem = getComponent(state, targetItemEntityId, ComponentType.Item) as ItemComponent | undefined;
   const sourceItem = getComponent(state, coatingSourceEntityId, ComponentType.Item) as ItemComponent | undefined;
   if (!targetItem || !sourceItem) {
@@ -253,32 +424,58 @@ export function resolveDipWeaponCoating(params: {
     };
   }
 
-  const sysItems = getDnD35SystemContent(state.campaign)?.items;
-  const sourceCampaignDef = state.campaign.items[sourceItem.itemId];
-  const rawSourceSysDef = sysItems?.[sourceItem.itemId];
-  const sourceSysDef =
-    rawSourceSysDef && sysItems ? resolveEffectiveItemDefinition(rawSourceSysDef, sysItems, sourceItem) : undefined;
-  const sourceTags = [...(sourceCampaignDef?.tags ?? []), ...(sourceSysDef?.tags ?? [])];
-  const sourceName = resolveEntityDisplayName(
-    state,
-    coatingSourceEntityId,
-    sourceCampaignDef?.name ?? sourceSysDef?.name ?? sourceItem.itemId
-  );
   const targetName = resolveEntityDisplayName(state, targetItemEntityId, targetItem.itemId);
+  if (!isTargetCoatableWeaponOrAmmo(state, targetItemEntityId, targetItem)) {
+    return {
+      state: addMessage(
+        state,
+        `${targetName} is not a weapon or ammunition that can be coated.`,
+        MessageLogCategory.System
+      ),
+      success: false,
+      poisonMishap: false
+    };
+  }
+
+  const sourceDef = resolveMergedItemDefinition(state, sourceItem);
+  const sourceTags = sourceDef?.tags ?? [];
+  const sourceName = resolveEntityDisplayName(state, coatingSourceEntityId, sourceDef?.name ?? sourceItem.itemId);
   const actorName = resolveEntityDisplayName(state, actorId, 'The actor');
 
+  const declarativeCoating = sourceDef?.coating;
   const isPoison =
-    sourceTags.includes('poison') || sourceItem.itemId.includes('poison') || sourceItem.itemId.includes('venom');
-  const isOil = sourceTags.includes('flammable_oil') || sourceTags.includes('fuel');
-  const isHolyWater = sourceTags.includes('holy_water') || (sourceTags.includes('holy') && sourceTags.includes('splash_weapon'));
+    declarativeCoating?.isPoison === true || declarativeCoating?.statusId === 'poison' || sourceTags.includes('poison');
+  const isOil =
+    declarativeCoating?.statusId === 'burning' ||
+    sourceTags.includes('flammable_oil') ||
+    (sourceTags.includes('fuel') && sourceTags.includes('alchemical'));
+  const isHolyWater =
+    declarativeCoating?.statusId === 'holy_water_splash' ||
+    sourceTags.includes('holy_water') ||
+    (sourceTags.includes('holy') && sourceTags.includes('splash_weapon'));
 
-  if (!isPoison && !isOil && !isHolyWater) {
+  if (!declarativeCoating && !isPoison && !isOil && !isHolyWater) {
     return {
       state: addMessage(state, `You cannot coat ${targetName} with ${sourceName}.`, MessageLogCategory.System),
       success: false,
       poisonMishap: false
     };
   }
+
+  const dipInteraction = appendInteractionFrame(
+    params.interaction ??
+      createInteractionChain(actorId, {
+        kind: 'action',
+        actionId: 'dip',
+        actorId
+      }),
+    {
+      kind: 'item',
+      itemEntityId: coatingSourceEntityId,
+      itemId: sourceItem.itemId,
+      role: 'consumable'
+    }
+  );
 
   let nextState = state;
   if (isPoison) {
@@ -289,7 +486,8 @@ export function resolveDipWeaponCoating(params: {
     if (!hasPoisonUse) {
       const mishapRoll = rollD20('ability_check', 0, params.forcedMishapD20);
       if (mishapRoll.naturalRoll === POISON_APPLICATION_MISHAP_NATURAL_ROLL) {
-        nextState = applyStatusEffect(nextState, actorId, 'poison', 10, actorId);
+        nextState = consumeOneChargeOrDestroyActorItem(nextState, actorId, coatingSourceEntityId);
+        nextState = applyStatusEffect(nextState, actorId, 'poison', 10, actorId, dipInteraction);
         nextState = addMessage(
           nextState,
           `${actorName} fumbles while applying ${sourceName} (Natural 1 without Poison Use) and accidentally poisons themselves!`,
@@ -304,35 +502,57 @@ export function resolveDipWeaponCoating(params: {
     }
   }
 
-  const coating: CoatingComponent = isPoison
+  const coating: CoatingComponent = declarativeCoating
     ? {
         type: ComponentType.Coating,
-        statusId: 'poison',
-        charges: 1,
-        duration: DEFAULT_COATING_DURATION_TURNS,
-        coatingItemId: sourceItem.itemId
+        statusId: declarativeCoating.statusId,
+        charges: declarativeCoating.charges,
+        duration: declarativeCoating.duration,
+        coatingItemId: sourceItem.itemId,
+        ...(declarativeCoating.bonusDamageDice !== undefined
+          ? { bonusDamageDice: declarativeCoating.bonusDamageDice }
+          : {}),
+        ...(declarativeCoating.bonusDamageType !== undefined
+          ? { bonusDamageType: declarativeCoating.bonusDamageType }
+          : {}),
+        ...(declarativeCoating.targetConditionTag !== undefined
+          ? { targetConditionTag: declarativeCoating.targetConditionTag }
+          : {}),
+        interaction: dipInteraction
       }
-    : isHolyWater
+    : isPoison
       ? {
           type: ComponentType.Coating,
-          statusId: 'holy_water_splash',
+          statusId: 'poison',
           charges: 1,
           duration: DEFAULT_COATING_DURATION_TURNS,
           coatingItemId: sourceItem.itemId,
-          bonusDamageDice: '2d4',
-          bonusDamageType: 'positive',
-          targetConditionTag: 'type:undead'
+          interaction: dipInteraction
         }
-      : {
-          type: ComponentType.Coating,
-          statusId: 'burning',
-          charges: 2,
-          duration: DEFAULT_COATING_DURATION_TURNS,
-          coatingItemId: sourceItem.itemId,
-          bonusDamageDice: '1d3',
-          bonusDamageType: 'fire'
-        };
+      : isHolyWater
+        ? {
+            type: ComponentType.Coating,
+            statusId: 'holy_water_splash',
+            charges: 1,
+            duration: DEFAULT_COATING_DURATION_TURNS,
+            coatingItemId: sourceItem.itemId,
+            bonusDamageDice: '2d4',
+            bonusDamageType: 'positive',
+            targetConditionTag: 'type:undead',
+            interaction: dipInteraction
+          }
+        : {
+            type: ComponentType.Coating,
+            statusId: 'burning',
+            charges: 2,
+            duration: DEFAULT_COATING_DURATION_TURNS,
+            coatingItemId: sourceItem.itemId,
+            bonusDamageDice: '1d3',
+            bonusDamageType: 'fire',
+            interaction: dipInteraction
+          };
 
+  nextState = consumeOneChargeOrDestroyActorItem(nextState, actorId, coatingSourceEntityId);
   nextState = addComponent(nextState, targetItemEntityId, coating);
   nextState = addMessage(
     nextState,
@@ -348,37 +568,55 @@ export function resolveDipWeaponCoating(params: {
 }
 
 /**
- * Evaluates and consumes 1 charge from an active `CoatingComponent` on the attacker's equipped primary weapon
+ * Evaluates and consumes 1 charge from an active `CoatingComponent` on the striking weapon entity
  * when a melee strike hits `defenderId`.
+ * - When `strikingWeaponEntityId` is provided (or when the strike is natural/unarmed without a weapon entity),
+ *   only that exact weapon entity's coating is inspected and decremented.
+ * - For legacy direct callers that omit `strikingWeaponEntityId`, falls back to the first equipped coated item.
  *
  * @param state Current immutable GameState.
  * @param attackerId Attacker EntityId.
  * @param defenderId Defender EntityId.
  * @param defenderSelfTags Defender semantic tags.
+ * @param strikingWeaponEntityId Optional EntityId of the specific weapon that delivered the strike.
+ * @param interaction Optional InteractionChain for the strike.
  * @returns Updated GameState, extra coating damage dealt, and log suffix.
  */
 export function applyAndConsumeWeaponCoatingOnHit(
   state: GameState,
   attackerId: EntityId,
   defenderId: EntityId,
-  defenderSelfTags: ReadonlyArray<string>
+  defenderSelfTags: ReadonlyArray<string>,
+  strikingWeaponEntityId?: EntityId | null,
+  interaction?: InteractionChain
 ): {
   readonly state: GameState;
   readonly bonusDamage: number;
   readonly riderText: string;
 } {
-  const equip = getComponent(state, attackerId, ComponentType.Equipment) as EquipmentComponent | undefined;
-  if (!equip) return { state, bonusDamage: 0, riderText: '' };
-
   let coatedWeaponId: EntityId | undefined;
   let coating: CoatingComponent | undefined;
-  for (const slot of equip.slots) {
-    if (slot.equippedItem === null) continue;
-    const c = getComponent(state, slot.equippedItem, ComponentType.Coating) as CoatingComponent | undefined;
+
+  if (strikingWeaponEntityId !== undefined) {
+    if (strikingWeaponEntityId === null) {
+      return { state, bonusDamage: 0, riderText: '' };
+    }
+    const c = getComponent(state, strikingWeaponEntityId, ComponentType.Coating) as CoatingComponent | undefined;
     if (c && c.charges > 0) {
-      coatedWeaponId = slot.equippedItem;
+      coatedWeaponId = strikingWeaponEntityId;
       coating = c;
-      break;
+    }
+  } else {
+    const equip = getComponent(state, attackerId, ComponentType.Equipment) as EquipmentComponent | undefined;
+    if (!equip) return { state, bonusDamage: 0, riderText: '' };
+    for (const slot of equip.slots) {
+      if (slot.equippedItem === null) continue;
+      const c = getComponent(state, slot.equippedItem, ComponentType.Coating) as CoatingComponent | undefined;
+      if (c && c.charges > 0) {
+        coatedWeaponId = slot.equippedItem;
+        coating = c;
+        break;
+      }
     }
   }
 
@@ -390,10 +628,25 @@ export function applyAndConsumeWeaponCoatingOnHit(
   let bonusDamage = 0;
   let riderText = '';
 
+  const baseChain =
+    interaction ??
+    coating.interaction ??
+    createInteractionChain(attackerId, {
+      kind: 'strike',
+      attackerId,
+      defenderId,
+      strikeIndex: 0,
+      attackSource: 'manufactured_primary'
+    });
+  const coatingChain = appendInteractionFrame(baseChain, {
+    kind: 'item',
+    itemEntityId: coatedWeaponId,
+    itemId: coating.coatingItemId ?? 'coated_weapon',
+    role: 'weapon'
+  });
+
   const matchesTargetCondition =
-    coating.targetConditionTag === undefined ||
-    defenderSelfTags.includes(coating.targetConditionTag) ||
-    defenderSelfTags.includes('alignment:evil');
+    coating.targetConditionTag === undefined || defenderSelfTags.includes(coating.targetConditionTag);
 
   if (coating.bonusDamageDice && matchesTargetCondition) {
     bonusDamage = Math.max(1, evaluateDiceExpression(coating.bonusDamageDice).total);
@@ -403,7 +656,13 @@ export function applyAndConsumeWeaponCoatingOnHit(
     instances.push({
       amount: bonusDamage,
       sourceEntityId: attackerId,
-      tags: ['coating', dmgType]
+      tags: ['coating', dmgType],
+      interaction: appendInteractionFrame(coatingChain, {
+        kind: 'effect',
+        effectId: coating.statusId,
+        effectKind: 'coating',
+        sourcePath: `item:${coating.coatingItemId ?? 'coating'}`
+      })
     });
     nextState = addComponent(nextState, defenderId, {
       type: ComponentType.Damage,
@@ -420,11 +679,11 @@ export function applyAndConsumeWeaponCoatingOnHit(
       defenderSelfTags.includes('type:construct') ||
       defenderSelfTags.includes('type:elemental');
     if (!isPoisonImmune) {
-      nextState = applyStatusEffect(nextState, defenderId, 'poison', 11, attackerId);
+      nextState = applyStatusEffect(nextState, defenderId, 'poison', 11, attackerId, coatingChain);
       riderText += ' [Poisoned]';
     }
   } else if (coating.statusId === 'burning' && nextState.campaign.status['burning']) {
-    nextState = applyStatusEffect(nextState, defenderId, 'burning', 2, attackerId);
+    nextState = applyStatusEffect(nextState, defenderId, 'burning', 2, attackerId, coatingChain);
   }
 
   const remainingCharges = coating.charges - 1;
@@ -495,7 +754,7 @@ export function resolveCraftAlchemyPotionIdentification(
 
   const nextIdentified = new Set(state.identifiedItems);
   nextIdentified.add(itemComp.itemId);
-  const itemDef = state.campaign.items[itemComp.itemId];
+  const itemDef = resolveMergedItemDefinition(state, itemComp);
   const trueName = itemDef?.name ?? itemComp.itemId;
   let nextState: GameState = { ...state, identifiedItems: nextIdentified };
   nextState = addMessage(
@@ -512,33 +771,39 @@ export function resolveCraftAlchemyPotionIdentification(
 }
 
 /**
- * Deploys a tactical floor hazard item (`caltrops`, `marbles`, `oil_flask`, `smokestick`) onto `(x, y)` as an active field.
+ * Deploys a tactical floor hazard item (`caltrops`, `marbles`, `oil_flask`, `smokestick`) onto `(x, y)` as an active field,
+ * consuming 1 charge/unit of the deployed item from `actorId` and recording `InteractionChain` provenance.
  */
 export function deployTacticalFloorHazardItem(
   state: GameState,
-  _actorId: EntityId,
+  actorId: EntityId,
   itemEntityId: EntityId,
   targetX: number,
-  targetY: number
+  targetY: number,
+  interaction?: InteractionChain
 ): { readonly state: GameState; readonly success: boolean } {
   const itemComp = getComponent(state, itemEntityId, ComponentType.Item) as ItemComponent | undefined;
   if (!itemComp) return { state, success: false };
 
-  const tags = resolveItemTags(state, itemEntityId);
-  let fieldId: string | undefined;
-  let duration = 20;
-  if (tags.includes('caltrops_hazard')) {
-    fieldId = 'caltrops';
-    duration = 100;
-  } else if (tags.includes('marbles_hazard')) {
-    fieldId = 'marbles';
-    duration = 100;
-  } else if (tags.includes('flammable_oil')) {
-    fieldId = 'oil';
-    duration = 50;
-  } else if (tags.includes('smoke_emitter')) {
-    fieldId = 'smoke';
-    duration = 10;
+  const mergedDef = resolveMergedItemDefinition(state, itemComp);
+  const tags = mergedDef?.tags ?? [];
+  let fieldId = mergedDef?.deployment?.fieldId;
+  let duration = mergedDef?.deployment?.duration ?? 20;
+
+  if (!fieldId) {
+    if (tags.includes('caltrops_hazard')) {
+      fieldId = 'caltrops';
+      duration = 100;
+    } else if (tags.includes('marbles_hazard')) {
+      fieldId = 'marbles';
+      duration = 100;
+    } else if (tags.includes('flammable_oil')) {
+      fieldId = 'oil';
+      duration = 50;
+    } else if (tags.includes('smoke_emitter')) {
+      fieldId = 'smoke';
+      duration = 10;
+    }
   }
 
   if (!fieldId) return { state, success: false };
@@ -564,10 +829,26 @@ export function deployTacticalFloorHazardItem(
     };
   }
 
-  const [spawnedState] = spawnField(nextState, fieldId, targetX, targetY, 1, duration);
+  const deployChain = appendInteractionFrame(
+    interaction ??
+      createInteractionChain(actorId, {
+        kind: 'action',
+        actionId: 'deploy_hazard',
+        actorId
+      }),
+    {
+      kind: 'item',
+      itemEntityId,
+      itemId: itemComp.itemId,
+      role: 'deployed_source'
+    }
+  );
+
+  const [spawnedState] = spawnField(nextState, fieldId, targetX, targetY, 1, duration, undefined, deployChain);
+  const consumedState = consumeOneChargeOrDestroyActorItem(spawnedState, actorId, itemEntityId);
   return {
     state: addMessage(
-      spawnedState,
+      consumedState,
       `Deployed ${itemComp.itemId.replace(/_/g, ' ')} at (${targetX}, ${targetY}).`,
       MessageLogCategory.System
     ),

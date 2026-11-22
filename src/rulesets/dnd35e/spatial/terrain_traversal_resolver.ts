@@ -347,6 +347,8 @@ export function resolveGapJumpTraversal(params: {
 
   const hazardX = params.pitX ?? (fromPos ? fromPos.x + Math.sign(landingX - fromPos.x) : landingX);
   const hazardY = params.pitY ?? (fromPos ? fromPos.y + Math.sign(landingY - fromPos.y) : landingY);
+  const preJumpDmgCount =
+    (getComponent(state, entityId, ComponentType.Damage) as DamageComponent | undefined)?.instances.length ?? 0;
   const fallDisp = displaceEntityStep({
     state,
     entityId,
@@ -358,7 +360,11 @@ export function resolveGapJumpTraversal(params: {
       provokesAoO: false
     }
   });
-  const fallenState = applyPitFallConsequences(fallDisp.state, entityId);
+  const postDispDmgCount =
+    (getComponent(fallDisp.state, entityId, ComponentType.Damage) as DamageComponent | undefined)?.instances.length ??
+    0;
+  const fallenState =
+    postDispDmgCount > preJumpDmgCount ? fallDisp.state : applyPitFallConsequences(fallDisp.state, entityId);
   return {
     state: fallenState,
     success: false,
@@ -393,7 +399,7 @@ export function resolvePitClimbTraversal(params: {
   const dc = params.dc ?? CLIMB_PIT_WALL_DC;
   const dag = evaluateDnD35eEntityDAG(state, entityId);
   const baseClimbMod = dag?.resolvedSkills['climb']?.totalModifier ?? dag?.dagResult.effectiveAbilityModifiers.str ?? 0;
-  const hasClimbersKit = actorInventoryHasItemTagOrId(state, entityId, 'climbers_kit');
+  const hasClimbersKit = actorInventoryHasItemTag(state, entityId, 'climbing_kit');
   // If climbers_kit is in inventory (not equipped), add +2 circumstance bonus if not already in skill snapshot
   const kitBonus = hasClimbersKit && (dag?.resolvedSkills['climb']?.miscModifier ?? 0) === 0 ? 2 : 0;
 
@@ -436,9 +442,89 @@ export function resolvePitClimbTraversal(params: {
   };
 }
 
+function findInventoryItemWithTag(state: Readonly<GameState>, entityId: EntityId, tag: string): EntityId | undefined {
+  const inv = getComponent(state, entityId, ComponentType.Inventory) as InventoryComponent | undefined;
+  if (!inv) return undefined;
+  const sysItems = getDnD35SystemContent(state.campaign)?.items;
+  for (const itemEntityId of inv.items) {
+    const itemComp = getComponent(state, itemEntityId, ComponentType.Item) as ItemComponent | undefined;
+    if (!itemComp) continue;
+    const campaignDef = state.campaign.items[itemComp.itemId];
+    if (campaignDef?.tags?.includes(tag)) return itemEntityId;
+    const rawSysDef = sysItems?.[itemComp.itemId];
+    const sysDef = rawSysDef && sysItems ? resolveEffectiveItemDefinition(rawSysDef, sysItems, itemComp) : undefined;
+    if (sysDef?.tags?.includes(tag)) return itemEntityId;
+  }
+  return undefined;
+}
+
+function consumeOneInventoryItemEntity(state: GameState, actorId: EntityId, itemEntityId: EntityId): GameState {
+  const itemComp = getComponent(state, itemEntityId, ComponentType.Item) as ItemComponent | undefined;
+  if (itemComp?.charges !== undefined && itemComp.charges > 1) {
+    return addComponent(state, itemEntityId, {
+      ...itemComp,
+      charges: itemComp.charges - 1
+    });
+  }
+  const inv = getComponent(state, actorId, ComponentType.Inventory) as InventoryComponent | undefined;
+  if (!inv) return state;
+  return addComponent(state, actorId, {
+    ...inv,
+    items: inv.items.filter((id) => id !== itemEntityId)
+  });
+}
+
+function isTileCrossingGapHazard(state: Readonly<GameState>, x: number, y: number): boolean {
+  if (!isInBounds(x, y, state.map.width, state.map.height)) return false;
+  const tile = state.map.tiles[coordToIndex(x, y, state.map.width)];
+  const tileDef = tile ? state.campaign.tiles[tile.tileId] : undefined;
+  if (!tileDef) return false;
+  const tags = tileDef.tags ?? [];
+  return (
+    tileDef.hazardKind === 'pit' ||
+    tileDef.hazardKind === 'chasm' ||
+    tileDef.hazardKind === 'water' ||
+    tileDef.hazardKind === 'deep_water' ||
+    tags.includes('pit') ||
+    tags.includes('chasm') ||
+    tags.includes('water') ||
+    tags.includes('liquid') ||
+    !tileDef.walkable
+  );
+}
+
+function findAdjacentSolidAnchorCoords(
+  state: Readonly<GameState>,
+  x: number,
+  y: number
+): ReadonlyArray<{ readonly x: number; readonly y: number }> {
+  const anchors: Array<{ readonly x: number; readonly y: number }> = [];
+  const dirs = [
+    { dx: 1, dy: 0 },
+    { dx: -1, dy: 0 },
+    { dx: 0, dy: 1 },
+    { dx: 0, dy: -1 }
+  ];
+  for (const { dx, dy } of dirs) {
+    const nx = x + dx;
+    const ny = y + dy;
+    if (!isInBounds(nx, ny, state.map.width, state.map.height)) continue;
+    const tile = state.map.tiles[coordToIndex(nx, ny, state.map.width)];
+    const tileDef = tile ? state.campaign.tiles[tile.tileId] : undefined;
+    if (tileDef && (tileDef.walkable || tileDef.isSolidObstacle === true)) {
+      anchors.push({ x: nx, y: ny });
+    }
+  }
+  return anchors;
+}
+
 /**
  * Resolves deploying a world-owned `CrossingComponent` entity (`'rope_line'` via `grappling_hook` + rope and
- * a `Use Rope DC 10` check with `+2` for `silk_rope`, or `'ladder_span'` via `ladder_10ft`) over a hazardous tile `(targetX, targetY)`.
+ * a `Use Rope DC 10` check with `+2` for `silk_rope`, or `'ladder_span'` via `ladder_10ft`) over a hazardous tile `(targetX, targetY)`:
+ * - Validates that `(targetX, targetY)` is a gap/hazard tile within `maxRangeTiles`, has at least one adjacent solid anchor,
+ *   and does not already have an active crossing.
+ * - Requires and consumes/installs the required inventory gear (`crossing_ladder` / `ladder` for `'ladder_span'`, or
+ *   `grappling_anchor` + `rope` for `'rope_line'`) when the actor carries an inventory.
  *
  * @param params Crossing deployment parameters.
  * @returns Updated GameState, success flag, and spawned `crossingEntityId`.
@@ -459,15 +545,81 @@ export function resolveRigCrossingWithGear(params: {
   const { state, entityId, targetX, targetY } = params;
   const actorName = resolveEntityDisplayName(state, entityId, 'The adventurer');
 
-  const hasLadder = actorInventoryHasItemTagOrId(state, entityId, 'ladder_10ft');
-  const requestedKind: CrossingKind = params.crossingKind ?? (hasLadder ? 'ladder_span' : 'rope_line');
+  if (!isInBounds(targetX, targetY, state.map.width, state.map.height)) {
+    return {
+      state: addMessage(state, 'Target square is out of bounds.', MessageLogCategory.System),
+      success: false
+    };
+  }
+
+  if (queryCrossingAtPosition(state, targetX, targetY) !== undefined) {
+    return {
+      state: addMessage(state, 'A crossing is already rigged over that square.', MessageLogCategory.System),
+      success: false
+    };
+  }
+
+  if (!isTileCrossingGapHazard(state, targetX, targetY)) {
+    return {
+      state: addMessage(
+        state,
+        'You can only rig a crossing over a pit, chasm, or water hazard.',
+        MessageLogCategory.System
+      ),
+      success: false
+    };
+  }
+
+  const anchorCoords = findAdjacentSolidAnchorCoords(state, targetX, targetY);
+  if (anchorCoords.length === 0) {
+    return {
+      state: addMessage(
+        state,
+        'There is no adjacent ledge or anchor point to support a crossing there.',
+        MessageLogCategory.System
+      ),
+      success: false
+    };
+  }
+
+  const ladderItemId =
+    findInventoryItemWithTag(state, entityId, 'crossing_ladder') ?? findInventoryItemWithTag(state, entityId, 'ladder');
+  const requestedKind: CrossingKind = params.crossingKind ?? (ladderItemId !== undefined ? 'ladder_span' : 'rope_line');
+  const maxRangeTiles = requestedKind === 'ladder_span' ? 2 : 4;
+
+  const actorPos = getComponent(state, entityId, ComponentType.Position) as PositionComponent | undefined;
+  if (actorPos) {
+    const dist = Math.max(Math.abs(actorPos.x - targetX), Math.abs(actorPos.y - targetY));
+    if (dist > maxRangeTiles) {
+      return {
+        state: addMessage(state, 'That gap is too far away to rig from here.', MessageLogCategory.System),
+        success: false
+      };
+    }
+  }
+
+  const inv = getComponent(state, entityId, ComponentType.Inventory) as InventoryComponent | undefined;
+  const hasPopulatedInventory = inv !== undefined && inv.items.length > 0;
 
   if (requestedKind === 'ladder_span' || requestedKind === 'bridge') {
+    if (requestedKind === 'ladder_span' && hasPopulatedInventory && ladderItemId === undefined) {
+      return {
+        state: addMessage(state, 'You need a 10-foot ladder to bridge that gap.', MessageLogCategory.System),
+        success: false
+      };
+    }
+
+    let workingState = state;
+    if (ladderItemId !== undefined) {
+      workingState = consumeOneInventoryItemEntity(workingState, entityId, ladderItemId);
+    }
+
     const [nextState, crossingEntityId] = spawnCrossingEntity({
-      state,
+      state: workingState,
       x: targetX,
       y: targetY,
-      crossingKind: requestedKind
+      crossingKind: requestedKind,
+      anchorTileCoords: anchorCoords
     });
     return {
       state: addMessage(
@@ -480,10 +632,24 @@ export function resolveRigCrossingWithGear(params: {
     };
   }
 
+  const hookItemId = findInventoryItemWithTag(state, entityId, 'grappling_anchor');
+  const ropeItemId =
+    findInventoryItemWithTag(state, entityId, 'supple_rope') ?? findInventoryItemWithTag(state, entityId, 'rope');
+  if (hasPopulatedInventory && (hookItemId === undefined || ropeItemId === undefined)) {
+    return {
+      state: addMessage(
+        state,
+        'You need both a grappling hook and a coil of rope to rig a rope line across that gap.',
+        MessageLogCategory.System
+      ),
+      success: false
+    };
+  }
+
   const dag = evaluateDnD35eEntityDAG(state, entityId);
   const baseRopeMod =
     dag?.resolvedSkills['use_rope']?.totalModifier ?? dag?.dagResult.effectiveAbilityModifiers.dex ?? 0;
-  const hasSilkRope = actorInventoryHasItemTagOrId(state, entityId, 'silk_rope');
+  const hasSilkRope = actorInventoryHasItemTag(state, entityId, 'supple_rope');
   const silkBonus = hasSilkRope && (dag?.resolvedSkills['use_rope']?.miscModifier ?? 0) === 0 ? 2 : 0;
   const roll = rollD20('skill_check', baseRopeMod + silkBonus, params.forcedD20);
 
@@ -499,13 +665,22 @@ export function resolveRigCrossingWithGear(params: {
     };
   }
 
+  let workingState = state;
+  if (hookItemId !== undefined) {
+    workingState = consumeOneInventoryItemEntity(workingState, entityId, hookItemId);
+  }
+  if (ropeItemId !== undefined) {
+    workingState = consumeOneInventoryItemEntity(workingState, entityId, ropeItemId);
+  }
+
   const [nextState, crossingEntityId] = spawnCrossingEntity({
-    state,
+    state: workingState,
     x: targetX,
     y: targetY,
     crossingKind: 'rope_line',
     requiredSkill: 'balance',
-    skillDc: 10
+    skillDc: 10,
+    anchorTileCoords: anchorCoords
   });
   return {
     state: addMessage(
@@ -537,7 +712,8 @@ export function evaluateActorTileHazardOccupation(
   state: GameState,
   entityId: EntityId,
   x: number,
-  y: number
+  y: number,
+  options?: { readonly isTurnStart?: boolean | undefined }
 ): GameState {
   if (!isInBounds(x, y, state.map.width, state.map.height)) return state;
   const tile = state.map.tiles[coordToIndex(x, y, state.map.width)];
@@ -576,9 +752,11 @@ export function evaluateActorTileHazardOccupation(
     return setActorSubmersionState(ext, entityId, false);
   }
 
-  const evalRes = evaluateTileTraversal(tileDef, modes, state, x, y);
-  if (evalRes.passability === 'hazardous' && (evalRes.hazardKind === 'pit' || evalRes.hazardKind === 'chasm')) {
-    return applyPitFallConsequences(state, entityId);
+  if (options?.isTurnStart !== true) {
+    const evalRes = evaluateTileTraversal(tileDef, modes, state, x, y);
+    if (evalRes.passability === 'hazardous' && (evalRes.hazardKind === 'pit' || evalRes.hazardKind === 'chasm')) {
+      return applyPitFallConsequences(state, entityId);
+    }
   }
 
   return setActorSubmersionState(state, entityId, false);

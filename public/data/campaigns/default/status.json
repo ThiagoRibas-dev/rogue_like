@@ -5,6 +5,7 @@
     "description": "Takes 2 damage at the start of each turn, plus secondary poison damage after 10 rounds unless a Fortitude save succeeds.",
     "color": "#00d2d3",
     "detrimental": true,
+    "tags": ["effect:poison"],
     "perTurnDamage": 2,
     "secondaryTriggerAfterTurns": 10,
     "secondarySaveDc": 14,
@@ -16,7 +17,22 @@
     "name": "Antitoxin Protection",
     "description": "Grants a +5 alchemical bonus on Fortitude saving throws against poison.",
     "color": "#1abc9c",
-    "detrimental": false
+    "detrimental": false,
+    "saveModifiers": [
+      {
+        "saveType": "fort",
+        "value": 5,
+        "bonusType": "alchemical",
+        "effectTagsAll": ["effect:poison"]
+      }
+    ]
+  },
+  "holy_water_splash": {
+    "id": "holy_water_splash",
+    "name": "Holy Water Splash",
+    "description": "Blessed water sears undead and evil outsiders on contact.",
+    "color": "#f1c40f",
+    "detrimental": true
   },
   "limping": {
     "id": "limping",

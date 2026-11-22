@@ -5,6 +5,8 @@
     "description": "Restrained by a creature, trap, or effect. Loses Dexterity bonus to AC against opponents not in the grapple and cannot move.",
     "grantedTags": ["condition:grappled"],
     "modifiers": [],
-    "ruleOverrides": []
+    "ruleOverrides": [
+      { "id": "grappled_blocks_charge", "ruleKey": "blocks_charge", "value": true, "priority": 10 }
+    ]
   }
 }

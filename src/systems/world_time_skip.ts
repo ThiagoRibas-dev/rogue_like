@@ -14,18 +14,27 @@ import {
   RIVALRY_EVALUATION_INTERVAL,
   SCHEME_CADENCE_INTERVAL
 } from '../constants/scheduler.constants.ts';
-import { addComponent, getComponent, queryEntities, removeEntity } from '../core/ecs.ts';
+import { addComponent, getComponent, queryEntities, removeComponent } from '../core/ecs.ts';
 import { tickControllerLinksAndOverlays } from '../core/ecs/ecs_lifecycle.ts';
-import { ComponentType, type FieldComponent, type StatusEffectsComponent } from '../types/components.types.ts';
+import { ComponentType, type CoatingComponent, type FighterComponent } from '../types/components.types.ts';
 import { type GameEvent, GameEventType } from '../types/events.types.ts';
 import type { EntityId, GameState } from '../types/game-state.types.ts';
+import { advanceActorBreathByTurns } from './breath.system.ts';
+import { tickCorpseDecay } from './corpse.system.ts';
+import { advanceCrossingsByTurns } from './crossing.system.ts';
+import { processDamageSystem } from './damage.system.ts';
+import { processDeathSystem } from './death.system.ts';
+import { advanceFieldsByTurns } from './field.system.ts';
 import { cullStaleAndConfirmedRumors, processRumorPropagationEvents, tickPendingRumors } from './gossip.system.ts';
 import { processHungerTick } from './hunger.system.ts';
 import { processKnowledgePropagationEvents, tickPendingKnowledge } from './knowledge.system.ts';
+import { advanceActorLightEmittersByTurns } from './light_emitter.system.ts';
 import { processNemesisSystem } from './nemesis.system.ts';
 import { processPersonalitySystem } from './personality.system.ts';
 import { processRivalries } from './rivalry.system.ts';
 import { processSchemeTurn } from './scheme.system.ts';
+import { advanceAIAlertnessDecayByTurns } from './sound.system.ts';
+import { advanceActorStatusEffectsByTurns } from './status-effect.system.ts';
 import { applyElapsedWorldHours, resolveAreaRestPressure } from './world_clock.system.ts';
 import { processWorldEvents } from './world_events.system.ts';
 
@@ -37,42 +46,86 @@ export interface BulkTimeAdvanceResult {
   readonly interruptedReason?: string | undefined;
 }
 
+/** Result returned by domain-shared local actor/world elapsed-time advancement. */
+export interface ActorElapsedTimeResult {
+  readonly state: GameState;
+  readonly turnsAdvanced: number;
+  readonly interruptedReason?: string | undefined;
+}
+
+function hasActivePerTurnLocalHazard(state: GameState): boolean {
+  for (const entityId of state.entities) {
+    if (getComponent(state, entityId, ComponentType.StatusEffects) !== undefined) return true;
+    if (getComponent(state, entityId, ComponentType.Breath) !== undefined) return true;
+    if (getComponent(state, entityId, ComponentType.Field) !== undefined) return true;
+  }
+  return false;
+}
+
 /**
- * Fast-forwards active durations (`StatusEffectsComponent`, `FieldComponent`, `PropertyOverlayComponent`,
- * and temporary `ControllerLinkComponent` summons) in O(entities) when advancing time in bulk.
+ * Advances all local domain-owned elapsed-time resolvers across `turnsElapsed` turns:
+ * - Actor status primary/secondary elapsed stages (`advanceActorStatusEffectsByTurns`)
+ * - Actor breath/submersion countdown & drowning (`advanceActorBreathByTurns`)
+ * - Light emitter fuel countdown & burnout (`advanceActorLightEmittersByTurns`)
+ * - AI acoustic alertness decay (`advanceAIAlertnessDecayByTurns`)
+ * - World temporary crossings (`advanceCrossingsByTurns`)
+ * - Spatial fields (`advanceFieldsByTurns`)
+ * - Corpse decay (`tickCorpseDecay`)
+ * - Weapon coating durations (`CoatingComponent`)
+ * - Passive overlays & temporary controller links (`tickControllerLinksAndOverlays`)
+ * - Queued damage & death resolution (`processDamageSystem`, `processDeathSystem`)
+ *
+ * @param state Current immutable GameState.
+ * @param turnsElapsed Number of turns elapsed in this step.
+ * @returns Updated GameState.
  */
-function fastForwardEntityDurations(state: GameState, turnsElapsed: number): GameState {
+export function advanceLocalElapsedTimeByTurns(state: GameState, turnsElapsed: number): GameState {
   if (turnsElapsed <= 0) return state;
   let nextState = state;
-  let fovNeedsUpdate = false;
+  const entitySnapshot = [...nextState.entities];
 
-  for (const entityId of [...nextState.entities]) {
-    const statusCmp = getComponent(nextState, entityId, ComponentType.StatusEffects) as
-      StatusEffectsComponent | undefined;
-    if (statusCmp && statusCmp.activeEffects.length > 0) {
-      const remaining = statusCmp.activeEffects
-        .map((eff) => ({ ...eff, duration: eff.duration - turnsElapsed }))
-        .filter((eff) => eff.duration > 0);
-      if (remaining.length !== statusCmp.activeEffects.length || remaining.length > 0) {
-        nextState = addComponent(nextState, entityId, { ...statusCmp, activeEffects: remaining });
-      }
+  for (const entityId of entitySnapshot) {
+    if (getComponent(nextState, entityId, ComponentType.StatusEffects) !== undefined) {
+      nextState = advanceActorStatusEffectsByTurns(nextState, entityId, turnsElapsed);
     }
-
-    const fieldCmp = getComponent(nextState, entityId, ComponentType.Field) as FieldComponent | undefined;
-    if (fieldCmp) {
-      const remainingDur = fieldCmp.duration - turnsElapsed;
-      if (remainingDur <= 0) {
-        const def = nextState.campaign.fields[fieldCmp.fieldType];
-        if (def?.blocksSight) fovNeedsUpdate = true;
-        nextState = removeEntity(nextState, entityId);
-        continue;
+    if (getComponent(nextState, entityId, ComponentType.Breath) !== undefined) {
+      nextState = advanceActorBreathByTurns(nextState, entityId, turnsElapsed);
+    }
+    if (
+      getComponent(nextState, entityId, ComponentType.Player) !== undefined ||
+      getComponent(nextState, entityId, ComponentType.Equipment) !== undefined ||
+      getComponent(nextState, entityId, ComponentType.Inventory) !== undefined
+    ) {
+      nextState = advanceActorLightEmittersByTurns(nextState, entityId, turnsElapsed);
+    }
+    if (getComponent(nextState, entityId, ComponentType.AI) !== undefined) {
+      nextState = advanceAIAlertnessDecayByTurns(nextState, entityId, turnsElapsed);
+    }
+    const coating = getComponent(nextState, entityId, ComponentType.Coating) as CoatingComponent | undefined;
+    if (coating) {
+      const nextDuration = coating.duration - turnsElapsed;
+      if (nextDuration <= 0) {
+        nextState = removeComponent(nextState, entityId, ComponentType.Coating);
+      } else {
+        nextState = addComponent(nextState, entityId, {
+          ...coating,
+          duration: nextDuration
+        });
       }
-      nextState = addComponent(nextState, entityId, { ...fieldCmp, duration: remainingDur });
     }
   }
 
+  nextState = advanceCrossingsByTurns(nextState, turnsElapsed);
+  nextState = advanceFieldsByTurns(nextState, turnsElapsed);
+  nextState = tickCorpseDecay(nextState);
   nextState = tickControllerLinksAndOverlays(nextState, turnsElapsed);
-  return fovNeedsUpdate ? { ...nextState, fovNeedsUpdate: true } : nextState;
+
+  if (queryEntities(nextState, [ComponentType.Damage]).length > 0) {
+    nextState = processDamageSystem(nextState);
+    nextState = processDeathSystem(nextState);
+  }
+
+  return nextState;
 }
 
 function formatBulkEventSummary(evt: GameEvent): string | undefined {
@@ -162,9 +215,9 @@ function stepBulkMacroCadence(
 /**
  * Advances world time synchronously by `turns`:
  * 1. Advances `globalTurn`, Drama Budget, and Tier 2/3 macro simulations (`Nemesis`, `Rivalry`, `World Events`, `Rumors`).
- * 2. Fast-forwards status/field/overlay/summon durations in O(entities).
+ * 2. Advances domain-owned local elapsed-time resolvers (statuses, breath, light emitters, crossings, fields, alertness, corpses) on each step.
  * 3. Applies normal hunger progression (`rules.hunger.satiationLossPerStandardTurn`) for the player.
- * 4. Aborts cleanly if `shouldInterrupt` returns a non-empty interruption reason.
+ * 4. Aborts cleanly if `shouldInterrupt` returns a non-empty interruption reason after any step.
  */
 export function advanceWorldTimeBulk(
   state: GameState,
@@ -184,19 +237,25 @@ export function advanceWorldTimeBulk(
   let interruptedReason: string | undefined;
 
   while (remaining > 0) {
-    const step = Math.min(BULK_CADENCE_STEP_SIZE, remaining);
+    const stepCap = hasActivePerTurnLocalHazard(nextState) ? 1 : BULK_CADENCE_STEP_SIZE;
+    const step = Math.min(stepCap, remaining);
     nextState = stepBulkMacroCadence(nextState, step, summaryEvents, seenEventIds);
+    nextState = advanceLocalElapsedTimeByTurns(nextState, step);
     remaining -= step;
     advanced += step;
 
-    const reason = shouldInterrupt?.(nextState);
+    const playerDeadReason =
+      playerId !== undefined &&
+      (nextState.isGameOver ||
+        ((getComponent(nextState, playerId, ComponentType.Fighter) as FighterComponent | undefined)?.hp ?? 1) <= 0)
+        ? 'You collapsed or died during the time skip!'
+        : undefined;
+    const reason = shouldInterrupt?.(nextState) ?? playerDeadReason;
     if (reason) {
       interruptedReason = reason;
       break;
     }
   }
-
-  nextState = fastForwardEntityDurations(nextState, advanced);
 
   if (playerId !== undefined && advanced > 0) {
     nextState = processHungerTick(nextState, playerId, advanced * STANDARD_ENERGY_PER_TURN);
@@ -236,12 +295,20 @@ export async function advanceWorldTimeBulkAsync(
     const chunk = Math.min(BULK_REST_CHUNK_TURNS, turns - completed);
     let chunkRemaining = chunk;
     while (chunkRemaining > 0) {
-      const step = Math.min(BULK_CADENCE_STEP_SIZE, chunkRemaining);
+      const stepCap = hasActivePerTurnLocalHazard(nextState) ? 1 : BULK_CADENCE_STEP_SIZE;
+      const step = Math.min(stepCap, chunkRemaining);
       nextState = stepBulkMacroCadence(nextState, step, summaryEvents, seenEventIds);
+      nextState = advanceLocalElapsedTimeByTurns(nextState, step);
       chunkRemaining -= step;
       completed += step;
 
-      const reason = shouldInterrupt?.(nextState);
+      const playerDeadReason =
+        playerId !== undefined &&
+        (nextState.isGameOver ||
+          ((getComponent(nextState, playerId, ComponentType.Fighter) as FighterComponent | undefined)?.hp ?? 1) <= 0)
+          ? 'You collapsed or died during the time skip!'
+          : undefined;
+      const reason = shouldInterrupt?.(nextState) ?? playerDeadReason;
       if (reason) {
         interruptedReason = reason;
         break;
@@ -253,7 +320,6 @@ export async function advanceWorldTimeBulkAsync(
     }
   }
 
-  nextState = fastForwardEntityDurations(nextState, completed);
   if (playerId !== undefined && completed > 0) {
     nextState = processHungerTick(nextState, playerId, completed * STANDARD_ENERGY_PER_TURN);
   }

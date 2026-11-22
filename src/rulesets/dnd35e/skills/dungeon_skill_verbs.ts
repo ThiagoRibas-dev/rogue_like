@@ -62,19 +62,19 @@ import {
 const TRAP_RESET_MARGIN = 5;
 
 /** Declarative item tag identifying physical restraint tools (`manacles`, `masterwork_manacles`). */
-export const RESTRAINTS_ITEM_TAG = 'restraints';
+const RESTRAINTS_ITEM_TAG = 'restraints';
 
 /** Standard Escape Artist DC to slip out of iron manacles (`30` per PHB p. 126). */
-export const STANDARD_MANACLES_ESCAPE_ARTIST_DC = 30;
+const STANDARD_MANACLES_ESCAPE_ARTIST_DC = 30;
 
 /** Masterwork Escape Artist DC to slip out of masterwork manacles (`35` per PHB p. 126). */
-export const MASTERWORK_MANACLES_ESCAPE_ARTIST_DC = 35;
+const MASTERWORK_MANACLES_ESCAPE_ARTIST_DC = 35;
 
 /** Standard Strength Break DC to burst iron manacles (`26` per PHB p. 126). */
-export const STANDARD_MANACLES_BREAK_DC = 26;
+const STANDARD_MANACLES_BREAK_DC = 26;
 
 /** Masterwork Strength Break DC to burst masterwork manacles (`28` per PHB p. 126). */
-export const MASTERWORK_MANACLES_BREAK_DC = 28;
+const MASTERWORK_MANACLES_BREAK_DC = 28;
 
 /** Conditions on a target that allow applying physical restraints (`manacles`). */
 const RESTRAINABLE_CONDITIONS: ReadonlySet<DnD35ConditionId> = new Set([
@@ -586,8 +586,7 @@ export function resolveDungeonSkillVerb(
         };
       }
 
-      const isMasterwork =
-        itemDef.magicalProperties?.isMasterwork === true || toolTags.includes('masterwork');
+      const isMasterwork = itemDef.magicalProperties?.isMasterwork === true || toolTags.includes('masterwork');
       const escapeArtistDc = isMasterwork ? MASTERWORK_MANACLES_ESCAPE_ARTIST_DC : STANDARD_MANACLES_ESCAPE_ARTIST_DC;
       const breakDc = isMasterwork ? MASTERWORK_MANACLES_BREAK_DC : STANDARD_MANACLES_BREAK_DC;
 

@@ -1,10 +1,10 @@
 # Implementation Plan — M150–M156 Corrective Remediation
 
-> **Status:** Phase 1, Steps 4–5 — Enhanced corrective implementation plan; awaiting explicit approval.
+> **Status:** Complete — All 6 phases (`P1.1–P6.9`) executed and verified against the full 8-stage pipeline (`./verify.sh` + `bun scripts/map-codebase.ts --check`).
 > **Audited baseline:** commit `c83c3830d812c746e88fb850812462be57fd1a66` against its parent.
 > **Research source:** `docs/research_notes.md` contains the verified evidence, stable remediation IDs, provenance design, and audit baseline.
-> **Execution strategy:** Execute the six corrective phases sequentially. Complete every task and regression test in a phase, run the full eight-stage verification pipeline, and restore a clean verification baseline before beginning the next phase.
-> **Current authorization:** Planning artifacts only. No production source, test, data, asset, or documentation implementation is authorized until this plan is explicitly approved.
+> **Execution strategy:** Executed sequentially across Phases 1–6 with regression tests, campaign/ruleset/SSOT parity checks, and zero-error full-pipeline verification.
+> **Verification outcome:** `verify.sh` Stages 1–8 passed (0 errors, 0 warnings across 371 tests in 49 files, all 5 campaigns, 863 ruleset files, 2 sprite packs, ai-prompt-kit mirror, and 502 SSOT source files).
 
 ---
 

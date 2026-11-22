@@ -3,22 +3,18 @@ import {
   ComponentType,
   type FactionComponent,
   type AttitudeComponent,
-  type IdentityMaskComponent
+  type IdentityMaskComponent,
+  type MemoryComponent,
+  type TemplateComponent
 } from '../types/components.types.ts';
 import { getComponent } from '../core/ecs.ts';
 
-/**
- * Gets the faction relation between two entities.
- * Defaults to Neutral if either entity lacks a FactionComponent.
- * @param state The current GameState.
- * @param subject The EntityId checking relation.
- * @param target The EntityId being checked against.
- * @returns The FactionRelation enum value.
- */
-export function getFactionRelation(
+function resolveActualBaselineRelation(
   state: GameState,
   subject: EntityId,
-  target: EntityId
+  target: EntityId,
+  subjectFaction: string,
+  actualTargetFaction: string
 ): 'hostile' | 'neutral' | 'friendly' {
   const isSubjectPlayer = getComponent(state, subject, ComponentType.Player) !== undefined;
   const isTargetPlayer = getComponent(state, target, ComponentType.Player) !== undefined;
@@ -39,22 +35,7 @@ export function getFactionRelation(
     }
   }
 
-  const subjectFactionCmp = getComponent(state, subject, ComponentType.Faction) as FactionComponent | undefined;
-  const targetFactionCmp = getComponent(state, target, ComponentType.Faction) as FactionComponent | undefined;
-
-  const subjectMask = getComponent(state, subject, ComponentType.IdentityMask) as IdentityMaskComponent | undefined;
-  const targetMask = getComponent(state, target, ComponentType.IdentityMask) as IdentityMaskComponent | undefined;
-
-  const subjectFaction =
-    subjectMask && subjectMask.suspicion < subjectMask.maxSuspicion
-      ? subjectMask.disguisedAsFactionId
-      : (subjectFactionCmp?.factionId ?? 'neutral');
-  const targetFaction =
-    targetMask && targetMask.suspicion < targetMask.maxSuspicion
-      ? targetMask.disguisedAsFactionId
-      : (targetFactionCmp?.factionId ?? 'neutral');
-
-  if (subjectFaction === targetFaction && subjectFaction !== 'neutral') {
+  if (subjectFaction === actualTargetFaction && subjectFaction !== 'neutral') {
     return 'friendly';
   }
 
@@ -63,12 +44,65 @@ export function getFactionRelation(
     return 'neutral';
   }
 
-  const relation = relations[targetFaction];
-  if (!relation) {
-    return 'neutral';
+  return relations[actualTargetFaction] ?? 'neutral';
+}
+
+/**
+ * Gets the faction relation between two entities.
+ * Precedence:
+ * 1. The subject's own faction/attitude remains its actual state (never overwritten by subject's own mask).
+ * 2. Personal grudges (`MemoryComponent.grudges`) on `subject` toward `target` override any disguise and return `'hostile'`.
+ * 3. Actual `'friendly'` allies remain `'friendly'` even when `target` is wearing a disguise.
+ * 4. A valid, unblown `IdentityMaskComponent` on `target` (`suspicion < maxSuspicion`) resolves `target`'s perceived
+ *    faction from `targetMask.disguisedAsFactionId` and suppresses baseline faction/attitude hostility.
+ * 5. Otherwise falls back to actual faction/attitude relation.
+ *
+ * @param state The current GameState.
+ * @param subject The EntityId checking relation.
+ * @param target The EntityId being checked against.
+ * @returns The FactionRelation value (`'hostile' | 'neutral' | 'friendly'`).
+ */
+export function getFactionRelation(
+  state: GameState,
+  subject: EntityId,
+  target: EntityId
+): 'hostile' | 'neutral' | 'friendly' {
+  const subjectFactionCmp = getComponent(state, subject, ComponentType.Faction) as FactionComponent | undefined;
+  const targetFactionCmp = getComponent(state, target, ComponentType.Faction) as FactionComponent | undefined;
+  const subjectFaction = subjectFactionCmp?.factionId ?? 'neutral';
+  const actualTargetFaction = targetFactionCmp?.factionId ?? 'neutral';
+
+  const subjectMemory = getComponent(state, subject, ComponentType.Memory) as MemoryComponent | undefined;
+  if (subjectMemory?.grudges && subjectMemory.grudges.length > 0) {
+    const targetTemplateId = (getComponent(state, target, ComponentType.Template) as TemplateComponent | undefined)
+      ?.templateId;
+    if (
+      subjectMemory.grudges.includes(String(target)) ||
+      subjectMemory.grudges.includes(actualTargetFaction) ||
+      (targetTemplateId !== undefined && subjectMemory.grudges.includes(targetTemplateId))
+    ) {
+      return 'hostile';
+    }
   }
 
-  return relation;
+  const actualRelation = resolveActualBaselineRelation(state, subject, target, subjectFaction, actualTargetFaction);
+  if (actualRelation === 'friendly') {
+    return 'friendly';
+  }
+
+  const targetMask = getComponent(state, target, ComponentType.IdentityMask) as IdentityMaskComponent | undefined;
+  if (targetMask && targetMask.suspicion < targetMask.maxSuspicion) {
+    const disguisedFaction = targetMask.disguisedAsFactionId;
+    if (subjectFaction === disguisedFaction && subjectFaction !== 'neutral') {
+      return 'friendly';
+    }
+    const spoofedRelation = state.campaign.factions[subjectFaction]?.[disguisedFaction] ?? 'neutral';
+    if (spoofedRelation !== 'hostile') {
+      return spoofedRelation;
+    }
+  }
+
+  return actualRelation;
 }
 
 /**

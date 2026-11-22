@@ -7,7 +7,9 @@
     "modifiers": [
       { "id": "entangled_attack", "target": "attack", "value": -2, "type": "untyped" }
     ],
-    "ruleOverrides": [],
+    "ruleOverrides": [
+      { "id": "entangled_blocks_charge", "ruleKey": "blocks_charge", "value": true, "priority": 10 }
+    ],
     "abilityPenaltyGroup": "entanglement",
     "abilityPenalties": { "str": 0, "dex": 4 }
   }

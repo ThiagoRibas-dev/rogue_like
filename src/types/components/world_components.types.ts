@@ -1,5 +1,6 @@
 import type { ComponentType } from '../components.types.ts';
 import type { EntityId } from '../game-state.types.ts';
+import type { InteractionChain } from '../interaction_provenance.types.ts';
 import type { Intent } from '../intents/intent.union.ts';
 import type { PhaseBlock } from '../campaign/social.ts';
 
@@ -137,6 +138,7 @@ export interface DamageInstance {
   readonly amount: number;
   readonly sourceEntityId?: EntityId | undefined;
   readonly tags: ReadonlyArray<string>;
+  readonly interaction?: InteractionChain | undefined;
 }
 
 /**
@@ -154,6 +156,7 @@ export interface DeathComponent {
   readonly type: ComponentType.Death;
   readonly killerId?: EntityId | undefined;
   readonly causeOfDeath?: string | undefined;
+  readonly interaction?: InteractionChain | undefined;
 }
 
 /**
@@ -222,6 +225,7 @@ export interface FieldComponent {
         readonly yieldsToDescriptors?: ReadonlyArray<string> | undefined;
       }
     | undefined;
+  readonly interaction?: InteractionChain | undefined;
 }
 
 /**
@@ -295,6 +299,7 @@ export interface CrossingComponent {
   readonly maxWeightLbs?: number | undefined;
   readonly anchorTileCoords?: ReadonlyArray<{ readonly x: number; readonly y: number }> | undefined;
   readonly durationTurns?: number | undefined;
+  readonly interaction?: InteractionChain | undefined;
 }
 
 /**

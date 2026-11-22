@@ -56,6 +56,7 @@ import type {
   TraitsComponent,
   TrapComponent
 } from './components/world_components.types.ts';
+export type { InteractionChain, InteractionFrame, InteractionFrameKind } from './interaction_provenance.types.ts';
 
 // Re-export Actor Components & Types (AGENTS.md Rule 8 & 15)
 export type {

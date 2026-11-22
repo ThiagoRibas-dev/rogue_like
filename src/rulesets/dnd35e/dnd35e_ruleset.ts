@@ -1,6 +1,6 @@
 import { addComponent, getComponent, resolveEntityDisplayName } from '../../core/ecs.ts';
 import { addMessage, MessageLogCategory } from '../../systems/message.system.ts';
-import { ComponentType, type FighterComponent, type StatusEffectsComponent } from '../../types/components.types.ts';
+import { ComponentType, type FighterComponent } from '../../types/components.types.ts';
 import type { EntityId, GameState } from '../../types/game-state.types.ts';
 import type {
   HudVitalsDTO,
@@ -282,23 +282,29 @@ export const dnd35eRulesetContract: RulesetContract = {
   },
   resolveStatusSecondaryStage(state, entityId, _activeEffect, statusDef) {
     const dc = statusDef.secondarySaveDc ?? 14;
-    const dag = evaluateDnD35eEntityDAG(state, entityId);
-    const baseFort = dag?.dagResult.saves.fort ?? 0;
-    const statuses = getComponent(state, entityId, ComponentType.StatusEffects) as StatusEffectsComponent | undefined;
-    const resistedIds = statusDef.resistedByStatusIds ?? [];
-    const hasResistanceStatus =
-      resistedIds.length > 0 && (statuses?.activeEffects.some((e) => resistedIds.includes(e.effectId)) ?? false);
-    const alchemicalBonus = hasResistanceStatus ? 5 : 0;
+    const effectTags =
+      statusDef.tags && statusDef.tags.length > 0
+        ? statusDef.tags.map((t) => (t.startsWith('effect:') ? t : `effect:${t}`))
+        : [`effect:${statusDef.id}`];
+    const baseDag = evaluateDnD35eEntityDAG(state, entityId);
+    const contextualDag = evaluateDnD35eEntityDAG(state, entityId, { effectTags });
+    const totalFort = contextualDag?.dagResult.saves.fort ?? baseDag?.dagResult.saves.fort ?? 0;
+    const baselineFort = baseDag?.dagResult.saves.fort ?? totalFort;
+    const contextualBonus = totalFort - baselineFort;
+    const contextualMod = contextualDag?.dagResult.saveBreakdowns?.fort.modifierBreakdown.activeModifiers.find(
+      (m) => m.condition?.effectTagsAny !== undefined
+    );
+    const contextualBonusType = contextualMod?.bonusType ?? 'resistance';
 
     const saveRes = resolveSavingThrow({
       saveType: 'fort',
-      baseSave: baseFort,
+      baseSave: totalFort,
       abilityModifier: 0,
-      miscBonus: alchemicalBonus,
+      miscBonus: 0,
       dc
     });
     const name = resolveEntityDisplayName(state, entityId, 'Someone');
-    const bonusNote = alchemicalBonus > 0 ? ` (+${alchemicalBonus} alchemical)` : '';
+    const bonusNote = contextualBonus > 0 ? ` (+${contextualBonus} ${contextualBonusType})` : '';
     const msg = saveRes.success
       ? `${name} resists secondary ${statusDef.name} damage (Fortitude ${saveRes.total}${bonusNote} vs DC ${dc})!`
       : `${name} fails to resist secondary ${statusDef.name} damage (Fortitude ${saveRes.total}${bonusNote} vs DC ${dc})!`;

@@ -8,6 +8,7 @@ import type { EntityId, GameState, TargetingContext } from './game-state.types.t
 import type { MeleeAttackIntent, UseAbilityIntent } from './intents/combat.intents.ts';
 import type { ApplyIntent, ApplyIntentTarget } from './intents/interaction.intents.ts';
 import type { Intent } from './intents/intent.union.ts';
+import type { InteractionChain, InteractionFrame } from './interaction_provenance.types.ts';
 
 /**
  * Describes a campaign verification warning or error containing pathway keys and details.
@@ -110,12 +111,14 @@ export interface DisplacementContext {
   readonly provokesAoO: boolean;
   readonly sourceEntityId?: EntityId | undefined;
   readonly ignoresDifficultTerrainForCharge?: boolean | undefined;
+  readonly interaction?: InteractionChain | undefined;
 }
 
 /** Result of executing an atomic spatial displacement step or multi-step vector displacement. */
 export interface DisplacementResult {
   readonly state: GameState;
   readonly moved: boolean;
+  readonly anchorMoved?: boolean | undefined;
   readonly stepsMoved: number;
   readonly finalPos: { readonly x: number; readonly y: number };
   readonly stopReason:
@@ -270,9 +273,14 @@ export interface RulesetContract {
    * Optional hook validating whether an actor can activate a wand (e.g. Spell Trigger or Use Magic Device DC 20).
    * @param state The current GameState.
    * @param entityId The acting entity ID.
+   * @param wandEntityId Optional wand item entity ID being activated.
    * @returns `{ allowed: boolean; state: GameState }`.
    */
-  validateWandActivation?(state: GameState, entityId: EntityId): { allowed: boolean; state: GameState };
+  validateWandActivation?(
+    state: GameState,
+    entityId: EntityId,
+    wandEntityId?: EntityId
+  ): { allowed: boolean; state: GameState };
 
   /**
    * Optional hook projecting Monster Lore / ruleset inspection lines for an inspected entity.
@@ -522,6 +530,16 @@ export interface RulesetContract {
    * Optional hook invoked when a non-player entity dies at `(x, y)` before removal (e.g., spawning an arcane caster's spellbook).
    */
   onEntityDied?(state: GameState, victimId: EntityId, x: number, y: number, killerId?: EntityId): GameState;
+
+  /**
+   * Optional before-frame causal interception point invoked before an `InteractionFrame` is appended
+   * to an active `InteractionChain`. May modify state or veto (`prevented: true`) the frame without mutating the chain.
+   */
+  beforeInteractionFrame?(
+    state: GameState,
+    chain: InteractionChain,
+    frame: InteractionFrame
+  ): { readonly state: GameState; readonly prevented: boolean; readonly reason?: string | undefined };
 }
 
 /** Context passed to `RulesetContract.evaluateTradePriceModifier`. */

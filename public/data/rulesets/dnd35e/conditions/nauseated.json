@@ -5,6 +5,8 @@
     "description": "Experiencing stomach distress. Nauseated creatures are unable to attack, cast spells, concentrate, or do anything requiring attention other than a single move action.",
     "grantedTags": ["condition:nauseated"],
     "modifiers": [],
-    "ruleOverrides": []
+    "ruleOverrides": [
+      { "id": "nauseated_blocks_charge", "ruleKey": "blocks_charge", "value": true, "priority": 10 }
+    ]
   }
 }

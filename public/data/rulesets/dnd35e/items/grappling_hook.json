@@ -16,6 +16,14 @@
       "dungeoneering",
       "grappling_anchor"
     ],
+    "crossingRecipe": {
+      "crossingKind": "rope_line",
+      "requiredPartnerTags": ["rope"],
+      "requiredSkill": "use_rope",
+      "skillDc": 10,
+      "consumesItems": true,
+      "maxRangeTiles": 4
+    },
     "spriteId": "dcss_item_misc_misc_disc_new"
   }
 }

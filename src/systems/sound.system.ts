@@ -7,12 +7,15 @@ import {
   type FighterComponent,
   type LockComponent,
   type PositionComponent,
+  type StatusEffectsComponent,
   type TacticalDoctrineComponent
 } from '../types/components.types.ts';
 import type { EntityId, GameState } from '../types/game-state.types.ts';
+import type { InteractionChain } from '../types/interaction_provenance.types.ts';
 import { isHostile } from '../utils/faction.ts';
 import { coordToIndex, isInBounds } from '../utils/grid.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
+import { SLEEPING_AWARENESS_PENALTY, SLEEPING_STATUS_ID, wakeSleepingActor } from './rest.system.ts';
 
 /** Default sound attenuation (dB) per open walkable floor tile (`5` dB). */
 export const DEFAULT_OPEN_TILE_SOUND_ATTENUATION = 5;
@@ -65,6 +68,7 @@ export interface EmitSoundEventOptions {
   readonly cueLabel?: string | undefined;
   readonly stealthRoll?: number | undefined;
   readonly forcedListenerRolls?: Readonly<Record<string, number>> | undefined;
+  readonly interaction?: InteractionChain | undefined;
 }
 
 /** Result returned by `emitSoundEvent`. */
@@ -196,10 +200,16 @@ function resolveNextAlertnessState(current: AIAlertnessState | undefined, receiv
   return 'suspicious';
 }
 
+function isActorSleeping(state: Readonly<GameState>, entityId: EntityId): boolean {
+  const statusComp = getComponent(state, entityId, ComponentType.StatusEffects) as StatusEffectsComponent | undefined;
+  return statusComp?.activeEffects.some((e) => e.effectId === SLEEPING_STATUS_ID) === true;
+}
+
 /**
  * Emits a Tier 1 acoustic ripple at `(originX, originY)` with intensity `dbLevel`.
  * - Propagates through walls and closed doors via `propagateSoundField`.
  * - Evaluates living listeners symmetrically:
+ *   - Sleeping listeners suffer `SLEEPING_AWARENESS_PENALTY` (`-10` on `Listen`) and wake via `wakeSleepingActor` when they hear the sound.
  *   - Hostile/unaffiliated AI actors transition `unaware -> suspicious -> alerted` and record `lastHeardPos`.
  *   - The player receives directional sound cues in the message log when an unseen source makes noise outside FOV.
  *
@@ -247,17 +257,22 @@ export function emitSoundEvent(
     const receivedDb = soundMap.get(`${pos.x},${pos.y}`);
     if (receivedDb === undefined || receivedDb < SOUND_SUSPICIOUS_THRESHOLD_DB) continue;
 
-    // Opposed Listen check when source is actively stealthed; otherwise threshold hearing
+    const sleeping = isActorSleeping(nextState, listenerId);
     let heard = true;
-    if (effectiveStealthRoll !== undefined) {
+    if (effectiveStealthRoll !== undefined || sleeping) {
       const listenMod = activeRuleset.getActorSkillModifier?.(nextState, listenerId, 'listen') ?? 0;
       const forcedRoll = options?.forcedListenerRolls?.[String(listenerId)];
       const rawD20 = forcedRoll !== undefined ? forcedRoll : BASE_LISTEN_DC;
       const dbBonus = Math.floor((receivedDb - SOUND_SUSPICIOUS_THRESHOLD_DB) / 5);
-      heard = rawD20 + listenMod + dbBonus >= effectiveStealthRoll;
+      const sleepPenalty = sleeping ? SLEEPING_AWARENESS_PENALTY : 0;
+      const targetDc = effectiveStealthRoll ?? BASE_LISTEN_DC;
+      heard = rawD20 + listenMod + sleepPenalty + dbBonus >= targetDc;
     }
 
     if (!heard) continue;
+    if (sleeping) {
+      nextState = wakeSleepingActor(nextState, listenerId);
+    }
     heardByEntityIds.push(listenerId);
 
     const isPlayer = getComponent(nextState, listenerId, ComponentType.Player) !== undefined;
@@ -288,15 +303,7 @@ export function emitSoundEvent(
   return { state: nextState, heardByEntityIds, soundMap };
 }
 
-/**
- * Ticks down `AIComponent.alertnessDecayTurns` at an AI actor's turn start, stepping
- * `'alerted' -> 'suspicious' -> 'unaware'` and clearing `lastHeardPos` once decayed.
- *
- * @param state Current immutable GameState.
- * @param entityId AI actor EntityId.
- * @returns Updated GameState.
- */
-export function tickAIAlertnessDecay(state: GameState, entityId: EntityId): GameState {
+function tickAIAlertnessDecaySingleTurn(state: GameState, entityId: EntityId): GameState {
   const ai = getComponent(state, entityId, ComponentType.AI) as AIComponent | undefined;
   if (!ai || ai.alertnessState === undefined || ai.alertnessState === 'unaware') {
     return state;
@@ -323,4 +330,37 @@ export function tickAIAlertnessDecay(state: GameState, entityId: EntityId): Game
     ...restAi,
     alertnessState: 'unaware'
   });
+}
+
+/**
+ * Advances `AIComponent.alertnessDecayTurns` across `turnsElapsed` turns, stepping
+ * `'alerted' -> 'suspicious' -> 'unaware'` and clearing `lastHeardPos` once decayed.
+ * Shared between normal Turn Start and bulk time advancement.
+ *
+ * @param state Current immutable GameState.
+ * @param entityId AI actor EntityId.
+ * @param turnsElapsed Number of elapsed turns.
+ * @returns Updated GameState.
+ */
+export function advanceAIAlertnessDecayByTurns(state: GameState, entityId: EntityId, turnsElapsed: number): GameState {
+  if (turnsElapsed <= 0) return state;
+  let nextState = state;
+  for (let step = 0; step < turnsElapsed; step++) {
+    const ai = getComponent(nextState, entityId, ComponentType.AI) as AIComponent | undefined;
+    if (!ai || ai.alertnessState === undefined || ai.alertnessState === 'unaware') break;
+    nextState = tickAIAlertnessDecaySingleTurn(nextState, entityId);
+  }
+  return nextState;
+}
+
+/**
+ * Ticks down `AIComponent.alertnessDecayTurns` at an AI actor's turn start, stepping
+ * `'alerted' -> 'suspicious' -> 'unaware'` and clearing `lastHeardPos` once decayed.
+ *
+ * @param state Current immutable GameState.
+ * @param entityId AI actor EntityId.
+ * @returns Updated GameState.
+ */
+export function tickAIAlertnessDecay(state: GameState, entityId: EntityId): GameState {
+  return advanceAIAlertnessDecayByTurns(state, entityId, 1);
 }

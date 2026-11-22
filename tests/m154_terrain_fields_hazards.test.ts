@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { addComponent, getComponent, queryEntities, spawnEntity, spawnItem } from '../src/core/ecs.ts';
+import { evaluateDnD35eEntityDAG } from '../src/rulesets/dnd35e/cartridge/dnd35e_dag_adapter.ts';
 import {
   applyAndConsumeWeaponCoatingOnHit,
   resolveCaltropsStepHazard,
@@ -8,6 +9,7 @@ import {
   resolveSlipperyFloorStepHazard
 } from '../src/rulesets/dnd35e/combat/floor_hazard_resolver.ts';
 import {
+  evaluateActorTileHazardOccupation,
   extinguishActorFireInWater,
   getShallowWaterStealthAndTumblePenalty,
   resolveDeepWaterSwimCheck,
@@ -19,8 +21,10 @@ import { getDnD35EntityData, setDnD35EntityData } from '../src/rulesets/dnd35e/s
 import { processActorBreathTick } from '../src/systems/breath.system.ts';
 import { destroyCrossingEntity, queryCrossingAtPosition, spawnCrossingEntity } from '../src/systems/crossing.system.ts';
 import { queryActiveFieldsAtPosition, spawnField } from '../src/systems/field.system.ts';
+import { createInteractionChain, resolveInteractionOriginator } from '../src/systems/interaction_provenance.system.ts';
 import { processEquipItemIntent } from '../src/systems/inventory/equipment_slots.ts';
-import { canTraverseTile } from '../src/systems/movement.system.ts';
+import { runActorTurnStart } from '../src/systems/lifecycle.system.ts';
+import { canTraverseTile, processMoveIntent } from '../src/systems/movement.system.ts';
 import { evaluateTileTraversal } from '../src/systems/movement_displacement.ts';
 import { applyStatusEffect } from '../src/systems/status-effect.system.ts';
 import {
@@ -28,7 +32,7 @@ import {
   type CoatingComponent,
   ComponentType,
   type DamageComponent,
-  type FighterComponent,
+  type EquipmentComponent,
   type InventoryComponent,
   type PositionComponent,
   type StatusEffectsComponent
@@ -263,7 +267,28 @@ describe('Milestone 154: Universal Terrain Traversal, Crossing Entities, Element
     });
     expect(climbRes.success).toBe(true);
 
-    // Add silk_rope + grappling_hook and rig a world-owned rope_line crossing
+    // Add silk_rope + grappling_hook and rig a world-owned rope_line crossing over a pit tile
+    state = {
+      ...state,
+      campaign: {
+        ...state.campaign,
+        tiles: {
+          ...state.campaign.tiles,
+          pit_trap_hole: {
+            id: 'pit_trap_hole',
+            name: 'Open Pit',
+            glyph: 'O',
+            fg: '#111111',
+            bg: '#000000',
+            walkable: false,
+            blocksSight: false,
+            tags: ['pit'],
+            requiredMovementModes: ['fly']
+          }
+        }
+      }
+    };
+    state = setMapTileAt(state, gapX, gapY, 'pit_trap_hole');
     let ropeId: EntityId;
     let hookId: EntityId;
     [state, ropeId] = spawnItem(state, 'silk_rope', playerPos.x, playerPos.y);
@@ -487,4 +512,162 @@ describe('Milestone 154: Universal Terrain Traversal, Crossing Entities, Element
     expect(idRes.success).toBe(true);
     expect(idRes.state.identifiedItems.has('antitoxin')).toBe(true);
   });
+
+  test('8. Single pit-entry fall invariant, crossing movement, ladder/rope consumption, single-transaction transmutation, weapon-bound coating, footAC, and InteractionChain provenance', () => {
+    let state = buildGameState(sharedCampaign);
+    const playerId = queryEntities(state, [ComponentType.Player])[0]!;
+    const playerPos = getComponent(state, playerId, ComponentType.Position) as PositionComponent;
+    const pitX = playerPos.x + 1;
+    const pitY = playerPos.y;
+
+    state = {
+      ...state,
+      campaign: {
+        ...state.campaign,
+        tiles: {
+          ...state.campaign.tiles,
+          open_pit: {
+            id: 'open_pit',
+            name: 'Open Pit',
+            glyph: 'O',
+            fg: '#111111',
+            bg: '#000000',
+            walkable: false,
+            blocksSight: false,
+            tags: ['pit'],
+            requiredMovementModes: ['fly']
+          }
+        }
+      }
+    };
+    state = setMapTileAt(state, pitX, pitY, 'open_pit');
+
+    // 1. Single pit-entry fall invariant: entering pit deals fall damage ONCE; subsequent turn start inside pit does NOT re-apply fall damage
+    let victimId: EntityId;
+    [state, victimId] = spawnEntity(state, 'skeleton', pitX, pitY);
+    state = evaluateActorTileHazardOccupation(state, victimId, pitX, pitY, { isTurnStart: false });
+    const entryDmgCount = (getComponent(state, victimId, ComponentType.Damage) as DamageComponent | undefined)?.instances.length ?? 0;
+    expect(entryDmgCount).toBe(1);
+    expect(getDnD35EntityData(state, victimId).conditions).toContain('prone');
+
+    const afterTurnStart = runActorTurnStart(state, victimId);
+    const turnStartDmgCount =
+      (getComponent(afterTurnStart, victimId, ComponentType.Damage) as DamageComponent | undefined)?.instances.length ?? 0;
+    expect(turnStartDmgCount).toBe(0);
+
+    // Clear victim from pit so player can deploy crossing gear and walk onto the crossing via processMoveIntent
+    state = addComponent(state, victimId, { type: ComponentType.Position, x: playerPos.x - 2, y: playerPos.y });
+
+    // 2. resolveRigCrossingWithGear consumes ladder_10ft to spawn a ladder_span crossing
+    let ladderId: EntityId;
+    [state, ladderId] = spawnItem(state, 'ladder_10ft', playerPos.x, playerPos.y);
+    const inv = getComponent(state, playerId, ComponentType.Inventory) as InventoryComponent;
+    state = addComponent(state, playerId, { ...inv, items: [...inv.items, ladderId] });
+
+    const deployLadder = resolveRigCrossingWithGear({
+      state,
+      entityId: playerId,
+      targetX: pitX,
+      targetY: pitY
+    });
+    expect(deployLadder.success).toBe(true);
+    state = deployLadder.state;
+    expect(queryCrossingAtPosition(state, pitX, pitY)?.crossing.crossingKind).toBe('ladder_span');
+    expect((getComponent(state, playerId, ComponentType.Inventory) as InventoryComponent).items).not.toContain(ladderId);
+
+    // 3. processMoveIntent allows walking onto the unwalkable pit tile because a world-owned crossing spans (pitX, pitY)
+    const moveOverCrossing = processMoveIntent(state, {
+      type: IntentType.Move,
+      entityId: playerId,
+      dx: 1,
+      dy: 0
+    });
+    expect(moveOverCrossing.success).toBe(true);
+    expect(getComponent(moveOverCrossing.state, playerId, ComponentType.Position)).toMatchObject({ x: pitX, y: pitY });
+
+    // 4. Single-transaction fire-on-oil transmutation leaves only the transmuted 'fire' field, never duplicate raw + transmuted
+    const fx = playerPos.x;
+    const fy = playerPos.y + 2;
+    const oilChain = createInteractionChain(playerId, { kind: 'action', actionId: 'deploy_oil', actorId: playerId });
+    const fireChain = createInteractionChain(playerId, { kind: 'action', actionId: 'deploy_fire', actorId: playerId });
+    [state] = spawnField(state, 'oil', fx, fy, 0, 10, undefined, oilChain);
+    [state] = spawnField(state, 'fire', fx, fy, 0, 5, undefined, fireChain);
+    const transmutedFields = queryActiveFieldsAtPosition(state, fx, fy);
+    expect(transmutedFields.length).toBe(1);
+    expect(transmutedFields[0]?.field.fieldType).toBe('fire');
+    expect(resolveInteractionOriginator(transmutedFields[0]!.field.interaction!)).toBe(playerId);
+
+    // 5. Weapon-entity-bound coating consumption & multi-hop InteractionChain provenance
+    let mainSwordId: EntityId;
+    let offDaggerId: EntityId;
+    let oilFlaskId: EntityId;
+    [state, mainSwordId] = spawnItem(state, 'longsword', playerPos.x, playerPos.y);
+    [state, offDaggerId] = spawnItem(state, 'dagger', playerPos.x, playerPos.y);
+    [state, oilFlaskId] = spawnItem(state, 'oil_flask', playerPos.x, playerPos.y);
+    state = addComponent(state, playerId, {
+      type: ComponentType.Equipment,
+      slots: [
+        { id: 'main_hand', slotType: 'main_hand', equippedItem: mainSwordId },
+        { id: 'off_hand', slotType: 'off_hand', equippedItem: offDaggerId }
+      ]
+    } as EquipmentComponent);
+
+    const dipMain = resolveDipWeaponCoating({
+      state,
+      actorId: playerId,
+      targetItemEntityId: mainSwordId,
+      coatingSourceEntityId: oilFlaskId
+    });
+    expect(dipMain.success).toBe(true);
+    state = dipMain.state;
+    const mainCoating = getComponent(state, mainSwordId, ComponentType.Coating) as CoatingComponent;
+    expect(mainCoating.interaction?.originatorEntityId).toBe(playerId);
+    expect(mainCoating.interaction?.frames.some((f) => f.kind === 'item' && f.role === 'consumable')).toBe(true);
+
+    // Striking with the uncoated off-hand dagger must NOT consume the main-hand sword's coating!
+    const offHit = applyAndConsumeWeaponCoatingOnHit(state, playerId, victimId, [], offDaggerId);
+    expect(offHit.bonusDamage).toBe(0);
+    expect(getComponent(offHit.state, mainSwordId, ComponentType.Coating)).toBeDefined();
+
+    // Striking with the coated main-hand sword decrements its 2-charge oil coating to 1, then removes it on the second strike, while threading InteractionChain provenance
+    const mainHit1 = applyAndConsumeWeaponCoatingOnHit(offHit.state, playerId, victimId, [], mainSwordId);
+    expect(mainHit1.bonusDamage).toBeGreaterThanOrEqual(1);
+    expect((getComponent(mainHit1.state, mainSwordId, ComponentType.Coating) as CoatingComponent | undefined)?.charges).toBe(1);
+    const mainHit = applyAndConsumeWeaponCoatingOnHit(mainHit1.state, playerId, victimId, [], mainSwordId);
+    expect(mainHit.bonusDamage).toBeGreaterThanOrEqual(1);
+    expect(getComponent(mainHit.state, mainSwordId, ComponentType.Coating)).toBeUndefined();
+    const victimDmg = getComponent(mainHit.state, victimId, ComponentType.Damage) as DamageComponent;
+    const coatingDmgInst = victimDmg.instances[victimDmg.instances.length - 1]!;
+    expect(coatingDmgInst.interaction?.originatorEntityId).toBe(playerId);
+    expect(coatingDmgInst.interaction?.frames.some((f) => f.kind === 'effect' && f.effectKind === 'coating')).toBe(true);
+
+    // 6. Caltrops uses dagResult.acBreakdown.footAC and is bypassed when moving at half speed or slower
+    const dag = evaluateDnD35eEntityDAG(state, playerId)!;
+    expect(dag.dagResult.acBreakdown.footAC).toBeGreaterThanOrEqual(10);
+    const cx = playerPos.x - 1;
+    const cy = playerPos.y;
+    state = {
+      ...state,
+      campaign: {
+        ...state.campaign,
+        fields: {
+          ...state.campaign.fields,
+          caltrops: {
+            id: 'caltrops',
+            name: 'Caltrops',
+            glyph: '^',
+            fg: '#95a5a6',
+            bg: 'transparent',
+            blocksSight: false,
+            tags: ['caltrops']
+          }
+        }
+      }
+    };
+    [state] = spawnField(state, 'caltrops', cx, cy, 0, 10);
+    const halfSpeedBypass = resolveCaltropsStepHazard(state, playerId, cx, cy, 20, { isHalfSpeedOrSlower: true });
+    expect(halfSpeedBypass.triggered).toBe(false);
+    expect(halfSpeedBypass.hit).toBe(false);
+  });
 });
+

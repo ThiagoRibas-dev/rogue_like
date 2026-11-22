@@ -1,4 +1,5 @@
 import type { TacticalDoctrineComponent, WeaponGripMode } from '../../../types/components.types.ts';
+import type { EntityId } from '../../../types/game-state.types.ts';
 import type { ResolvedActorWeapons } from '../equipment_physics.ts';
 import type { DnD35DamageType, DnD35WeaponDamageRider } from '../types/dnd35e_system.types.ts';
 import { type AttackRollParams, computeHandednessStrDamage } from './attack_roll.ts';
@@ -38,6 +39,10 @@ export interface DnD35ResolvedStrikeProfile {
   readonly critThreatBreakdown?: StatResolutionBreakdown | undefined;
   readonly weaponId?: string | undefined;
   readonly baseWeaponId?: string | undefined;
+  readonly weaponEntityId?: EntityId | undefined;
+  readonly weaponSlotId?: string | undefined;
+  readonly reachFt?: number | undefined;
+  readonly strikesAdjacent?: boolean | undefined;
   readonly naturalWeaponId?: string | undefined;
   readonly damageMultiplier?: number | undefined;
 }
@@ -143,8 +148,8 @@ export function resolveActorAttackRoutine(params: {
       entry.attackSource === 'manufactured_primary' || entry.attackSource === 'manufactured_offhand';
     const offWeapon =
       entry.attackSource === 'manufactured_offhand'
-        ? (offHands.find((w) => w.weaponItemId === entry.weaponId) ??
-          offHands[offHandCounter % Math.max(1, offHands.length)] ??
+        ? (offHands[offHandCounter % Math.max(1, offHands.length)] ??
+          offHands.find((w) => w.weaponItemId === entry.weaponId) ??
           primary)
         : undefined;
 
@@ -242,7 +247,11 @@ export function resolveActorAttackRoutine(params: {
         damageRiders: wpn.damageRiders,
         critThreatBreakdown,
         weaponId: wpn.weaponItemId,
-        baseWeaponId: wpn.baseWeaponId ?? wpn.weaponItemId
+        baseWeaponId: wpn.baseWeaponId ?? wpn.weaponItemId,
+        ...(wpn.itemEntityId !== undefined ? { weaponEntityId: wpn.itemEntityId } : {}),
+        ...(wpn.slotId !== undefined ? { weaponSlotId: wpn.slotId } : {}),
+        ...(wpn.reachFt !== undefined ? { reachFt: wpn.reachFt } : {}),
+        ...(wpn.strikesAdjacent !== undefined ? { strikesAdjacent: wpn.strikesAdjacent } : {})
       });
     } else {
       const isPrimary = entry.attackSource === 'natural_primary';
@@ -278,7 +287,9 @@ export function resolveActorAttackRoutine(params: {
         bypassTags: [natLimb?.damageType ?? 'slashing'],
         ...(natLimb?.riders !== undefined ? { onHitRiders: natLimb.riders } : {}),
         critThreatBreakdown,
-        naturalWeaponId: entry.naturalWeaponId
+        naturalWeaponId: entry.naturalWeaponId,
+        reachFt: 5,
+        strikesAdjacent: true
       });
     }
   }

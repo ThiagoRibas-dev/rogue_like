@@ -22,6 +22,17 @@
       "damage": 2,
       "destroyOnImpact": true
     },
+    "coating": {
+      "statusId": "burning",
+      "charges": 2,
+      "duration": 50,
+      "bonusDamageDice": "1d3",
+      "bonusDamageType": "fire"
+    },
+    "deployment": {
+      "fieldId": "oil",
+      "duration": 50
+    },
     "spriteId": "dcss_item_potion_brown_new"
   }
 }

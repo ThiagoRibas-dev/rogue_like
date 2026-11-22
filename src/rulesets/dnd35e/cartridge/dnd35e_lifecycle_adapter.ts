@@ -24,6 +24,7 @@ import { FEET_PER_GRID_SQUARE } from '../spatial/grid_geometry.ts';
 import { evaluateActorLightExposure } from '../spatial/light_exposure.ts';
 import { evaluateStealthDetection, isActorStealthed } from '../spatial/stealth_resolver.ts';
 import { evaluateActorTileHazardOccupation } from '../spatial/terrain_traversal_resolver.ts';
+import { evaluateAndRecordMonsterLore } from '../skills/monster_lore_tracker.ts';
 import { getDnD35EntityData, setDnD35EntityData } from '../srd_registry.ts';
 import { getDnD35SystemContent } from '../types/dnd35e_system.types.ts';
 import { evaluateDnD35eEntityDAG } from './dnd35e_dag_adapter.ts';
@@ -197,7 +198,7 @@ export function onDnD35eActorTurnStart(state: GameState, entityId: EntityId): Ga
 
   const actorPos = getComponent(nextState, entityId, ComponentType.Position) as PositionComponent | undefined;
   if (actorPos) {
-    nextState = evaluateActorTileHazardOccupation(nextState, entityId, actorPos.x, actorPos.y);
+    nextState = evaluateActorTileHazardOccupation(nextState, entityId, actorPos.x, actorPos.y, { isTurnStart: true });
   }
 
   for (const otherId of nextState.entities) {
@@ -207,6 +208,19 @@ export function onDnD35eActorTurnStart(state: GameState, entityId: EntityId): Ga
 
   if (isActorStealthed(nextState, entityId)) {
     nextState = evaluateStealthDetection(nextState, entityId, 'round_cadence').state;
+  }
+
+  if (getComponent(nextState, entityId, ComponentType.Player) !== undefined && nextState.cachedFov.size > 0) {
+    for (const otherId of nextState.entities) {
+      if (otherId === entityId) continue;
+      const otherFighter = getComponent(nextState, otherId, ComponentType.Fighter) as FighterComponent | undefined;
+      const otherPos = getComponent(nextState, otherId, ComponentType.Position) as PositionComponent | undefined;
+      if (!otherFighter || otherFighter.hp <= 0 || !otherPos) continue;
+      const tileIdx = otherPos.y * nextState.map.width + otherPos.x;
+      if (nextState.cachedFov.has(tileIdx)) {
+        nextState = evaluateAndRecordMonsterLore(nextState, entityId, otherId).state;
+      }
+    }
   }
 
   return evaluateActorAuraEntrySaves(nextState, entityId);
@@ -235,7 +249,10 @@ export function onDnD35eActorMovementStep(
 ): GameState {
   let nextState = evaluateActorAuraEntrySaves(state, entityId);
   nextState = evaluateActorTileHazardOccupation(nextState, entityId, toPos.x, toPos.y);
-  nextState = evaluateActorFloorStepHazards(nextState, entityId, toPos.x, toPos.y);
+  nextState = evaluateActorFloorStepHazards(nextState, entityId, toPos.x, toPos.y, {
+    isChargingOrRunning: displacementContext?.mode === 'charge_step',
+    ...(displacementContext?.interaction !== undefined ? { interaction: displacementContext.interaction } : {})
+  });
 
   if (isActorStealthed(nextState, entityId)) {
     const fromLight = resolveTileLightReading(nextState, fromPos.x, fromPos.y).level;

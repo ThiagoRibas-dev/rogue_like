@@ -1,7 +1,13 @@
 import { addComponent, getComponent } from '../../../core/ecs.ts';
+import { appendInteractionFrame, createInteractionChain } from '../../../systems/interaction_provenance.system.ts';
 import { addMessage, MessageLogCategory } from '../../../systems/message.system.ts';
 import { matchesEntityTagCondition } from '../../../systems/reaction.system.ts';
-import { ComponentType, type DamageComponent } from '../../../types/components.types.ts';
+import {
+  ComponentType,
+  type DamageComponent,
+  type DamageInstance,
+  type InteractionChain
+} from '../../../types/components.types.ts';
 import type { EntityId, GameState } from '../../../types/game-state.types.ts';
 import { evaluateDiceExpression } from '../math/dice.ts';
 import type { DnD35EntityData } from '../types/dnd35e.types.ts';
@@ -43,6 +49,7 @@ export interface StrikeExchangeParams {
   readonly forcedAttackRoll?: number | undefined;
   readonly forcedRiderSaveRoll?: number | undefined;
   readonly isChargeAttack?: boolean | undefined;
+  readonly interaction?: InteractionChain | undefined;
 }
 
 /** Result of executing a single strike exchange. */
@@ -85,6 +92,33 @@ export function executeCombatStrikeExchange(params: StrikeExchangeParams): Strik
   let runningState = breakActorStealth(state, attackerId, 'attacked');
   let currentDefenderHp = params.defenderHpRemaining;
   let cleavesCount = cleavesUsedThisTurn;
+
+  const baseChain =
+    params.interaction ??
+    createInteractionChain(attackerId, [
+      {
+        kind: 'action',
+        actionId: params.isChargeAttack ? 'charge' : 'melee_attack',
+        actorId: attackerId
+      }
+    ]);
+  const strikeChain = appendInteractionFrame(baseChain, {
+    kind: 'strike',
+    attackerId,
+    defenderId,
+    strikeIndex,
+    attackSource: strike.attackSource
+  });
+  const hitChain =
+    !strike.isNaturalOrUnarmed && strike.weaponEntityId !== undefined
+      ? appendInteractionFrame(strikeChain, {
+          kind: 'item',
+          itemEntityId: strike.weaponEntityId,
+          itemId: strike.weaponId ?? strike.baseWeaponId ?? 'weapon',
+          role: 'weapon',
+          ...(strike.weaponSlotId !== undefined ? { slotId: strike.weaponSlotId } : {})
+        })
+      : strikeChain;
 
   // Phase 1: PreAttackPhase (Spatial, Flanking, Illumination & Concealment)
   const preContext = resolveStrikePreAttackContext(
@@ -181,11 +215,12 @@ export function executeCombatStrikeExchange(params: StrikeExchangeParams): Strik
   // Phase 3: OnHitRidersPhase (Weapon Damage Riders & Damage Queueing)
   const existingDamage = getComponent(runningState, defenderId, ComponentType.Damage) as DamageComponent | undefined;
   const multipliedBaseDamage = rollResult.totalDamage * strikeDmgMult;
-  const newInstances = [
+  const newInstances: DamageInstance[] = [
     {
       amount: multipliedBaseDamage,
       sourceEntityId: attackerId,
-      tags: ['melee', 'physical', weaponDamageType, ...bypassTags]
+      tags: ['melee', 'physical', weaponDamageType, ...bypassTags],
+      interaction: hitChain
     }
   ];
 
@@ -216,7 +251,8 @@ export function executeCombatStrikeExchange(params: StrikeExchangeParams): Strik
     newInstances.push({
       amount: sneakRes.damage,
       sourceEntityId: attackerId,
-      tags: ['melee', 'physical', 'precision', weaponDamageType, ...bypassTags]
+      tags: ['melee', 'physical', 'precision', weaponDamageType, ...bypassTags],
+      interaction: hitChain
     });
     totalRiderDamage += sneakRes.damage;
     riderText += ` + ${sneakRes.damage} ${sneakRes.usedPenetratingStrike ? 'Penetrating' : 'Sneak'} (${sneakRes.diceUsed}d6)`;
@@ -238,10 +274,17 @@ export function executeCombatStrikeExchange(params: StrikeExchangeParams): Strik
       const riderAmount = diceExpr ? Math.max(0, evaluateDiceExpression(diceExpr).total) : 0;
       if (riderAmount > 0) {
         const isEnergy = ['fire', 'cold', 'electricity', 'acid', 'sonic'].includes(rider.damageType);
+        const riderChain = appendInteractionFrame(hitChain, {
+          kind: 'effect',
+          effectId: rider.id,
+          effectKind: 'rider',
+          ...(strike.weaponEntityId !== undefined ? { sourcePath: `item:${strike.weaponEntityId}` } : {})
+        });
         newInstances.push({
           amount: riderAmount,
           sourceEntityId: attackerId,
-          tags: ['melee', isEnergy ? 'energy' : 'physical', rider.damageType, ...bypassTags]
+          tags: ['melee', isEnergy ? 'energy' : 'physical', rider.damageType, ...bypassTags],
+          interaction: riderChain
         });
         totalRiderDamage += riderAmount;
         riderText += ` + ${riderAmount} ${rider.damageType}`;
@@ -254,8 +297,15 @@ export function executeCombatStrikeExchange(params: StrikeExchangeParams): Strik
     instances: existingDamage ? [...existingDamage.instances, ...newInstances] : newInstances
   });
 
-  if (!strike.isNaturalOrUnarmed) {
-    const coatingOutcome = applyAndConsumeWeaponCoatingOnHit(runningState, attackerId, defenderId, defenderSelfTags);
+  if (!strike.isNaturalOrUnarmed && strike.weaponEntityId !== undefined) {
+    const coatingOutcome = applyAndConsumeWeaponCoatingOnHit(
+      runningState,
+      attackerId,
+      defenderId,
+      defenderSelfTags,
+      strike.weaponEntityId,
+      hitChain
+    );
     runningState = coatingOutcome.state;
     totalRiderDamage += coatingOutcome.bonusDamage;
     riderText += coatingOutcome.riderText;

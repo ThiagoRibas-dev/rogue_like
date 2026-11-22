@@ -14,9 +14,14 @@ import { clearScheduler, getActorRemainingScheduleTime, addActor } from '../src/
 import { buildTurnStatusRibbon } from '../src/rendering/ui/hud_alerts.ui.ts';
 import { canDnD35eActorPerformIntent, resolveDnD35eActionEnergyCost } from '../src/rulesets/dnd35e/cartridge/dnd35e_turn_budget.ts';
 import { getDnD35EntityData, setDnD35EntityData } from '../src/rulesets/dnd35e/srd_registry.ts';
+import { queryCrossingAtPosition, spawnCrossingEntity } from '../src/systems/crossing.system.ts';
+import { queryActiveFieldsAtPosition, spawnField } from '../src/systems/field.system.ts';
 import { applyStatusEffect } from '../src/systems/status-effect.system.ts';
+import { advanceWorldTimeBulk } from '../src/systems/world_time_skip.ts';
 import {
   ComponentType,
+  type FighterComponent,
+  type LightEmitterComponent,
   type PositionComponent,
   type StatusEffectsComponent
 } from '../src/types/components.types.ts';
@@ -237,4 +242,52 @@ describe('Milestone 151: Unified 6-Second Round Clock across TB & RTwP', () => {
     expect(getActorRemainingScheduleTime(playerId)).toBe(0);
     expect(RTWP_IDLE_WAIT_DURATION).toBe(2);
   });
+
+  test('advanceWorldTimeBulk shares local elapsed-time tick across status effects, light emitters, crossings, fields, and breath drowning interruption', () => {
+    let { state, playerId } = buildRtwpArena();
+
+    // 1. Add a 10-turn status effect, a lit light emitter on player with 25 fuelTurns, a 5-turn crossing, and a 5-turn field
+    state = applyStatusEffect(state, playerId, 'antitoxin', 10, playerId);
+    state = addComponent(state, playerId, {
+      type: ComponentType.LightEmitter,
+      radiusFt: 20,
+      shadowyRadiusFt: 40,
+      fuelTurns: 25,
+      maxFuelTurns: 100,
+      isLit: true
+    });
+    [state] = spawnCrossingEntity({
+      state,
+      x: 5,
+      y: 10,
+      crossingKind: 'frozen_surface',
+      durationTurns: 5
+    });
+    [state] = spawnField(state, 'oil', 6, 10, 0, 5);
+
+    // Advance 8 turns via advanceWorldTimeBulk -> crossing (5 turns) and field (5 turns) expire, status has 2 turns left, light has 17 fuelTurns left
+    const bulk8 = advanceWorldTimeBulk(state, 8, playerId);
+    state = bulk8.state;
+    expect(bulk8.turnsAdvanced).toBe(8);
+    expect(queryCrossingAtPosition(state, 5, 10)).toBeUndefined();
+    expect(queryActiveFieldsAtPosition(state, 6, 10).length).toBe(0);
+    const remStatus = (getComponent(state, playerId, ComponentType.StatusEffects) as StatusEffectsComponent).activeEffects.find(
+      (e) => e.effectId === 'antitoxin'
+    );
+    expect(remStatus?.duration).toBe(2);
+    expect((getComponent(state, playerId, ComponentType.LightEmitter) as LightEmitterComponent).fuelTurns).toBe(17);
+
+    // 2. Submerge player with 2 turns of breath remaining and attempt a 100-turn skip -> drowns and interrupts immediately!
+    state = addComponent(state, playerId, {
+      type: ComponentType.Breath,
+      remainingTurns: 2,
+      maxTurns: 20,
+      isSubmerged: true
+    });
+    const drownSkip = advanceWorldTimeBulk(state, 100, playerId);
+    expect(drownSkip.turnsAdvanced).toBeLessThan(100);
+    expect(drownSkip.interruptedReason).toBeDefined();
+    expect((getComponent(drownSkip.state, playerId, ComponentType.Fighter) as FighterComponent).hp).toBeLessThanOrEqual(0);
+  });
 });
+

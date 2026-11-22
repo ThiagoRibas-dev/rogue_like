@@ -78,17 +78,31 @@ export const StaticMapLayoutSchema = z.object({
 /** Inferred type for a static map layout. */
 export type StaticMapLayout = z.infer<typeof StaticMapLayoutSchema>;
 
-/** Zod schema for per-area and campaign-default rest pressure ("Doom Clock") configuration. */
+const RestPressureFields = {
+  safeRest: z.boolean(),
+  ambushChancePerWatch: z.number().min(0).max(1),
+  watchDurationHours: z.number().int().positive(),
+  schemeTickMultiplier: z.number().min(0),
+  respawnRateMultiplier: z.number().min(0),
+  alarmDecayTurns: z.number().int().nonnegative()
+};
+
+/** Zod schema for campaign-default rest pressure ("Doom Clock") configuration. */
 export const RestPressureConfigSchema = z.object({
-  safeRest: z.boolean().default(false),
-  ambushChancePerWatch: z.number().min(0).max(1).default(0.15),
-  watchDurationHours: z.number().int().positive().default(2),
-  schemeTickMultiplier: z.number().min(0).default(1),
-  respawnRateMultiplier: z.number().min(0).default(1),
-  alarmDecayTurns: z.number().int().nonnegative().default(50)
+  safeRest: RestPressureFields.safeRest.default(false),
+  ambushChancePerWatch: RestPressureFields.ambushChancePerWatch.default(0.15),
+  watchDurationHours: RestPressureFields.watchDurationHours.default(2),
+  schemeTickMultiplier: RestPressureFields.schemeTickMultiplier.default(1),
+  respawnRateMultiplier: RestPressureFields.respawnRateMultiplier.default(1),
+  alarmDecayTurns: RestPressureFields.alarmDecayTurns.default(50)
 });
 /** Inferred type for per-area or campaign-level rest pressure configuration. */
 export type RestPressureConfig = z.infer<typeof RestPressureConfigSchema>;
+
+/** Zod schema for partial per-area rest pressure overrides (preserving omitted fields for campaign inheritance). */
+export const RestPressureOverrideSchema = z.object(RestPressureFields).partial();
+/** Inferred type for partial per-area rest pressure overrides. */
+export type RestPressureOverride = z.infer<typeof RestPressureOverrideSchema>;
 
 /** Zod schema outlining an area definition config. */
 export const AreaDefinitionSchema = z.object({
@@ -156,7 +170,7 @@ export const AreaDefinitionSchema = z.object({
     .nonnegative()
     .optional()
     .describe('Overrides the auto-calculated hot path thickness.'),
-  restPressure: RestPressureConfigSchema.optional().describe(
+  restPressure: RestPressureOverrideSchema.optional().describe(
     'Per-area override for camp rest ambush risk, watch duration, scheme acceleration, and respawn scaling.'
   )
 });

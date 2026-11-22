@@ -6,7 +6,7 @@ import {
   evaluateTileTraversal,
   getEntityMovementModes
 } from '../../../systems/movement_displacement.ts';
-import { evaluateFootprintOccupancy } from '../../../systems/movement_footprint.ts';
+import { evaluateFootprintOccupancy, getEntitySpatialProfile } from '../../../systems/movement_footprint.ts';
 import { applyStatusEffect } from '../../../systems/status-effect.system.ts';
 import {
   ComponentType,
@@ -53,8 +53,9 @@ function isTileValidJauntDestination(
   const distTiles = Math.max(Math.abs(targetX - actorPos.x), Math.abs(targetY - actorPos.y));
   if (distTiles < 1 || distTiles > ABRUPT_JAUNT_MAX_TILES) return false;
   const movementModes = getEntityMovementModes(state, actorId);
-  const w = Math.max(1, actorPos.footprintWidth ?? 1);
-  const h = Math.max(1, actorPos.footprintHeight ?? 1);
+  const profile = getEntitySpatialProfile(state, actorId, actorPos.facing);
+  const w = profile.baseWidth;
+  const h = profile.baseHeight;
   for (let oy = 0; oy < h; oy++) {
     for (let ox = 0; ox < w; ox++) {
       const cx = targetX + ox;
@@ -62,7 +63,7 @@ function isTileValidJauntDestination(
       if (!isInBounds(cx, cy, state.map.width, state.map.height)) return false;
       const tile = state.map.tiles[coordToIndex(cx, cy, state.map.width)];
       const tileDef = tile ? state.campaign.tiles[tile.tileId] : undefined;
-      const traversal = evaluateTileTraversal(tileDef, movementModes);
+      const traversal = evaluateTileTraversal(tileDef, movementModes, state, cx, cy);
       if (traversal.passability !== 'unimpeded' && traversal.passability !== 'difficult') return false;
     }
   }
@@ -201,16 +202,21 @@ export function executeAbruptJauntTeleport(
       success: false
     };
   }
+  const dndData = getDnD35EntityData(state, actorId);
+  const activeBudget = dndData.actionBudget ?? hydrateEntityRoundActionBudget(state, actorId);
+  if (!useImmediateAction(activeBudget, isOnTurn).allowed) {
+    return {
+      state: addMessage(state, 'Abrupt Jaunt: No Swift or Immediate Action available.', MessageLogCategory.System),
+      success: false
+    };
+  }
   if (!isTileValidJauntDestination(state, actorId, actorPos, targetX, targetY)) {
     const err = 'Abrupt Jaunt: Destination must be an unoccupied, visible walkable square within 10 ft.';
     return { state: addMessage(state, err, MessageLogCategory.System), success: false };
   }
 
-  const consumed = tryConsumeImmediatePoolAndAction(state, actorId, 'abrupt_jaunt', 'Abrupt Jaunt', isOnTurn);
-  if (!consumed.allowed) return { state: consumed.state, success: false };
-
   const teleportRes = displaceEntityStep({
-    state: consumed.state,
+    state,
     entityId: actorId,
     targetX,
     targetY,
@@ -219,10 +225,23 @@ export function executeAbruptJauntTeleport(
       isForced: false,
       provokesAoO: false,
       sourceEntityId: actorId
-    },
-    skipOccupancyCheck: true
+    }
   });
-  let next = teleportRes.state;
+  if (!teleportRes.moved) {
+    const err = 'Abrupt Jaunt: Destination is blocked.';
+    return { state: addMessage(state, err, MessageLogCategory.System), success: false };
+  }
+
+  const consumed = tryConsumeImmediatePoolAndAction(
+    teleportRes.state,
+    actorId,
+    'abrupt_jaunt',
+    'Abrupt Jaunt',
+    isOnTurn
+  );
+  if (!consumed.allowed) return { state: consumed.state, success: false };
+
+  let next = consumed.state;
   const name = resolveEntityDisplayName(next, actorId, 'Actor');
   const distFt = Math.max(Math.abs(targetX - actorPos.x), Math.abs(targetY - actorPos.y)) * FEET_PER_GRID_SQUARE;
   next = addFloatingText(next, actorId, 'JAUNT!', '#74b9ff');

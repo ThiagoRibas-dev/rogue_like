@@ -96,6 +96,23 @@ export const EntityTemplateSchema = z.object({
       breakable: z.boolean().optional()
     })
     .optional(),
+  structural: z
+    .object({
+      materialId: z.string(),
+      thicknessInches: z.number().positive(),
+      hp: z.number().int().nonnegative().optional(),
+      maxHp: z.number().int().positive().optional(),
+      hardnessOverride: z.number().int().nonnegative().optional(),
+      isDoor: z.boolean().optional(),
+      isOpen: z.boolean().optional(),
+      isLocked: z.boolean().optional(),
+      openLockDc: z.number().int().nonnegative().optional(),
+      isStuck: z.boolean().optional(),
+      isSpiked: z.boolean().optional(),
+      breakDc: z.number().int().nonnegative().optional(),
+      isRuined: z.boolean().optional()
+    })
+    .optional(),
   renderable: z.boolean().optional(),
   crCost: z.number().int().nonnegative().optional(),
   roleTags: z.array(z.string()).optional(),
@@ -153,6 +170,16 @@ export const EntityTemplateSchema = z.object({
 /** Inferred type for an entity template definition. */
 export type EntityTemplate = z.infer<typeof EntityTemplateSchema>;
 
+/** Zod schema for a declarative saving throw modifier granted by an active status effect. */
+export const StatusSaveModifierSchema = z.object({
+  saveType: z.enum(['fort', 'ref', 'will', 'all']),
+  value: z.number().int(),
+  bonusType: z.string(),
+  effectTagsAll: z.array(z.string()).optional()
+});
+/** Inferred type for a status effect saving throw modifier. */
+export type StatusSaveModifier = z.infer<typeof StatusSaveModifierSchema>;
+
 /** Zod schema defining static status effect templates. */
 export const StatusEffectDefinitionSchema = z.object({
   id: z.string(),
@@ -165,6 +192,8 @@ export const StatusEffectDefinitionSchema = z.object({
    * intent from damage values (many detrimental effects deal no damage).
    */
   detrimental: z.boolean().default(false),
+  tags: z.array(z.string()).optional(),
+  saveModifiers: z.array(StatusSaveModifierSchema).optional(),
   statModifiers: z
     .object({
       attack: z.number().int().optional(),

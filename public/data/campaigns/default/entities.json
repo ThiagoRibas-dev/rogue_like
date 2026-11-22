@@ -197,6 +197,15 @@
       "solid",
       "opaque"
     ],
+    "structural": {
+      "materialId": "wood",
+      "thicknessInches": 2,
+      "hp": 20,
+      "maxHp": 20,
+      "isDoor": true,
+      "isOpen": false,
+      "breakDc": 16
+    },
     "lock": {
       "difficulty": 10,
       "locked": false,
@@ -277,7 +286,8 @@
     "tags": [
       "altar",
       "divine",
-      "terrain"
+      "terrain",
+      "deity:pelor"
     ],
     "crCost": 5,
     "roleTags": [

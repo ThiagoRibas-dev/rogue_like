@@ -238,5 +238,10 @@
     "category": "item",
     "color": "#bdc3c7",
     "description": "A book of records."
+  },
+  "deity:pelor": {
+    "category": "magic",
+    "color": "#f1c40f",
+    "description": "Consecrated to Pelor, deity of light and the sun."
   }
 }

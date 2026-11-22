@@ -172,6 +172,7 @@ export interface ACBreakdownDTO {
   readonly fullAC: number;
   readonly touchAC: number;
   readonly flatFootedAC: number;
+  readonly footAC?: number | undefined;
   readonly baseAC: number;
   readonly dexContribution: number;
   readonly sizeContribution: number;

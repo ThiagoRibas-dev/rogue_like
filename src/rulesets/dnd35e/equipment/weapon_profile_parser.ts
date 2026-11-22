@@ -45,6 +45,7 @@ export {
 export interface EquippedWeaponProfile {
   readonly isArmed: boolean;
   readonly wieldable: boolean;
+  readonly itemEntityId?: EntityId | undefined;
   readonly weaponItemId?: string | undefined;
   readonly baseWeaponId?: string | undefined;
   readonly weaponName: string;
@@ -182,10 +183,12 @@ export function parseEquippedItem(
   const itemComp = getComponent(state, slot.equippedItem, ComponentType.Item) as ItemComponent | undefined;
   if (!itemComp) return undefined;
 
-  const rawItemDef = state.campaign.items[itemComp.itemId] as DnD35ItemDefinition | undefined;
+  const sysItems = (state.campaign.systemContent?.['items'] as Record<string, DnD35ItemDefinition> | undefined) ?? {};
+  const mergedItems = { ...sysItems, ...state.campaign.items };
+  const rawItemDef = mergedItems[itemComp.itemId] as DnD35ItemDefinition | undefined;
   if (!rawItemDef || rawItemDef.category !== 'weapon') return undefined;
 
-  const baseItemDef = resolveEffectiveItemDefinition(rawItemDef, state.campaign.items, itemComp);
+  const baseItemDef = resolveEffectiveItemDefinition(rawItemDef, mergedItems, itemComp);
   const baseWeaponId = baseItemDef.baseItemId ?? baseItemDef.id;
 
   const itemTags = collectEffectiveItemTags(state, slot.equippedItem, itemComp, baseItemDef);
@@ -324,10 +327,12 @@ export function parseEquippedItem(
     classesRegistry
   );
   const damageBonus = Math.max(MIN_WEAPON_DAMAGE_BONUS, enhBonus - weaponPenalty);
+  const hasReachTag = itemTags.includes('reach_10ft') || itemTags.includes('reach');
 
   return {
     isArmed: true,
     wieldable: wieldProfile.wieldable,
+    itemEntityId: slot.equippedItem,
     weaponItemId: baseItemDef.id,
     baseWeaponId,
     weaponName: baseItemDef.name,
@@ -344,8 +349,8 @@ export function parseEquippedItem(
     isFinesseEligible,
     cannotTwoHandStr,
     isExotic1HMartial2H,
-    reachFt: weaponStats?.reachFt ?? (itemTags.includes('reach_10ft') ? 10 : 5),
-    strikesAdjacent: weaponStats?.strikesAdjacent ?? !itemTags.includes('reach_10ft'),
+    reachFt: weaponStats?.reachFt ?? (hasReachTag ? 10 : 5),
+    strikesAdjacent: weaponStats?.strikesAdjacent ?? !hasReachTag,
     attackBonus,
     sizeAttackPenalty: wieldProfile.attackPenalty,
     nonproficiencyPenalty,

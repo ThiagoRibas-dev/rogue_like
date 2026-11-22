@@ -1846,7 +1846,6 @@
       "SPELLCRAFT_TRANSCRIBE_BASE_DC",
       "GLOBAL_TURNS_PER_SCRIBE_HOUR",
       "SPELLBOOK_ITEM_TAG",
-      "WRITING_GEAR_ITEM_TAG",
       "SPELL_RARITY_DROP_WEIGHTS",
       "getSpellRarityTier",
       "spawnArcaneCasterSpellbookLoot",

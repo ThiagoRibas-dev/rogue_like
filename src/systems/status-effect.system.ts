@@ -10,18 +10,10 @@ import { getComponent, addComponent, removeComponent, resolveEntityDisplayName }
 import { getRuleset } from '../rulesets/registry.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import { getEffectiveStats } from '../utils/stats.ts';
-import type { DamageComponent, DamageInstance } from '../types/components.types.ts';
+import type { DamageComponent, DamageInstance, InteractionChain } from '../types/components.types.ts';
+import { appendInteractionFrame, createInteractionChain } from './interaction_provenance.system.ts';
 
-/**
- * Ticks active status effects on an entity.
- * This should be called at the start of the entity's turn.
- * It applies per-turn damage/heals, reduces durations, and removes expired effects.
- *
- * @param state The current GameState.
- * @param entityId The entity whose turn is starting.
- * @returns The updated GameState.
- */
-export function processStatusEffectsTick(state: GameState, entityId: EntityId): GameState {
+function tickActorStatusEffectsSingleTurn(state: GameState, entityId: EntityId): GameState {
   const statuses = getComponent(state, entityId, ComponentType.StatusEffects);
   if (!statuses || statuses.activeEffects.length === 0) return state;
 
@@ -34,14 +26,31 @@ export function processStatusEffectsTick(state: GameState, entityId: EntityId): 
   const name = resolveEntityDisplayName(state, entityId, 'Someone');
 
   let xpToGrant: { source: EntityId; amount: number } | null = null;
+  let damageInteraction: InteractionChain | undefined;
 
   for (const active of statuses.activeEffects) {
     const def = state.campaign.status[active.effectId];
     let nextElapsed = active.elapsedTurns ?? 0;
     let nextSecondaryResolved = active.secondaryResolved === true;
+    const statusEffectFrame = {
+      kind: 'effect' as const,
+      effectId: active.effectId,
+      effectKind: 'status' as const
+    };
+    const activeChain =
+      active.interaction !== undefined
+        ? appendInteractionFrame(active.interaction, statusEffectFrame)
+        : active.sourceEntityId !== undefined
+          ? createInteractionChain(active.sourceEntityId, [statusEffectFrame])
+          : undefined;
 
     if (def) {
-      if (def.perTurnDamage) damageTaken += def.perTurnDamage;
+      if (def.perTurnDamage) {
+        damageTaken += def.perTurnDamage;
+        if (damageInteraction === undefined && activeChain !== undefined) {
+          damageInteraction = activeChain;
+        }
+      }
       if (def.perTurnHeal) healthGained += def.perTurnHeal;
 
       if (def.perTurnDamage && active.sourceEntityId) {
@@ -62,9 +71,21 @@ export function processStatusEffectsTick(state: GameState, entityId: EntityId): 
             nextState = stageRes.state;
             if (!stageRes.resisted && def.secondaryDamage !== undefined && def.secondaryDamage > 0) {
               damageTaken += def.secondaryDamage;
+              if (damageInteraction === undefined && activeChain !== undefined) {
+                damageInteraction = activeChain;
+              }
+              if (active.sourceEntityId !== undefined && xpToGrant === null) {
+                const fighter = getComponent(nextState, entityId, ComponentType.Fighter);
+                if (fighter && fighter.xpGiven > 0) {
+                  xpToGrant = { source: active.sourceEntityId, amount: fighter.xpGiven };
+                }
+              }
             }
           } else if (def.secondaryDamage !== undefined && def.secondaryDamage > 0) {
             damageTaken += def.secondaryDamage;
+            if (damageInteraction === undefined && activeChain !== undefined) {
+              damageInteraction = activeChain;
+            }
           }
         }
       }
@@ -106,11 +127,17 @@ export function processStatusEffectsTick(state: GameState, entityId: EntityId): 
       nextState = addMessage(nextState, `${name} suffers from afflictions.`, MessageLogCategory.CombatHit);
 
       const existingDamageComp = getComponent(nextState, entityId, ComponentType.Damage) as DamageComponent | undefined;
+      const resolvedSourceId = xpToGrant
+        ? xpToGrant.source
+        : damageInteraction !== undefined
+          ? damageInteraction.originatorEntityId
+          : undefined;
 
       const damageInstance: DamageInstance = {
         amount: actualDamage,
-        sourceEntityId: xpToGrant ? xpToGrant.source : undefined,
-        tags: ['status_effect', 'dot']
+        sourceEntityId: resolvedSourceId,
+        tags: ['status_effect', 'dot'],
+        ...(damageInteraction !== undefined ? { interaction: damageInteraction } : {})
       };
 
       if (existingDamageComp) {
@@ -144,6 +171,43 @@ export function processStatusEffectsTick(state: GameState, entityId: EntityId): 
 }
 
 /**
+ * Advances active status effects on `entityId` across `turnsElapsed` turns using the
+ * canonical status elapsed-stage resolver (shared between normal turn start and bulk time).
+ *
+ * @param state The current GameState.
+ * @param entityId The entity whose status effects are advancing.
+ * @param turnsElapsed Number of elapsed turns to process.
+ * @returns The updated GameState.
+ */
+export function advanceActorStatusEffectsByTurns(
+  state: GameState,
+  entityId: EntityId,
+  turnsElapsed: number
+): GameState {
+  if (turnsElapsed <= 0) return state;
+  let nextState = state;
+  for (let step = 0; step < turnsElapsed; step++) {
+    const statuses = getComponent(nextState, entityId, ComponentType.StatusEffects);
+    if (!statuses || statuses.activeEffects.length === 0) break;
+    nextState = tickActorStatusEffectsSingleTurn(nextState, entityId);
+  }
+  return nextState;
+}
+
+/**
+ * Ticks active status effects on an entity by 1 turn.
+ * This should be called at the start of the entity's turn.
+ * It applies per-turn damage/heals, evaluates secondary stage triggers, reduces durations, and removes expired effects.
+ *
+ * @param state The current GameState.
+ * @param entityId The entity whose turn is starting.
+ * @returns The updated GameState.
+ */
+export function processStatusEffectsTick(state: GameState, entityId: EntityId): GameState {
+  return advanceActorStatusEffectsByTurns(state, entityId, 1);
+}
+
+/**
  * Checks whether any active status effect on this entity has the `skipTurn` flag.
  * The game loop uses this to decide if the entity's turn should be skipped entirely.
  *
@@ -168,16 +232,19 @@ export function applyStatusEffect(
   entityId: EntityId,
   effectId: string,
   duration: number,
-  sourceEntityId?: EntityId
+  sourceEntityId?: EntityId,
+  interaction?: InteractionChain
 ): GameState {
   const statuses = getComponent(state, entityId, ComponentType.StatusEffects);
   const def = state.campaign.status[effectId];
   const hasSecondaryStage = def?.secondaryTriggerAfterTurns !== undefined;
+  const resolvedSourceId = sourceEntityId ?? interaction?.originatorEntityId;
   const nextActive: ActiveStatusEffect = {
     effectId,
     duration,
-    ...(sourceEntityId !== undefined ? { sourceEntityId } : {}),
-    ...(hasSecondaryStage ? { elapsedTurns: 0, secondaryResolved: false } : {})
+    ...(resolvedSourceId !== undefined ? { sourceEntityId: resolvedSourceId } : {}),
+    ...(hasSecondaryStage ? { elapsedTurns: 0, secondaryResolved: false } : {}),
+    ...(interaction !== undefined ? { interaction } : {})
   };
 
   let nextState = state;
@@ -190,11 +257,13 @@ export function applyStatusEffect(
     if (existingIndex >= 0) {
       const existing = nextEffects[existingIndex]!;
       const newDuration = Math.max(existing.duration, duration);
+      const nextInteraction = interaction ?? existing.interaction;
       nextEffects[existingIndex] = {
         ...existing,
         duration: newDuration,
-        ...(sourceEntityId !== undefined ? { sourceEntityId } : {}),
-        ...(hasSecondaryStage ? { elapsedTurns: 0, secondaryResolved: false } : {})
+        ...(resolvedSourceId !== undefined ? { sourceEntityId: resolvedSourceId } : {}),
+        ...(hasSecondaryStage ? { elapsedTurns: 0, secondaryResolved: false } : {}),
+        ...(nextInteraction !== undefined ? { interaction: nextInteraction } : {})
       };
     } else {
       nextEffects.push(nextActive);

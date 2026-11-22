@@ -3,13 +3,12 @@ import { addComponent, createEntity, getComponent, queryEntities, spawnEntity, s
 import { applyIntentWithCost } from '../src/core/loop/intent_cost_resolver.ts';
 import { hydrateEntityRoundActionBudget } from '../src/rulesets/dnd35e/cartridge/dnd35e_turn_budget.ts';
 import { executeEightHourRest } from '../src/rulesets/dnd35e/magic/rest_recovery.ts';
-import {
-  attemptEscapeOrBreakRestraints,
-  MASTERWORK_MANACLES_BREAK_DC,
-  MASTERWORK_MANACLES_ESCAPE_ARTIST_DC,
-  STANDARD_MANACLES_BREAK_DC,
-  STANDARD_MANACLES_ESCAPE_ARTIST_DC
-} from '../src/rulesets/dnd35e/skills/dungeon_skill_verbs.ts';
+import { attemptEscapeOrBreakRestraints } from '../src/rulesets/dnd35e/skills/dungeon_skill_verbs.ts';
+
+const STANDARD_MANACLES_ESCAPE_ARTIST_DC = 30;
+const STANDARD_MANACLES_BREAK_DC = 26;
+const MASTERWORK_MANACLES_ESCAPE_ARTIST_DC = 35;
+const MASTERWORK_MANACLES_BREAK_DC = 28;
 import { getDnD35EntityData, setDnD35EntityData } from '../src/rulesets/dnd35e/srd_registry.ts';
 import { processApplyIntent } from '../src/systems/apply.system.ts';
 import { processEquipItemIntent } from '../src/systems/inventory/equipment_slots.ts';
@@ -155,7 +154,7 @@ describe('Milestone 153: Per-Area Rest Pressure ("Doom Clock"), Bulk Schemes, Ca
     // Without camp gear: preparedness reduction = 0
     expect(evaluatePartyCampPreparedness(state, playerId).ambushRiskReduction).toBe(0);
 
-    // Add bedroll, tent, and torch to player inventory -> 2 camp_gear (0.06) + 1 light_source (0.03) = 0.09 reduction
+    // Add bedroll, tent, and unlit torch to player inventory -> 2 camp_gear (0.06) + 0 unlit light = 0.06 reduction
     let bedrollId;
     let tentId;
     let torchId;
@@ -166,6 +165,21 @@ describe('Milestone 153: Per-Area Rest Pressure ("Doom Clock"), Bulk Schemes, Ca
     state = addComponent(state, playerId, {
       ...inv,
       items: [...inv.items, bedrollId, tentId, torchId]
+    });
+
+    const unlitPrep = evaluatePartyCampPreparedness(state, playerId);
+    expect(unlitPrep.campGearCount).toBe(2);
+    expect(unlitPrep.hasCampLight).toBe(false);
+    expect(unlitPrep.ambushRiskReduction).toBeCloseTo(0.06, 5);
+
+    // Ignite the torch -> active lit LightEmitterComponent grants hasCampLight: true (+0.03 -> 0.09 reduction)
+    state = addComponent(state, torchId, {
+      type: ComponentType.LightEmitter,
+      radiusFt: 20,
+      shadowyRadiusFt: 40,
+      fuelTurns: 600,
+      maxFuelTurns: 600,
+      isLit: true
     });
 
     const prep = evaluatePartyCampPreparedness(state, playerId);
@@ -436,4 +450,133 @@ describe('Milestone 153: Per-Area Rest Pressure ("Doom Clock"), Bulk Schemes, Ca
     expect(getDnD35EntityData(succeededEscape.state, banditId).conditions).not.toContain('bound');
     expect(getDnD35EntityData(succeededEscape.state, banditId).restraintBinding).toBeUndefined();
   });
+
+  test('8. Partial area RestPressureOverrideSchema preserves campaign defaults and wand activation checks class spell lists before UMD', () => {
+    let state = buildGameState(sharedCampaign);
+    const playerId = queryEntities(state, [ComponentType.Player])[0]!;
+    const playerPos = getComponent(state, playerId, ComponentType.Position)!;
+
+    // 1. Partial area restPressure override ({ ambushChancePerWatch: 0.35 }) inherits non-overridden fields from campaign.rules.restPressure
+    const customRules = {
+      ...state.campaign.rules,
+      restPressure: {
+        safeRest: false,
+        ambushChancePerWatch: 0.12,
+        watchDurationHours: 4,
+        schemeTickMultiplier: 3,
+        respawnRateMultiplier: 2.5,
+        alarmDecayTurns: 45
+      }
+    };
+    const partialAreaState = {
+      ...state,
+      campaign: {
+        ...state.campaign,
+        rules: customRules,
+        areas: {
+          ...state.campaign.areas,
+          partial_crypt: {
+            ...state.campaign.areas['dungeon_1']!,
+            id: 'partial_crypt',
+            restPressure: {
+              ambushChancePerWatch: 0.35
+            }
+          }
+        }
+      }
+    };
+    const resolvedPartial = resolveAreaRestPressure(partialAreaState, 'partial_crypt');
+    expect(resolvedPartial.ambushChancePerWatch).toBe(0.35);
+    expect(resolvedPartial.watchDurationHours).toBe(4);
+    expect(resolvedPartial.schemeTickMultiplier).toBe(3);
+    expect(resolvedPartial.respawnRateMultiplier).toBe(2.5);
+    expect(resolvedPartial.alarmDecayTurns).toBe(45);
+
+    // 2. Class-list wand activation via processApplyIntent ('zap')
+    let cureWandId;
+    let missileWandId;
+    [state, cureWandId] = spawnItem(state, 'wand_of_cure_light_wounds', playerPos.x, playerPos.y);
+    [state, missileWandId] = spawnItem(state, 'wand_of_magic_missile', playerPos.x, playerPos.y);
+    const inv = getComponent(state, playerId, ComponentType.Inventory)!;
+    state = addComponent(state, playerId, {
+      ...inv,
+      items: [...inv.items, cureWandId, missileWandId]
+    });
+
+    // Give player a Cleric 1 track and 0 Use Magic Device ranks (CHA 6 -> -2 mod so untrained/low UMD cannot hit DC 20)
+    const baseDnd = getDnD35EntityData(state, playerId);
+    state = setDnD35EntityData(state, playerId, {
+      ...baseDnd,
+      tracks: [
+        {
+          trackId: 'cleric',
+          source: 'class',
+          sourceId: 'cleric',
+          classId: 'cleric',
+          level: 1,
+          levels: 1,
+          hitDie: 8,
+          babProgression: 'medium',
+          goodSaves: ['fort', 'will'],
+          skillPointsPerLevel: 2
+        }
+      ],
+      skillRanks: {},
+      abilityScores: {
+        ...baseDnd.abilityScores,
+        cha: { base: 6, inherentBonus: 0, damage: 0, drain: 0, tempPenalty: 0 }
+      }
+    });
+
+    // Cleric zaps wand_of_cure_light_wounds (on cleric spell list) -> succeeds automatically without UMD!
+    const clericCureZap = processApplyIntent(state, {
+      type: IntentType.Apply,
+      entityId: playerId,
+      verb: 'zap',
+      target: { type: 'entity', entityId: playerId },
+      toolEntityId: cureWandId
+    });
+    expect(clericCureZap.success).toBe(true);
+
+    // Cleric zaps wand_of_magic_missile (NOT on cleric spell list, 0 UMD ranks) -> fails UMD check!
+    const clericMissileZap = processApplyIntent(state, {
+      type: IntentType.Apply,
+      entityId: playerId,
+      verb: 'zap',
+      target: { type: 'entity', entityId: playerId },
+      toolEntityId: missileWandId
+    });
+    expect(clericMissileZap.success).toBe(false);
+    expect(clericMissileZap.state.messages.some((m) => m.text.includes('Use Magic Device'))).toBe(true);
+
+    // Switch player to Wizard 1 track -> wand_of_magic_missile is on wizard spell list -> succeeds automatically without UMD!
+    let targetEnemyId;
+    [state, targetEnemyId] = spawnEntity(state, 'goblin', playerPos.x + 2, playerPos.y);
+    const wizardState = setDnD35EntityData(state, playerId, {
+      ...getDnD35EntityData(state, playerId),
+      tracks: [
+        {
+          trackId: 'wizard',
+          source: 'class',
+          sourceId: 'wizard',
+          classId: 'wizard',
+          level: 1,
+          levels: 1,
+          hitDie: 4,
+          babProgression: 'poor',
+          goodSaves: ['will'],
+          skillPointsPerLevel: 2
+        }
+      ]
+    });
+    const wizardMissileZap = processApplyIntent(wizardState, {
+      type: IntentType.Apply,
+      entityId: playerId,
+      verb: 'zap',
+      target: { type: 'entity', entityId: targetEnemyId },
+      toolEntityId: missileWandId
+    });
+    expect(wizardMissileZap.success).toBe(true);
+  });
 });
+

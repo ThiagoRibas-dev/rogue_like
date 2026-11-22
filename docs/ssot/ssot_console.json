@@ -3356,6 +3356,8 @@
       "deriveHarvestableCorpseTags",
       "spawnCorpseForSlainEntity",
       "harvestCorpseTag",
+      "canHarvestCorpseEntity",
+      "harvestCorpseEntity",
       "tickCorpseDecay"
     ],
     "ownershipBoundary": {
@@ -3467,7 +3469,10 @@
       "DEFAULT_MAX_DISGUISE_SUSPICION",
       "SPOT_BEATS_DISGUISE_SUSPICION_GAIN",
       "DISGUISE_SCRUTINY_RADIUS_TILES",
+      "DISGUISE_KIT_ITEM_TAG",
+      "isDisguiseToolItem",
       "applyIdentityMask",
+      "applyDisguiseFromTool",
       "isDisguiseSuppressingHostility",
       "evaluateDisguiseSuspicion"
     ],
@@ -3496,6 +3501,7 @@
       "applyStructuralDamage",
       "repairRuinedItem",
       "evaluateOptInCombatWear",
+      "syncStructuralDoorState",
       "openStructuralDoor",
       "closeStructuralDoor",
       "spikeDoorWithWedge",
@@ -3630,6 +3636,25 @@
       "Do not duplicate or bypass exports from src/systems/intent.system.ts."
     ]
   },
+  "src/systems/interaction_provenance.system.ts": {
+    "domain": "Core Console: ECS Systems & Simulation",
+    "tier": "tier1_console",
+    "responsibility": "Constructs, appends, inspects, and runs ruleset frame-hook evaluations on first-class multi-hop InteractionChain provenance.",
+    "canonicalEntryPoints": [
+      "createInteractionChain",
+      "appendInteractionFrame",
+      "findLastInteractionFrame",
+      "resolveInteractionOriginator",
+      "evaluateInteractionFrameWithHook"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/systems/interaction_provenance.system.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/systems/interaction_provenance.system.ts."
+    ]
+  },
   "src/systems/inventory.system.ts": {
     "domain": "Core Console: ECS Systems & Simulation",
     "tier": "tier1_console",
@@ -3760,6 +3785,8 @@
       "buildLightEmitterFromItem",
       "getActiveLightEmitters",
       "evaluateDynamicLightAtTile",
+      "isPositionIlluminatedByActiveLightEmitter",
+      "canIgniteLightEmitterItem",
       "igniteLightEmitter",
       "refuelLightEmitter",
       "processActorLightEmittersTick"
@@ -4084,7 +4111,10 @@
       "DEFAULT_TABOO_FAVOR_PENALTY",
       "recordDeityFavorDelta",
       "recordTabooViolation",
-      "atonePenanceAtAltar"
+      "atonePenanceAtAltar",
+      "isAltarOrShrineEntity",
+      "resolveAltarDeityId",
+      "prayAtAltarOrShrine"
     ],
     "ownershipBoundary": {
       "includes": "Pure implementation and exports for src/systems/religion.system.ts.",
@@ -4990,6 +5020,23 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/types/generation.types.ts."
+    ]
+  },
+  "src/types/interaction_provenance.types.ts": {
+    "domain": "Core Console: Engine Types & Schemas",
+    "tier": "tier1_types",
+    "responsibility": "Types for first-class multi-hop interaction provenance chains, causal frames, and ruleset frame-hook evaluations.",
+    "canonicalEntryPoints": [
+      "InteractionFrame",
+      "InteractionFrameKind",
+      "InteractionChain"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/types/interaction_provenance.types.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/types/interaction_provenance.types.ts."
     ]
   },
   "src/types/intents/camera.intents.ts": {

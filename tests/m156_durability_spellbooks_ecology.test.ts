@@ -19,7 +19,7 @@ import {
 } from '../src/rulesets/dnd35e/skill_verbs.ts';
 import { evaluateAndRecordMonsterLore } from '../src/rulesets/dnd35e/skills/monster_lore_tracker.ts';
 import { getDnD35EntityData, setDnD35EntityData } from '../src/rulesets/dnd35e/srd_registry.ts';
-import { processApplyIntent } from '../src/systems/apply.system.ts';
+import { getValidVerbsForTarget, processApplyIntent } from '../src/systems/apply.system.ts';
 import { harvestCorpseTag, spawnCorpseForSlainEntity, tickCorpseDecay } from '../src/systems/corpse.system.ts';
 import { processDeathSystem } from '../src/systems/death.system.ts';
 import {
@@ -32,6 +32,7 @@ import {
   evaluateOptInCombatWear,
   openStructuralDoor,
   probeTrapWithReachTool,
+  repairRuinedItem,
   resolveDurabilityConfig,
   spikeDoorWithWedge
 } from '../src/systems/durability.system.ts';
@@ -45,6 +46,7 @@ import {
   type CorpseComponent,
   type InventoryComponent,
   type ReligionComponent,
+  type RenderableComponent,
   type StructuralComponent,
   type TrapComponent
 } from '../src/types/components.types.ts';
@@ -327,7 +329,7 @@ describe('Milestone 156: SRD Object/Durability Engine, Structural Doors, Spellbo
     const playerDnd = getDnD35EntityData(state, playerId);
     state = setDnD35EntityData(state, playerId, {
       ...playerDnd,
-      tracks: [{ trackId: 'fighter', source: 'class', hitDie: 10, levels: 3, babProgression: 'full' }],
+      tracks: [{ trackId: 'wizard', source: 'class', hitDie: 4, levels: 5, babProgression: 'poor' }],
       skillRanks: {
         ...(playerDnd.skillRanks ?? {}),
         spellcraft: 6,
@@ -361,6 +363,10 @@ describe('Milestone 156: SRD Object/Durability Engine, Structural Doors, Spellbo
     expect(projectedLines.some((l) => l.value.includes('DR: 5/bludgeoning'))).toBe(true);
 
     // 5. UMD DC 20 wand activation for non-spell-trigger fighter with UMD ranks
+    state = setDnD35EntityData(state, playerId, {
+      ...getDnD35EntityData(state, playerId),
+      tracks: [{ trackId: 'fighter', source: 'class', hitDie: 10, levels: 3, babProgression: 'full' }]
+    });
     const umdRes = validateDnD35eWandActivation(state, playerId);
     expect(typeof umdRes.allowed).toBe('boolean');
   });
@@ -450,4 +456,152 @@ describe('Milestone 156: SRD Object/Durability Engine, Structural Doors, Spellbo
     expect(getComponent(state, playerId, ComponentType.IdentityMask)).toBeUndefined();
     expect(isHostile(state, rivalId, playerId)).toBe(true);
   });
+
+  test('5. Template-spawned structural doors, magic +1 effectiveMaxHp repair/break DC, divine-only Cleric spellbook exclusion, elemental corpse suppression, and harvest/pray/disguise_kit verbs', () => {
+    const { state: initialState, playerId, rivalId } = buildTestDnd35eState();
+    let state = initialState;
+
+    // 1. Template-spawned structural door hydrates StructuralComponent and syncs Renderable glyph on open/close
+    state = {
+      ...state,
+      campaign: {
+        ...state.campaign,
+        entities: {
+          ...state.campaign.entities,
+          oak_door: {
+            id: 'oak_door',
+            name: 'Oak Door',
+            glyph: '+',
+            fg: '#d35400',
+            bg: 'transparent',
+            isActor: false,
+            tags: ['door', 'solid', 'opaque'],
+            structural: {
+              materialId: 'wood',
+              thicknessInches: 2,
+              hp: 20,
+              maxHp: 20,
+              isDoor: true,
+              isOpen: false,
+              breakDc: 18
+            }
+          }
+        }
+      }
+    };
+    const [sDoor, oakDoorId] = spawnEntity(state, 'oak_door', 6, 6);
+    state = sDoor;
+    const spawnedDoorComp = getComponent(state, oakDoorId, ComponentType.Structural) as StructuralComponent | undefined;
+    expect(spawnedDoorComp?.isDoor).toBe(true);
+    expect(spawnedDoorComp?.maxHp).toBe(20);
+    state = openStructuralDoor(state, playerId, oakDoorId).state;
+    expect((getComponent(state, oakDoorId, ComponentType.Renderable) as RenderableComponent | undefined)?.glyph).toBe('/');
+    state = closeStructuralDoor(state, playerId, oakDoorId).state;
+    expect((getComponent(state, oakDoorId, ComponentType.Renderable) as RenderableComponent | undefined)?.glyph).toBe('+');
+
+    // 2. Magic +1 shield (base maxHp 10 + 10 = effectiveMaxHp 20): repair restores full 20 HP and Break DC -2 applies at <= 10 HP (50% of effectiveMaxHp)
+    const [sShield, magicShieldId] = createEntity(state);
+    state = addComponent(sShield, magicShieldId, {
+      type: ComponentType.Structural,
+      materialTag: 'wood',
+      hardness: 5,
+      hp: 0,
+      maxHp: 10,
+      breakDc: 20,
+      objectSize: 'small',
+      enhancementBonus: 1,
+      ruined: true
+    });
+    const repairedShield = repairRuinedItem(state, playerId, magicShieldId);
+    expect(repairedShield.success).toBe(true);
+    state = repairedShield.state;
+    expect((getComponent(state, magicShieldId, ComponentType.Structural) as StructuralComponent).hp).toBe(20);
+
+    // Damage shield to 9 HP (45% of effectiveMaxHp 20, though >50% of base maxHp 10) -> Break DC drops by -2
+    state = addComponent(state, magicShieldId, {
+      ...(getComponent(state, magicShieldId, ComponentType.Structural) as StructuralComponent),
+      hp: 9
+    });
+    const shieldBreak = resolveSrdBreakObjectCheck(state, playerId, magicShieldId, { forcedD20: 10 });
+    // Base Break DC 20 - 2 (<= 50% of effectiveMaxHp 20) = 18
+    expect(shieldBreak.effectiveDc).toBe(18);
+
+    // 3. Divine-only Cleric does NOT drop an arcane wizards_spellbook on death and cannot transcribe arcane spells
+    const clericDnd = getDnD35EntityData(state, rivalId);
+    state = setDnD35EntityData(state, rivalId, {
+      ...clericDnd,
+      tracks: [{ trackId: 'cleric', classId: 'cleric', source: 'class', hitDie: 8, levels: 5, babProgression: 'medium' }],
+      knownSpells: ['cure_light_wounds']
+    });
+    const clericDrop = spawnArcaneCasterSpellbookLoot(state, rivalId, 6, 5);
+    expect(clericDrop.spellbookEntityId).toBeUndefined();
+
+    // 4. Elemental and incorporeal creatures do NOT spawn physical corpses on death
+    state = setDnD35EntityData(state, rivalId, {
+      ...getDnD35EntityData(state, rivalId),
+      creatureType: 'elemental',
+      subtypes: ['fire', 'extraplanar']
+    });
+    expect(spawnCorpseForSlainEntity(state, rivalId, 6, 5).corpseEntityId).toBeUndefined();
+
+    state = setDnD35EntityData(state, rivalId, {
+      ...getDnD35EntityData(state, rivalId),
+      creatureType: 'undead',
+      subtypes: ['incorporeal']
+    });
+    expect(spawnCorpseForSlainEntity(state, rivalId, 6, 5).corpseEntityId).toBeUndefined();
+
+    // 5. Verbs: 'harvest' on beast corpse spawns yield item into inventory; 'pray' on consecrated altar; 'apply' with disguise_kit
+    state = setDnD35EntityData(state, rivalId, {
+      ...getDnD35EntityData(state, rivalId),
+      creatureType: 'animal',
+      subtypes: []
+    });
+    const beastCorpseRes = spawnCorpseForSlainEntity(state, rivalId, 6, 5);
+    expect(beastCorpseRes.corpseEntityId).toBeDefined();
+    state = beastCorpseRes.state;
+    const beastCorpseId = beastCorpseRes.corpseEntityId!;
+    expect(getValidVerbsForTarget(state, playerId, { type: 'entity', entityId: beastCorpseId })).toContain('harvest');
+
+    const beforeInvCount = (getComponent(state, playerId, ComponentType.Inventory) as InventoryComponent | undefined)?.items.length ?? 0;
+    const harvestVerbRes = processApplyIntent(state, {
+      type: IntentType.Apply,
+      entityId: playerId,
+      verb: 'harvest',
+      target: { type: 'entity', entityId: beastCorpseId }
+    });
+    expect(harvestVerbRes.success).toBe(true);
+    state = harvestVerbRes.state;
+    const afterInvCount = (getComponent(state, playerId, ComponentType.Inventory) as InventoryComponent).items.length;
+    expect(afterInvCount).toBe(beforeInvCount + 1);
+
+    // Consecrated altar with 'deity:pelor' tag projects 'pray' and grants Pelor favor
+    const [sAltar, altarId] = createEntity(state);
+    state = addComponent(sAltar, altarId, { type: ComponentType.Position, x: 5, y: 6 });
+    state = addComponent(state, altarId, { type: ComponentType.Tags, tags: ['altar', 'divine', 'deity:pelor'] });
+    expect(getValidVerbsForTarget(state, playerId, { type: 'entity', entityId: altarId })).toContain('pray');
+    const prayRes = processApplyIntent(state, {
+      type: IntentType.Apply,
+      entityId: playerId,
+      verb: 'pray',
+      target: { type: 'entity', entityId: altarId }
+    });
+    expect(prayRes.success).toBe(true);
+    state = prayRes.state;
+    expect((getComponent(state, playerId, ComponentType.Religion) as ReligionComponent).deityOrPatronId).toBe('pelor');
+
+    // Disguise kit projects 'apply' and applies IdentityMaskComponent
+    const [sKit, disguiseKitId] = spawnItem(state, 'disguise_kit', 5, 5);
+    state = sKit;
+    expect(getValidVerbsForTarget(state, playerId, { type: 'item', itemEntityId: disguiseKitId })).toContain('apply');
+    const applyDisguiseRes = processApplyIntent(state, {
+      type: IntentType.Apply,
+      entityId: playerId,
+      verb: 'apply',
+      target: { type: 'item', itemEntityId: disguiseKitId }
+    });
+    expect(applyDisguiseRes.success).toBe(true);
+    expect(getComponent(applyDisguiseRes.state, playerId, ComponentType.IdentityMask)).toBeDefined();
+  });
 });
+

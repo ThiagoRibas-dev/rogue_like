@@ -1,14 +1,21 @@
-import { addComponent, getComponent, removeComponent, resolveEntityDisplayName } from '../core/ecs.ts';
+import { addComponent, getComponent, removeComponent, removeEntity, resolveEntityDisplayName } from '../core/ecs.ts';
 import { getActiveRuleset } from '../rulesets/registry.ts';
 import {
   ComponentType,
+  type CorpseComponent,
   type FactionComponent,
   type FighterComponent,
   type IdentityMaskComponent,
+  type InventoryComponent,
+  type ItemComponent,
   type PositionComponent
 } from '../types/components.types.ts';
 import type { EntityId, GameState } from '../types/game-state.types.ts';
+import type { ApplyIntentTarget } from '../types/intents/interaction.intents.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
+
+/** Declarative tag identifying disguise kit / costume tools (`disguise_kit`). */
+export const DISGUISE_KIT_ITEM_TAG = 'disguise_kit';
 
 /** Default suspicion threshold (`100`) at which an `IdentityMaskComponent` disguise is blown. */
 export const DEFAULT_MAX_DISGUISE_SUSPICION = 100;
@@ -23,9 +30,104 @@ export const DISGUISE_SCRUTINY_RADIUS_TILES = 4;
 const PASSIVE_SCRUTINY_SPOT_ROLL = 10;
 
 /**
+ * Checks whether an item entity carries the declarative `'disguise_kit'` or `'disguise_tool'` tag.
+ */
+export function isDisguiseToolItem(state: Readonly<GameState>, itemEntityId: EntityId): boolean {
+  const itemComp = getComponent(state, itemEntityId, ComponentType.Item) as ItemComponent | undefined;
+  if (!itemComp) return false;
+  const campaignDef = state.campaign.items[itemComp.itemId];
+  const sysItems = (
+    state.campaign.systemContent as
+      { readonly items?: Readonly<Record<string, { readonly tags?: ReadonlyArray<string> | undefined }>> } | undefined
+  )?.items;
+  const tags = campaignDef?.tags ?? sysItems?.[itemComp.itemId]?.tags ?? [];
+  return tags.includes(DISGUISE_KIT_ITEM_TAG) || tags.includes('disguise_tool');
+}
+
+function resolveImpersonatedFactionForDisguise(
+  state: Readonly<GameState>,
+  actorId: EntityId,
+  target: ApplyIntentTarget
+): string {
+  const actorFaction =
+    (getComponent(state, actorId, ComponentType.Faction) as FactionComponent | undefined)?.factionId ?? 'player';
+
+  if (target.type === 'entity' && target.entityId !== actorId) {
+    const targetFaction = (getComponent(state, target.entityId, ComponentType.Faction) as FactionComponent | undefined)
+      ?.factionId;
+    if (targetFaction && targetFaction !== 'neutral' && targetFaction !== actorFaction) {
+      return targetFaction;
+    }
+    const corpse = getComponent(state, target.entityId, ComponentType.Corpse) as CorpseComponent | undefined;
+    if (corpse) {
+      const tpl = state.campaign.entities[corpse.sourceTemplateId];
+      const tplFaction = tpl?.faction;
+      if (tplFaction && tplFaction !== 'neutral' && tplFaction !== actorFaction) {
+        return tplFaction;
+      }
+    }
+  }
+
+  for (const eid of state.entities) {
+    if (eid === actorId) continue;
+    const f = (getComponent(state, eid, ComponentType.Faction) as FactionComponent | undefined)?.factionId;
+    if (f && f !== actorFaction && f !== 'neutral') {
+      return f;
+    }
+  }
+
+  const campaignFactionIds = Object.keys(state.campaign.factions).filter(
+    (fid) => fid !== actorFaction && fid !== 'neutral'
+  );
+  return campaignFactionIds[0] ?? 'bandits';
+}
+
+/**
+ * Production entry point for applying a disguise kit (`'disguise_kit'` / `'disguise_tool'`) via `processApplyIntent`.
+ * Resolves the target faction to impersonate, computes the actor's Disguise skill check total (`Take 10 + modifier`),
+ * decrements finite tool charges if present, and attaches `ComponentType.IdentityMask`.
+ */
+export function applyDisguiseFromTool(
+  state: GameState,
+  actorId: EntityId,
+  target: ApplyIntentTarget,
+  toolEntityId: EntityId
+): { readonly state: GameState; readonly success: boolean } {
+  if (!isDisguiseToolItem(state, toolEntityId)) {
+    return { state, success: false };
+  }
+  const activeRuleset = getActiveRuleset(state);
+  const disguiseMod = activeRuleset.getActorSkillModifier?.(state, actorId, 'disguise') ?? 0;
+  const checkTotal = PASSIVE_SCRUTINY_SPOT_ROLL + disguiseMod;
+  const disguisedAsFactionId = resolveImpersonatedFactionForDisguise(state, actorId, target);
+
+  let nextState = applyIdentityMask(state, actorId, disguisedAsFactionId, checkTotal);
+  const itemComp = getComponent(nextState, toolEntityId, ComponentType.Item) as ItemComponent | undefined;
+  if (itemComp?.charges !== undefined) {
+    const remaining = itemComp.charges - 1;
+    if (remaining <= 0) {
+      const inv = getComponent(nextState, actorId, ComponentType.Inventory) as InventoryComponent | undefined;
+      if (inv && inv.items.includes(toolEntityId)) {
+        nextState = addComponent(nextState, actorId, {
+          ...inv,
+          items: inv.items.filter((id) => id !== toolEntityId)
+        });
+      }
+      nextState = removeEntity(nextState, toolEntityId);
+    } else {
+      nextState = addComponent(nextState, toolEntityId, {
+        ...itemComp,
+        charges: remaining
+      });
+    }
+  }
+  return { state: nextState, success: true };
+}
+
+/**
  * Applies an active `IdentityMaskComponent` to `actorId`, disguising them as a member of `disguisedAsFactionId`
  * (and optionally `disguisedAsRaceId`) with an initial `disguiseCheckTotal`.
- *Works symmetrically for both player infiltrators and enemy spies.
+ * Works symmetrically for both player infiltrators and enemy spies.
  *
  * @param state Current immutable GameState.
  * @param actorId Actor donning the disguise.

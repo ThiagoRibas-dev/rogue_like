@@ -1,6 +1,7 @@
 import type { ComponentType } from '../components.types.ts';
 import type { EntityId } from '../game-state.types.ts';
 import type { EquipmentSlot } from '../campaign.types.ts';
+import type { InteractionChain } from '../interaction_provenance.types.ts';
 import type { MovementModes } from './actor_components.types.ts';
 
 /**
@@ -46,6 +47,7 @@ export interface CoatingComponent {
   readonly bonusDamageDice?: string | undefined;
   readonly bonusDamageType?: string | undefined;
   readonly targetConditionTag?: string | undefined;
+  readonly interaction?: InteractionChain | undefined;
 }
 
 /**

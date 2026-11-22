@@ -1,11 +1,13 @@
 import type { IntentType } from './intent.enum.ts';
 import type { EntityId } from '../game-state.types.ts';
+import type { InteractionChain } from '../interaction_provenance.types.ts';
 
 /** Base interface representing any player or AI command queue intent. */
 export interface BaseIntent {
   readonly type: IntentType;
   readonly entityId: EntityId;
   readonly isImmediate?: boolean;
+  readonly interaction?: InteractionChain | undefined;
 }
 
 /** Intent to skip/pass a turn or wait for a tick. */

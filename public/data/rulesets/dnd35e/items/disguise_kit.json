@@ -13,7 +13,8 @@
     "currencyUnit": "gp",
     "tags": [
       "class_tool",
-      "skill_kit"
+      "skill_kit",
+      "disguise_kit"
     ],
     "effectBundle": {
       "bundleId": "item_disguise_kit",

@@ -15,6 +15,14 @@
       "wand",
       "spell:cure_light_wounds"
     ],
+    "zappable": {
+      "effectId": "heal_5",
+      "spellId": "cure_light_wounds",
+      "pattern": "bolt",
+      "range": 6,
+      "maxCharges": 50,
+      "currentCharges": 15
+    },
     "spriteId": "dcss_item_wand_gem_bone_new"
   }
 }

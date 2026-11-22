@@ -22,6 +22,10 @@
       "damage": 1,
       "destroyOnImpact": false
     },
+    "deployment": {
+      "fieldId": "caltrops",
+      "duration": 100
+    },
     "spriteId": "dcss_item_misc_misc_quad"
   }
 }

@@ -17,6 +17,10 @@
       "tactical_hazard",
       "marbles_hazard"
     ],
+    "deployment": {
+      "fieldId": "marbles",
+      "duration": 100
+    },
     "spriteId": "dcss_item_misc_misc_orb"
   }
 }

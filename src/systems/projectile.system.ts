@@ -110,7 +110,12 @@ export function processProjectileThrow(state: GameState, intent: ApplyIntent): {
 
     // Check Entity Collisions
     const entitiesAtPoint = state.spatialIndex.get(`${point.x},${point.y}`) || [];
-    const blocker = entitiesAtPoint.find((id) => getComponent(state, id, ComponentType.Fighter) !== undefined);
+    const blocker = entitiesAtPoint.find(
+      (id) =>
+        id !== intent.entityId &&
+        (getComponent(state, id, ComponentType.Fighter) !== undefined ||
+          getComponent(state, id, ComponentType.Structural) !== undefined)
+    );
 
     if (blocker && blocker !== intent.entityId) {
       hitEntityId = blocker;
@@ -171,7 +176,8 @@ export function processProjectileThrow(state: GameState, intent: ApplyIntent): {
         {
           sourceEntityId: intent.entityId,
           amount: baseDamage,
-          tags: ['throw', itemDef.category]
+          tags: ['throw', itemDef.category, ...(itemDef.tags ?? [])],
+          ...(intent.interaction !== undefined ? { interaction: intent.interaction } : {})
         }
       ]
     };
@@ -181,7 +187,14 @@ export function processProjectileThrow(state: GameState, intent: ApplyIntent): {
     // Apply weapon coating if present
     const coating = getComponent(nextState, intent.toolEntityId, ComponentType.Coating) as CoatingComponent | undefined;
     if (coating) {
-      nextState = applyStatusEffect(nextState, hitEntityId, coating.statusId, coating.duration, intent.entityId);
+      nextState = applyStatusEffect(
+        nextState,
+        hitEntityId,
+        coating.statusId,
+        coating.duration,
+        intent.entityId,
+        coating.interaction ?? intent.interaction
+      );
 
       const newCharges = coating.charges - 1;
       if (newCharges <= 0) {
@@ -207,7 +220,14 @@ export function processProjectileThrow(state: GameState, intent: ApplyIntent): {
   };
   nextState = { ...nextState, visualEffects: [...nextState.visualEffects, visualEffect] };
 
-  // Remove from inventory, move to map
+  // Remove from thrower's inventory list and move to map
+  const throwerInv = getComponent(nextState, intent.entityId, ComponentType.Inventory);
+  if (throwerInv && throwerInv.items.includes(intent.toolEntityId)) {
+    nextState = addComponent(nextState, intent.entityId, {
+      ...throwerInv,
+      items: throwerInv.items.filter((id) => id !== intent.toolEntityId)
+    });
+  }
   nextState = removeComponent(nextState, intent.toolEntityId, ComponentType.Inventory);
   nextState = addComponent(nextState, intent.toolEntityId, { type: ComponentType.Position, x: impactX, y: impactY });
 

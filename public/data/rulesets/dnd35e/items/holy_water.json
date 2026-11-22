@@ -21,6 +21,14 @@
       "damage": 5,
       "destroyOnImpact": true
     },
+    "coating": {
+      "statusId": "holy_water_splash",
+      "charges": 1,
+      "duration": 50,
+      "bonusDamageDice": "2d4",
+      "bonusDamageType": "positive",
+      "targetConditionTag": "type:undead"
+    },
     "spriteId": "dcss_item_misc_misc_phial"
   }
 }

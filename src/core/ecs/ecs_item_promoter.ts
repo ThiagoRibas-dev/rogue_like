@@ -48,6 +48,67 @@ export function spawnItem(state: GameState, itemId: string, x: number, y: number
   nextState = addComponent(nextState, entityId, item);
   nextState = { ...nextState, nextItemInstanceId: nextState.nextItemInstanceId + 1 };
 
+  if (def.structural) {
+    const s = def.structural;
+    const defaultHardnessByMaterial: Readonly<Record<string, number>> = {
+      paper: 0,
+      cloth: 0,
+      rope: 0,
+      glass: 1,
+      ice: 0,
+      leather: 2,
+      hide: 2,
+      wood: 5,
+      darkwood: 5,
+      stone: 8,
+      iron: 10,
+      steel: 10,
+      cold_iron: 10,
+      alchemical_silver: 8,
+      silver: 8,
+      mithral: 15,
+      adamantine: 20
+    };
+    const defaultHpPerInchByMaterial: Readonly<Record<string, number>> = {
+      paper: 2,
+      cloth: 2,
+      rope: 2,
+      glass: 1,
+      ice: 3,
+      leather: 5,
+      hide: 5,
+      wood: 10,
+      darkwood: 10,
+      stone: 15,
+      iron: 30,
+      steel: 30,
+      cold_iron: 30,
+      alchemical_silver: 10,
+      silver: 10,
+      mithral: 30,
+      adamantine: 40
+    };
+    const computedMaxHp =
+      s.maxHp ?? Math.max(1, Math.round(s.thicknessInches * (defaultHpPerInchByMaterial[s.materialId] ?? 10)));
+    const computedHp = s.isRuined === true ? 0 : (s.hp ?? computedMaxHp);
+    const computedHardness = s.hardnessOverride ?? defaultHardnessByMaterial[s.materialId] ?? 5;
+    const magicProps = def.magicalProperties as { readonly enhancementBonus?: number | undefined } | undefined;
+    nextState = addComponent(nextState, entityId, {
+      type: ComponentType.Structural,
+      materialTag: s.materialId,
+      hardness: computedHardness,
+      hp: computedHp,
+      maxHp: computedMaxHp,
+      breakDc: s.breakDc ?? 15,
+      objectSize: 'medium',
+      ...(magicProps?.enhancementBonus !== undefined ? { enhancementBonus: magicProps.enhancementBonus } : {}),
+      ...(s.isDoor !== undefined ? { isDoor: s.isDoor } : {}),
+      ...(s.isOpen !== undefined ? { isOpen: s.isOpen } : {}),
+      ...(s.isStuck !== undefined ? { jammed: s.isStuck } : {}),
+      ...(s.isRuined === true || computedHp === 0 ? { ruined: true } : {})
+    });
+  }
+
   if (def.isArtifact) {
     nextState = promoteEntity(nextState, entityId);
   }

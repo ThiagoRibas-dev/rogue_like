@@ -96,6 +96,7 @@ export function processDeathSystem(state: GameState): GameState {
 
     const tagsComponent = getComponent(nextState, entityId, ComponentType.Tags) as TagsComponent | undefined;
     const tags = tagsComponent ? tagsComponent.tags : [];
+    const resolvedKillerId = deathComp.killerId ?? deathComp.interaction?.originatorEntityId;
 
     nextState = {
       ...nextState,
@@ -104,7 +105,8 @@ export function processDeathSystem(state: GameState): GameState {
         {
           type: GameEventType.EntityDied,
           victimId: entityId,
-          ...(deathComp.killerId !== undefined ? { killerId: deathComp.killerId } : {}),
+          ...(resolvedKillerId !== undefined ? { killerId: resolvedKillerId } : {}),
+          ...(deathComp.interaction !== undefined ? { interaction: deathComp.interaction } : {}),
           tags
         }
       ]
@@ -117,15 +119,15 @@ export function processDeathSystem(state: GameState): GameState {
       }
       nextState = addMessage(nextState, `Game Over! You have been ${causeText}.`, MessageLogCategory.CombatDeath);
 
-      if (deathComp.killerId !== undefined) {
-        const killerNemesis = getComponent(nextState, deathComp.killerId, ComponentType.Nemesis) as
+      if (resolvedKillerId !== undefined) {
+        const killerNemesis = getComponent(nextState, resolvedKillerId, ComponentType.Nemesis) as
           NemesisComponent | undefined;
         if (killerNemesis) {
-          const barks = getEntityBarks(nextState, deathComp.killerId, 'victory_taunt');
+          const barks = getEntityBarks(nextState, resolvedKillerId, 'victory_taunt');
           if (barks.length > 0) {
             const bark = rng.getItem(barks);
             if (bark) {
-              const killerName = resolveEntityDisplayName(nextState, deathComp.killerId, 'Someone');
+              const killerName = resolveEntityDisplayName(nextState, resolvedKillerId, 'Someone');
               nextState = addMessage(nextState, `${killerName} taunts: "${bark}"`, MessageLogCategory.Flavor);
             }
           }
@@ -136,7 +138,7 @@ export function processDeathSystem(state: GameState): GameState {
       deleteSave(); // Enforce permadeath
     } else {
       // Check for cheat death before removing entity
-      const cheatResult = evaluateCheatDeath(nextState, entityId, deathComp.killerId);
+      const cheatResult = evaluateCheatDeath(nextState, entityId, resolvedKillerId);
       if (cheatResult.shouldCheatDeath) {
         nextState = cheatResult.state;
         continue; // Entity moves to limbo; do not remove completely or drop loot yet
@@ -166,17 +168,17 @@ export function processDeathSystem(state: GameState): GameState {
       }
 
       // Grant XP to killer if applicable (using Cartridge CR-vs-ECL hook when implemented)
-      if (deathComp.killerId !== undefined) {
+      if (resolvedKillerId !== undefined) {
         const xpToGrant =
-          getActiveRuleset(nextState).resolveKillXpReward?.(nextState, deathComp.killerId, entityId) ??
+          getActiveRuleset(nextState).resolveKillXpReward?.(nextState, resolvedKillerId, entityId) ??
           fighter?.xpGiven ??
           0;
         if (xpToGrant > 0) {
-          nextState = grantXp(nextState, deathComp.killerId, xpToGrant);
+          nextState = grantXp(nextState, resolvedKillerId, xpToGrant);
         }
 
         // Notify quest system if player killed it
-        if (deathComp.killerId === state.entities.find((e) => getComponent(state, e, ComponentType.Player))) {
+        if (resolvedKillerId === state.entities.find((e) => getComponent(state, e, ComponentType.Player))) {
           const templateComp = getComponent(nextState, entityId, ComponentType.Template) as
             TemplateComponent | undefined;
           if (templateComp) {

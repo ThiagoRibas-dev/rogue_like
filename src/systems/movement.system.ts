@@ -125,7 +125,7 @@ export function processMoveIntent(
 
     if (isPlayer) {
       const tileDef = placement.blockedByObstacleDef ?? directTileDef;
-      const evalBlocked = evaluateTileTraversal(tileDef, movementModes);
+      const evalBlocked = evaluateTileTraversal(tileDef, movementModes, state, targetX, targetY);
       const obstacleName =
         evalBlocked.hazardKind === 'pit' ||
         evalBlocked.hazardKind === 'chasm' ||
@@ -184,7 +184,7 @@ export function processMoveIntent(
         blockerIsSingleTile &&
         (isPlayerControlledCompanion(state, entityId, blockedByEntityId) ||
           getFactionRelation(state, entityId, blockedByEntityId) === 'friendly') &&
-        canTraverseTile(originTileDef, getEntityMovementModes(state, blockedByEntityId));
+        canTraverseTile(originTileDef, getEntityMovementModes(state, blockedByEntityId), state, position.x, position.y);
 
       if (canFriendlySwap && blockerPos) {
         const swapContext = { mode: 'swap' as const, isForced: false, provokesAoO: true };
@@ -248,6 +248,30 @@ export function processMoveIntent(
             target: { type: 'entity', entityId: blockedByEntityId }
           });
         }
+      }
+
+      const structural = getComponent(state, blockedByEntityId, ComponentType.Structural);
+      if (structural) {
+        const lock = getComponent(state, blockedByEntityId, ComponentType.Lock);
+        if (
+          structural.isDoor === true &&
+          structural.isOpen !== true &&
+          lock?.locked !== true &&
+          structural.jammed !== true &&
+          structural.spikedByEntityId === undefined
+        ) {
+          return processApplyIntent(state, {
+            type: IntentType.Apply,
+            entityId,
+            verb: 'open',
+            target: { type: 'entity', entityId: blockedByEntityId }
+          });
+        }
+        return processMeleeAttackIntent(state, {
+          type: IntentType.MeleeAttack,
+          entityId,
+          defenderId: blockedByEntityId
+        });
       }
     }
 

@@ -16,12 +16,14 @@ import {
   type EquipmentComponent,
   type FactionComponent,
   type FighterComponent,
+  type InteractionChain,
   type ItemComponent,
   type MemoryComponent,
   type NemesisComponent
 } from '../../types/components.types.ts';
 import { addMessage, MessageLogCategory } from '../../systems/message.system.ts';
 import { addFloatingText } from '../../systems/damage.system.ts';
+import { appendInteractionFrame, createInteractionChain } from '../../systems/interaction_provenance.system.ts';
 import { applyStatusEffect } from '../../systems/status-effect.system.ts';
 import { getEntityBarks } from '../../systems/nemesis.system.ts';
 import { promoteEntity, recordChronicleEvent } from '../../systems/chronicle.system.ts';
@@ -109,6 +111,38 @@ export function resolveClassicMeleeAttack(
     nextState = addComponent(nextState, entityId, nextMemory);
   }
 
+  const equipment = getComponent(state, entityId, ComponentType.Equipment) as EquipmentComponent | undefined;
+  const weaponSlot = equipment?.slots?.find((s) => s.slotType === 'hand' && s.equippedItem !== null);
+  const weaponId = weaponSlot?.equippedItem ?? undefined;
+  const weaponItem =
+    weaponId !== undefined
+      ? (getComponent(state, weaponId, ComponentType.Item) as ItemComponent | undefined)
+      : undefined;
+
+  const baseChain =
+    intent.interaction ??
+    createInteractionChain(entityId, [
+      { kind: 'intent', intentType: intent.type, actorId: entityId },
+      { kind: 'action', actionId: 'melee_attack', actorId: entityId }
+    ]);
+  const strikeChain = appendInteractionFrame(baseChain, {
+    kind: 'strike',
+    attackerId: entityId,
+    defenderId,
+    strikeIndex: 0,
+    attackSource: weaponId !== undefined ? 'manufactured_primary' : 'natural_primary'
+  });
+  const hitChain =
+    weaponId !== undefined && weaponItem !== undefined
+      ? appendInteractionFrame(strikeChain, {
+          kind: 'item',
+          itemEntityId: weaponId,
+          itemId: weaponItem.itemId,
+          role: 'weapon',
+          ...(weaponSlot?.id !== undefined ? { slotId: weaponSlot.id } : {})
+        })
+      : strikeChain;
+
   if (damage > 0) {
     nextState = addMessage(nextState, `${attackerName} hits ${defenderName}.`, MessageLogCategory.CombatHit);
 
@@ -116,7 +150,8 @@ export function resolveClassicMeleeAttack(
     const damageInstance: DamageInstance = {
       amount: damage,
       sourceEntityId: entityId,
-      tags: ['melee', 'physical']
+      tags: ['melee', 'physical'],
+      interaction: hitChain
     };
 
     if (existingDamageComp) {
@@ -132,25 +167,33 @@ export function resolveClassicMeleeAttack(
       nextState = addComponent(nextState, defenderId, newDamageComp);
     }
 
-    const equipment = getComponent(state, entityId, ComponentType.Equipment) as EquipmentComponent | undefined;
-    if (equipment?.slots) {
-      const weaponSlot = equipment.slots.find((s) => s.slotType === 'hand' && s.equippedItem !== null);
-      if (weaponSlot?.equippedItem) {
-        const weaponId = weaponSlot.equippedItem;
-        const coating = getComponent(nextState, weaponId, ComponentType.Coating) as CoatingComponent | undefined;
-        if (coating) {
-          nextState = applyStatusEffect(nextState, defenderId, coating.statusId, coating.duration, entityId);
-          const newCharges = coating.charges - 1;
-          if (newCharges <= 0) {
-            nextState = removeComponent(nextState, weaponId, ComponentType.Coating);
-            nextState = addMessage(
-              nextState,
-              `The coating on ${attackerName}'s weapon wears off.`,
-              MessageLogCategory.System
-            );
-          } else {
-            nextState = addComponent(nextState, weaponId, { ...coating, charges: newCharges });
-          }
+    if (weaponId !== undefined) {
+      const coating = getComponent(nextState, weaponId, ComponentType.Coating) as CoatingComponent | undefined;
+      if (coating) {
+        const coatingChain = appendInteractionFrame(hitChain, {
+          kind: 'effect',
+          effectId: coating.statusId,
+          effectKind: 'coating',
+          sourcePath: `item:${weaponId}`
+        });
+        nextState = applyStatusEffect(
+          nextState,
+          defenderId,
+          coating.statusId,
+          coating.duration,
+          entityId,
+          coatingChain
+        );
+        const newCharges = coating.charges - 1;
+        if (newCharges <= 0) {
+          nextState = removeComponent(nextState, weaponId, ComponentType.Coating);
+          nextState = addMessage(
+            nextState,
+            `The coating on ${attackerName}'s weapon wears off.`,
+            MessageLogCategory.System
+          );
+        } else {
+          nextState = addComponent(nextState, weaponId, { ...coating, charges: newCharges });
         }
       }
     }
@@ -198,6 +241,7 @@ export function processClassicDamage(state: GameState): GameState {
 
     let totalDamage = 0;
     let lastKillerId: EntityId | undefined;
+    let lastInteraction: InteractionChain | undefined;
     let hitByMelee = false;
     let meleeSourceId: EntityId | undefined;
     let causeOfDeath: string | undefined;
@@ -206,7 +250,10 @@ export function processClassicDamage(state: GameState): GameState {
       const dmg = isGod ? 0 : instance.amount;
       if (dmg > 0) {
         totalDamage += dmg;
-        lastKillerId = instance.sourceEntityId;
+        lastKillerId = instance.sourceEntityId ?? instance.interaction?.originatorEntityId;
+        if (instance.interaction !== undefined) {
+          lastInteraction = instance.interaction;
+        }
 
         if (instance.tags.includes('spell')) causeOfDeath = 'spell';
         else if (instance.tags.includes('scroll')) causeOfDeath = 'scroll';
@@ -216,7 +263,7 @@ export function processClassicDamage(state: GameState): GameState {
 
         if (instance.tags.includes('melee')) {
           hitByMelee = true;
-          meleeSourceId = instance.sourceEntityId;
+          meleeSourceId = instance.sourceEntityId ?? instance.interaction?.originatorEntityId;
         }
       }
     }
@@ -231,9 +278,27 @@ export function processClassicDamage(state: GameState): GameState {
       const nextFighter: FighterComponent = { ...fighter, hp: newHp };
       nextState = removeComponent(nextState, entityId, ComponentType.Damage);
       nextState = addComponent(nextState, entityId, nextFighter);
+      nextState = {
+        ...nextState,
+        events: [
+          ...nextState.events,
+          {
+            type: GameEventType.EntityDamaged,
+            entityId,
+            amount: totalDamage,
+            ...(lastKillerId !== undefined ? { sourceEntityId: lastKillerId } : {}),
+            ...(lastInteraction !== undefined ? { interaction: lastInteraction } : {})
+          }
+        ]
+      };
 
       if (newHp === 0) {
-        const deathComp: DeathComponent = { type: ComponentType.Death, killerId: lastKillerId, causeOfDeath };
+        const deathComp: DeathComponent = {
+          type: ComponentType.Death,
+          killerId: lastKillerId,
+          causeOfDeath,
+          ...(lastInteraction !== undefined ? { interaction: lastInteraction } : {})
+        };
         nextState = addComponent(nextState, entityId, deathComp);
 
         if (lastKillerId !== undefined) {

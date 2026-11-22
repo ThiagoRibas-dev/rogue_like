@@ -319,6 +319,19 @@ export function evaluateDynamicLightAtTile(
   return level;
 }
 
+/**
+ * Checks whether `(x, y)` is currently illuminated (`'bright'` or `'shadowy'`) by at least one active,
+ * lit, non-depleted `LightEmitterComponent` source (carried by a living actor or placed on the map).
+ *
+ * @param state Current immutable GameState.
+ * @param x Target tile X coordinate.
+ * @param y Target tile Y coordinate.
+ * @returns `true` if `(x, y)` is illuminated by an active light emitter.
+ */
+export function isPositionIlluminatedByActiveLightEmitter(state: Readonly<GameState>, x: number, y: number): boolean {
+  return evaluateDynamicLightAtTile(state, x, y) !== 'darkness';
+}
+
 function actorHasFireStarter(state: Readonly<GameState>, actorId: EntityId, igniterItemEntityId?: EntityId): boolean {
   const checkItem = (itemId: EntityId): boolean => {
     const itemComp = getComponent(state, itemId, ComponentType.Item) as ItemComponent | undefined;
@@ -329,6 +342,26 @@ function actorHasFireStarter(state: Readonly<GameState>, actorId: EntityId, igni
   if (igniterItemEntityId !== undefined && checkItem(igniterItemEntityId)) return true;
   const inv = getComponent(state, actorId, ComponentType.Inventory) as InventoryComponent | undefined;
   return inv?.items.some((id) => checkItem(id)) ?? false;
+}
+
+/**
+ * Checks whether `targetItemEntityId` is a valid, unlit, non-depleted light source that `actorId`
+ * can currently ignite (using `igniterItemEntityId` or a carried `'fire_starter'` tool when required).
+ * Shared between UI verb projection (`getValidVerbsForTarget`) and `igniteLightEmitter`.
+ */
+export function canIgniteLightEmitterItem(
+  state: Readonly<GameState>,
+  actorId: EntityId,
+  targetItemEntityId: EntityId,
+  igniterItemEntityId?: EntityId
+): boolean {
+  const emitter = buildLightEmitterFromItem(state, targetItemEntityId);
+  if (!emitter || emitter.isLit) return false;
+  if (emitter.fuelTurns !== undefined && emitter.fuelTurns <= 0) return false;
+  if (emitter.requiresIgnition !== false && !actorHasFireStarter(state, actorId, igniterItemEntityId)) {
+    return false;
+  }
+  return true;
 }
 
 /**
@@ -444,11 +477,17 @@ export function refuelLightEmitter(
   return { state: nextState, success: true };
 }
 
-function tickSingleEmitterFuel(state: GameState, emitterEntityId: EntityId, notifyOwner: boolean): GameState {
+function tickSingleEmitterFuel(
+  state: GameState,
+  emitterEntityId: EntityId,
+  notifyOwner: boolean,
+  turnsElapsed = 1
+): GameState {
+  if (turnsElapsed <= 0) return state;
   const emitter = getComponent(state, emitterEntityId, ComponentType.LightEmitter) as LightEmitterComponent | undefined;
   if (!emitter || !emitter.isLit || emitter.fuelTurns === undefined) return state;
 
-  const nextFuel = Math.max(0, emitter.fuelTurns - 1);
+  const nextFuel = Math.max(0, emitter.fuelTurns - turnsElapsed);
   if (nextFuel > 0) {
     return addComponent(state, emitterEntityId, { ...emitter, fuelTurns: nextFuel });
   }
@@ -458,10 +497,63 @@ function tickSingleEmitterFuel(state: GameState, emitterEntityId: EntityId, noti
     fuelTurns: 0,
     isLit: false
   });
+  nextState = { ...nextState, fovNeedsUpdate: true };
   if (notifyOwner) {
     const itemName = resolveEntityDisplayName(nextState, emitterEntityId, 'light source');
     nextState = addMessage(nextState, `Your ${itemName} flickers and burns out!`, MessageLogCategory.System);
   }
+  return nextState;
+}
+
+/**
+ * Advances fuel by `turnsElapsed` turns for all lit `LightEmitterComponent` items carried/equipped by `entityId`
+ * (and when `entityId` is the player, also advances any lit world-placed/dropped emitters on the map).
+ *
+ * @param state Current immutable GameState.
+ * @param entityId Actor whose light emitters are advancing.
+ * @param turnsElapsed Number of elapsed turns.
+ * @returns Updated GameState.
+ */
+export function advanceActorLightEmittersByTurns(
+  state: GameState,
+  entityId: EntityId,
+  turnsElapsed: number
+): GameState {
+  if (turnsElapsed <= 0) return state;
+  let nextState = state;
+  const isPlayer = getComponent(state, entityId, ComponentType.Player) !== undefined;
+  const tickedIds = new Set<EntityId>();
+
+  const equip = getComponent(nextState, entityId, ComponentType.Equipment) as EquipmentComponent | undefined;
+  if (equip) {
+    for (const slot of equip.slots) {
+      if (slot.equippedItem !== null && !tickedIds.has(slot.equippedItem)) {
+        tickedIds.add(slot.equippedItem);
+        nextState = tickSingleEmitterFuel(nextState, slot.equippedItem, isPlayer, turnsElapsed);
+      }
+    }
+  }
+  const inv = getComponent(nextState, entityId, ComponentType.Inventory) as InventoryComponent | undefined;
+  if (inv) {
+    for (const itemId of inv.items) {
+      if (!tickedIds.has(itemId)) {
+        tickedIds.add(itemId);
+        nextState = tickSingleEmitterFuel(nextState, itemId, isPlayer, turnsElapsed);
+      }
+    }
+  }
+
+  if (isPlayer) {
+    for (const worldId of nextState.entities) {
+      if (tickedIds.has(worldId)) continue;
+      if (getComponent(nextState, worldId, ComponentType.Position) === undefined) continue;
+      const emitter = getComponent(nextState, worldId, ComponentType.LightEmitter) as LightEmitterComponent | undefined;
+      if (emitter?.isLit && emitter.fuelTurns !== undefined) {
+        nextState = tickSingleEmitterFuel(nextState, worldId, false, turnsElapsed);
+      }
+    }
+  }
+
   return nextState;
 }
 
@@ -474,39 +566,5 @@ function tickSingleEmitterFuel(state: GameState, emitterEntityId: EntityId, noti
  * @returns Updated GameState.
  */
 export function processActorLightEmittersTick(state: GameState, entityId: EntityId): GameState {
-  let nextState = state;
-  const isPlayer = getComponent(state, entityId, ComponentType.Player) !== undefined;
-  const tickedIds = new Set<EntityId>();
-
-  const equip = getComponent(nextState, entityId, ComponentType.Equipment) as EquipmentComponent | undefined;
-  if (equip) {
-    for (const slot of equip.slots) {
-      if (slot.equippedItem !== null && !tickedIds.has(slot.equippedItem)) {
-        tickedIds.add(slot.equippedItem);
-        nextState = tickSingleEmitterFuel(nextState, slot.equippedItem, isPlayer);
-      }
-    }
-  }
-  const inv = getComponent(nextState, entityId, ComponentType.Inventory) as InventoryComponent | undefined;
-  if (inv) {
-    for (const itemId of inv.items) {
-      if (!tickedIds.has(itemId)) {
-        tickedIds.add(itemId);
-        nextState = tickSingleEmitterFuel(nextState, itemId, isPlayer);
-      }
-    }
-  }
-
-  if (isPlayer) {
-    for (const worldId of nextState.entities) {
-      if (tickedIds.has(worldId)) continue;
-      if (getComponent(nextState, worldId, ComponentType.Position) === undefined) continue;
-      const emitter = getComponent(nextState, worldId, ComponentType.LightEmitter) as LightEmitterComponent | undefined;
-      if (emitter?.isLit && emitter.fuelTurns !== undefined) {
-        nextState = tickSingleEmitterFuel(nextState, worldId, false);
-      }
-    }
-  }
-
-  return nextState;
+  return advanceActorLightEmittersByTurns(state, entityId, 1);
 }

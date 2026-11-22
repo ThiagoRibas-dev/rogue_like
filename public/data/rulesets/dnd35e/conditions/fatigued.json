@@ -8,7 +8,9 @@
     "abilityPenaltyGroup": "fatigue",
     "grantedTags": ["condition:fatigued"],
     "modifiers": [],
-    "ruleOverrides": [],
+    "ruleOverrides": [
+      { "id": "fatigued_blocks_charge", "ruleKey": "blocks_charge", "value": true, "priority": 10 }
+    ],
     "abilityPenalties": { "str": 2, "dex": 2 }
   }
 }

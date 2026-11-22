@@ -1,0 +1,28 @@
+{
+  "ladder_10ft": {
+    "id": "ladder_10ft",
+    "name": "Ladder (10-ft.)",
+    "unidentifiedName": "Wooden Ladder",
+    "description": "A straight, simple wooden ladder (10 feet long) that can bridge a 5-foot pit or chasm or assist in climbing.",
+    "glyph": "=",
+    "fg": "#a04000",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 20,
+    "baseValue": 5,
+    "currencyUnit": "cp",
+    "tags": [
+      "adventuring_gear",
+      "dungeoneering",
+      "ladder",
+      "crossing_ladder"
+    ],
+    "crossingRecipe": {
+      "crossingKind": "ladder_span",
+      "requiredPartnerTags": [],
+      "consumesItems": true,
+      "maxRangeTiles": 2
+    },
+    "spriteId": "dcss_item_misc_misc_quad"
+  }
+}

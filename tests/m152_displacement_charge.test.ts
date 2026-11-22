@@ -11,7 +11,11 @@ import { getDnD35EntityData, setDnD35EntityData } from '../src/rulesets/dnd35e/s
 import { getDnD35SystemContent } from '../src/rulesets/dnd35e/types/dnd35e_system.types.ts';
 import { buildActorHotbarSlots } from '../src/rulesets/dnd35e/ui/dnd35e_ui_hotbar.ts';
 import { runActorTurnStart } from '../src/systems/lifecycle.system.ts';
-import { displaceEntityAlongVector, evaluateTileTraversal } from '../src/systems/movement_displacement.ts';
+import {
+  displaceEntityAlongVector,
+  displaceEntityStep,
+  evaluateTileTraversal
+} from '../src/systems/movement_displacement.ts';
 import type { TileDefinition } from '../src/types/campaign.types.ts';
 import {
   ComponentType,
@@ -454,4 +458,129 @@ describe('Milestone 152: Spatial Displacement Kernel & Explicit Triggered Charge
     });
     expect(['solid_obstacle', 'out_of_bounds', 'entity_blocker']).toContain(boundRes.stopReason);
   });
+
+  test('6. Same-anchor footprint rotation/squeeze, blocks_charge condition, fly charge speed, 10-ft reach stop, and non-Pounce vs Pounce strike counts', () => {
+    let state = buildGameState(campaign, EngineMode.TurnBased);
+    const clearPts: Array<{ x: number; y: number }> = [];
+    for (let y = 4; y <= 6; y++) {
+      for (let x = 2; x <= 14; x++) {
+        clearPts.push({ x, y });
+      }
+    }
+    state = clearFloorCorridor(state, clearPts);
+
+    const knightId = queryEntities(state, [ComponentType.Player])[0]!;
+    const [s2, targetId] = createEntity(state);
+    const [s3, glaiveId] = createEntity(s2);
+    state = s3;
+
+    // 1. Same-anchor footprint squeeze/rotation succeeds with moved === false
+    state = addComponent(state, knightId, {
+      type: ComponentType.Position,
+      x: 4,
+      y: 5,
+      footprintWidth: 2,
+      footprintHeight: 1,
+      facing: 'E'
+    });
+    const rotateRes = displaceEntityStep({
+      state,
+      entityId: knightId,
+      targetX: 4,
+      targetY: 5,
+      precomputedPlacement: {
+        valid: true,
+        anchorX: 4,
+        anchorY: 5,
+        width: 1,
+        height: 2,
+        facing: 'S',
+        isSqueezing: true,
+        moveCostMultiplier: 2
+      },
+      context: { mode: 'voluntary_walk', isForced: false, provokesAoO: false }
+    });
+    expect(rotateRes.moved).toBe(true);
+    expect(rotateRes.anchorMoved).toBe(false);
+    const rotatedPos = getComponent(rotateRes.state, knightId, ComponentType.Position)!;
+    expect(rotatedPos.footprintWidth).toBe(1);
+    expect(rotatedPos.footprintHeight).toBe(2);
+    expect(rotatedPos.isSqueezing).toBe(true);
+
+    // Reset knight to 1x1 at (2, 5) with Fighter 8 (BAB +8/+3 = 2 iterative attacks on full attack)
+    state = addComponent(state, knightId, { type: ComponentType.Position, x: 2, y: 5 });
+    state = addComponent(state, knightId, { type: ComponentType.Fighter, hp: 100, maxHp: 100 });
+    const fighterDef = getDnD35SystemContent(campaign)!.classes['fighter']!;
+    const baseKnightDnd = getDnD35EntityData(state, knightId);
+    state = setDnD35EntityData(state, knightId, {
+      ...baseKnightDnd,
+      tracks: [buildHitDieTrackFromClass(fighterDef, 8)],
+      actionBudget: {
+        standardRemaining: 1,
+        moveRemaining: 1,
+        swiftRemaining: 1,
+        aooRemaining: 1,
+        movementRemainingFt: 30,
+        distanceMovedThisRoundFt: 0,
+        fiveFootStepAvailable: true,
+        canMoveFurtherThisRound: true,
+        immediateUsedOffTurn: false,
+        hasActedThisRound: false
+      }
+    });
+
+    state = addComponent(state, targetId, { type: ComponentType.Position, x: 7, y: 5 });
+    state = addComponent(state, targetId, { type: ComponentType.Fighter, hp: 150, maxHp: 150 });
+    state = addComponent(state, targetId, { type: ComponentType.Attitude, attitude: 'hostile' });
+
+    // 2. Declarative blocks_charge condition (fatigued) blocks charge in DAG and validateChargeLine
+    const fatiguedState = setDnD35EntityData(state, knightId, {
+      ...getDnD35EntityData(state, knightId),
+      conditions: ['fatigued']
+    });
+    expect(evaluateDnD35eEntityDAG(fatiguedState, knightId)!.canCharge).toBe(false);
+    expect(validateChargeLine(fatiguedState, knightId, targetId).valid).toBe(false);
+
+    // 3. Fly-only creature (land: 0, fly: 60) can charge using its 60-ft fly speed
+    const flyerState = setDnD35EntityData(state, knightId, {
+      ...getDnD35EntityData(state, knightId),
+      movementModes: { land: 0, fly: 60 }
+    });
+    expect(validateChargeLine(flyerState, knightId, targetId).valid).toBe(true);
+
+    // 4. Equip 10-ft reach weapon (glaive: reachFt 10, strikesAdjacent false) -> stops 2 tiles away at (5, 5)
+    state = addComponent(state, glaiveId, {
+      type: ComponentType.Item,
+      itemId: 'glaive',
+      instanceId: toItemInstanceId('m152-glaive')
+    });
+    state = addComponent(state, knightId, {
+      type: ComponentType.Equipment,
+      slots: [{ id: 'main_hand', slotType: 'main_hand', equippedItem: glaiveId }]
+    } as EquipmentComponent);
+
+    const reachLine = validateChargeLine(state, knightId, targetId);
+    expect(reachLine.valid).toBe(true);
+    expect(reachLine.landingPos).toEqual({ x: 5, y: 5 });
+    expect(reachLine.totalDistanceFt).toBe(15);
+
+    // 5. Non-Pounce Fighter 8 charging resolves exactly 1 strike (not full 2-strike iterative routine) and records distanceMovedThisRoundFt = 15
+    const nonPounceCharge = executeDnD35eChargeAction({ ...state, messages: [] }, knightId, targetId);
+    expect(nonPounceCharge.success).toBe(true);
+    expect(getComponent(nonPounceCharge.state, knightId, ComponentType.Position)?.x).toBe(5);
+    expect(getDnD35EntityData(nonPounceCharge.state, knightId).actionBudget?.distanceMovedThisRoundFt).toBe(15);
+    const nonPounceChargeLogs = nonPounceCharge.state.messages.filter((m) => m.text.includes('[Charge +2]'));
+    expect(nonPounceChargeLogs.length).toBe(1);
+
+    // 6. With trait:pounce, Fighter 8 charging resolves full iterative routine (2 strikes)
+    const pounceState = addComponent({ ...state, messages: [] }, knightId, {
+      type: ComponentType.Tags,
+      tags: ['trait:pounce']
+    });
+    const pounceCharge = executeDnD35eChargeAction(pounceState, knightId, targetId);
+    expect(pounceCharge.success).toBe(true);
+    const pounceChargeLogs = pounceCharge.state.messages.filter((m) => m.text.includes('[Charge +2]'));
+    expect(pounceChargeLogs.length).toBe(2);
+  });
 });
+

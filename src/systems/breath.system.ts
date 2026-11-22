@@ -112,16 +112,7 @@ export function setActorSubmersionState(state: GameState, entityId: EntityId, is
   return addComponent(state, entityId, breath);
 }
 
-/**
- * Ticks an actor's `BreathComponent` at Turn Start (`runActorTurnStart`).
- * Decrements `remainingTurns` while `isSubmerged === true` (unless immune to drowning);
- * when `remainingTurns` reaches `0`, queues lethal drowning damage (`DROWNING_SUFFOCATION_DAMAGE`).
- *
- * @param state Current immutable GameState.
- * @param entityId The actor whose turn is starting.
- * @returns Updated GameState.
- */
-export function processActorBreathTick(state: GameState, entityId: EntityId): GameState {
+function tickActorBreathSingleTurn(state: GameState, entityId: EntityId): GameState {
   const breath = getComponent(state, entityId, ComponentType.Breath) as BreathComponent | undefined;
   if (!breath) return state;
 
@@ -162,4 +153,41 @@ export function processActorBreathTick(state: GameState, entityId: EntityId): Ga
   }
 
   return nextState;
+}
+
+/**
+ * Advances an actor's `BreathComponent` across `turnsElapsed` turns.
+ * Shared between normal Turn Start and bulk time advancement.
+ *
+ * @param state Current immutable GameState.
+ * @param entityId The actor whose breath is advancing.
+ * @param turnsElapsed Number of elapsed turns.
+ * @returns Updated GameState.
+ */
+export function advanceActorBreathByTurns(state: GameState, entityId: EntityId, turnsElapsed: number): GameState {
+  if (turnsElapsed <= 0) return state;
+  let nextState = state;
+  for (let step = 0; step < turnsElapsed; step++) {
+    const breath = getComponent(nextState, entityId, ComponentType.Breath) as BreathComponent | undefined;
+    if (!breath) break;
+    const prevRemaining = breath.remainingTurns;
+    nextState = tickActorBreathSingleTurn(nextState, entityId);
+    if (prevRemaining === 0 || (getComponent(nextState, entityId, ComponentType.Breath)?.remainingTurns ?? 0) === 0) {
+      break;
+    }
+  }
+  return nextState;
+}
+
+/**
+ * Ticks an actor's `BreathComponent` at Turn Start (`runActorTurnStart`).
+ * Decrements `remainingTurns` while `isSubmerged === true` (unless immune to drowning);
+ * when `remainingTurns` reaches `0`, queues lethal drowning damage (`DROWNING_SUFFOCATION_DAMAGE`).
+ *
+ * @param state Current immutable GameState.
+ * @param entityId The actor whose turn is starting.
+ * @returns Updated GameState.
+ */
+export function processActorBreathTick(state: GameState, entityId: EntityId): GameState {
+  return advanceActorBreathByTurns(state, entityId, 1);
 }

@@ -122,12 +122,14 @@ export function summarizeConditionEffects(
   readonly strPenalty: number;
   readonly dexPenalty: number;
   readonly canTakeActions: boolean;
+  readonly canCharge: boolean;
 } {
   const registry = resolveConditionRegistry(conditionRegistry);
   let meleeAttackPenalty = 0;
   let acPenalty = 0;
   let losesDexToAC = false;
   let canTakeActions = true;
+  let canCharge = true;
   const maxStrByGroup: Record<string, number> = {};
   const maxDexByGroup: Record<string, number> = {};
 
@@ -148,6 +150,9 @@ export function summarizeConditionEffects(
         losesDexToAC = true;
       } else if (override.ruleKey === 'can_take_actions' && override.value === false) {
         canTakeActions = false;
+        canCharge = false;
+      } else if (override.ruleKey === 'blocks_charge' && override.value === true) {
+        canCharge = false;
       }
     }
 
@@ -173,6 +178,7 @@ export function summarizeConditionEffects(
     losesDexToAC,
     strPenalty,
     dexPenalty,
-    canTakeActions
+    canTakeActions,
+    canCharge
   };
 }

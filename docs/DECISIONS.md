@@ -694,6 +694,27 @@ This document records architectural decisions whose rationale is **non-obvious o
 - **Decision 4: 3-Way SSOT Partition (`ssot_classic.json`), `tier2_types` & Hard-Error Unique `canonicalEntryPoints` (`scripts/ssot_parity.ts`)**:
   - Partitioned Classic cartridge files into `docs/ssot/ssot_classic.json` + `docs/SSOT_CLASSIC.md`, added `tier2_types` for cartridge schema files, normalized fragmented domain labels, deduplicated all 182 re-export overlaps across files, and added hard-error checks for duplicate `canonicalEntryPoints` and tier-to-registry mismatches.
 
+---
+
+### M150–M156 Architectural Audit, Multi-Hop `InteractionChain` Provenance & Rule 21 Schema Completion
+
+- **Decision 1: First-Class Multi-Hop `InteractionChain` Provenance (`src/types/interaction_provenance.types.ts`, `src/systems/interaction_provenance.system.ts`)**:
+  - Introduced a serializable `InteractionChain` (`originatorEntityId`, `frames: ReadonlyArray<InteractionFrame>`) threaded across `BaseIntent`, `BaseGameEvent`, `ActiveStatusEffect`, `CoatingComponent`, `DamageInstance`, `DeathComponent`, `FieldComponent`, `CrossingComponent`, and `DisplacementContext`, with an optional `RulesetContract.beforeInteractionFrame` interception hook.
+  - *Rationale*: Enables indirect multi-hop gameplay chains (weapon coating -> strike -> status/field transmutation -> kill) to retain full causal lineage and credit XP, grudges, and event telemetry to the originating actor without ad-hoc parent pointers.
+
+- **Decision 2: Single Pit-Entry Fall Invariant, Transactional Field Transmutations & Shared Bulk Local Elapsed-Time Tick (`terrain_traversal_resolver.ts`, `field.system.ts`, `world_time_skip.ts`)**:
+  - Separated movement-entry pit falls (`isTurnStart: false`, dealing `1d6/10ft` + `prone`) from turn-start pit occupancy (`isTurnStart: true`, attempting `Climb` without re-applying fall damage), committed `spawnField` transmutations in a single transaction so raw and transmuted fields never coexist on the same tile, and routed `advanceWorldTimeBulk` through shared local elapsed-time tick helpers (`advanceActorStatusEffectsByTurns`, `advanceActorBreathByTurns`, `advanceActorLightEmittersByTurns`, `advanceCrossingsByTurns`, `advanceAIAlertnessDecayByTurns`, `advanceFieldsByTurns`).
+  - *Rationale*: Prevents double pit-fall damage across movement + turn start, duplicate raw + transmuted field ticks, and frozen local status/breath/light/crossing timers during bulk rest or study skips.
+
+- **Decision 3: Declarative Item/Status/Condition Schemas Over Rule 21 Content-ID Branching (`item.ts`, `entity.ts`, `status.json`, `conditions/*.json`)**:
+  - Replaced hardcoded item/status/condition ID branches across coatings (`ItemCoatingMetadataSchema`), tactical deployment (`ItemDeploymentMetadataSchema`), crossing recipes (`ItemCrossingRecipeSchema`), structural objects (`EntityStructuralConfigSchema`, `ItemStructuralConfigSchema`), wand spell-trigger lists (`zappable.spellId`), status save modifiers (`StatusEffectDefinitionSchema.saveModifiers` projected into the Stat DAG), and charge blockers (`ruleOverrides: [{ ruleKey: "blocks_charge", value: true }]`).
+  - *Rationale*: Satisfies the "New Content Mod" Litmus Test (Rule 21) so campaign authors can define new coatings, deployable hazards, crossings, wands, status save buffs, and charge-blocking conditions purely in JSON.
+
+- **Decision 4: 5-Step `getFactionRelation` Disguise Precedence (`src/utils/faction.ts`)**:
+  - Enforced strict 5-step relational precedence when evaluating `IdentityMaskComponent`: (1) never overwrite the subject's own faction with the subject's disguise mask; (2) personal grudges override the target's disguise; (3) actual `'friendly'` allies remain `'friendly'` even when the target wears a hostile faction disguise; (4) an unblown target disguise (`suspicion < maxSuspicion`) spoofs the target's faction to suppress baseline hostility; (5) baseline faction relation matrix.
+  - *Rationale*: Prevents a disguised player from treating enemies of their disguised faction as non-hostile or being attacked by their own party companions.
+
+
 
 
 

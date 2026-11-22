@@ -41,6 +41,9 @@ import type {
   TileEnteredEvent,
   WorldEventFiredEvent
 } from './events/interaction_events.types.ts';
+import type { InteractionChain, InteractionFrame, InteractionFrameKind } from './interaction_provenance.types.ts';
+
+export type { InteractionChain, InteractionFrame, InteractionFrameKind };
 
 // Re-export Combat & Nemesis Events (AGENTS.md Rule 8 & 15)
 export type {
@@ -140,6 +143,7 @@ export interface BaseGameEvent {
   readonly type: GameEventType;
   readonly importance?: 'low' | 'normal' | 'high';
   readonly summary?: string;
+  readonly interaction?: InteractionChain | undefined;
 }
 
 /**

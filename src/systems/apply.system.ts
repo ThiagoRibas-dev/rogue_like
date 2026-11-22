@@ -28,7 +28,10 @@ import {
   processCompanionVerbIntent
 } from './companion_commands.system.ts';
 import { startDialogue } from './dialogue.system.ts';
-import { igniteLightEmitter, refuelLightEmitter } from './light_emitter.system.ts';
+import { canIgniteLightEmitterItem, igniteLightEmitter, refuelLightEmitter } from './light_emitter.system.ts';
+import { canHarvestCorpseEntity, harvestCorpseEntity } from './corpse.system.ts';
+import { isAltarOrShrineEntity, prayAtAltarOrShrine } from './religion.system.ts';
+import { applyDisguiseFromTool, isDisguiseToolItem } from './disguise.system.ts';
 /**
  * Emits an 'interact' quest event when the player successfully interacts with an entity target.
  */
@@ -118,6 +121,61 @@ export function processApplyIntent(
     return companionOutcome;
   }
 
+  if (intent.verb === 'harvest' && intent.target.type === 'entity') {
+    const harvestRes = harvestCorpseEntity(state, intent.entityId, intent.target.entityId);
+    if (harvestRes.success) {
+      const nextState = emitInteractQuestEventIfApplicable(harvestRes.state, intent);
+      const resolvedEvent: ApplyResolvedEvent = {
+        type: GameEventType.ApplyResolved,
+        entityId: intent.entityId,
+        verb: intent.verb,
+        target: intent.target,
+        toolEntityId: intent.toolEntityId
+      };
+      return { state: nextState, success: true, events: [resolvedEvent] };
+    }
+    return { state: harvestRes.state, success: false };
+  }
+
+  if (intent.verb === 'pray' && intent.target.type === 'entity') {
+    const prayRes = prayAtAltarOrShrine(state, intent.entityId, intent.target.entityId);
+    if (prayRes.success) {
+      const nextState = emitInteractQuestEventIfApplicable(prayRes.state, intent);
+      const resolvedEvent: ApplyResolvedEvent = {
+        type: GameEventType.ApplyResolved,
+        entityId: intent.entityId,
+        verb: intent.verb,
+        target: intent.target,
+        toolEntityId: intent.toolEntityId
+      };
+      return { state: nextState, success: true, events: [resolvedEvent] };
+    }
+    return { state: prayRes.state, success: false };
+  }
+
+  if (intent.verb === 'apply') {
+    const candidateToolId =
+      intent.toolEntityId !== undefined
+        ? intent.toolEntityId
+        : intent.target.type === 'item'
+          ? intent.target.itemEntityId
+          : undefined;
+    if (candidateToolId !== undefined && isDisguiseToolItem(state, candidateToolId)) {
+      const disguiseRes = applyDisguiseFromTool(state, intent.entityId, intent.target, candidateToolId);
+      if (disguiseRes.success) {
+        const resolvedEvent: ApplyResolvedEvent = {
+          type: GameEventType.ApplyResolved,
+          entityId: intent.entityId,
+          verb: intent.verb,
+          target: intent.target,
+          toolEntityId: intent.toolEntityId
+        };
+        return { state: disguiseRes.state, success: true, events: [resolvedEvent] };
+      }
+      return { state: disguiseRes.state, success: false };
+    }
+  }
+
   const activeRuleset = getActiveRuleset(state);
   if (activeRuleset.resolveSkillVerb) {
     const rulesetOutcome = activeRuleset.resolveSkillVerb(state, intent);
@@ -190,35 +248,7 @@ export function processApplyIntent(
         };
         return { state: refuelRes.state, success: true, events: [resolvedEvent] };
       }
-      const toolItem = getComponent(state, intent.toolEntityId, ComponentType.Item) as ItemComponent | undefined;
-      const targetItem = getComponent(state, targetItemEntityId, ComponentType.Item) as ItemComponent | undefined;
-      if (toolItem && targetItem) {
-        const statusId = toolItem.itemId.includes('poison') ? 'poison' : 'burning';
-        let nextState = addComponent(state, targetItemEntityId, {
-          type: ComponentType.Coating,
-          statusId,
-          charges: 1,
-          duration: 50,
-          coatingItemId: toolItem.itemId
-        });
-        nextState = addMessage(
-          nextState,
-          `You dip ${targetItem.itemId.replace(/_/g, ' ')} into ${toolItem.itemId.replace(/_/g, ' ')}.`,
-          MessageLogCategory.System
-        );
-        const resolvedEvent: ApplyResolvedEvent = {
-          type: GameEventType.ApplyResolved,
-          entityId: intent.entityId,
-          verb: intent.verb,
-          target: intent.target,
-          toolEntityId: intent.toolEntityId
-        };
-        return {
-          state: nextState,
-          success: true,
-          events: [resolvedEvent]
-        };
-      }
+      return { state: refuelRes.state, success: false };
     }
   }
 
@@ -311,6 +341,9 @@ export function getValidVerbsForTarget(
           validVerbs.add('apply');
           validVerbs.add('drink');
         }
+        if (isDisguiseToolItem(state, toolEntityId)) {
+          validVerbs.add('apply');
+        }
         const tags = itemDef.tags ?? [];
         if (
           tags.includes('liquid') ||
@@ -322,6 +355,26 @@ export function getValidVerbsForTarget(
           validVerbs.add('dip');
         }
       }
+    }
+  }
+
+  const targetItemEntityId =
+    target.type === 'item' ? target.itemEntityId : target.type === 'entity' ? target.entityId : undefined;
+  if (targetItemEntityId !== undefined) {
+    if (canIgniteLightEmitterItem(state, sourceEntityId, targetItemEntityId, toolEntityId)) {
+      validVerbs.add('ignite');
+    }
+    if (isDisguiseToolItem(state, targetItemEntityId)) {
+      validVerbs.add('apply');
+    }
+  }
+
+  if (target.type === 'entity') {
+    if (canHarvestCorpseEntity(state, target.entityId)) {
+      validVerbs.add('harvest');
+    }
+    if (isAltarOrShrineEntity(state, target.entityId)) {
+      validVerbs.add('pray');
     }
   }
 

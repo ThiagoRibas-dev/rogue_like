@@ -8,6 +8,8 @@
       { "id": "prone_attack", "target": "attack", "value": -4, "type": "untyped" },
       { "id": "prone_ac", "target": "ac", "value": -4, "type": "untyped" }
     ],
-    "ruleOverrides": []
+    "ruleOverrides": [
+      { "id": "prone_blocks_charge", "ruleKey": "blocks_charge", "value": true, "priority": 10 }
+    ]
   }
 }

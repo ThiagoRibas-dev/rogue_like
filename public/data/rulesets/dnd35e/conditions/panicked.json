@@ -10,6 +10,8 @@
       { "id": "panicked_attack", "target": "attack", "value": -2, "type": "untyped" },
       { "id": "panicked_skills", "target": "skills", "value": -2, "type": "untyped" }
     ],
-    "ruleOverrides": []
+    "ruleOverrides": [
+      { "id": "panicked_blocks_charge", "ruleKey": "blocks_charge", "value": true, "priority": 10 }
+    ]
   }
 }

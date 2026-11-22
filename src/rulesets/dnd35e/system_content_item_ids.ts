@@ -130,6 +130,7 @@ export const ITEM_IDS: ReadonlyArray<string> = [
   'kama',
   'keen_rapier_plus1',
   'kukri',
+  'ladder_10ft',
   'lance',
   'leather_armor',
   'light_crossbow',

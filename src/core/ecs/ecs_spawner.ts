@@ -233,6 +233,74 @@ export function spawnEntity(
     }
   }
 
+  if (template.structural) {
+    const s = template.structural;
+    const defaultHardnessByMaterial: Readonly<Record<string, number>> = {
+      paper: 0,
+      cloth: 0,
+      rope: 0,
+      glass: 1,
+      ice: 0,
+      leather: 2,
+      hide: 2,
+      wood: 5,
+      darkwood: 5,
+      stone: 8,
+      iron: 10,
+      steel: 10,
+      cold_iron: 10,
+      alchemical_silver: 8,
+      silver: 8,
+      mithral: 15,
+      adamantine: 20
+    };
+    const defaultHpPerInchByMaterial: Readonly<Record<string, number>> = {
+      paper: 2,
+      cloth: 2,
+      rope: 2,
+      glass: 1,
+      ice: 3,
+      leather: 5,
+      hide: 5,
+      wood: 10,
+      darkwood: 10,
+      stone: 15,
+      iron: 30,
+      steel: 30,
+      cold_iron: 30,
+      alchemical_silver: 10,
+      silver: 10,
+      mithral: 30,
+      adamantine: 40
+    };
+    const computedMaxHp =
+      s.maxHp ?? Math.max(1, Math.round(s.thicknessInches * (defaultHpPerInchByMaterial[s.materialId] ?? 10)));
+    const computedHp = s.isRuined === true ? 0 : (s.hp ?? computedMaxHp);
+    const computedHardness = s.hardnessOverride ?? defaultHardnessByMaterial[s.materialId] ?? 5;
+    nextState = addComponent(nextState, entityId, {
+      type: ComponentType.Structural,
+      materialTag: s.materialId,
+      hardness: computedHardness,
+      hp: computedHp,
+      maxHp: computedMaxHp,
+      breakDc: s.breakDc ?? 15,
+      objectSize: 'medium',
+      ...(s.isDoor !== undefined ? { isDoor: s.isDoor } : {}),
+      ...(s.isOpen !== undefined ? { isOpen: s.isOpen } : {}),
+      ...(s.isStuck !== undefined ? { jammed: s.isStuck } : {}),
+      ...(s.isSpiked === true ? { jammed: true, spikedByEntityId: entityId } : {}),
+      ...(s.isRuined === true || computedHp === 0 ? { ruined: true } : {})
+    });
+    if (s.isLocked !== undefined && !getComponent(nextState, entityId, ComponentType.Lock)) {
+      nextState = addComponent(nextState, entityId, {
+        type: ComponentType.Lock,
+        difficulty: s.openLockDc ?? 20,
+        locked: s.isLocked,
+        breakable: true
+      });
+    }
+  }
+
   if (template.dialogueId) {
     nextState = addComponent(nextState, entityId, {
       type: ComponentType.Interactable,

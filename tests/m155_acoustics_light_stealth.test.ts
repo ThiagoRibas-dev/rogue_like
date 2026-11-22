@@ -21,7 +21,8 @@ import {
 } from '../src/rulesets/dnd35e/spatial/stealth_resolver.ts';
 import { getDnD35EntityData, setDnD35EntityData } from '../src/rulesets/dnd35e/srd_registry.ts';
 import { processAITurn } from '../src/systems/ai.system.ts';
-import { processApplyIntent } from '../src/systems/apply.system.ts';
+import { getValidVerbsForTarget, processApplyIntent } from '../src/systems/apply.system.ts';
+import { applyIdentityMask } from '../src/systems/disguise.system.ts';
 import { runActorTurnStart } from '../src/systems/lifecycle.system.ts';
 import {
   evaluateDynamicLightAtTile,
@@ -37,15 +38,17 @@ import {
   SOUND_DB_DOOR_KICK,
   tickAIAlertnessDecay
 } from '../src/systems/sound.system.ts';
+import { applyStatusEffect } from '../src/systems/status-effect.system.ts';
 import {
   ComponentType,
   type AIComponent,
   type InventoryComponent,
   type LightEmitterComponent,
-  type PositionComponent
+  type StatusEffectsComponent
 } from '../src/types/components.types.ts';
 import type { EntityId, GameState } from '../src/types/game-state.types.ts';
 import { IntentType } from '../src/types/intents/intent.enum.ts';
+import { getFactionRelation, isHostile } from '../src/utils/faction.ts';
 import { coordToIndex } from '../src/utils/grid.ts';
 import { buildGameState, loadCampaignFromDisk } from './helpers.ts';
 
@@ -381,4 +384,73 @@ describe('Milestone 155: Acoustics, Dynamic LightEmitterComponent & Symmetric 6s
     const ticked = runActorTurnStart(state, playerId);
     expect(ticked).toBeDefined();
   });
+
+  test('5. Sleeping listener -10 Listen penalty + wake-up on emitSoundEvent, getValidVerbsForTarget ignite projection, and 5-step getFactionRelation disguise precedence', () => {
+    const campaign = loadCampaignFromDisk('dnd35e-crypt');
+    const baseState = buildGameState(campaign);
+    const { floorId } = getFloorAndWallTileIds(baseState);
+    let state = clearOpenRoom(baseState, floorId, 2, 2, 16, 12);
+
+    const playerId = state.entities.find((id) => getComponent(state, id, ComponentType.Player) !== undefined)!;
+    state = addComponent(state, playerId, { type: ComponentType.Position, x: 5, y: 5 });
+
+    // 1. getValidVerbsForTarget projects 'ignite' for an unlit torch when actor has flint_and_steel
+    const [s1, torchId] = addItemToActorInventory(state, playerId, 'torch');
+    state = s1;
+    expect(getValidVerbsForTarget(state, playerId, { type: 'item', itemEntityId: torchId })).not.toContain('ignite');
+    const [s2] = addItemToActorInventory(state, playerId, 'flint_and_steel');
+    state = s2;
+    expect(getValidVerbsForTarget(state, playerId, { type: 'item', itemEntityId: torchId })).toContain('ignite');
+
+    // 2. Sleeping guard suffers -10 Listen penalty against stealthed noise and wakes up when alerted by a loud sound
+    const [s3, guardId] = spawnEntity(state, 'bandit', 6, 5);
+    state = addComponent(s3, guardId, {
+      type: ComponentType.AI,
+      profileId: Object.keys(state.campaign.ai)[0] ?? 'aggressive',
+      aggroRadius: 8
+    });
+    state = applyStatusEffect(state, guardId, 'sleeping', 50);
+    expect(
+      (getComponent(state, guardId, ComponentType.StatusEffects) as StatusEffectsComponent | undefined)?.activeEffects.some(
+        (e) => e.effectId === 'sleeping'
+      )
+    ).toBe(true);
+
+    const wakeSound = emitSoundEvent(state, 5, 5, SOUND_DB_DOOR_KICK, playerId, { cueLabel: 'a loud crash' });
+    state = wakeSound.state;
+    expect(wakeSound.heardByEntityIds).toContain(guardId);
+    expect(
+      (getComponent(state, guardId, ComponentType.StatusEffects) as StatusEffectsComponent | undefined)?.activeEffects.some(
+        (e) => e.effectId === 'sleeping'
+      ) ?? false
+    ).toBe(false);
+
+    // 3. 5-step getFactionRelation precedence with IdentityMaskComponent
+    const [s4, allyId] = spawnEntity(state, 'bandit', 4, 5);
+    state = addComponent(s4, allyId, { type: ComponentType.Faction, factionId: 'player' });
+    state = addComponent(state, playerId, { type: ComponentType.Faction, factionId: 'player' });
+    state = addComponent(state, guardId, { type: ComponentType.Faction, factionId: 'bandits' });
+
+    // Before disguise: mutual hostility between player ('player') and guard ('bandits')
+    expect(isHostile(state, playerId, guardId)).toBe(true);
+    expect(isHostile(state, guardId, playerId)).toBe(true);
+
+    // Disguise player as 'bandits'
+    state = applyIdentityMask(state, playerId, 'bandits', 25);
+
+    // Step 1: Subject's own faction is never overwritten by subject's mask -> player still sees bandit guard as hostile!
+    expect(isHostile(state, playerId, guardId)).toBe(true);
+    // Step 4: Target's valid IdentityMaskComponent spoofs target faction -> bandit guard sees disguised player as non-hostile!
+    expect(isHostile(state, guardId, playerId)).toBe(false);
+    // Step 3: Actual 'friendly' allies remain 'friendly' even when player wears a hostile faction mask!
+    expect(getFactionRelation(state, allyId, playerId)).toBe('friendly');
+    // Step 2: Personal grudge on guard overrides player's disguise mask!
+    const grudgeState = addComponent(state, guardId, {
+      type: ComponentType.Memory,
+      grudges: ['player'],
+      knowledge: {}
+    });
+    expect(isHostile(grudgeState, guardId, playerId)).toBe(true);
+  });
 });
+

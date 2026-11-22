@@ -7,6 +7,7 @@ import {
   type ItemComponent,
   type LockComponent,
   type PositionComponent,
+  type RenderableComponent,
   type StructuralComponent,
   type TagsComponent,
   type TrapComponent
@@ -21,8 +22,8 @@ export const REPAIR_TOOL_ITEM_TAG = 'repair_tool';
 /** Declarative item tag identifying door wedges / iron spikes (`iron_spike`). */
 export const DOOR_SPIKE_ITEM_TAG = 'door_spike';
 
-/** Declarative item tag identifying hammers used to drive spikes (`hammer`). */
-export const HAMMER_TOOL_ITEM_TAG = 'hammer';
+/** Declarative item tag identifying hammers used to drive spikes (`hammer_tool`). */
+export const HAMMER_TOOL_ITEM_TAG = 'hammer_tool';
 
 /** Declarative item tag identifying 10-ft reach probing poles (`pole_10ft`). */
 export const REACH_PROBE_ITEM_TAG = 'reach_probe';
@@ -36,6 +37,9 @@ export const REACH_PROBE_MAX_RANGE_TILES = 2;
 /** Sound decibel emission when driving an iron spike into a door with a hammer (`55` dB). */
 export const SOUND_DOOR_SPIKE_DB = 55;
 
+/** Hit point bonus granted per `+1` magical enhancement bonus on a weapon/shield/armor (`+10` per SRD). */
+const MAGIC_ENHANCEMENT_HP_PER_PLUS = 10;
+
 /** Default campaign durability configuration (all opt-in combat wear probabilities set to `0%`). */
 export const DEFAULT_DURABILITY_CONFIG: DurabilityConfig = {
   enableFumbleWearChance: 0,
@@ -43,6 +47,54 @@ export const DEFAULT_DURABILITY_CONFIG: DurabilityConfig = {
   enableCritArmorWearChance: 0,
   ruinedIsRepairable: true
 };
+
+function computeEffectiveStructuralMaxHp(structural: StructuralComponent): number {
+  const plus = Math.max(0, structural.enhancementBonus ?? 0);
+  return structural.maxHp + plus * MAGIC_ENHANCEMENT_HP_PER_PLUS;
+}
+
+/**
+ * Synchronizes a structural door entity's passability (`'solid'`), line-of-sight opacity (`'opaque'`),
+ * `fovNeedsUpdate`, and `RenderableComponent.glyph` (`'/'` when open/broken, `'+'` when closed)
+ * whenever `structural.isOpen` or `structural.ruined` changes.
+ */
+export function syncStructuralDoorState(
+  state: GameState,
+  doorEntityId: EntityId,
+  structural: StructuralComponent
+): GameState {
+  if (structural.isDoor !== true) return state;
+
+  let nextState = state;
+  const isOpenOrBroken = structural.isOpen === true || structural.ruined === true;
+  const tagsCmp = getComponent(nextState, doorEntityId, ComponentType.Tags) as TagsComponent | undefined;
+  const existingTags = tagsCmp?.tags ?? [];
+
+  const nextTags = isOpenOrBroken
+    ? existingTags.filter((t) => t !== 'solid' && t !== 'opaque')
+    : Array.from(new Set([...existingTags, 'solid', 'opaque']));
+
+  nextState = addComponent(nextState, doorEntityId, {
+    type: ComponentType.Tags,
+    tags: nextTags
+  });
+
+  const renderable = getComponent(nextState, doorEntityId, ComponentType.Renderable) as RenderableComponent | undefined;
+  if (renderable) {
+    const nextGlyph = isOpenOrBroken ? '/' : '+';
+    if (renderable.glyph !== nextGlyph) {
+      nextState = addComponent(nextState, doorEntityId, {
+        ...renderable,
+        glyph: nextGlyph
+      });
+    }
+  }
+
+  return {
+    ...nextState,
+    fovNeedsUpdate: true
+  };
+}
 
 /**
  * Resolves the effective campaign durability configuration from `state.campaign.rules.durabilityConfig`,
@@ -100,6 +152,9 @@ export function applyStructuralDamage(
   };
 
   let nextState = addComponent(state, targetEntityId, updatedStructural);
+  if (structural.isDoor === true && nextHp === 0) {
+    nextState = syncStructuralDoorState(nextState, targetEntityId, updatedStructural);
+  }
   if (becameRuined) {
     const targetName = resolveEntityDisplayName(nextState, targetEntityId, 'The object');
     nextState = addMessage(
@@ -119,12 +174,12 @@ export function applyStructuralDamage(
 
 /**
  * Repairs a damaged or `ruined: true` structural item or object (`targetEntityId`), restoring HP
- * (up to `maxHp`) and clearing `ruined` when `hp > 0` and `resolveDurabilityConfig(state).ruinedIsRepairable` is true.
+ * (up to `effectiveMaxHp`) and clearing `ruined` when `hp > 0` and `resolveDurabilityConfig(state).ruinedIsRepairable` is true.
  *
  * @param state Current immutable GameState.
  * @param actorId Actor performing the repair.
  * @param targetEntityId Structural item or object being repaired.
- * @param restoredHp Amount of structural HP restored (defaults to full `maxHp`).
+ * @param restoredHp Amount of structural HP restored (defaults to full `effectiveMaxHp`).
  * @returns `{ state, success }`.
  */
 export function repairRuinedItem(
@@ -153,8 +208,9 @@ export function repairRuinedItem(
     };
   }
 
-  const healAmount = restoredHp !== undefined ? Math.max(1, Math.floor(restoredHp)) : structural.maxHp;
-  const nextHp = Math.min(structural.maxHp, structural.hp + healAmount);
+  const effectiveMaxHp = computeEffectiveStructuralMaxHp(structural);
+  const healAmount = restoredHp !== undefined ? Math.max(1, Math.floor(restoredHp)) : effectiveMaxHp;
+  const nextHp = Math.min(effectiveMaxHp, structural.hp + healAmount);
   const { ruined: _clearedRuined, ...restStructural } = structural;
   const updatedStructural: StructuralComponent = {
     ...restStructural,
@@ -162,11 +218,14 @@ export function repairRuinedItem(
   };
 
   let nextState = addComponent(state, targetEntityId, updatedStructural);
+  if (updatedStructural.isDoor === true) {
+    nextState = syncStructuralDoorState(nextState, targetEntityId, updatedStructural);
+  }
   const actorName = resolveEntityDisplayName(nextState, actorId, 'Someone');
   const itemName = resolveEntityDisplayName(nextState, targetEntityId, 'the item');
   nextState = addMessage(
     nextState,
-    `${actorName} repairs ${itemName} (${nextHp}/${structural.maxHp} HP).`,
+    `${actorName} repairs ${itemName} (${nextHp}/${effectiveMaxHp} HP).`,
     MessageLogCategory.System
   );
   return { state: nextState, success: true };
@@ -258,10 +317,12 @@ export function openStructuralDoor(
     };
   }
 
-  let nextState = addComponent(state, doorEntityId, {
+  const updatedStructural: StructuralComponent = {
     ...structural,
     isOpen: true
-  });
+  };
+  let nextState = addComponent(state, doorEntityId, updatedStructural);
+  nextState = syncStructuralDoorState(nextState, doorEntityId, updatedStructural);
   const actorName = resolveEntityDisplayName(nextState, actorId, 'Someone');
   nextState = addMessage(nextState, `${actorName} opens the door.`, MessageLogCategory.System);
   return { state: nextState, success: true };
@@ -300,10 +361,12 @@ export function closeStructuralDoor(
     };
   }
 
-  let nextState = addComponent(state, doorEntityId, {
+  const updatedStructural: StructuralComponent = {
     ...structural,
     isOpen: false
-  });
+  };
+  let nextState = addComponent(state, doorEntityId, updatedStructural);
+  nextState = syncStructuralDoorState(nextState, doorEntityId, updatedStructural);
   const actorName = resolveEntityDisplayName(nextState, actorId, 'Someone');
   nextState = addMessage(nextState, `${actorName} closes the door.`, MessageLogCategory.System);
   return { state: nextState, success: true };
@@ -311,8 +374,13 @@ export function closeStructuralDoor(
 
 function itemHasDeclarativeTag(state: Readonly<GameState>, itemEntityId: EntityId, tag: string): boolean {
   const itemComp = getComponent(state, itemEntityId, ComponentType.Item) as ItemComponent | undefined;
-  const itemDef = itemComp ? state.campaign.items[itemComp.itemId] : undefined;
-  if (itemDef?.tags.includes(tag)) return true;
+  if (itemComp) {
+    const itemDef = state.campaign.items[itemComp.itemId];
+    if (itemDef?.tags.includes(tag)) return true;
+    const sysContent = state.campaign.systemContent as
+      { readonly items?: Readonly<Record<string, { readonly tags?: ReadonlyArray<string> }>> } | undefined;
+    if (sysContent?.items?.[itemComp.itemId]?.tags?.includes(tag)) return true;
+  }
   const tagsComp = getComponent(state, itemEntityId, ComponentType.Tags) as TagsComponent | undefined;
   return tagsComp?.tags.includes(tag) ?? false;
 }
@@ -351,8 +419,7 @@ export function spikeDoorWithWedge(
   const invItems = inv?.items ?? [];
 
   const resolvedSpikeId =
-    spikeItemEntityId ??
-    invItems.find((id) => itemHasDeclarativeTag(state, id, DOOR_SPIKE_ITEM_TAG));
+    spikeItemEntityId ?? invItems.find((id) => itemHasDeclarativeTag(state, id, DOOR_SPIKE_ITEM_TAG));
 
   if (resolvedSpikeId === undefined) {
     return {
@@ -361,9 +428,7 @@ export function spikeDoorWithWedge(
     };
   }
 
-  const hasHammer = invItems.some(
-    (id) => itemHasDeclarativeTag(state, id, HAMMER_TOOL_ITEM_TAG) || itemHasDeclarativeTag(state, id, 'hammer')
-  );
+  const hasHammer = invItems.some((id) => itemHasDeclarativeTag(state, id, HAMMER_TOOL_ITEM_TAG));
   if (!hasHammer) {
     return {
       state: addMessage(state, 'You need a hammer to drive the iron spike under the door.', MessageLogCategory.System),

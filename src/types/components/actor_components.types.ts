@@ -1,5 +1,6 @@
 import type { ComponentType } from '../components.types.ts';
 import type { EntityId } from '../game-state.types.ts';
+import type { InteractionChain } from '../interaction_provenance.types.ts';
 
 /**
  * Tag component indicating that the entity is the player.
@@ -103,6 +104,7 @@ export interface ActiveStatusEffect {
   readonly sourceEntityId?: EntityId;
   readonly elapsedTurns?: number | undefined;
   readonly secondaryResolved?: boolean | undefined;
+  readonly interaction?: InteractionChain | undefined;
 }
 
 /**

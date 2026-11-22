@@ -69,6 +69,7 @@ export interface DnD35EntityDAGResult {
   readonly dagResult: DnD35ResolvedActorStats;
   readonly selfTags: ReadonlyArray<string>;
   readonly canAttack: boolean;
+  readonly canCharge: boolean;
   readonly resolvedWeapons: ResolvedActorWeapons;
   readonly attackRoutine: DnD35ResolvedAttackRoutine;
   readonly resolvedSkills: Readonly<Record<string, DnD35SkillResolution>>;
@@ -409,6 +410,26 @@ function evaluateDnD35eEntityDAGInternal(
   );
   const extraModifiers: StatModifier[] = [...baseStatMods, ...itemContrib.modifiers, ...auraContrib.modifiers];
 
+  const statusComp = getComponent(state, entityId, ComponentType.StatusEffects) as StatusEffectsComponent | undefined;
+  for (const activeEffect of statusComp?.activeEffects ?? []) {
+    const statusDef = state.campaign.status[activeEffect.effectId];
+    if (!statusDef?.saveModifiers) continue;
+    for (const saveMod of statusDef.saveModifiers) {
+      const targetStat: StatModifier['targetStat'] = saveMod.saveType === 'all' ? 'saves' : saveMod.saveType;
+      extraModifiers.push({
+        targetStat,
+        value: saveMod.value,
+        bonusType: saveMod.bonusType as StatModifier['bonusType'],
+        sourceId: `status:${activeEffect.effectId}`,
+        sourcePath: `status:${activeEffect.effectId}/save:${saveMod.saveType}`,
+        origin: 'mundane',
+        ...(saveMod.effectTagsAll !== undefined && saveMod.effectTagsAll.length > 0
+          ? { condition: { effectTagsAny: saveMod.effectTagsAll } }
+          : {})
+      });
+    }
+  }
+
   const hasFeatModsAlready = baseStatMods.some((m) => (m.sourcePath ?? '').startsWith('feat:'));
   if (!hasFeatModsAlready && (dndData.feats ?? []).length > 0 && sysContent?.feats) {
     extraModifiers.push(...buildFeatEffectModifiers(dndData.feats ?? [], sysContent.feats, suppressedIds, selfTags));
@@ -600,6 +621,7 @@ function evaluateDnD35eEntityDAGInternal(
     dagResult,
     selfTags: mergedSelfTags,
     canAttack: doctrineMod.canAttack,
+    canCharge: condSummary.canCharge,
     resolvedWeapons: finalWeapons,
     attackRoutine,
     resolvedSkills,

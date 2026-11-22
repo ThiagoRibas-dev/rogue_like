@@ -340,6 +340,16 @@ function loadAndValidateZod(dir: string): { data?: CampaignData; errors: number;
     return existsSync(p) ? (JSON.parse(readFileSync(p, 'utf-8')) as Record<string, unknown>) : {};
   };
 
+  for (const sharedKey of ['items', 'entities', 'status', 'effects'] as const) {
+    const baseRecord = readRulesetJson(`${sharedKey}.json`);
+    if (Object.keys(baseRecord).length > 0) {
+      campaignData[sharedKey] = {
+        ...baseRecord,
+        ...((campaignData[sharedKey] as Record<string, unknown> | undefined) ?? {})
+      };
+    }
+  }
+
   const systemDescriptors = ruleset.getSystemContentFiles?.() ?? [];
   const rawSystemContent: Record<string, Record<string, unknown>> = {};
   for (const desc of systemDescriptors) {

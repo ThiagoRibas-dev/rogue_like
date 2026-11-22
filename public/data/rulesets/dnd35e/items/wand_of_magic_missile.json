@@ -17,6 +17,7 @@
     ],
     "zappable": {
       "effectId": "damage_5_cold",
+      "spellId": "magic_missile",
       "pattern": "bolt",
       "range": 6,
       "maxCharges": 50,

@@ -93,7 +93,8 @@ export const ItemDefinitionSchema = z.object({
       range: z.number().int().positive(),
       pattern: z.enum(['beam', 'bolt', 'cone']),
       effectId: z.string(),
-      charges: z.number().int().positive().optional()
+      charges: z.number().int().positive().optional(),
+      spellId: z.string().optional()
     })
     .optional(),
   lightSource: z
@@ -104,6 +105,50 @@ export const ItemDefinitionSchema = z.object({
       fuelTurns: z.number().int().nonnegative().optional(),
       requiresIgnition: z.boolean().optional(),
       defaultLit: z.boolean().optional()
+    })
+    .optional(),
+  coating: z
+    .object({
+      statusId: z.string(),
+      charges: z.number().int().positive(),
+      duration: z.number().int().positive(),
+      bonusDamageDice: z.string().optional(),
+      bonusDamageType: z.string().optional(),
+      targetConditionTag: z.string().optional(),
+      isPoison: z.boolean().optional()
+    })
+    .optional(),
+  deployment: z
+    .object({
+      fieldId: z.string(),
+      duration: z.number().int().positive()
+    })
+    .optional(),
+  crossingRecipe: z
+    .object({
+      crossingKind: z.enum(['bridge', 'rope_line', 'ladder_span', 'frozen_surface']),
+      requiredPartnerTags: z.array(z.string()).default([]),
+      requiredSkill: z.string().optional(),
+      skillDc: z.number().int().nonnegative().optional(),
+      consumesItems: z.boolean().default(true),
+      maxRangeTiles: z.number().int().positive().default(4)
+    })
+    .optional(),
+  structural: z
+    .object({
+      materialId: z.string(),
+      thicknessInches: z.number().positive(),
+      hp: z.number().int().nonnegative().optional(),
+      maxHp: z.number().int().positive().optional(),
+      hardnessOverride: z.number().int().nonnegative().optional(),
+      isDoor: z.boolean().optional(),
+      isOpen: z.boolean().optional(),
+      isLocked: z.boolean().optional(),
+      openLockDc: z.number().int().nonnegative().optional(),
+      isStuck: z.boolean().optional(),
+      isSpiked: z.boolean().optional(),
+      breakDc: z.number().int().nonnegative().optional(),
+      isRuined: z.boolean().optional()
     })
     .optional()
 });

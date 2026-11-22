@@ -45,5 +45,11 @@
     "type": "satiate",
     "value": 500,
     "message": "You enjoy a hearty and nourishing meal."
+  },
+  "food_ration": {
+    "id": "food_ration",
+    "type": "satiate",
+    "value": 500,
+    "message": "It is filling. Hunger decreases."
   }
 }

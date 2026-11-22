@@ -365,6 +365,7 @@ export function displaceEntityStep(params: {
     return {
       state,
       moved: false,
+      anchorMoved: false,
       stepsMoved: 0,
       finalPos: { x: targetX, y: targetY },
       stopReason: 'out_of_bounds',
@@ -376,6 +377,7 @@ export function displaceEntityStep(params: {
     return {
       state,
       moved: false,
+      anchorMoved: false,
       stepsMoved: 0,
       finalPos: { x: fromPos.x, y: fromPos.y },
       stopReason: 'out_of_bounds',
@@ -397,7 +399,7 @@ export function displaceEntityStep(params: {
   let profile = getEntitySpatialProfile(state, entityId, fromPos.facing);
   let enteredHazard = false;
 
-  if (context.mode === 'teleport' || !isAdjacentStep) {
+  if (precomputedPlacement === undefined && (context.mode === 'teleport' || !isAdjacentStep)) {
     width = profile.baseWidth;
     height = profile.baseHeight;
     isSqueezing = false;
@@ -406,6 +408,7 @@ export function displaceEntityStep(params: {
       return {
         state,
         moved: false,
+        anchorMoved: false,
         stepsMoved: 0,
         finalPos: { x: fromPos.x, y: fromPos.y },
         stopReason: tierCheck.stopReason,
@@ -442,6 +445,7 @@ export function displaceEntityStep(params: {
       return {
         state,
         moved: false,
+        anchorMoved: false,
         stepsMoved: 0,
         finalPos: { x: fromPos.x, y: fromPos.y },
         stopReason,
@@ -456,9 +460,21 @@ export function displaceEntityStep(params: {
     height = placement.height;
     facing = placement.facing;
     isSqueezing = placement.isSqueezing;
-    profile = placement.profile;
+    profile = placement.profile ?? profile;
 
     const postTierCheck = evaluateFootprintMaxTier(state, anchorX, anchorY, width, height, movementModes, context);
+    if (!postTierCheck.allowed) {
+      return {
+        state,
+        moved: false,
+        anchorMoved: false,
+        stepsMoved: 0,
+        finalPos: { x: fromPos.x, y: fromPos.y },
+        stopReason: postTierCheck.stopReason,
+        ...(postTierCheck.collidedTileId !== undefined ? { collidedTileId: postTierCheck.collidedTileId } : {}),
+        events: []
+      };
+    }
     enteredHazard = postTierCheck.enteredHazard;
   }
 
@@ -477,6 +493,7 @@ export function displaceEntityStep(params: {
       return {
         state,
         moved: false,
+        anchorMoved: false,
         stepsMoved: 0,
         finalPos: { x: fromPos.x, y: fromPos.y },
         stopReason: 'entity_blocker',
@@ -497,6 +514,17 @@ export function displaceEntityStep(params: {
     fromPos.facing
   );
 
+  const prevWidth = Math.max(1, fromPos.footprintWidth ?? 1);
+  const prevHeight = Math.max(1, fromPos.footprintHeight ?? 1);
+  const prevSqueezing = fromPos.isSqueezing === true;
+  const anchorMoved = anchorX !== fromPos.x || anchorY !== fromPos.y;
+  const placementCommitted =
+    anchorMoved ||
+    width !== prevWidth ||
+    height !== prevHeight ||
+    nextPos.facing !== fromPos.facing ||
+    isSqueezing !== prevSqueezing;
+
   let nextState = addComponent(state, entityId, nextPos);
   if (getComponent(nextState, entityId, ComponentType.Player) !== undefined) {
     nextState = { ...nextState, fovNeedsUpdate: true };
@@ -508,12 +536,15 @@ export function displaceEntityStep(params: {
     { x: anchorX, y: anchorY },
     context
   );
-  const events = buildTileEnteredEvents(nextState, entityId, anchorX, anchorY);
+  const events = buildTileEnteredEvents(nextState, entityId, anchorX, anchorY).map((evt) =>
+    context.interaction !== undefined ? { ...evt, interaction: context.interaction } : evt
+  );
 
   return {
     state: nextState,
-    moved: anchorX !== fromPos.x || anchorY !== fromPos.y,
-    stepsMoved: 1,
+    moved: placementCommitted,
+    anchorMoved,
+    stepsMoved: placementCommitted ? 1 : 0,
     finalPos: { x: anchorX, y: anchorY },
     stopReason: enteredHazard ? 'hazard_halted' : 'completed',
     events
@@ -604,6 +635,7 @@ export function displaceEntityAlongVector(params: {
   return {
     state: runningState,
     moved: stepsMoved > 0,
+    anchorMoved: currentX !== initialPos.x || currentY !== initialPos.y,
     stepsMoved,
     finalPos: { x: currentX, y: currentY },
     stopReason,

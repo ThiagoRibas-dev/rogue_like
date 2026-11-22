@@ -1,7 +1,7 @@
 import type { Verb } from '../../constants/verbs.constants.ts';
 import { getComponent, queryEntities } from '../../core/ecs.ts';
 import { addMessage, MessageLogCategory } from '../../systems/message.system.ts';
-import { ComponentType, type FighterComponent } from '../../types/components.types.ts';
+import { ComponentType, type FighterComponent, type ItemComponent } from '../../types/components.types.ts';
 import type { GameEvent } from '../../types/events.types.ts';
 import { type EntityId, type GameState, UIMode } from '../../types/game-state.types.ts';
 import type { ApplyIntent, ApplyIntentTarget } from '../../types/intents/interaction.intents.ts';
@@ -18,6 +18,7 @@ import {
 } from './skills/skill_verb_helpers.ts';
 import { collectCreatureLoreTraitDescriptors, getPersistedMonsterLoreTraits } from './skills/monster_lore_tracker.ts';
 import { resolveSocialCombatSkillVerb } from './skills/social_combat_skill_verbs.ts';
+import { getDnD35SystemContent } from './types/dnd35e_system.types.ts';
 
 export * from './skills/skill_verb_helpers.ts';
 export * from './skills/dungeon_skill_verbs.ts';
@@ -133,18 +134,46 @@ export function getDnD35eValidVerbsForTarget(
 
 /**
  * Validates whether an actor can activate a wand in D&D 3.5e (either via a Spell Trigger class track
- * or a DC 20 Use Magic Device check where Take 10 is prohibited).
+ * whose class spell list contains the wand's spell, or a DC 20 Use Magic Device check where Take 10 is prohibited).
  */
 export function validateDnD35eWandActivation(
   state: GameState,
-  entityId: EntityId
+  entityId: EntityId,
+  wandEntityId?: EntityId
 ): { allowed: boolean; state: GameState } {
   const dndData = resolveEntityDnD35Data(state, entityId);
-  const hasSpellTriggerClass = dndData.tracks.some(
-    (t) => t.levels > 0 && SPELL_TRIGGER_CLASS_TRACK_IDS.includes(t.trackId)
-  );
-  if (hasSpellTriggerClass) {
-    return { allowed: true, state };
+  const sysContent = getDnD35SystemContent(state.campaign);
+
+  let wandSpellId: string | undefined;
+  if (wandEntityId !== undefined) {
+    const itemComp = getComponent(state, wandEntityId, ComponentType.Item) as ItemComponent | undefined;
+    const itemDef = itemComp ? state.campaign.items[itemComp.itemId] : undefined;
+    const tagSpellId = itemDef?.tags?.find((t) => t.startsWith('spell:'))?.slice('spell:'.length);
+    wandSpellId = itemDef?.zappable?.spellId ?? tagSpellId;
+  }
+
+  const spellDef = wandSpellId !== undefined ? sysContent?.spells?.[wandSpellId] : undefined;
+  if (spellDef) {
+    const hasMatchingClassSpellList = dndData.tracks.some((t) => {
+      const classId = t.trackId ?? (t as { readonly classId?: string | undefined }).classId;
+      return t.levels > 0 && classId !== undefined && spellDef.levelByClass[classId] !== undefined;
+    });
+    if (hasMatchingClassSpellList) {
+      return { allowed: true, state };
+    }
+  } else {
+    const hasSpellTriggerClass = dndData.tracks.some((t) => {
+      if (t.levels <= 0) return false;
+      const classId = t.trackId ?? (t as { readonly classId?: string | undefined }).classId;
+      if (classId === undefined) return false;
+      const classDef = sysContent?.classes?.[classId];
+      return (
+        (classDef !== undefined && classDef.castingMode !== 'none') || SPELL_TRIGGER_CLASS_TRACK_IDS.includes(classId)
+      );
+    });
+    if (hasSpellTriggerClass) {
+      return { allowed: true, state };
+    }
   }
 
   const { check } = evaluateActorSkillCheck(state, entityId, 'use_magic_device', UMD_ACTIVATE_WAND_DC, 'roll');

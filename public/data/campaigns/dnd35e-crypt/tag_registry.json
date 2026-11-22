@@ -843,5 +843,15 @@
     "category": "item",
     "color": "#af601a",
     "description": "Rigid ladder capable of spanning a chasm or pit."
+  },
+  "ladder": {
+    "category": "item",
+    "color": "#af601a",
+    "description": "Portable climbing or bridging ladder."
+  },
+  "disguise_kit": {
+    "category": "item",
+    "color": "#af7ac5",
+    "description": "Cosmetics, wigs, and props used for Disguise checks and concealing identity."
   }
 }

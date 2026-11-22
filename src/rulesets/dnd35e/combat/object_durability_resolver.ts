@@ -2,7 +2,8 @@ import { addComponent, getComponent, resolveEntityDisplayName } from '../../../c
 import {
   applyStructuralDamage,
   DEFAULT_DURABILITY_CONFIG,
-  resolveDurabilityConfig
+  resolveDurabilityConfig,
+  syncStructuralDoorState
 } from '../../../systems/durability.system.ts';
 import { addMessage, MessageLogCategory } from '../../../systems/message.system.ts';
 import { emitSoundEvent, SOUND_DB_DOOR_KICK } from '../../../systems/sound.system.ts';
@@ -21,6 +22,7 @@ import { evaluateDnD35eEntityDAG } from '../cartridge/dnd35e_dag_adapter.ts';
 import { rollD20 } from '../math/dice.ts';
 import { resolveEntityDnD35Data } from '../skills/skill_verb_helpers.ts';
 import type { CreatureSizeCategory, DnD35DamageType } from '../types/dnd35e.types.ts';
+import { getDnD35SystemContent } from '../types/dnd35e_system.types.ts';
 
 /** Base AC of an object before size, Dex 0 (`-5`), and inanimate (`-2`) adjustments (`10`). */
 export const SRD_OBJECT_BASE_AC = 10;
@@ -114,7 +116,7 @@ export interface ObjectDamageEvaluationInput {
 /** Result of evaluating SRD *Smashing an Object* damage against a `StructuralComponent`. */
 export interface ObjectDamageEvaluationResult {
   readonly effectiveHardness: number;
-  readonlyEffectiveMaxHp: number;
+  readonly effectiveMaxHp: number;
   readonly preHardnessDamage: number;
   readonly netDamage: number;
 }
@@ -187,7 +189,7 @@ export function evaluateSrdObjectDamage(
   ) {
     return {
       effectiveHardness,
-      readonlyEffectiveMaxHp: effectiveMaxHp,
+      effectiveMaxHp,
       preHardnessDamage: 0,
       netDamage: 0
     };
@@ -197,7 +199,7 @@ export function evaluateSrdObjectDamage(
     const doubled = Math.floor(input.rawDamage * 2);
     return {
       effectiveHardness: 0,
-      readonlyEffectiveMaxHp: effectiveMaxHp,
+      effectiveMaxHp,
       preHardnessDamage: doubled,
       netDamage: doubled
     };
@@ -231,7 +233,7 @@ export function evaluateSrdObjectDamage(
 
   return {
     effectiveHardness: appliedHardness,
-    readonlyEffectiveMaxHp: effectiveMaxHp,
+    effectiveMaxHp,
     preHardnessDamage: scaledDamage,
     netDamage
   };
@@ -262,7 +264,7 @@ export function applySrdObjectAttackDamage(
       state,
       evaluation: {
         effectiveHardness: 0,
-        readonlyEffectiveMaxHp: 0,
+        effectiveMaxHp: 0,
         preHardnessDamage: 0,
         netDamage: 0
       },
@@ -286,11 +288,14 @@ const BATTERING_RAM_ITEM_TAG = 'battering_ram';
 
 function actorCarriesToolWithDeclarativeTag(state: Readonly<GameState>, actorId: EntityId, tag: string): boolean {
   const inv = getComponent(state, actorId, ComponentType.Inventory) as InventoryComponent | undefined;
+  const sysItems = getDnD35SystemContent(state.campaign)?.items;
   for (const itemId of inv?.items ?? []) {
     const itemComp = getComponent(state, itemId, ComponentType.Item) as ItemComponent | undefined;
     if (!itemComp) continue;
     const itemDef = state.campaign.items[itemComp.itemId];
     if (itemDef?.tags.includes(tag)) return true;
+    const sysDef = sysItems?.[itemComp.itemId];
+    if (sysDef?.tags?.includes(tag)) return true;
     const tagsComp = getComponent(state, itemId, ComponentType.Tags) as TagsComponent | undefined;
     if (tagsComp?.tags.includes(tag)) return true;
   }
@@ -301,7 +306,7 @@ function actorCarriesToolWithDeclarativeTag(state: Readonly<GameState>, actorId:
  * Resolves a D&D 3.5e Strength Break / Kick check against a structural door or container (`targetEntityId`):
  * - Roll = `1d20 + STR mod + SRD Break Size Modifier` (`Fine -16` .. `Colossal +16`)
  * - Circumstance bonuses: `+2` with a carried `crowbar`, `+2` with a `portable_ram` (`+2` extra if an ally assists).
- * - Target DC = `structural.breakDc` (`-2` when `structural.hp <= structural.maxHp / 2`).
+ * - Target DC = `structural.breakDc` (`-2` when `structural.hp <= effectiveMaxHp / 2`).
  * - Emits a loud `SOUND_DB_DOOR_KICK` (`65` dB) acoustic sound ripple via `emitSoundEvent`.
  * - On success, forces the door open (`isOpen: true`, `jammed: false`, `locked: false`).
  *
@@ -356,7 +361,8 @@ export function resolveSrdBreakObjectCheck(
     }
   }
 
-  const isHalfHpOrLess = structural.hp <= Math.floor(structural.maxHp / 2);
+  const { effectiveMaxHp } = resolveEffectiveStructuralStats(structural);
+  const isHalfHpOrLess = structural.hp <= Math.floor(effectiveMaxHp / 2);
   const effectiveDc = Math.max(1, structural.breakDc + (isHalfHpOrLess ? SRD_HALF_HP_BREAK_DC_MOD : 0));
 
   const d20 = rollD20('ability_check', strMod + sizeMod + toolBonus, options?.forcedD20);
@@ -386,10 +392,12 @@ export function resolveSrdBreakObjectCheck(
   }
 
   const { spikedByEntityId: _clearedSpike, jammed: _clearedJammed, ...restStructural } = structural;
-  nextState = addComponent(nextState, targetEntityId, {
+  const updatedStructural: StructuralComponent = {
     ...restStructural,
     isOpen: true
-  });
+  };
+  nextState = addComponent(nextState, targetEntityId, updatedStructural);
+  nextState = syncStructuralDoorState(nextState, targetEntityId, updatedStructural);
 
   const lock = getComponent(nextState, targetEntityId, ComponentType.Lock) as LockComponent | undefined;
   if (lock?.locked === true) {

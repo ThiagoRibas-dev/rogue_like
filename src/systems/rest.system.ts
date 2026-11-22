@@ -14,6 +14,7 @@ import {
   type HungerComponent,
   type InventoryComponent,
   type ItemComponent,
+  type LightEmitterComponent,
   type PositionComponent,
   type StatusEffectsComponent
 } from '../types/components.types.ts';
@@ -22,6 +23,7 @@ import { coordToIndex } from '../utils/grid.ts';
 import { getPlayerCompanions } from './companion_commands.system.ts';
 import { queryActiveFieldsAtPosition } from './field.system.ts';
 import { getHungerState, HungerState } from './hunger.system.ts';
+import { isPositionIlluminatedByActiveLightEmitter } from './light_emitter.system.ts';
 import { triggerActiveAreaRespawnIfDue } from './map/map_wake_respawn.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import {
@@ -196,15 +198,22 @@ export function evaluatePartyCampPreparedness(state: GameState, playerId: Entity
         distinctCampGearIds.add(itemComp.itemId);
       }
       if (tags.includes(LIGHT_SOURCE_TAG)) {
-        hasCampLight = true;
+        const emitter = getComponent(state, itemEntId, ComponentType.LightEmitter) as LightEmitterComponent | undefined;
+        if (emitter !== undefined && emitter.isLit && (emitter.fuelTurns === undefined || emitter.fuelTurns > 0)) {
+          hasCampLight = true;
+        }
       }
     }
 
     const pos = getComponent(state, actorId, ComponentType.Position) as PositionComponent | undefined;
     if (pos && !hasCampLight) {
-      for (const activeField of queryActiveFieldsAtPosition(state, pos.x, pos.y)) {
-        if (activeField.field.fieldType.includes(CAMP_FIRE_TAG)) {
-          hasCampLight = true;
+      if (isPositionIlluminatedByActiveLightEmitter(state, pos.x, pos.y)) {
+        hasCampLight = true;
+      } else {
+        for (const activeField of queryActiveFieldsAtPosition(state, pos.x, pos.y)) {
+          if (activeField.field.fieldType.includes(CAMP_FIRE_TAG)) {
+            hasCampLight = true;
+          }
         }
       }
     }

@@ -33,6 +33,7 @@ const SAVE_KEY = 'roguelike_save';
  * Checks if a save game exists in localStorage.
  */
 export function hasSaveGame(): boolean {
+  if (typeof localStorage === 'undefined') return false;
   return localStorage.getItem(SAVE_KEY) !== null;
 }
 
@@ -40,13 +41,16 @@ export function hasSaveGame(): boolean {
  * Deletes the save game from localStorage.
  */
 export function deleteSave(): void {
-  localStorage.removeItem(SAVE_KEY);
+  if (typeof localStorage !== 'undefined') {
+    localStorage.removeItem(SAVE_KEY);
+  }
 }
 
 /**
  * Gets the raw serialized save string (useful for exporting to a file).
  */
 export function getSaveData(): string | null {
+  if (typeof localStorage === 'undefined') return null;
   return localStorage.getItem(SAVE_KEY);
 }
 

@@ -20,6 +20,10 @@
       "damage": 0,
       "destroyOnImpact": true
     },
+    "deployment": {
+      "fieldId": "smoke",
+      "duration": 10
+    },
     "spriteId": "dcss_item_wand_gem_brass_new"
   }
 }

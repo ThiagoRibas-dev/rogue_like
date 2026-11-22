@@ -27,7 +27,7 @@ export function processWandZap(state: GameState, intent: ApplyIntent): { state: 
 
   const activeRuleset = getActiveRuleset(state);
   if (activeRuleset.validateWandActivation) {
-    const wandValidation = activeRuleset.validateWandActivation(state, intent.entityId);
+    const wandValidation = activeRuleset.validateWandActivation(state, intent.entityId, intent.toolEntityId);
     if (!wandValidation.allowed) {
       return { state: wandValidation.state, success: false };
     }

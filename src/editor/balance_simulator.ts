@@ -124,57 +124,60 @@ export function runBalanceSimulations(campaign: CampaignData, runs: number): Bal
   }
 
   // 3. SCHEMES ESCALATION SIMULATION
-  for (let i = 0; i < runs; i++) {
-    let state = createMockGameState(campaign);
-    const mastermindId = toEntityId(state.nextEntityId);
-    state = {
-      ...state,
-      nextEntityId: state.nextEntityId + 1,
-      persistentEntities: new Map([
-        [
-          mastermindId,
-          {
-            areaId: 'world',
-            components: {
-              [ComponentType.Scheme]: {
-                type: ComponentType.Scheme,
-                recipeId: 'bandit_uprising',
-                currentPhase: 0,
-                activeMinions: [],
-                phases: compilePhases(campaign, 'bandit_uprising'),
-                conspiracyAwareness: 0
-              },
-              [ComponentType.Actor]: {
-                type: ComponentType.Actor,
-                speed: 100
+  const firstSchemeRecipeId = Object.keys(campaign.schemeRecipes)[0];
+  if (firstSchemeRecipeId !== undefined) {
+    for (let i = 0; i < runs; i++) {
+      let state = createMockGameState(campaign);
+      const mastermindId = toEntityId(state.nextEntityId);
+      state = {
+        ...state,
+        nextEntityId: state.nextEntityId + 1,
+        persistentEntities: new Map([
+          [
+            mastermindId,
+            {
+              areaId: 'world',
+              components: {
+                [ComponentType.Scheme]: {
+                  type: ComponentType.Scheme,
+                  recipeId: firstSchemeRecipeId,
+                  currentPhase: 0,
+                  activeMinions: [],
+                  phases: compilePhases(campaign, firstSchemeRecipeId),
+                  conspiracyAwareness: 0
+                },
+                [ComponentType.Actor]: {
+                  type: ComponentType.Actor,
+                  speed: 100
+                }
               }
             }
-          }
-        ]
-      ])
-    };
+          ]
+        ])
+      };
 
-    let turns = 0;
-    let escalations = 0;
-    while (turns < 500) {
-      turns++;
-      // Process scheme turn
-      const nextState = processSchemeTurn(state, mastermindId);
-      const prevScheme = state.persistentEntities.get(mastermindId)?.components[ComponentType.Scheme] as
-        SchemeComponent | undefined;
-      const nextScheme = nextState.persistentEntities.get(mastermindId)?.components[ComponentType.Scheme] as
-        SchemeComponent | undefined;
+      let turns = 0;
+      let escalations = 0;
+      while (turns < 500) {
+        turns++;
+        // Process scheme turn
+        const nextState = processSchemeTurn(state, mastermindId);
+        const prevScheme = state.persistentEntities.get(mastermindId)?.components[ComponentType.Scheme] as
+          SchemeComponent | undefined;
+        const nextScheme = nextState.persistentEntities.get(mastermindId)?.components[ComponentType.Scheme] as
+          SchemeComponent | undefined;
 
-      if (prevScheme && nextScheme && nextScheme.currentPhase > prevScheme.currentPhase) {
-        escalations++;
+        if (prevScheme && nextScheme && nextScheme.currentPhase > prevScheme.currentPhase) {
+          escalations++;
+        }
+        state = nextState;
       }
-      state = nextState;
-    }
 
-    totalEscalations += escalations;
-    const finalScheme = state.persistentEntities.get(mastermindId)?.components[ComponentType.Scheme] as
-      SchemeComponent | undefined;
-    totalConspiracyAwareness += finalScheme?.conspiracyAwareness ?? 0;
+      totalEscalations += escalations;
+      const finalScheme = state.persistentEntities.get(mastermindId)?.components[ComponentType.Scheme] as
+        SchemeComponent | undefined;
+      totalConspiracyAwareness += finalScheme?.conspiracyAwareness ?? 0;
+    }
   }
 
   return {

@@ -277,11 +277,16 @@ export function evaluateDnD35ActorStatDAG(input: DnD35ActorStatDAGInput): DnD35R
   const acResolution = refineStage4AcBreakdownOriginLayers(rawAcResolution, substatBreakdowns);
   const touchAcResolution = refineStage4AcBreakdownOriginLayers(rawTouchAcResolution, substatBreakdowns);
   const flatFootedAcResolution = refineStage4AcBreakdownOriginLayers(rawFlatFootedAcResolution, substatBreakdowns);
+  const footAcResolution = resolveTypedModifiersWithBreakdown(
+    allAcModifiers.filter((m) => m.bonusType !== 'armor' && m.bonusType !== 'shield' && m.bonusType !== 'deflection'),
+    stageContext
+  );
 
   const acBreakdown: ACBreakdownDTO = {
     fullAC: DND35E_BASE_AC + effectiveDexMod + acResolution.total,
     touchAC: DND35E_BASE_AC + effectiveDexMod + touchAcResolution.total,
     flatFootedAC: DND35E_BASE_AC + flatFootedDex + flatFootedAcResolution.total,
+    footAC: DND35E_BASE_AC + effectiveDexMod + footAcResolution.total,
     baseAC: DND35E_BASE_AC,
     dexContribution: effectiveDexMod,
     sizeContribution,

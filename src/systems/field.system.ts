@@ -6,12 +6,14 @@ import {
   type DamageComponent,
   type FieldComponent,
   type FighterComponent,
+  type InteractionChain,
   type PositionComponent,
   type RenderableComponent
 } from '../types/components.types.ts';
 import type { EntityId, GameState } from '../types/game-state.types.ts';
 import { coordToIndex, isInBounds } from '../utils/grid.ts';
 import { destroyCrossingEntity, queryCrossingAtPosition, spawnCrossingEntity } from './crossing.system.ts';
+import { appendInteractionFrame } from './interaction_provenance.system.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import { applyStatusEffect } from './status-effect.system.ts';
 
@@ -192,13 +194,48 @@ function spawnFieldRaw(
   y: number,
   intensity: number,
   duration: number,
-  spreadRuleId?: string
+  spreadRuleId?: string,
+  interaction?: InteractionChain
 ): [GameState, EntityId] {
   const readyState = ensureFieldDefinitionExists(state, fieldType);
   const def = readyState.campaign.fields[fieldType]!;
 
+  // Deduplicate same-type stationary field on the exact same tile
+  const existingAtTile = readyState.spatialIndex.get(`${x},${y}`) ?? [];
+  for (const existingId of existingAtTile) {
+    const existingField = getComponent(readyState, existingId, ComponentType.Field) as FieldComponent | undefined;
+    if (existingField && existingField.fieldType === fieldType && existingField.anchorEntityId === undefined) {
+      const mergedField: FieldComponent = {
+        ...existingField,
+        intensity: Math.max(existingField.intensity, intensity),
+        duration: Math.max(existingField.duration, duration),
+        ...(spreadRuleId !== undefined ? { spreadRuleId } : {}),
+        ...(interaction !== undefined
+          ? {
+              sourceEntityId: interaction.originatorEntityId,
+              interaction: appendInteractionFrame(interaction, {
+                kind: 'field',
+                fieldEntityId: existingId,
+                fieldType
+              })
+            }
+          : {})
+      };
+      return [addComponent(readyState, existingId, mergedField), existingId];
+    }
+  }
+
   const [createdState, entityId] = createEntity(readyState);
   let nextState = createdState;
+
+  const fieldInteraction =
+    interaction !== undefined
+      ? appendInteractionFrame(interaction, {
+          kind: 'field',
+          fieldEntityId: entityId,
+          fieldType
+        })
+      : undefined;
 
   const pos: PositionComponent = { type: ComponentType.Position, x, y };
   const render: RenderableComponent = {
@@ -213,7 +250,13 @@ function spawnFieldRaw(
     fieldType,
     intensity,
     duration,
-    ...(spreadRuleId !== undefined ? { spreadRuleId } : {})
+    ...(spreadRuleId !== undefined ? { spreadRuleId } : {}),
+    ...(fieldInteraction !== undefined
+      ? {
+          sourceEntityId: fieldInteraction.originatorEntityId,
+          interaction: fieldInteraction
+        }
+      : {})
   };
 
   nextState = addComponent(nextState, entityId, pos);
@@ -231,26 +274,21 @@ function spawnFieldRaw(
   return [nextState, entityId];
 }
 
-/**
- * Evaluates declarative `FieldInteractionRule` chemistry at `(x, y)` for an incoming elemental/alchemical tag set
- * (e.g. `['fire']`, `['cold']`, `['electricity']`, `['water']`), supporting orthogonal BFS chain propagation
- * (`oil` + `fire` ignition, `water` + `electricity` conductive shock, `water` + `cold` -> `frozen_surface` crossing,
- * `frozen_surface` + `fire` thaw/collapse, and `fire` + `water` -> `steam_cloud` with `blocksSight: true`).
- *
- * @param state Current immutable GameState.
- * @param originX Grid X coordinate.
- * @param originY Grid Y coordinate.
- * @param incomingTags Incoming energy or substance tags.
- * @returns Updated GameState after resolving all matching field interactions.
- */
-export function evaluateFieldInteractionsAtTile(
+interface FieldInteractionTransactionResult {
+  readonly state: GameState;
+  readonly matched: boolean;
+  readonly primarySpawnedEntityId?: EntityId | undefined;
+}
+
+function resolveFieldInteractionsTransaction(
   state: GameState,
   originX: number,
   originY: number,
-  incomingTags: ReadonlyArray<string>
-): GameState {
+  incomingTags: ReadonlyArray<string>,
+  interaction?: InteractionChain
+): FieldInteractionTransactionResult {
   if (incomingTags.length === 0 || !isInBounds(originX, originY, state.map.width, state.map.height)) {
-    return state;
+    return { state, matched: false };
   }
 
   const rules =
@@ -260,6 +298,8 @@ export function evaluateFieldInteractionsAtTile(
 
   let nextState = state;
   const incomingSet = new Set(incomingTags);
+  let matchedAnyRule = false;
+  let primarySpawnedEntityId: EntityId | undefined;
 
   for (const rule of rules) {
     const incomingMatches = rule.incomingTags.some((t) => incomingSet.has(t));
@@ -301,6 +341,16 @@ export function evaluateFieldInteractionsAtTile(
     }
 
     if (affectedCoords.length === 0) continue;
+    matchedAnyRule = true;
+
+    const ruleInteraction =
+      interaction !== undefined
+        ? appendInteractionFrame(interaction, {
+            kind: 'effect',
+            effectId: rule.id,
+            effectKind: 'field_interaction'
+          })
+        : undefined;
 
     if (rule.message) {
       nextState = addMessage(nextState, rule.message, MessageLogCategory.System);
@@ -308,6 +358,7 @@ export function evaluateFieldInteractionsAtTile(
 
     for (const coord of affectedCoords) {
       const latestTarget = collectTargetTagsAtTile(nextState, coord.x, coord.y);
+      let inheritedInteraction = ruleInteraction;
 
       if (rule.extinguishTarget === true) {
         if (latestTarget.frozenCrossingEntityId !== undefined) {
@@ -316,6 +367,13 @@ export function evaluateFieldInteractionsAtTile(
         for (const fId of latestTarget.matchingFieldEntityIds) {
           const fComp = getComponent(nextState, fId, ComponentType.Field) as FieldComponent | undefined;
           if (!fComp) continue;
+          if (inheritedInteraction === undefined && fComp.interaction !== undefined) {
+            inheritedInteraction = appendInteractionFrame(fComp.interaction, {
+              kind: 'effect',
+              effectId: rule.id,
+              effectKind: 'field_interaction'
+            });
+          }
           const fDef = nextState.campaign.fields[fComp.fieldType];
           const fTags = new Set<string>([fComp.fieldType, ...(fDef?.tags ?? [])]);
           if (fComp.fieldType.includes('oil')) fTags.add('oil');
@@ -328,26 +386,35 @@ export function evaluateFieldInteractionsAtTile(
       }
 
       if (rule.spawnCrossingKind !== undefined) {
-        const [withCrossing] = spawnCrossingEntity({
+        const [withCrossing, crossingId] = spawnCrossingEntity({
           state: nextState,
           x: coord.x,
           y: coord.y,
           crossingKind: rule.spawnCrossingKind,
-          durationTurns: rule.spawnCrossingDuration ?? DEFAULT_FROZEN_CROSSING_DURATION
+          durationTurns: rule.spawnCrossingDuration ?? DEFAULT_FROZEN_CROSSING_DURATION,
+          ...(inheritedInteraction !== undefined ? { interaction: inheritedInteraction } : {})
         });
         nextState = withCrossing;
+        if (primarySpawnedEntityId === undefined) {
+          primarySpawnedEntityId = crossingId;
+        }
       }
 
       if (rule.spawnFieldType !== undefined) {
-        const [withField] = spawnFieldRaw(
+        const [withField, spawnedId] = spawnFieldRaw(
           nextState,
           rule.spawnFieldType,
           coord.x,
           coord.y,
           rule.spawnFieldIntensity ?? 1,
-          rule.spawnFieldDuration ?? DEFAULT_TRANSMUTED_FIELD_DURATION
+          rule.spawnFieldDuration ?? DEFAULT_TRANSMUTED_FIELD_DURATION,
+          undefined,
+          inheritedInteraction
         );
         nextState = withField;
+        if (primarySpawnedEntityId === undefined) {
+          primarySpawnedEntityId = spawnedId;
+        }
       }
 
       if (rule.shockDamageDice !== undefined) {
@@ -360,7 +427,11 @@ export function evaluateFieldInteractionsAtTile(
           const instances = existingDmg ? [...existingDmg.instances] : [];
           instances.push({
             amount: dmgAmount,
-            tags: ['electricity', 'energy', 'field', 'conductive_water']
+            ...(inheritedInteraction?.originatorEntityId !== undefined
+              ? { sourceEntityId: inheritedInteraction.originatorEntityId }
+              : {}),
+            tags: ['electricity', 'energy', 'field', 'conductive_water'],
+            ...(inheritedInteraction !== undefined ? { interaction: inheritedInteraction } : {})
           });
           nextState = addComponent(nextState, occId, {
             type: ComponentType.Damage,
@@ -371,11 +442,39 @@ export function evaluateFieldInteractionsAtTile(
     }
   }
 
-  return nextState;
+  return {
+    state: nextState,
+    matched: matchedAnyRule,
+    ...(primarySpawnedEntityId !== undefined ? { primarySpawnedEntityId } : {})
+  };
 }
 
 /**
- * Helper to spawn a field at a given position and evaluate any immediate declarative `FieldInteractionRule` reactions.
+ * Evaluates declarative `FieldInteractionRule` chemistry at `(x, y)` for an incoming elemental/alchemical tag set
+ * (e.g. `['fire']`, `['cold']`, `['electricity']`, `['water']`), supporting orthogonal BFS chain propagation
+ * (`oil` + `fire` ignition, `water` + `electricity` conductive shock, `water` + `cold` -> `frozen_surface` crossing,
+ * `frozen_surface` + `fire` thaw/collapse, and `fire` + `water` -> `steam_cloud` with `blocksSight: true`).
+ *
+ * @param state Current immutable GameState.
+ * @param originX Grid X coordinate.
+ * @param originY Grid Y coordinate.
+ * @param incomingTags Incoming energy or substance tags.
+ * @param interaction Optional causal interaction provenance chain.
+ * @returns Updated GameState after resolving all matching field interactions.
+ */
+export function evaluateFieldInteractionsAtTile(
+  state: GameState,
+  originX: number,
+  originY: number,
+  incomingTags: ReadonlyArray<string>,
+  interaction?: InteractionChain
+): GameState {
+  return resolveFieldInteractionsTransaction(state, originX, originY, incomingTags, interaction).state;
+}
+
+/**
+ * Helper to spawn a field at a given position and evaluate any immediate declarative `FieldInteractionRule` reactions
+ * as a single atomic transaction (transmuting existing reactive surfaces without spawning duplicate fields).
  */
 export function spawnField(
   state: GameState,
@@ -384,7 +483,8 @@ export function spawnField(
   y: number,
   intensity: number,
   duration: number,
-  spreadRuleId?: string
+  spreadRuleId?: string,
+  interaction?: InteractionChain
 ): [GameState, EntityId] {
   const def = state.campaign.fields[fieldType];
   if (
@@ -415,11 +515,13 @@ export function spawnField(
   if (fieldType.includes('elec') || fieldType.includes('lightning')) incomingTags.push('electricity');
   if (fieldType.includes('water')) incomingTags.push('water', 'liquid');
 
-  // If the incoming field triggers a transmutation with existing surface/field at (x, y) that replaces it
-  // (e.g., water dousing fire into steam_cloud, or fire igniting oil), evaluate interactions after spawning.
-  const [spawnedState, entityId] = spawnFieldRaw(state, fieldType, x, y, intensity, duration, spreadRuleId);
-  const reactedState = evaluateFieldInteractionsAtTile(spawnedState, x, y, incomingTags);
-  return [reactedState, entityId];
+  // Detect and commit transmutations BEFORE committing a raw incoming field (prevents double-spawning fire on oil).
+  const reaction = resolveFieldInteractionsTransaction(state, x, y, incomingTags, interaction);
+  if (reaction.matched) {
+    return [reaction.state, reaction.primarySpawnedEntityId ?? (-1 as unknown as EntityId)];
+  }
+
+  return spawnFieldRaw(state, fieldType, x, y, intensity, duration, spreadRuleId, interaction);
 }
 
 /**
@@ -455,13 +557,13 @@ export function syncAnchoredFieldsForEntity(
 }
 
 /**
- * Ticks all fields, handles decay, applies effects to occupants, and processes spreading.
+ * Ticks all fields by 1 turn, handles decay, applies effects to occupants, and processes spreading.
  */
 export function processFieldsTick(state: GameState): GameState {
   let nextState = state;
   let fovNeedsUpdate = false;
 
-  for (const entityId of nextState.entities) {
+  for (const entityId of [...nextState.entities]) {
     const fieldCmp = getComponent(nextState, entityId, ComponentType.Field) as FieldComponent | undefined;
     if (!fieldCmp) continue;
 
@@ -483,7 +585,62 @@ export function processFieldsTick(state: GameState): GameState {
 
     const def = nextState.campaign.fields[fieldCmp.fieldType];
 
-    // 1. Tick duration
+    // 1. Apply effects to occupants for the current round
+    if (def) {
+      const entitiesAtPos = nextState.spatialIndex.get(`${pos.x},${pos.y}`);
+      if (entitiesAtPos) {
+        const fieldChain =
+          fieldCmp.interaction !== undefined
+            ? appendInteractionFrame(fieldCmp.interaction, {
+                kind: 'field',
+                fieldEntityId: entityId,
+                fieldType: fieldCmp.fieldType
+              })
+            : undefined;
+        for (const occupantId of entitiesAtPos) {
+          if (occupantId === entityId) continue;
+          const occupantField = getComponent(nextState, occupantId, ComponentType.Field);
+          if (occupantField) continue; // Fields don't damage other fields here (reactions handle that)
+
+          const fighter = getComponent(nextState, occupantId, ComponentType.Fighter);
+          if (fighter) {
+            // Apply Damage
+            if (def.damagePerTurn !== undefined && def.damagePerTurn > 0) {
+              const existingDamage = getComponent(nextState, occupantId, ComponentType.Damage) as
+                DamageComponent | undefined;
+              const newInstances = existingDamage ? [...existingDamage.instances] : [];
+              newInstances.push({
+                amount: def.damagePerTurn,
+                ...(fieldChain?.originatorEntityId !== undefined
+                  ? { sourceEntityId: fieldChain.originatorEntityId }
+                  : {}),
+                tags: ['field', fieldCmp.fieldType],
+                ...(fieldChain !== undefined ? { interaction: fieldChain } : {})
+              });
+              nextState = addComponent(nextState, occupantId, {
+                type: ComponentType.Damage,
+                instances: newInstances
+              });
+            }
+
+            // Apply Status Effect
+            if (def.statusEffectId) {
+              // Reapply for 2 turns so they stay poisoned as long as they are in it, and 1 turn after.
+              nextState = applyStatusEffect(
+                nextState,
+                occupantId,
+                def.statusEffectId,
+                2,
+                fieldChain?.originatorEntityId,
+                fieldChain
+              );
+            }
+          }
+        }
+      }
+    }
+
+    // 2. Tick duration
     const newDuration = fieldCmp.duration - 1;
     if (newDuration <= 0) {
       nextState = removeEntity(nextState, entityId);
@@ -493,48 +650,10 @@ export function processFieldsTick(state: GameState): GameState {
 
     nextState = addComponent(nextState, entityId, { ...fieldCmp, duration: newDuration });
 
-    if (!def) continue;
-
-    // 2. Apply effects to occupants
-    const entitiesAtPos = nextState.spatialIndex.get(`${pos.x},${pos.y}`);
-    if (entitiesAtPos) {
-      for (const occupantId of entitiesAtPos) {
-        if (occupantId === entityId) continue;
-        const occupantField = getComponent(nextState, occupantId, ComponentType.Field);
-        if (occupantField) continue; // Fields don't damage other fields here (reactions handle that)
-
-        const fighter = getComponent(nextState, occupantId, ComponentType.Fighter);
-        if (fighter) {
-          // Apply Damage
-          if (def.damagePerTurn !== undefined && def.damagePerTurn > 0) {
-            const existingDamage = getComponent(nextState, occupantId, ComponentType.Damage) as
-              DamageComponent | undefined;
-            const newInstances = existingDamage ? [...existingDamage.instances] : [];
-            newInstances.push({
-              amount: def.damagePerTurn,
-              tags: ['field', fieldCmp.fieldType]
-            });
-            nextState = addComponent(nextState, occupantId, {
-              type: ComponentType.Damage,
-              instances: newInstances
-            });
-          }
-
-          // Apply Status Effect
-          if (def.statusEffectId) {
-            // Reapply for 2 turns so they stay poisoned as long as they are in it, and 1 turn after.
-            nextState = applyStatusEffect(nextState, occupantId, def.statusEffectId, 2);
-          }
-        }
-      }
-    }
-
     // 3. Process Spread Rules (Basic implementation)
-    // To implement deterministic spread, we'd roll rng here based on spreadRuleId.
     if (fieldCmp.spreadRuleId === 'fire_spread') {
       if (rng.getUniform() < 0.05) {
         // 5% chance to spread per turn
-        // For a full implementation, we'd check adjacent tiles for 'flammable' tags
       }
     }
   }
@@ -543,6 +662,32 @@ export function processFieldsTick(state: GameState): GameState {
     nextState = { ...nextState, fovNeedsUpdate: true };
   }
 
+  return nextState;
+}
+
+/**
+ * Advances active spatial fields across `turnsElapsed` turns.
+ * When any field has active occupant effects or expires during the window, ticks turn-by-turn;
+ * otherwise fast-forwards remaining durations cleanly.
+ *
+ * @param state Current immutable GameState.
+ * @param turnsElapsed Number of elapsed turns.
+ * @returns Updated GameState.
+ */
+export function advanceFieldsByTurns(state: GameState, turnsElapsed: number): GameState {
+  if (turnsElapsed <= 0) return state;
+  let nextState = state;
+  for (let step = 0; step < turnsElapsed; step++) {
+    let hasAnyField = false;
+    for (const eid of nextState.entities) {
+      if (getComponent(nextState, eid, ComponentType.Field) !== undefined) {
+        hasAnyField = true;
+        break;
+      }
+    }
+    if (!hasAnyField) break;
+    nextState = processFieldsTick(nextState);
+  }
   return nextState;
 }
 

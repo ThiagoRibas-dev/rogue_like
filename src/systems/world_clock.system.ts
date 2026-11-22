@@ -103,9 +103,14 @@ export function resolveAreaRestPressure(state: GameState, areaIdOverride?: strin
   const base = campaignDefault ?? DEFAULT_REST_PRESSURE_CONFIG;
 
   if (area?.restPressure) {
+    const ov = area.restPressure;
     return {
-      ...base,
-      ...area.restPressure
+      safeRest: ov.safeRest ?? base.safeRest,
+      ambushChancePerWatch: ov.ambushChancePerWatch ?? base.ambushChancePerWatch,
+      watchDurationHours: ov.watchDurationHours ?? base.watchDurationHours,
+      schemeTickMultiplier: ov.schemeTickMultiplier ?? base.schemeTickMultiplier,
+      respawnRateMultiplier: ov.respawnRateMultiplier ?? base.respawnRateMultiplier,
+      alarmDecayTurns: ov.alarmDecayTurns ?? base.alarmDecayTurns
     };
   }
 
