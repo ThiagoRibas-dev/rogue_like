@@ -2306,5 +2306,83 @@ Upgrade the Character Creation Wizard into a full CRPG character forging experie
 - [x] **Spellbook Rarity Tags, Bulk-Clock Transcription, Class-List Wand Activation & Auto `Knowledge` Monster Lore (`src/rulesets/dnd35e/magic/spellbook_loot.ts`, `src/rulesets/dnd35e/skills/monster_lore_tracker.ts`, `skill_verbs.ts`)**: Supported `rarity:common|uncommon|rare|forbidden` on spells; gated `spawnArcaneCasterSpellbookLoot` and `transcribeSpellFromBook` on arcane spellbook-scribing class tracks + class spell list validation while routing transcription hours through `advanceWorldTimeBulk`; auto-triggered `evaluateAndRecordMonsterLore` at player turn start (`onDnD35eActorTurnStart`) for visible monsters in `state.cachedFov` and on inspect; and checked `zappable.spellId` against class spell lists in `validateDnD35eWandActivation` before falling back to `UMD DC 20`.
 - [x] **Physical Corpse Economy, Piety & 5-Step Active Disguise Precedence (`src/systems/corpse.system.ts`, `src/systems/religion.system.ts`, `src/systems/disguise.system.ts`, `faction.ts`, `apply.system.ts`)**: Suppressed corpses for elemental/incorporeal creatures in `spawnCorpseForSlainEntity` and wired `'harvest'` (`harvestCorpseEntity` spawning concrete inventory yield items); wired `'pray'` (`prayAtAltarOrShrine` resolving `deity:<id>` tags without silent deity defaults); and wired `'apply'` on `disguise_kit` (`applyDisguiseFromTool`) with 5-step `getFactionRelation` precedence (`IdentityMaskComponent`).
 
+---
 
+# 🚀 Phase 43: Unified Preact UI Architecture, Semantic Theming, Full Keyboard Mapping & Gameplay UI Rewrite
+
+Rebuild the entire Gameplay UI and Keyboard/Input stack onto **Preact (`preact` ~4KB gzipped)**, a single **3-Theme Semantic CSS Token (`--ui-*`)** contract (`parchment`, `retro-crt`, `obsidian-brass`), a priority-ordered **`InputScopeManager` + `CommandRegistry`** with automatic `TextInputGuard` (eliminating text-input hotkey hijacking), a contextual **`F1` Help Panel**, **`F6` Keyboard HUD Focus**, and Editor-ready shared primitives (keeping the ROT.js Canvas renderer pure Vanilla TS). See [docs/implementation_plan.md](./implementation_plan.md).
+
+## ⚪ Milestone 157: UI Runtime Foundation, `.tsx` SSOT Parity & 3-Theme Semantic Token Engine (Planned)
+
+- [ ] **Preact + `.tsx` Toolchain & Guardrail Parity (`package.json`, `tsconfig.json`, `vite.config.ts`, `knip.json`, `.dependency-cruiser.cjs`, `scripts/{ssot_parity,map-codebase,check-file-length}.ts`)**: Install `preact` (and `happy-dom` + `preact-render-to-string` for component tests), enable `react-jsx` (`jsxImportSource: "preact"`), mount `<AppUiRoot />` cleanly beside `#game-canvas-wrapper`, and update SSOT/lint/dependency-cruiser rules for `.tsx` and `src/rendering/ui/cartridges/{classic,dnd35e}/`.
+- [ ] **Unified `--ui-*` Semantic & Editor-Density Token Layer (`src/styles/tokens.css`, `themes/{parchment,retro-crt,obsidian-brass}.css`, `a11y.css`, `primitives.css`)**: Consolidate all 4 disconnected color systems into `--ui-*` semantic tokens covering surfaces, ink, borders, focus rings, accents, status colors, elevation, z-layers, typography, and `[data-ui-density="compact"]` for Phase 44 Editor readiness.
+- [ ] **Single Theme Authority & Doc/Font Sync (`src/rendering/ui/core/console_theme.ts`, `index.html`, `docs/UI_UX_STANDARDS.md`)**: Resolve `effectiveTheme` strictly via `auto | parchment | retro-crt | obsidian-brass` on `document.documentElement.dataset.uiTheme`, retire dead `--console-*` inline property injection and forced cartridge overrides, and synchronize loaded fonts and `docs/UI_UX_STANDARDS.md`.
+
+## ⚪ Milestone 158: Scoped `InputScopeManager`, `TextInputGuard`, Declarative `CommandRegistry` & Full Keymap Engine (Planned)
+
+- [ ] **Scoped Input Dispatcher & Automatic `TextInputGuard` (`src/core/input/input_scope_manager.ts`, `text_input_guard.ts`)**: Replace all scattered `window.addEventListener('keydown')` listeners with a single 8-tier priority dispatcher (`rebind_capture` -> `system_dialog` -> `help_overlay` -> `active_modal` -> `hud_focus` -> `targeting_inspect` -> `world_gameplay` -> `editor`) plus `isEditableEventTarget()` so typing in any `<input>`, `<textarea>`, `<select>`, or `[contenteditable]` never triggers gameplay or modal shortcuts unless explicitly flagged `allowInTextInput: true`.
+- [ ] **Declarative `CommandRegistry` & Multi-Slot Modifier `KeyChord`s (`src/core/input/command_registry.ts`, `src/core/settings.ts`, `src/types/input.types.ts`)**: Support modifier chords (`ctrl`, `shift`, `alt`, `meta`), `event.code` vs `event.key` normalization, multi-slot bindings per command, scoped conflict detection, cartridge-contributed command registration, and lossless migration of v1 `localStorage` & `public/data/campaigns/*/keybinds.json`.
+- [ ] **Browser-Safe `F*` Keys & Default Collision Fixes**: Intercept `F1` (Contextual Help), `F6` (HUD Focus), and `F2` (Editor Playtest) safely via `preventDefault()` while leaving `F5`/`F11`/`F12` unbound; fix `Shift+L` Ledger, `\` Fold HUD (reclaiming `Tab` for focus/target cycling), `Escape` Pause/Settings in gameplay, `Shift+ArrowUp/Down` Hotbar Banks, and Numpad `7/9/1/3` 8-way diagonals (with selectable Modern / Classic Vi-Keys presets).
+- [ ] **Input & Keymap Regression Suite (`tests/input_scope_and_keymap.test.ts`)**: Verify scope precedence, `TextInputGuard` isolation across all input types, modifier chords, `F1`/`F6` interception, scoped conflict detection, cartridge command rebinding, and v1->v2 migration.
+
+## ⚪ Milestone 159: Editor-Ready Shared Primitive Kit, Live Focus Hooks, `ConsoleModalHost` & `DialogService` (Planned)
+
+- [ ] **`PresentationDomain`-Gated Preact Store (`src/rendering/ui/core/ui_store.ts`, `src/rendering/presenter.ts`)**: Bridge immutable `GameState` snapshots and transient UI slices into Preact strictly on dirty `PresentationDomain` updates so off-screen NPC turns incur zero DOM re-renders.
+- [ ] **Shared Accessible Primitive Kit (`src/rendering/ui/primitives/*`)**: Build `ModalShell`, `Panel`, `SplitPane`, `Toolbar`, `Accordion`, `TreeList`, `Tabs`, `ListBox`, `GridNav`, `Button`, `IconButton`, `Stepper`, `FormField`, `TextInput`, `NumberInput`, `Select`, `Checkbox`, `Chip`, `Badge`, `StatChip`, `Keycap` (live `CommandRegistry`-bound `<kbd>`), `TooltipHost`, and `ToastHost`.
+- [ ] **Live Focus Management, `ConsoleModalHost` & `DialogService` (`focus_hooks.ts`, `dialog_service.ts`, `DialogHost.tsx`, `ConsoleModalHost.tsx`)**: Implement dynamic `useFocusTrap` (live DOM query + previous-focus restoration, retiring stale `src/utils/a11y.ts`) and `useRovingFocus` (`vertical`/`horizontal`/`grid`), build the generic `ConsoleModalHost`, and replace `modal.ui.ts` + all gameplay `alert()`/`confirm()`/`prompt()` calls (`session_dom.ts`, `session_settings.ts`) with async `DialogService` + Preact tests (`tests/ui_primitives_focus.test.tsx`).
+
+## ⚪ Milestone 160: Contextual `F1` Help Panel, Menus, Selection Flows & Full Keybind Matrix Settings Rewrite (Planned)
+
+- [ ] **Contextual & Cartridge-Aware `F1` Help Panel (`HelpModal.tsx`, `HelpReminderChip.tsx`)**: Build the global `[F1]` overlay with 3 tabs — **This Screen** (auto-scoped shortcuts & guidance for current `InputScope`/`UIMode`), **All Keybinds** (searchable live bindings), and **Ruleset Guide** (declarative `CartridgeUIDefinition.helpSections`) — plus a subtle persistent `[F1] Help` reminder chip in gameplay HUD and modal footers.
+- [ ] **Menus & Selection Screens Rewrite (`src/rendering/ui/menus/*`)**: Rewrite `MainMenu`, `RulesetSelectModal`, `CampaignSelectModal`, `GameOverModal`, and `LoadingOverlay` with 100% keyboard navigation (Arrows/`Enter`/`Escape`), list search/details, campaign install/uninstall via `DialogService`, and full 3-theme parity.
+- [ ] **Settings & Multi-Slot Keybind Matrix Rewrite (`SettingsModal.tsx`, `KeybindMatrix.tsx`)**: Rewrite Settings with searchable command categories, scope tags, multi-slot `KeyChord` capture & clearing, inline conflict warnings, Modern vs. Classic Vi-Keys presets, live 3-theme / UI scale / tileset / high-contrast / auto-pause controls, and Credits & Attributions.
+
+## ⚪ Milestone 161: Tactical Floating HUD, `F6` Keyboard HUD Focus Mode & Context Verb Popover Rewrite (Planned)
+
+- [ ] **Tactical HUD Rewrite (`src/rendering/ui/hud/*`)**: Rewrite `HudRoot`, `VitalsCard` (removing duplicate raw HP write), `ChronosStrip` (TB/RTwP, `1x/2x/4x`, `45°`, `3D`, zoom, settings), `CommandDockCard` (live `<Keycap>`s, 2D/ASCII toggle), `TacticalScannerCard`, `ChronicleLogCard` (keyboard filter tabs & scrollable log), `AlertsStack`, and `BottomActionDock` (single `ui_store` `activeBank`, keyboard-operable stances & steppers, `Shift+Up/Down` bank cycling, action pips, End Turn).
+- [ ] **`F6` Keyboard HUD Focus & Context `VerbMenuPopover` (`HudFocusScope`, `VerbMenuPopover.tsx`)**: Wire `F6` region cycling across all HUD cards and controls (`Esc` returns immediately to map control), and rewrite `VerbMenuPopover` with Arrow + `1–9` + `Enter` + `Esc` keyboard selection.
+
+## ⚪ Milestone 162: Console Master Dossier, Paperdoll/Stash, Trade & World Modals Rewrite (Planned)
+
+- [ ] **Master Dossier & Inventory Rewrite (`ConsoleDossierView.tsx`, `PaperDollWidget.tsx`, `CompactStashWidget.tsx`)**: Replace all `<div>` slots and `.innerHTML` fragments with semantic `<button>` grids, 2D `GridNav` arrow traversal, keyboard-triggered Item Inspect Card (`?`/`Alt+I`), Weapon Set `I–IV` shortcuts, category/sort controls, and full keyboard access beyond slot `#26`.
+- [ ] **Trade & World Narrative/Diagnostic Modals Rewrite (`TradeModal`, `DialogueModal`, `QuestsModal`, `FactionsModal`, `InvestigationModal`, `NemesisDossierModal`, `LedgerModal`, `DebugOverlay`)**: Deliver dual-pane keyboard Trade (Buy/Sell + Cartridge social haggle shortcuts), Arrow + `1–9` + `Enter` Dialogue, filterable Quests/Investigation/Factions/Nemesis/Ledger/Debug views with 100% 3-theme compliance.
+
+## ⚪ Milestone 163: D&D 3.5e & Classic Cartridge Modals Rewrite (Sheet, Spellbook, Quickcast, Inspector) (Planned)
+
+- [ ] **Classic Cartridge UI Migration (`src/rendering/ui/cartridges/classic/classic_ui_registration.tsx`)**: Migrate Classic Dossier registration onto `ConsoleModalHost`, remove `#dnd35e-sheet-overlay` coupling and forced `retro-crt` override, and supply Classic commands + `helpSections`.
+- [ ] **D&D 3.5e Gameplay Modals Rewrite (`src/rendering/ui/cartridges/dnd35e/*`)**: Rewrite `DnD35eSheetModal`, `DnD35eSpellbookModal`, `DnD35eQuickcastOverlay`, `DnD35eInspector`, and `dnd35e_ui_registration.tsx` onto shared primitives, registering canonical Cartridge commands (`dnd35e:sheet`, `dnd35e:inventory`, `dnd35e:quickcast`, `dnd35e:spellbook`, `dnd35e:rest_8h`, `dnd35e:level_up`) and declarative D&D 3.5e `helpSections` with 100% keyboard navigation.
+
+## ⚪ Milestone 164: D&D 3.5e Character Creation Wizard & Level-Up Advancement Rewrite (Planned)
+
+- [ ] **Character Creation Wizard Rewrite (`DnD35eCharBuilderModal.tsx`)**: Rewrite all builder steps (Race/Abilities point-buy steppers, Class/Domains/ACFs, Skills, Feats, Spells, Equipment Kits & Custom Gear Shop with search, Review & Identity with Name/Title/Traits/Glyph Color/Sprite Picker) onto shared Preact primitives with `TextInputGuard`-protected inputs and full keyboard traversal.
+- [ ] **Level-Up Advancement Rewrite (`DnD35eLevelUpModal.tsx`)**: Rewrite multiclass track selection, ability boost, skill rank allocation, feat/spell selection, and confirmation footer with complete keyboard and 3-theme support.
+
+## ⚪ Milestone 165: Legacy Gameplay DOM/CSS Eviction, `index.html` Slimdown & Phase 43 Verification Sweep (Planned)
+
+- [ ] **Legacy Gameplay Eviction & `index.html` Slimdown**: Strip all 17 static `<div class="modal-overlay">` blocks and hardcoded inline styles from `index.html`, retire superseded imperative gameplay UI files and legacy stylesheets (`core.css`, `hud.css`, `modals.css`, `console_prototype.css`), and audit zero remaining gameplay `.innerHTML`, inline color hacks, or native dialogs.
+- [ ] **Docs, SSOT Parity & Verification Sweep**: Update `docs/UI_UX_STANDARDS.md`, `docs/ARCHITECTURE.md`, and 3-way SSOT registries (`bun scripts/map-codebase.ts`) and verify 0 errors across all 8 stages of `./verify.sh` (`bun test`, `tsc`, `eslint`, `depcruise`, `knip`, `vite build`, `run-validator.ts`).
+
+---
+
+# 🚀 Phase 44: Campaign Editor Rewrite on Shared Preact Primitives, Scoped Input & Unified Themes
+
+Rebuild the Campaign Creator (`~26` editor UI modules) directly onto Phase 43's Preact Primitive Kit, `--ui-*` semantic theme tokens (`[data-ui-density="compact"]`), `InputScopeManager` (`EditorScope`), and `DialogService` — preserving the pure `src/editor/` controller, JSON-Patch undo/redo stack, reverse-reference index, and campaign validator.
+
+## ⚪ Milestone 166: Campaign Editor Shell, `EditorScope` Input, `DialogService` Migration & Validation Dock (Planned)
+
+- [ ] **Editor Workspace Shell Rewrite (`src/rendering/ui/editor/{EditorShell,EditorToolbar,EditorActivityBar,EditorSidebar,EditorSplash,NewCampaignModal,ValidationDock}.tsx`)**: Rewrite shell layout onto Phase 43's `SplitPane`, `Toolbar`, `ModalShell`, and searchable `ListBox` with drag-and-drop and full 3-theme support.
+- [ ] **Editor Scope, Leak Fix & Dialog Migration**: Activate `EditorScope` (`Ctrl+Z`/`Ctrl+Shift+Z`/`Ctrl+Y` protected by `TextInputGuard` so text fields undo natively, `Ctrl+S` save, `F2` playtest, `F1` Editor Help), eliminate `editor_ui.ts`'s leaked `document` mouse listeners, and replace all remaining 24 editor `alert()`/`confirm()`/`prompt()` calls with `DialogService` + `ToastHost`.
+
+## ⚪ Milestone 167: Declarative Preact Zod Form Engine, Reference Pickers & Where-Used Inspector (Planned)
+
+- [ ] **Preact Zod Form Renderer (`ZodFormRenderer`, `ZodFormContainers`, `ZodFormPrimitives`, `EditorForms`, `EditorObjectRenderer`, `WhereUsedDrawer`)**: Rebuild recursive Zod form generation (`ZodObject`, `ZodDiscriminatedUnion`, `ZodArray`, `ReferenceField` autocomplete, inline `toFormPath` validation errors) onto Preact `FormField`/`Accordion`/`Stepper`/`Select` components with automatic cursor, scroll, and accordion state preservation.
+
+## ⚪ Milestone 168: Visual & Graph Editor Workspaces (Area Painter, World Graph, Dialogue Tree, Faction Matrix, Trigger Composer) (Planned)
+
+- [ ] **Interactive Visual Tooling Rewrite (`AreaEditor`, `AreaStaticPainter`, `WorldGraph`, `DialogueEditor`, `DialogueSimulatorPanel`, `FactionMatrixEditor`, `TriggerComposer`)**: Wrap the pure Canvas2D tile painter inside Preact `SplitPane`/`Toolbar`/`GridNav` palette, rebuild `DialogueEditor` on `TreeList`, and unify `WorldGraph`, `FactionMatrixEditor`, and `TriggerComposer` onto `--ui-*` theme tokens and keyboard-accessible primitives.
+
+## ⚪ Milestone 169: Simulation Tooling Rewrite & Legacy Editor Eviction (Planned)
+
+- [ ] **Simulation & Fuzzer Panels Rewrite (`AiArena`, `DirectorSandbox`, `KnowledgeSimulator`, `NarrativeFuzzer`, `BalanceLab`)**: Port all Campaign Editor simulation labs onto Preact primitives and unified themes.
+- [ ] **Legacy Editor Eviction & Final Verification Sweep**: Remove `src/rendering/editor_ui.ts`, `src/styles/editor.css`, legacy `knip.json` ignores, and any remaining legacy UI adapters; synchronize `docs/SSOT_CONSOLE.md` and `docs/ARCHITECTURE.md` and confirm full 8-stage `./verify.sh` passes cleanly.
 

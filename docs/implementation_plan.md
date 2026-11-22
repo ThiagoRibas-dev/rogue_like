@@ -1,1041 +1,393 @@
-# Implementation Plan — M150–M156 Corrective Remediation
+# Implementation Plan — Unified Preact UI Architecture, Semantic Theming & Full Keyboard Mapping (Phases 43 & 44)
 
-> **Status:** Complete — All 6 phases (`P1.1–P6.9`) executed and verified against the full 8-stage pipeline (`./verify.sh` + `bun scripts/map-codebase.ts --check`).
-> **Audited baseline:** commit `c83c3830d812c746e88fb850812462be57fd1a66` against its parent.
-> **Research source:** `docs/research_notes.md` contains the verified evidence, stable remediation IDs, provenance design, and audit baseline.
-> **Execution strategy:** Executed sequentially across Phases 1–6 with regression tests, campaign/ruleset/SSOT parity checks, and zero-error full-pipeline verification.
-> **Verification outcome:** `verify.sh` Stages 1–8 passed (0 errors, 0 warnings across 371 tests in 49 files, all 5 campaigns, 863 ruleset files, 2 sprite packs, ai-prompt-kit mirror, and 502 SSOT source files).
+*Prepared per `AGENTS.md` Phase 1 (Steps 4–5) based on confirmed research in `docs/research_notes.md` (trunk `b76cca8`).*
+
+> **STATUS: AWAITING USER APPROVAL (`AGENTS.md` Rule 5).** No production code files or `docs/MILESTONES.md` have been modified yet.
 
 ---
 
-## 0. Scope, Order, and Completion Criteria
+## 1. Architectural Vision & Core Invariants
 
-### Six-phase scope
+This plan replaces the fragmented Vanilla DOM UI (`92` UI files + `7` editor files + `591`-line static `index.html` + `4` disconnected CSS token systems) and unscoped `window` keydown handlers with a single, clean, keyboard-first UI platform:
 
-| Phase                                             | Goal                                                                                                                     | Remediation IDs |
-| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | --------------- |
-| **1 — Verification Gates**                        | Restore typecheck, format, tests, build, validator, and diff hygiene                                                     | P1.1–P1.4       |
-| **2 — Engine Invariants & Provenance**            | Repair pit/displacement/time/field semantics and introduce complete causal chains                                        | P2.1–P2.8       |
-| **3 — Action Economy, Items, Objects, Traversal** | Correct Charge, coating/weapon identity, consumables, hazards, structural objects/doors, rigging, and spellbook behavior | P3.1–P3.16      |
-| **4 — Production Integrations**                   | Wire disguise, sound/light, corpse, religion, and lore into live paths                                                   | P4.1–P4.9       |
-| **5 — Declarative/Data/SSOT Parity**              | Restore partial overrides, campaign dependencies, Rule 21 compliance, showcase content, docs, and assets                 | P5.1–P5.11      |
-| **6 — Integration Proof & Closure**               | Replace helper-only confidence with real-path tests, complete verification, and final cascading audit                    | P6.1–P6.9       |
-
-### Rules for every implementation task
-
-1. Use the existing canonical utility or schema owner before creating anything new.
-2. Keep each code change small enough to understand, test, and review independently.
-3. Do not branch on Tier 3 content IDs or infer generic behavior from bespoke properties.
-4. Do not use `any`, untyped magic gameplay values, `Math.random`, `Date.now`, or non-serializable ECS state.
-5. Preserve actor symmetry and backward compatibility for existing campaign/save data unless a migration is explicitly documented.
-6. Update the upstream/downstream/lateral matrix when implementation reveals additional impact.
-7. Run focused tests during development and the complete `./verify.sh` pipeline at the phase boundary.
-8. Do not commit or push unless the user separately requests and approves the exact commit.
-
-### Phase completion criteria
-
-A phase is complete only when:
-
-- Its focused regression tests pass.
-- `bun x tsc --noEmit` passes.
-- Formatting, lint, architecture, and dead-code checks pass.
-- The full `bun test` suite passes.
-- `bun run build` passes.
-- `bun run scripts/run-validator.ts` passes.
-- `bun scripts/map-codebase.ts --check` passes when SSOT ownership changes.
-- `git diff --check` passes.
-- The phase's cascading-effects rows and test evidence are updated.
+1. **View Runtime (Option B):** **Preact (`preact` + `preact/hooks`, ~4KB gzipped)** for all DOM UI chrome, fed by a thin reactive bridge (`src/rendering/ui/core/ui_store.ts`) driven by `presenter.ts` and `PresentationDomain` dirty flags. **The ROT.js Canvas renderer (`renderer.ts`, `viewport_snapshot.ts`, `tactical_overlay.ui.ts`, `vfx_overlay.ui.ts`) remains 100% pure Vanilla TS Canvas2D.**
+2. **Unified 3-Theme Semantic CSS Architecture (`--ui-*`):** One canonical CSS token contract with three first-class themes — **Parchment Tabletop (`parchment`)**, **Retro CRT (`retro-crt`)**, and **Obsidian & Brass (`obsidian-brass`)** — plus `auto` (Cartridge Default), high-contrast, UI-scale, and reduced-motion modifiers. Zero inline color overrides; zero `.innerHTML`; zero native `alert()`/`confirm()`/`prompt()`.
+3. **Full Keyboard Mapping & Scoped Input Architecture:** Priority-ordered `InputScopeManager` with automatic `TextInputGuard` (permanently preventing text-input hotkey hijacking), declarative `CommandRegistry` with multi-slot modifier `KeyChord` bindings, scope-aware conflict detection, cartridge-contributed commands, browser-safe `F*` keys (`F1` Contextual & Cartridge Help Panel, `F6` HUD Keyboard Focus), live `FocusTrap`, and `RovingFocus` across every screen.
+4. **Two-Phase Execution Designed as One System:**
+   - **Phase 43 (Milestones 157–165):** Foundation + Input/Keymap Engine + Shared Primitive Kit + Complete Gameplay UI Rewrite (including Contextual `F1` Help Panel, `F6` HUD Focus, Menus, Settings, HUD, Master Dossier/Inventory/Trade, World Modals, and D&D 3.5e / Classic Cartridge Modals).
+   - **Phase 44 (Milestones 166–169):** Full Campaign Editor Rewrite on the **exact same** Phase 43 Primitive Kit (`SplitPane`, `Toolbar`, `Accordion`, `TreeList`, `FormField`, `ContextMenu`), `--ui-*` tokens, `InputScopeManager` (`EditorScope`), and `DialogService` — engineered from M157–M159 so Phase 44 requires zero foundational rework.
 
 ---
 
-## 1. SSOT Ownership & Old-Brain Eviction Table
+## 2. SSOT Ownership & Old-Brain Eviction Table
 
-| Responsibility                                               | Canonical owner after remediation                                                                                    | Old brain replaced or constrained                                                     | Tier             |
-| ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | ---------------- |
-| Runtime interaction-chain types and append/query helpers     | `src/types/interaction_provenance.types.ts`, `src/systems/interaction_provenance.system.ts`                          | Ad-hoc `sourceEntityId`, item/spell IDs, and mutable “current source” assumptions     | Tier 1 Console   |
-| Causal chain on emitted events                               | `src/types/events.types.ts` (`BaseGameEvent`) and event producers                                                    | Events with no causal ancestry                                                        | Tier 1 Console   |
-| Causal chain on delayed/persisted outcomes                   | `DamageInstance`, `DeathComponent`, `ActiveStatusEffect`, `FieldComponent`, projectile/in-flight state as applicable | Delayed effects losing their origin after the initiating action                       | Tier 1 Console   |
-| Static modifier/grant provenance                             | Existing `StatModifier.sourcePath` and effect-bundle index                                                           | Runtime chain being mistaken for modifier provenance                                  | Tier 2 Cartridge |
-| Equipped weapon instance identity                            | `weapon_profile_parser.ts` (`EquippedWeaponProfile.itemEntityId`, slot/limb identity) and `attack_routine.ts`        | Content-only `weaponId` used to locate a coating                                      | Tier 2 Cartridge |
-| Displacement result and footprint commit                     | `src/systems/movement_displacement.ts`                                                                               | Anchor-delta-only `moved`; discarded precomputed placement                            | Tier 1 Console   |
-| Context-aware tile traversal                                 | `evaluateTileTraversal` and all context-aware callers                                                                | Caller-side traversal that omits state/coordinates and misses crossings               | Tier 1 Console   |
-| Pit-entry fall consequence                                   | Terrain traversal resolver, invoked once on a confirmed hazard entry                                                 | Duplicate explicit fall call plus recurring turn-start fall                           | Tier 2 Cartridge |
-| Jaunt validation and commit                                  | Immediate-reaction resolver using the displacement kernel                                                            | Squeezed validation versus expanded execution; skipped occupancy; ignored move result | Tier 2 Cartridge |
-| Normal and bulk elapsed-time semantics                       | Domain-owned elapsed resolvers orchestrated by `world_time_skip.ts`                                                  | Bulk duration subtraction that skips breath, light, crossings, AI, and status stages  | Tier 1 Console   |
-| Secondary status timing                                      | `status-effect.system.ts` shared elapsed resolver                                                                    | Bulk-only duration decrement without elapsed/secondary state                          | Tier 1 Console   |
-| Field transmutation commit                                   | `field.system.ts` interaction transaction                                                                            | Incoming field plus separately transmuted duplicate field                             | Tier 1 Console   |
-| Charge validation, movement, condition, and strike selection | `charge_resolver.ts` plus `dnd35e_combat_adapter.ts`                                                                 | Distance inferred after strike selection; condition applied only on success           | Tier 2 Cartridge |
-| Coating application and per-strike consumption               | Generic coating descriptor/resolver with D&D effect data; `combat_exchange_pipeline.ts`                              | First-coated-item search and item-ID heuristics                                       | Tier 1 + Tier 2  |
-| Consumable charge/item depletion                             | Canonical inventory consumption helper                                                                               | Scattered manual charge/removal implementations                                       | Tier 1 Console   |
-| Hazard deployment                                            | Generic deployment descriptor plus authored field definition                                                         | Runtime field-registry injection and reusable source item                             | Tier 1 + Tier 3  |
-| Floor-hazard movement behavior                               | `floor_hazard_resolver.ts` using movement context                                                                    | Context-free caltrops/marbles logic                                                   | Tier 2 Cartridge |
-| Structural data hydration                                    | Generic entity/item schema plus ECS spawn/promotion paths                                                            | Tests manually attaching `StructuralComponent`                                        | Tier 1 + Tier 3  |
-| Structural durability math                                   | `object_durability_resolver.ts`                                                                                      | Unreachable resolver and base-vs-enhanced HP maxima                                   | Tier 2 Cartridge |
-| Door presentation/passability                                | Existing reaction/consequence engine, invoked by structural door resolver                                            | Component-only open/break state bypassing tag/glyph/intent/FOV transition             | Tier 1 Console   |
-| Crossing installation recipes                                | Tier 3 recipe descriptor plus crossing system                                                                        | Rope-or-anchor shortcut and missing ladder content                                    | Tier 1 + Tier 3  |
-| Spellbook study time                                         | Canonical bulk/world-time advancement                                                                                | Direct `globalTurn += hours`                                                          | Tier 2 Cartridge |
-| Disguise perception and faction relation                     | `utils/faction.ts` with explicit mask precedence                                                                     | Mutating both observer and target allegiances; unconditional Attitude early return    | Tier 1 Console   |
-| Sound perception and sleeping awareness                      | `sound.system.ts` using canonical sleeping awareness                                                                 | Alerted-but-asleep actors and disconnected producers                                  | Tier 1 Console   |
-| Camp illumination                                            | `light_emitter.system.ts` active-emitter query                                                                       | Tag-only light-source check                                                           | Tier 1 Console   |
-| Corpse creation and harvest                                  | `corpse.system.ts`, semantic type projection, declarative yield recipes                                              | Test-only marking with no yield/tool effect                                           | Tier 1 + Tier 3  |
-| Religion ledger and altar integration                        | `religion.system.ts` plus authored altar/reaction data                                                               | Test-only helpers and implicit Pelor default                                          | Tier 1 + Tier 3  |
-| Automatic monster lore persistence                           | `monster_lore_tracker.ts` invoked from sight/inspect integration                                                     | Test-only persistence helper                                                          | Tier 2 Cartridge |
-| Rest-pressure shape                                          | Separate full config and partial override schemas                                                                    | Zod defaults erasing campaign values before inheritance                               | Tier 1 + Tier 3  |
-| Campaign/system consumable dependency validation             | Loader/validator reference pass                                                                                      | Validator accepting an item whose effect/status is absent                             | Tier 1 tooling   |
-| Default feature showcase                                     | `public/data/campaigns/default/` plus smoke scenarios                                                                | Unused schemas and non-functional default content                                     | Tier 3           |
+Every overlapping or split-brain responsibility identified in `docs/research_notes.md` is assigned to a single canonical owner, with legacy implementations explicitly scheduled for eviction:
+
+| Responsibility | Canonical New Owner (Tier) | Legacy "Old Brain" Evicted | Eviction Milestone |
+| :--- | :--- | :--- | :--- |
+| **Theme Resolution & `--ui-*` Root Attributes** | `src/rendering/ui/core/console_theme.ts` (`tier1_console`) | Dead `--console-*` JS CSS-var injection; `classic_ui_registration.ts:41` unconditional `setConsoleThemeMode('retro-crt')`; `--bg-*` vs `--crpg-*` split | M157 / M164 |
+| **Global Keyboard Dispatch & Scope Priority** | `src/core/input/input_scope_manager.ts` (`tier1_console`) | Direct `window.addEventListener('keydown')` in `session_controller.ts:238`, `editor_ui.ts:180`, `modal.ui.ts:154`; unscoped `modal_input.ts` / `shortcut_input.ts` | M158 / M166 |
+| **Editable Text-Input Bypass Guard** | `src/core/input/text_input_guard.ts` (`tier1_console`) | Non-existent (root cause of Character Creation / Shop / Settings / Prompt / Editor typing bugs) | M158 |
+| **Canonical Command & Multi-Slot `KeyChord` Registry** | `src/core/input/command_registry.ts` + `src/core/settings.ts` (`tier1_console`) | Split `ActionType` vs hardcoded `shortcut_input.ts` keys vs mismatched `dnd35e_sheet`/`classic_sheet` dock command IDs | M158 |
+| **Focus Trapping & Roving Keyboard Navigation** | `src/rendering/ui/primitives/focus_hooks.ts` (`tier1_console`) | Stale 50ms-snapshot `trapFocus()` in `src/utils/a11y.ts` & partial 6/16 wiring in `session_controller.ts` | M159 |
+| **In-App System Dialogs (`alert` / `confirm` / `prompt`)** | `src/rendering/ui/primitives/dialog_service.ts` + `DialogHost.tsx` (`tier1_console`) | `src/rendering/ui/modal.ui.ts` (Catppuccin inline prompt) + 35 native `alert()`/`confirm()`/`prompt()` calls across `session_dom`, `session_settings`, `editor`, `rendering` | M159 (Gameplay) & M166 (Editor) |
+| **Generic Console Modal Host & Overlay Mounting** | `src/rendering/ui/modals/ConsoleModalHost.tsx` (`tier1_console`) | 17 static `<div class="modal-overlay">` blocks in `index.html`; `trade.ui.ts` dynamic `document.body` overlay; Classic borrowing `#dnd35e-sheet-overlay` | M159–M164 |
+| **Contextual & Cartridge `F1` Help Overlay** | `src/rendering/ui/modals/HelpModal.tsx` (`tier1_console`) | Scattered stale key hints (`index.html:451` `"Press C"`, `hud_dock.ui.ts:135` fake `"ESC"`, `console_hotbar.ui.ts:189` unimplemented `"Shift+Up"`) | M160 |
+| **Hotbar Active Bank State** | `src/rendering/ui/core/ui_store.ts` (`tier1_console`) | Split-brain `activeBank` (`hud_bottom_dock.ui.ts:29`) vs `activeBankIndex` (`console_hotbar.ui.ts:52`) | M161 |
+| **HUD Vitals Rendering** | `src/rendering/ui/hud/VitalsCard.tsx` (`tier1_console`) | Duplicate HP bar write in `hud.ui.ts:237–251` (`updateHUD` overwriting `renderPlayerStats`) | M161 |
+| **Campaign Editor Workspace Shell & Input/Resize Lifecycle** | `src/rendering/ui/editor/EditorShell.tsx` (`tier1_console`) | `src/rendering/editor_ui.ts` (global `Ctrl+Z` hijack + leaked `document` mousemove/mouseup listeners) | M166 |
 
 ---
 
-## 2. Declarative Purity & Anti-Hardcoding Audit Table
+## 3. Declarative Purity & Anti-Hardcoding Audit Table (`AGENTS.md` Rule 21)
 
-| Behavior                           | Rejected imperative shortcut                           | Chosen declarative mechanism                                                                | New Content Mod litmus |
-| ---------------------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------- | ---------------------- |
-| Inventory climbing/rigging gear    | `itemId === 'climbers_kit'` or `'ladder_10ft'`         | Semantic tags `climbing_kit`, `ladder`, `supple_rope` on authored items                     | **Pass**               |
-| Charge movement capability         | Hardcoded condition-ID `Set`                           | Generic condition `ruleOverrides`/tags such as `blocks_charge`                              | **Pass**               |
-| Charge speed                       | Land-speed-only calculation                            | Movement mode selected from the actual traversal path                                       | **Pass**               |
-| Charge attack reach                | Size/natural-reach-only calculation                    | Scheduled strike's authored `reachFt` and `strikesAdjacent`                                 | **Pass**               |
-| Coating eligibility                | “Any item with `ItemComponent` is a weapon”            | Generic `weapon`/`ammunition` capability tags or item category profile                      | **Pass**               |
-| Coating damage/status/targets      | Item-ID substring and `alignment:evil` fallback        | Authored coating descriptor, target predicates, status/effect references                    | **Pass**               |
-| Hazard deployment                  | TypeScript-created field registry entries              | Item deployment descriptor referencing an authored field definition                         | **Pass**               |
-| Caltrops/marbles behavior          | Context-free fixed checks                              | Movement-mode/speed context plus authored hazard parameters                                 | **Pass**               |
-| Structural hardness/HP             | Per-item TypeScript branches                           | Authored material/object profile and typed effect data                                      | **Pass**               |
-| Door open/close/break presentation | Hardcoded tile IDs, glyphs, or tag arrays              | Existing declarative reaction consequences                                                  | **Pass**               |
-| Crossing installation              | Rope-or-anchor shortcut                                | Tier 3 recipe with required capabilities, anchor/range rules, and consumed/installed source | **Pass**               |
-| Antitoxin resistance               | `hasResistanceStatus ? 5 : 0`                          | Status-authored save modifier with typed bonus and effect tags                              | **Pass**               |
-| Wand Spell Trigger                 | Hardcoded class-track ID array                         | Wand `spellId` plus spell `levelByClass`/domain/access capability metadata                  | **Pass**               |
-| Religion patron                    | Default missing patron to `pelor`                      | Explicit actor/altar/deity data; no implicit patron                                         | **Pass**               |
-| Rest area override                 | Fully defaulted partial object                         | Separate partial override schema over a complete resolved config                            | **Pass**               |
-| Corpse harvest yield               | Hardcoded tag-to-item switch                           | Declarative harvest recipe mapping tags to item/tool requirements                           | **Pass**               |
-| Corporeal eligibility              | Raw tag-only check                                     | Canonical semantic type/subtype projection or Ruleset hook                                  | **Pass**               |
-| Interaction provenance             | Global mutable source or content-specific frame unions | Generic append-only `InteractionChain` frames and queries                                   | **Pass**               |
-| Modifier provenance                | Runtime chain reused as `sourcePath`                   | Keep static `sourcePath` and runtime chain as separate contracts                            | **Pass**               |
+| Behavior | Rejected Imperative Shortcut | Chosen Declarative Schema / Registry Mechanism | Passes "New Content Mod" Litmus Test? |
+| :--- | :--- | :--- | :--- |
+| **Cartridge Hotkeys & Dock Actions** | Hardcoding `if (cmd.id === 'dnd35e_quickcast')` or casting `cmd.id as ActionType` | Cartridges declare `commands: ReadonlyArray<CommandDefinition>` on `CartridgeUIDefinition`; `CommandRegistry` merges them dynamically into Settings, Keycaps, and `InputScopeManager` | **Yes** — any new cartridge (`pf2e`, `gurps`, `brp_d100`) gets full rebinding, conflict checking, and `<Keycap>` badges with zero Console edits |
+| **Contextual `F1` Help Content** | Hardcoding D&D 3.5e rules text inside `HelpModal.tsx` | `HelpModal` dynamically reads active `InputScope` commands from `CommandRegistry` + renders declarative `helpSections: ReadonlyArray<UIHelpSection>` supplied by `CartridgeUIDefinition` and active screen descriptors | **Yes** — new cartridges and new modals supply structured `UIHelpSection` data without touching `HelpModal.tsx` |
+| **Theme Application Across All Views** | Per-component `if (theme === 'parchment')` or inline `.style.color` | Semantic CSS variables (`--ui-*`) scoped strictly by `[data-ui-theme="<id>"]` stylesheets; single theme resolution in `console_theme.ts` | **Yes** — adding a 4th theme (e.g. `high-fantasy-dark`) requires only a new theme CSS file and registry entry |
+| **Text Input Key Bypass** | Whitelisting specific input DOM IDs (`if (el.id === 'char-name')`) | Generic `isEditableEventTarget(event)` in `text_input_guard.ts` checking semantic DOM editability (`<input>` text/search/number/email/url, `<textarea>`, `<select>`, `[contenteditable]`, `[role="textbox|combobox|spinbutton"]`) + `allowInTextInput` command flag | **Yes** — every future form input in gameplay or editor is protected automatically |
+| **Keyboard Navigation in Lists, Grids & Tabs** | Writing per-screen `if (key === 'ArrowDown')` boilerplate for every modal | Reusable `useRovingFocus` (`orientation: 'vertical' | 'horizontal' | 'grid'`, `columns`, `loop`) and `Tabs` / `ListBox` / `GridNav` primitives | **Yes** — any new list, grid, or tabbed modal inherits full keyboard navigation declaratively |
+| **Modal Lifecycle & Overlay Hosting** | Adding hardcoded `<div id="new-modal">` blocks to `index.html` | `ConsoleModalHost.tsx` renders any registered core or cartridge modal descriptor dynamically via `CartridgeUIDefinition.modals` | **Yes** — cartridges never touch `index.html` or borrow another cartridge's overlay ID |
 
 ---
 
-## 3. Cascading Effects Matrix — Corrective Implementation Tasks
+## 4. Cascading Effects Matrix (`AGENTS.md` Rule 15)
 
-| Task                                           | Upstream                                                              | Downstream                                                                   | Lateral                                                              |
-| ---------------------------------------------- | --------------------------------------------------------------------- | ---------------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| P1.1 semantic gear tags                        | Pit climb/rigging verbs and item registries                           | Typecheck/build, skill bonuses, crossing creation                            | Item fixtures, M154 tests, docs                                      |
-| P1.2 hammer tag                                | Door spike intent and tag registries                                  | Spike success, item consumption                                              | Default/crypt registries, M156 test                                  |
-| P1.3 formatting/EOF                            | Formatter and diff checks                                             | CI acceptance                                                                | Documentation mirrors                                                |
-| P1.4 prompt-kit mirrors                        | Default campaign sources                                              | Validator Stage 8                                                            | AI prompt kit and generated artifacts                                |
-| P2.1 pit entry                                 | Jump, forced displacement, crossing collapse                          | Damage/death/prone/events                                                    | Pit fixtures and M152/M154 tests                                     |
-| P2.2 displacement commit                       | Walk, swap, Bull Rush, Charge, Jaunt, AI pathing                      | Footprint, spatial index, FOV, movement hooks, steps                         | Movement SSOT and tests                                              |
-| P2.3 context-aware traversal                   | All tile/bridge callers                                               | Pathing, Charge, Jaunt, swap                                                 | Crossing fixtures                                                    |
-| P2.4 Jaunt transaction                         | Target selection and pool budget                                      | Occupancy, resources, success/reaction state                                 | Squeezing and reaction tests                                         |
-| P2.5 elapsed local time                        | Turn start, rest, wait, spellbook study                               | Breath, light fuel, crossings, AI, hunger, death                             | Sync/async paths and saves                                           |
-| P2.6 status elapsed time                       | Normal and bulk status processing                                     | Secondary saves/damage, expiry, logs                                         | Poison/antitoxin fixtures                                            |
-| P2.7 field transmutation                       | Field spawn, spell impact, deployment                                 | Field count/damage/FOV/provenance                                            | Field rules and oil/fire fixtures                                    |
-| P2.8 interaction provenance                    | Intents, strikes, items, coatings, spells, reactions, statuses/fields | Damage/death/events/triggers/ledger/saves                                    | `sourcePath`, event fixtures, ECS/SSOT/docs                          |
-| P3.1, P3.2, P3.3, P3.4 Charge                  | Hotbar/AI/Apply, budget, displacement, attack routine                 | Attack count, AC, Pounce, moved distance, reactions                          | Charge condition and M152 tests                                      |
-| P3.5/P3.6 coating identity                     | Weapon profiles, strike construction, dip                             | Correct coating consumption, damage/status chain, source depletion           | Classic coating path and item fixtures                               |
-| P3.7/P3.8 deployment/floor hazards             | Apply, movement mode/speed, Charge                                    | Fields, Balance/attack/limp/halt, inventory                                  | Hazard descriptors and M154 tests                                    |
-| P3.9, P3.10, P3.11 objects/doors               | Spawn, hydration, attack/wear, open/break/repair                      | HP/ruined, tags/glyph/intents, FOV/passability                               | Door/item JSON, default showcase, durability tests                   |
-| P3.12 rigging                                  | Use Rope/ladder intents, inventory, recipes                           | Crossing entities, gear consumption, pathing                                 | Ladder item and crossing recipes                                     |
-| P3.13 study time                               | Transcribe action/UI                                                  | Rest/wait simulation and interruption                                        | World-clock docs/tests                                               |
-| P3.14–P3.16/P5.4 coating and spellbook content | Item descriptors, dip/deploy, spellbook drops/transcription           | Target/effect resolution, field definitions, learned spells/drop eligibility | Poison/oil/holy-water/caltrops content, caster fixtures, mod fixture |
-| P4.1/P4.8 disguise                             | Mask application, observation, faction queries                        | Hostility, ally relations, suspicion, dialogue                               | Shipped bandit/faction data and M156 tests                           |
-| P4.2, P4.3, P4.4 sound/light                   | Movement/combat/thunderstone, ignite/refuel, camp                     | AI alert/sleep/wake, verb UI, light grid, rest                               | Sound/light items and stealth/rest tests                             |
-| P4.5/P4.6 corpse                               | Death, semantic type, harvest                                         | Corpse, yield, inventory, decay, necromancy                                  | Subtype data, recipes, default content                               |
-| P4.7 religion                                  | Shrine/altar/dialogue/reaction intents                                | Favor/penance/atonement and actor state                                      | Deity/altar JSON and showcase                                        |
-| P4.9 lore                                      | Sight/inspect and Knowledge resolver                                  | Memory persistence and inspection projection                                 | Existing on-demand lore and tests                                    |
-| P5.1/P5.2 schemas/references                   | Loader/Zod and runtime resolution                                     | Consumables/statuses/rest config                                             | All campaigns, generator kit, validator                              |
-| P5.3/P5.5–P5.7 declarative providers           | Status/class/condition/religion content                               | Stacking, UMD, Charge, religion                                              | Rule registries and Rule 21 audit                                    |
-| P5.8–P5.11 showcase/docs/assets                | New systems and shared sprite packs                                   | Default playability, rendering, SSOT truth                                   | Default/crypt content, sprite references, milestones                 |
-| P6 integration/closure                         | Every public path                                                     | Regression/build/validator/manual evidence                                   | All mirrors, docs, saves, final matrix audit                         |
-
-## 4. Detailed Corrective Implementation Plan
+| Change | Upstream (Callers, Producers, Authors, Tests) | Downstream (Consumers, Renderers, Serializers, Schemas) | Lateral (Mirrors, Sibling Data, Docs, SSOT) |
+| :--- | :--- | :--- | :--- |
+| **1. Preact Runtime & `.tsx` Toolchain (M157)** | `package.json` (`preact`, dev `happy-dom`, `preact-render-to-string`), `tsconfig.json`, `vite.config.ts` | All new `.tsx` components under `src/rendering/ui/`; `presenter.ts` mounts `<AppUiRoot />` | `knip.json`, `scripts/ssot_parity.ts` (scan `.tsx` + cartridge subdir rules), `scripts/map-codebase.ts`, `scripts/check-file-length.ts`, `.dependency-cruiser.cjs`, `docs/ARCHITECTURE.md` |
+| **2. Unified `--ui-*` Tokens & 3 Themes (M157)** | `src/core/settings.ts` (`ConsoleThemePreference = 'auto' \| 'parchment' \| 'retro-crt' \| 'obsidian-brass'`), `console_theme.ts`, `index.html` (synced fonts) | All `src/styles/themes/*.css`, `primitives.css`, `views/*.css`, `[data-ui-theme]` / `[data-high-contrast]` / `[data-ui-scale]` / `[data-reduced-motion]` | `tests/console_ui_architecture.test.ts` (preserve `getConsoleThemeMode` / `setConsoleThemeMode` / `subscribeConsoleThemeChange` contract), `docs/UI_UX_STANDARDS.md`, `localStorage` settings schema backward-compat |
+| **3. `InputScopeManager`, `CommandRegistry` & `KeyChord` (M158)** | `session_controller.ts`, `input_handler.ts`, `modal_input.ts`, `shortcut_input.ts`, `inventory_input.ts`, `mouse_input.ts`, `settings.ts`, `classic_ui_registration`, `dnd35e_ui_registration` | Settings Keybind Matrix, `<Keycap>` badges across HUD/Modals/Help, `HelpModal` contextual commands, `localStorage` keybind v1→v2 migration | All 4 `public/data/campaigns/*/keybinds.json` (`default`, `shroudgarde`, `dnd35e-crypt`, `realms-of-shroudgarde`) remain backward-compatible via loader adapter; new `tests/input_scope_and_keymap.test.ts` |
+| **4. Shared Primitives, Live Focus & `DialogService` (M159)** | `modal_manager.ts`, `ui_store.ts`, `session_dom.ts`, `session_settings.ts`, `cartridge_ui_registry.ts` | `ConsoleModalHost.tsx`, `DialogHost.tsx`, `TooltipHost.tsx`, `ToastHost.tsx`; eliminates `src/utils/a11y.ts` stale trap & `modal.ui.ts` | `tests/canvas_mount.test.ts` (**MUST keep `#game-canvas-wrapper` DOM mount contract untouched**), `tests/dirty_domains.test.ts`, new `tests/ui_primitives_focus.test.tsx` |
+| **5. Contextual `F1` Help & Menus/Settings Rewrite (M160)** | `UIMode` (or transient `ui_store` Help overlay so `F1` works cleanly on top of ANY `UIMode`, including MainMenu, Modals, Targeting, and Editor!), `CartridgeUIDefinition.helpSections`, `session_settings.ts` | `HelpModal.tsx`, `MainMenu.tsx`, `RulesetSelectModal.tsx`, `CampaignSelectModal.tsx`, `GameOverModal.tsx`, `SettingsModal.tsx` | `docs/UI_UX_STANDARDS.md`, `docs/ssot/ssot_console.json`, removes static menu/settings overlays from `index.html` |
+| **6. HUD, `F6` HUD Focus, VerbMenu & Core Modals (M161–M162)** | `presenter.ts`, `hud_dock`, `hud_bottom_dock`, `console_dossier`, `console_inventory`, `trade.ui`, `dialogue.ui`, `quest.ui`, `factions.ui`, `investigation.ui`, `dossier.ui`, `debug.ui`, `verb_menu.ui` | Replaces all imperative HUD/modal DOM builders; consolidates `activeBank` into `ui_store.ts`; removes duplicate HP write & `.innerHTML` | `tests/hud_rest_and_display_name.test.ts`, `tests/currency_trade_and_campaign.test.ts`, `docs/ssot/ssot_console.json` |
+| **7. Cartridge Modals Rewrite & Legacy Eviction (M163–M164)** | `src/rulesets/{classic,dnd35e}/ui/*_ui_adapter.ts` & `dnd35e_quickcast_model.ts` (kept pure!) | Rewrites `Sheet`, `Spellbook`, `Quickcast`, `Inspector`, `CharBuilder`, `LevelUp`, `ClassicSheet`; strips legacy overlays from `index.html` and retires old `hud.css`/`modals.css`/`console_prototype.css` | `tests/dnd35e_phase26_ui_and_showcase.test.ts`, `tests/dnd35e_classes_builder.test.ts`, `docs/ssot/ssot_{console,classic,dnd35e}.json` |
+| **8. Phase 44 Campaign Editor Rewrite (M166–M169)** | `src/editor/campaign_editor.ts`, `src/editor/reference_index.ts`, `src/editor/campaign_validator.ts` (pure controller logic preserved!) | Rewrites `EditorShell`, `EditorToolbar`, `EditorSidebar`, `ValidationDock`, `ZodForm`, `AreaPainter`, `WorldGraph`, `DialogueEditor`, `FactionMatrix`, `TriggerComposer`, `SimLab/Fuzzer/BalanceLab` onto Phase 43 Primitives + `EditorScope` + `DialogService` | Retires `src/rendering/editor_ui.ts`, `src/styles/editor.css`, 24 editor `alert`/`confirm`/`prompt` calls, and legacy `knip.json` ignore entries |
 
 ---
 
-## Phase 1 — Restore Verification Gates
+## 5. Step-by-Step Architecture & Code-Level Specifications (`AGENTS.md` Step 5)
 
-### Step 1.1 — Correct the semantic inventory-gear helper calls (P1.1)
+### 5.1 Toolchain, Preact JSX & SSOT Parity Updates (Milestone 157)
 
-**Files:** `src/rulesets/dnd35e/spatial/terrain_traversal_resolver.ts`, relevant M154 fixtures.
+1. **`package.json`:**
+   - Runtime dependency: `"preact": "^10.25.0"` (~4KB gzipped).
+   - Dev dependencies (testing only): `"happy-dom": "^16.0.0"`, `"preact-render-to-string": "^6.5.0"`.
+2. **`tsconfig.json`:**
+   ```jsonc
+   {
+     "compilerOptions": {
+       // ...existing strict flags preserved untouched...
+       "jsx": "react-jsx",
+       "jsxImportSource": "preact"
+     }
+   }
+   ```
+3. **`vite.config.ts`:**
+   ```ts
+   export default defineConfig({
+     base,
+     esbuild: {
+       jsx: 'automatic',
+       jsxImportSource: 'preact'
+     },
+     // ...existing resolve, build, server, preview preserved...
+   });
+   ```
+4. **Directory Structure & Cartridge Isolation (`.dependency-cruiser.cjs` + `scripts/ssot_parity.ts`):**
+   ```text
+   src/rendering/ui/
+     core/           # ui_store.ts, console_theme.ts, AppUiRoot.tsx, cartridge_ui_registry.ts
+     primitives/     # Button.tsx, ModalShell.tsx, Panel.tsx, SplitPane.tsx, Toolbar.tsx,
+                     # Accordion.tsx, TreeList.tsx, Tabs.tsx, ListBox.tsx, GridNav.tsx,
+                     # Stepper.tsx, FormField.tsx, Input.tsx, Select.tsx, Chip.tsx, Badge.tsx,
+                     # Keycap.tsx, TooltipHost.tsx, DialogHost.tsx, ToastHost.tsx, focus_hooks.ts
+     menus/          # MainMenu.tsx, RulesetSelectModal.tsx, CampaignSelectModal.tsx,
+                     # GameOverModal.tsx, SettingsModal.tsx, KeybindMatrix.tsx
+     hud/            # HudRoot.tsx, VitalsCard.tsx, ChronosStrip.tsx, CommandDockCard.tsx,
+                     # TacticalScannerCard.tsx, ChronicleLogCard.tsx, BottomActionDock.tsx,
+                     # AlertsStack.tsx, VerbMenuPopover.tsx, HelpReminderChip.tsx
+     modals/         # ConsoleModalHost.tsx, HelpModal.tsx, ConsoleDossierView.tsx,
+                     # PaperDollWidget.tsx, CompactStashWidget.tsx, TradeModal.tsx,
+                     # DialogueModal.tsx, QuestsModal.tsx, FactionsModal.tsx,
+                     # InvestigationModal.tsx, NemesisDossierModal.tsx, LedgerModal.tsx, DebugOverlay.tsx
+     cartridges/
+       classic/      # classic_ui_registration.tsx (tier2_ui -> ssot_classic.json)
+       dnd35e/       # dnd35e_ui_registration.tsx, DnD35eSheetModal.tsx, DnD35eSpellbookModal.tsx,
+                     # DnD35eQuickcastOverlay.tsx, DnD35eCharBuilderModal.tsx, DnD35eLevelUpModal.tsx
+                     # (tier2_ui -> ssot_dnd35e.json)
+     editor/         # Phase 44: EditorShell.tsx, EditorToolbar.tsx, EditorSidebar.tsx,
+                     # ValidationDock.tsx, ZodFormRenderer.tsx, AreaPainter.tsx, etc.
+   ```
+   - Update `scripts/ssot_parity.ts`:
+     ```ts
+     // Scan both .ts and .tsx (excluding .d.ts)
+     } else if ((entry.endsWith('.ts') || entry.endsWith('.tsx')) && !entry.endsWith('.d.ts')) {
+     // Partition both legacy prefix and new cartridge folder paths during incremental migration
+     export function isDnd35eFile(filePath: string): boolean {
+       return (
+         filePath.startsWith('src/rulesets/dnd35e/') ||
+         filePath.startsWith('src/rendering/ui/dnd35e_') ||
+         filePath.startsWith('src/rendering/ui/cartridges/dnd35e/')
+       );
+     }
+     export function isClassicFile(filePath: string): boolean {
+       return (
+         filePath.startsWith('src/rulesets/classic/') ||
+         filePath.startsWith('src/rendering/ui/classic_ui_') ||
+         filePath.startsWith('src/rendering/ui/cartridges/classic/')
+       );
+     }
+     ```
+   - Update `.dependency-cruiser.cjs` `no-direct-cartridge-imports-outside-registry` and `no-cross-cartridge-ui-imports` regexes identically to include `src/rendering/ui/cartridges/(dnd35e|classic)/`.
+   - Update `knip.json` `"project"` to include `"src/**/*.{ts,tsx}"` and `"tests/**/*.{ts,tsx}"`, and `scripts/check-file-length.ts` / `scripts/map-codebase.ts` to include `.tsx`.
 
-- Keep the existing tag-only helper `actorInventoryHasItemTag`; do not recreate the undefined ID-aware helper.
-- Replace the three invalid calls with semantic capability tags already authored on content:
-  - `climbers_kit` → `climbing_kit`
-  - `ladder_10ft` → `ladder`
-  - `silk_rope` → `supple_rope`
-- Do not special-case item IDs. The authored ladder item is added with the complete rigging recipe in Phase 3.
+---
 
+### 5.2 Unified Semantic CSS Token & 3-Theme Contract (Milestone 157)
+
+Replace the 4 disconnected styling systems with one layered CSS pipeline imported from `src/index.css`:
+```css
+@import './styles/tokens.css';
+@import './styles/themes/parchment.css';
+@import './styles/themes/retro-crt.css';
+@import './styles/themes/obsidian-brass.css';
+@import './styles/a11y.css';
+@import './styles/layout.css';
+@import './styles/primitives.css';
+@import './styles/views/hud.css';
+@import './styles/views/menus.css';
+@import './styles/views/dossier.css';
+@import './styles/views/modals.css';
+@import './styles/views/dnd35e.css';
+@import './styles/views/editor.css';
+```
+
+**Canonical Token Categories (`src/styles/tokens.css`):**
+- **Surfaces:** `--ui-bg-canvas`, `--ui-bg-backdrop`, `--ui-bg-panel`, `--ui-bg-panel-alt`, `--ui-bg-elevated`, `--ui-bg-input`, `--ui-bg-hover`, `--ui-bg-selected`, `--ui-bg-toolbar` (Editor-ready!)
+- **Ink / Text:** `--ui-ink-primary`, `--ui-ink-secondary`, `--ui-ink-muted`, `--ui-ink-inverse`, `--ui-ink-heading`
+- **Borders & Focus:** `--ui-border-subtle`, `--ui-border-strong`, `--ui-border-accent`, `--ui-focus-ring`, `--ui-focus-ring-offset`
+- **Accents & Semantic Status:** `--ui-accent-primary`, `--ui-accent-secondary`, `--ui-status-hp`, `--ui-status-xp`, `--ui-status-success`, `--ui-status-warning`, `--ui-status-danger`, `--ui-status-info`
+- **Typography, Spacing, Elevation & Density:** `--ui-font-display`, `--ui-font-body`, `--ui-font-mono`, `--ui-radius-sm|md|lg`, `--ui-space-1..6`, `--ui-shadow-panel|popover|modal`, `--ui-z-hud|popover|modal|help|dialog|tooltip`, plus `[data-ui-density="compact"]` for dense Campaign Editor tables/forms.
+
+**Single Theme Authority (`src/rendering/ui/core/console_theme.ts`):**
 ```ts
-const hasClimbersKit = actorInventoryHasItemTag(state, entityId, 'climbing_kit');
-const hasLadder = actorInventoryHasItemTag(state, entityId, 'ladder');
-const hasSilkRope = actorInventoryHasItemTag(state, entityId, 'supple_rope');
+export type ConsoleThemeMode = 'parchment' | 'retro-crt' | 'obsidian-brass';
+export type ConsoleThemePreference = 'auto' | ConsoleThemeMode;
+
+export function resolveEffectiveConsoleTheme(
+  preference: ConsoleThemePreference,
+  cartridgeDefault: ConsoleThemeMode
+): ConsoleThemeMode {
+  return preference === 'auto' ? cartridgeDefault : preference;
+}
 ```
-
-**Focused proof:**
-
-- Typecheck and build succeed.
-- M154 pit-climb test passes with the authored climber's kit.
-- A new modded climbing tool carrying `climbing_kit` works without TypeScript changes.
-
-### Step 1.2 — Canonicalize the hammer capability tag (P1.2)
-
-**Files:** `src/systems/durability.system.ts`, item/tag registry fixtures.
-
-- Change `HAMMER_TOOL_ITEM_TAG` from `hammer` to the authored `hammer_tool`.
-- Remove the duplicate `'hammer'` fallback.
-- Keep the behavior tag-based so a new hammer item with `hammer_tool` works unchanged.
-
-**Focused proof:** the existing M156 spike-door test succeeds; a no-hammer actor still receives the authored failure message.
-
-### Step 1.3 — Restore formatting and whitespace hygiene (P1.3)
-
-**Files:** the three Prettier failures plus the two EOF-only documentation files.
-
-- Run Prettier on only:
-  - `src/rulesets/dnd35e/combat/floor_hazard_resolver.ts`
-  - `src/rulesets/dnd35e/skills/dungeon_skill_verbs.ts`
-  - `src/systems/durability.system.ts`
-- Remove only the extra EOF blank lines from:
-  - `docs/ARCHITECTURE.md`
-  - `docs/ROGUELIKE_RPG_SYSTEMS_REPORT.md`
-- Do not run whole-repository auto-formatting.
-
-### Step 1.4 — Regenerate and review AI prompt-kit mirrors (P1.4)
-
-**Files:** `ai-prompt-kit/default-campaign/{rules,areas,effects,status}.json`.
-
-- Run the canonical generator:
-
-```bash
-bun scripts/generate-ai-prompt-kit.ts
-```
-
-- Review the generated diff to confirm it mirrors the current default campaign and introduces no schema drift.
-- Re-run `bun run scripts/run-validator.ts`.
-
-### Phase 1 gate
-
-```bash
-bun x tsc --noEmit
-bun run format:check
-bun run lint:check
-bun run lint:arch
-bun run lint:deadcode
-bun test
-bun run build
-bun run scripts/run-validator.ts
-git diff --check
-```
-
-Expected result: all checks pass before Phase 2 begins.
+- Sets `document.documentElement.dataset.uiTheme = mode` (and mirrors `dataset.consoleTheme = mode` during migration until old CSS is retired in M164).
+- Removes dead `--console-*` inline property injection (keeping `getConsoleThemeTokens()` returning a typed metadata summary so `tests/console_ui_architecture.test.ts` remains cleanly supported or updated explicitly).
 
 ---
 
-## Phase 2 — Repair Engine Invariants and Establish Causal Propagation
+### 5.3 Scoped Input Engine, `CommandRegistry` & Browser-Safe `F*` Key Policy (Milestone 158)
 
-### Step 2.1 — Add the canonical interaction-chain contract (P2.8)
-
-**New files:** `src/types/interaction_provenance.types.ts`, `src/systems/interaction_provenance.system.ts`.
-
-**Modified contract files:** `src/types/events.types.ts`, `src/types/components/{actor,world,item}_components.types.ts`, `src/types/ruleset.types.ts`.
-
-Use a generic Tier 1 contract; Tier 2 may supply semantic frame values but must not define the chain's shape.
-
+#### A. `KeyChord` & `CommandDefinition` (`src/types/input.types.ts`)
 ```ts
-export interface InteractionChain {
-  readonly originatorEntityId: EntityId;
-  readonly frames: ReadonlyArray<InteractionFrame>;
+export type InputScopeId =
+  | 'rebind_capture'
+  | 'system_dialog'
+  | 'help_overlay'
+  | 'active_modal'
+  | 'hud_focus'
+  | 'targeting_inspect'
+  | 'world_gameplay'
+  | 'editor';
+
+export type CommandCategory =
+  | 'movement'
+  | 'combat_actions'
+  | 'hotbar'
+  | 'panels'
+  | 'cartridge'
+  | 'hud_camera'
+  | 'navigation'
+  | 'system'
+  | 'editor';
+
+export interface KeyChord {
+  /** Physical KeyboardEvent.code (preferred for digits/F-keys/arrows/Space/Escape). */
+  readonly code?: string;
+  /** Layout-aware lowercase KeyboardEvent.key (used for letter mnemonics like 'i', 'c', '?', '/'). */
+  readonly key?: string;
+  readonly ctrl?: boolean;
+  readonly shift?: boolean;
+  readonly alt?: boolean;
+  readonly meta?: boolean;
 }
 
-export type InteractionFrame =
-  | {
-      readonly kind: 'intent';
-      readonly intentType: IntentType;
-      readonly actorId: EntityId;
-      readonly targetId?: EntityId | undefined;
-    }
-  | { readonly kind: 'action'; readonly actionId: string; readonly actorId: EntityId }
-  | {
-      readonly kind: 'strike';
-      readonly attackerId: EntityId;
-      readonly defenderId: EntityId;
-      readonly strikeIndex: number;
-      readonly attackSource: string;
-    }
-  | {
-      readonly kind: 'item';
-      readonly itemEntityId: EntityId;
-      readonly itemId: string;
-      readonly role: 'weapon' | 'tool' | 'consumable' | 'deployed_source';
-      readonly slotId?: string | undefined;
-    }
-  | {
-      readonly kind: 'effect';
-      readonly effectId: string;
-      readonly effectKind: 'coating' | 'rider' | 'spell' | 'status' | 'reaction' | 'field_interaction';
-      readonly sourcePath?: string | undefined;
-    }
-  | { readonly kind: 'field'; readonly fieldEntityId: EntityId; readonly fieldType: string }
-  | {
-      readonly kind: 'trigger';
-      readonly triggerId: string;
-      readonly triggeringEntityId?: EntityId | undefined;
-    };
-```
-
-Canonical helpers:
-
-```ts
-export function createInteractionChain(originatorEntityId: EntityId): InteractionChain;
-export function appendInteractionFrame(chain: InteractionChain, frame: InteractionFrame): InteractionChain;
-export function findLastInteractionFrame<K extends InteractionFrame['kind']>(
-  chain: InteractionChain,
-  kind: K
-): Extract<InteractionFrame, { kind: K }> | undefined;
-export function resolveInteractionOriginator(chain: InteractionChain): EntityId;
-```
-
-Add `interaction?: InteractionChain | undefined` to `BaseGameEvent` and to persisted outcome types that can outlive their initiating action:
-
-- `DamageInstance`
-- `DeathComponent`
-- `ActiveStatusEffect`
-- `FieldComponent`
-- projectile/in-flight state where a delayed impact must retain its origin
-
-The optional fields exist only for legacy save/event compatibility. New actor-driven causal effects must receive a chain explicitly; they must not fall back to an invented source.
-
-Add a generic before-frame interception point to `RulesetContract`:
-
-```ts
-beforeInteractionFrame?(
-  state: GameState,
-  chain: InteractionChain,
-  frame: InteractionFrame
-): { readonly state: GameState; readonly prevented: boolean; readonly reason?: string | undefined };
-```
-
-After-effect behavior continues through existing domain events, now carrying the complete chain. The hook may modify state or veto the frame; it cannot mutate the immutable chain.
-
-**Migration order:**
-
-1. Add types/helpers with no behavior change.
-2. Add weapon instance identity to strike profiles.
-3. Construct root intent/action chains at Apply/combat entry points.
-4. Append strike/item/effect frames through combat and item resolvers.
-5. Persist chains on damage, death, status, field, and projectile state.
-6. Make reactions/trigger consumers read the chain rather than reconstruct source from unrelated IDs.
-7. Add a generic Ruleset frame hook and after-event assertions.
-8. Remove redundant source reconstruction once all producers use the chain.
-
-**Required invariant:** there is no mutable global “current attacker/source.” Each resolver receives and returns immutable context.
-
-### Step 2.2 — Commit every valid footprint placement and report it accurately (P2.2)
-
-**Files:** `src/systems/movement_displacement.ts`, `src/systems/movement.system.ts`, `src/types/ruleset.types.ts` if result types are shared.
-
-Extend `DisplacementResult` so callers can distinguish anchor travel from a valid in-place placement:
-
-```ts
-export interface DisplacementResult {
-  readonly state: GameState;
-  readonly moved: boolean;
-  readonly anchorMoved: boolean;
-  readonly stepsMoved: number;
-  readonly finalPos: { readonly x: number; readonly y: number };
-  readonly stopReason: DisplacementStopReason;
-  readonly collidedTileId?: string | undefined;
-  readonly collidedEntityId?: EntityId | undefined;
-  readonly events: ReadonlyArray<GameEvent>;
+export interface CommandDefinition {
+  readonly id: string;
+  readonly label: string;
+  readonly description: string;
+  readonly category: CommandCategory;
+  readonly scopes: ReadonlyArray<InputScopeId>;
+  readonly defaultBindings: ReadonlyArray<KeyChord>;
+  /** When true, fires even if focus is inside an editable input (strictly limited to Escape, F1, Ctrl+Enter, Ctrl+S). */
+  readonly allowInTextInput?: boolean;
+  /** When true, calls event.preventDefault() proactively (crucial for F1, F6, Tab, Arrows, Space). */
+  readonly preventDefault?: boolean;
+  readonly source: 'console' | 'editor' | `cartridge:${string}`;
 }
 ```
 
-- `moved` means a valid spatial/footprint change was committed.
-- `anchorMoved` means the anchor coordinate changed.
-- A rotation, squeeze change, or facing change at the same anchor is a successful move.
-- Apply a supplied `precomputedPlacement` before the teleport/non-adjacent branch, rather than discarding it.
-- Compare the committed placement with the previous footprint (width, height, facing, squeezing), not only `x/y`.
-- Vector displacement must count a committed same-anchor placement as one completed step and continue to the next bounded step.
-- Preserve full `PositionComponent` fields and update `spatialIndex`/`fovNeedsUpdate` exactly once per committed placement.
-
-**Focused proof:** reproduce the 2×1 east-facing Large actor rotating to 1×2 at the same anchor; movement succeeds, the footprint changes, and vector displacement continues.
-
-### Step 2.3 — Use one context-aware traversal query everywhere (P2.3)
-
-**Files:** `src/systems/movement_displacement.ts`, `src/systems/movement.system.ts`, `src/rulesets/dnd35e/combat/{immediate_reactions,charge_resolver}.ts`, AI pathing callers.
-
-- Every traversal check that can occur over a crossing must pass `state`, `x`, and `y` to `evaluateTileTraversal`.
-- Remove local `canTraverse` wrappers that reconstruct only tile metadata.
-- The kernel and direct callers must agree on bridge, rope, ladder, ice, difficult, hazard, and solid classification.
-- Charge validation and execution must use the same movement-mode/crossing context.
-
-**Focused proof:** Abrupt Jaunt, friendly swap, Charge, voluntary walk, and AI pathing all accept the same active bridge destination.
-
-### Step 2.4 — Make Abrupt Jaunt transactional and footprint-consistent (P2.4)
-
-**Files:** `src/rulesets/dnd35e/combat/immediate_reactions.ts`, displacement kernel.
-
-Use this order:
-
-1. Read the actor and pool availability.
-2. Validate the destination against the exact footprint that will execute.
-3. Attempt displacement on the pre-consumption state.
-4. If the kernel reports failure, return the pre-action state plus a failure message; consume no pool/action.
-5. If displacement succeeds, commit the pool/action charge on the returned state.
-6. Emit the Jaunt event with the interaction chain.
-
-Remove `skipOccupancyCheck: true` from this path. Teleport must validate and execute the same base/squeezed dimensions and must not overlap an actor or occupy a wall.
-
-### Step 2.5 — Assign exactly one pit-entry fall (P2.1)
-
-**Files:** `src/rulesets/dnd35e/spatial/terrain_traversal_resolver.ts`, `src/rulesets/dnd35e/cartridge/dnd35e_lifecycle_adapter.ts`, movement lifecycle hooks.
-
-- Remove the explicit post-displacement `applyPitFallConsequences` call from the failed-Jump path.
-- The movement-entry hook owns pit-entry consequences and compares the prior tile with the entered tile.
-- Turn start must not reapply initial fall damage merely because the actor remains in a pit.
-- Ongoing field/caltrop occupation effects remain valid and are not removed.
-- Falling into a pit from Jump, forced push, crossing collapse, or other displacement uses the same entry transition.
-
-**Focused proof:** one failed Jump creates one fall-damage instance; the following turn creates none unless a new fall occurs.
-
-### Step 2.6 — Share local elapsed-time semantics between normal and bulk time (P2.5)
-
-**Files:** `src/systems/world_time_skip.ts`, `src/systems/lifecycle.system.ts`, `src/systems/{breath,light_emitter,crossing,ai,status-effect}.system.ts`.
-
-Each domain owns its elapsed-time resolver. The bulk orchestrator calls those same resolvers rather than subtracting unrelated durations itself.
-
+#### B. Automatic `TextInputGuard` (`src/core/input/text_input_guard.ts`)
 ```ts
-export interface ActorElapsedTimeResult {
-  readonly state: GameState;
-  readonly turnsAdvanced: number;
-  readonly interruptedReason?: string | undefined;
+const NON_TEXT_INPUT_TYPES = new Set(['button', 'checkbox', 'radio', 'submit', 'reset', 'file', 'image']);
+
+export function isEditableEventTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  if (target.isContentEditable) return true;
+
+  const tag = target.tagName;
+  if (tag === 'TEXTAREA' || tag === 'SELECT') return true;
+  if (tag === 'INPUT') {
+    const inputType = (target as HTMLInputElement).type.toLowerCase();
+    return !NON_TEXT_INPUT_TYPES.has(inputType);
+  }
+  const role = target.getAttribute('role');
+  return role === 'textbox' || role === 'combobox' || role === 'searchbox' || role === 'spinbutton';
 }
 ```
+- **Invariant:** Whenever `isEditableEventTarget(event.target)` (or `document.activeElement`) is `true`:
+  - `InputScopeManager` skips **every** binding where `allowInTextInput !== true`.
+  - Typing `c`, `i`, `t`, `b`, `z`, `q`, `y`, `v`, `n`, `l`, `a–z`, digits, or `Space` in Character Creation Name/Title/Trait, Shop Search, Sprite Search, Settings Number inputs, Prompt Dialogs, or Editor forms **100% reaches the text input and NEVER triggers gameplay or modal shortcuts**.
+  - Pressing `Escape` blurs the text input first (or closes dialog on second press); `F1` still opens Contextual Help; `Ctrl+S` still saves in Editor; native `Ctrl+Z` inside an editor text input performs native text undo (while `Ctrl+Z` outside a text input performs campaign JSON-Patch undo!).
 
-Required domain resolvers:
+#### C. Priority `InputScopeManager` Dispatch (`src/core/input/input_scope_manager.ts`)
+- Single `window.addEventListener('keydown', handleGlobalKeyDown)` owned by `InputScopeManager` (replaces all 4 scattered listeners!).
+- Active scope stack is computed deterministically from `(uiStoreState, gameState.uiMode, targeting/inspect flags)`:
+  1. `rebind_capture` — captures next non-modifier keydown as a `KeyChord` (`Escape` cancels, `Backspace`/`Delete` clears slot).
+  2. `system_dialog` — in-app `Alert` / `Confirm` / `Prompt` (`Escape` cancels, `Enter` confirms when valid).
+  3. `help_overlay` — `F1` or `Escape` closes Help; `/` focuses search input; `Arrow`/`Tab` navigates sections.
+  4. `active_modal` — modal-local handlers + `Escape` pops `modal_manager` LIFO stack + `F1` opens contextual help.
+  5. `hud_focus` — `F6` cycles HUD landmarks (`BottomDock → Vitals/Chronos → CommandDock → Scanner → ChronicleLog`), `Arrows`/`Tab`/`Enter`/`Space` operate every stance, stepper, button, and tab; `Escape` exits HUD focus immediately back to map.
+  6. `targeting_inspect` — 4-way/8-way cursor movement, `Tab`/`Shift+Tab` cycles visible targets, `Enter` confirms, `v` opens verb menu on cursor tile, `Escape` cancels.
+  7. `world_gameplay` — 8-way movement, wait, interact, pickup, hotbar `1–0/-/=`, hotbar bank `Shift+Up`/`Shift+Down`, `\` fold/unfold HUD, `F6` HUD focus, `F1` Help, `Escape` Settings/Pause, plus all Console & Cartridge modal toggles.
+  8. `editor` — `Ctrl+Z`/`Ctrl+Shift+Z`/`Ctrl+Y` (when not in text input), `Ctrl+S` save, `F1` Editor Help, `F2` Playtest, `Escape` clear selection/tool.
 
-- breath/submersion countdown
-- light-emitter fuel and ignition/expiry
-- crossing duration/collapse
-- AI alertness decay
-- status primary/secondary elapsed stages
-- purely passive overlays/links that have no per-turn side effect
+#### D. Browser `F*`-Key & Default Collision Resolution Policy
+| Key / Chord | Command ID | Scope(s) | Browser Safety Note |
+| :--- | :--- | :--- | :--- |
+| `F1` | `system.toggle_help` | Global (`allowInTextInput: true`) | Intercepted via `event.preventDefault()` on `keydown`; suppresses browser help tab |
+| `F6` | `hud.cycle_focus` | `world_gameplay`, `hud_focus` | Intercepted via `event.preventDefault()`; suppresses browser address-bar focus jump |
+| `\` (`Backslash`) | `hud.toggle_fold_all` | `world_gameplay` | Replaces `Tab` so `Tab` stays standard for focus traversal & target cycling |
+| `Escape` | `system.escape_or_pause` | Global (context-dependent) | Closes Help/Dialog/Modal/HUD-Focus/Targeting, or opens Settings/Pause in `world_gameplay` |
+| `Shift+L` | `panel.ledger` | `world_gameplay`, `active_modal` | Resolves `l` collision with `move_east` |
+| `Shift+ArrowUp` / `Shift+ArrowDown` | `hotbar.bank_prev` / `hotbar.bank_next` | `world_gameplay` | Implements previously unimplemented hotbar bank switching |
+| `Numpad7/9/1/3` | `move.nw/ne/sw/se` | `world_gameplay`, `targeting_inspect` | 8-way diagonals (with optional "Classic Vi-Keys" preset in Settings) |
+| `Ctrl+S` / `F2` | `editor.save` / `editor.playtest` | `editor` (`Ctrl+S` `allowInTextInput: true`) | Prevents browser Save Page dialog; Editor-ready from Day 1 |
+| `F5`, `F11`, `F12`, `Ctrl+W/T/N/Tab` | *Explicitly Unbound* | Never default-bound | Preserves browser reload, fullscreen, DevTools, and tab management |
 
-Normal turn start calls the relevant resolver with one turn. Bulk rest/wait calls the same resolver with elapsed turns and preserves event/death boundaries. `shouldInterrupt` must observe the state after local timers for the elapsed chunk, not only after the entire wait.
+- **Backwards Compatibility:** Existing `localStorage` `PlayerSettings.keybinds` (v1 flat `Record<ActionType, string[]>`) and `public/data/campaigns/*/keybinds.json` are automatically normalized into v2 `Record<CommandId, KeyChord[]>` on load so zero user settings or campaign JSONs break.
 
-Replace the current blanket `fastForwardEntityDurations` behavior for statuses and fields with domain-owned advancement. Retain an optimized helper only for genuinely passive state with no per-turn consequences.
+---
 
-### Step 2.7 — Use one canonical status elapsed resolver (P2.6)
+### 5.4 Preact UI Bridge (`ui_store.ts`), Editor-Ready Primitives & Contextual `F1` Help (Milestones 159–160)
 
-**Files:** `src/systems/status-effect.system.ts`, `src/systems/world_time_skip.ts`.
+#### A. Thin Bridge Store (`src/rendering/ui/core/ui_store.ts`)
+- Holds immutable UI slice refs (`gameState`, `hasSave`, `activeBank`, `helpOpen`, `hudFocusZone`, `activeDialog`, `activeTooltip`, `toasts`, `settingsVersion`) + subscriber set (`useUiSelector` hook).
+- `presenter.ts` pushes updates to `ui_store` **only for dirty `PresentationDomain`s** — preserving all M141 dirty-domain performance gains so off-screen NPC turns trigger zero Preact re-renders!
+- Mounts `<AppUiRoot />` into `#ui-root` as a sibling of `#game-canvas-wrapper` inside `index.html`, keeping `tests/canvas_mount.test.ts` 100% intact.
 
-- Extract the elapsed-stage logic from the current one-turn status tick into a shared resolver.
-- The resolver increments `elapsedTurns`, evaluates `secondaryTriggerAfterTurns`, resolves the secondary save/effect once, applies per-turn damage/heal in the same ordering as normal turns, and expires the effect at the correct boundary.
-- Normal turn start and bulk advancement call the same resolver.
-- The interaction chain from the status application is retained and extended by the secondary-effect frame.
+#### B. Shared Primitive Kit (`src/rendering/ui/primitives/` — Gameplay + Phase 44 Editor-Ready)
+- **Layout & Chrome:** `ModalShell` (backdrop, header, close `[Esc]`, footer with `F1 Help` chip, live `useFocusTrap`), `Panel`, `SplitPane` *(resizable split for Character Builder, Trade, AND Phase 44 Editor Sidebar/Workspace)*, `Toolbar` *(Chronos strip, Shop bar, AND Editor Toolbar)*, `Accordion` *(Quickcast classes, Investigation, AND Editor Zod nested objects)*.
+- **Navigation & Data:** `Tabs` (Arrow Left/Right + `[`/`]` modal shortcut support), `ListBox` (`useRovingFocus` vertical list for Menus, Ruleset/Campaign, Trade, Quests, Factions, AND Editor Sidebar), `GridNav` (2D arrow nav for Paperdoll, 5-col Stash, Sprite Picker, Quickcast tiles, AND Editor Tile Palette), `TreeList` *(Nemesis hierarchies AND Editor Dialogue Tree)*.
+- **Controls & Forms:** `Button`, `IconButton`, `Stepper` (`[-][val][+]` with `ArrowLeft/Right` & `+/-` support for Power Attack, Point Buy, AND Editor numbers), `FormField`, `TextInput`, `NumberInput`, `Select`, `Checkbox`, `Chip`, `Badge`, `StatChip`, `Keycap` *(live `<kbd>` bound directly to `CommandRegistry`!)*.
+- **Global Services:** `DialogHost` + `dialogService.alert/confirm/prompt` (async Promise API replacing all 35 native calls), `TooltipHost` (supports both pointer hover AND keyboard-triggered inspect via `?` / `Alt+I`), `ToastHost` (non-blocking notifications for saves, exports, errors).
 
-**Focused proof:** a 20-turn secondary-only status triggered at turn 10 resolves during bulk advancement exactly as it does over ten normal turns.
-
-### Step 2.8 — Commit field transmutation as one transaction (P2.7)
-
-**Files:** `src/systems/field.system.ts`, field interaction descriptors.
-
-- Detect interactions before committing an incoming field.
-- For oil plus fire, commit one fire field representing the transmutation; do not spawn incoming fire and then spawn a second fire.
-- Preserve the interaction chain on the resulting field and append the field-interaction/effect frame.
-- Ensure one incoming fire produces one damage application per occupant/tick.
-
-### Phase 2 gate
-
-- Focused displacement, bridge, Jaunt, pit, elapsed-time, status, field, and provenance tests pass.
-- Full `bun test` passes.
-- Existing save fixtures remain loadable; legacy events without chains remain readable.
-- A new actor-driven attack always emits causal events with a non-empty chain.
-- Run the full eight-stage verification pipeline and update the SSOT map if new source files/owners were added.
-
-## Phase 3 — Correct Action Economy, Items, Objects, and Traversal Mechanics
-
-### Step 3.1 — Repair Charge strike selection, movement accounting, and condition timing (P3.1, P3.2, P3.3, P3.4)
-
-**Files:** `src/rulesets/dnd35e/combat/charge_resolver.ts`, `src/rulesets/dnd35e/cartridge/dnd35e_combat_adapter.ts`, `src/rulesets/dnd35e/equipment/weapon_profile_parser.ts`, `src/rulesets/dnd35e/combat/attack_routine.ts`.
-
-#### Strike selection
-
-A Charge is a Full-Round action. Without Pounce it permits one strike; Pounce permits the attacker's full routine. Distance must not be used to infer a full attack after Charge movement.
-
+#### C. Contextual & Cartridge-Aware `F1` Help Panel (`HelpModal.tsx`)
 ```ts
-const isFullAttack = isChargeAttack
-  ? hasPounce
-  : distanceMovedFt <= FIVE_FOOT_STEP_MAX_DISTANCE_FT && actionBudget.moveRemaining >= 1;
-```
-
-- Record actual Charge distance before `resolveDnD35eMeleeAttack` selects strikes.
-- Preserve `distanceMovedThisRoundFt` when `consumeFullRoundChargeBudget` clears the action budget.
-- Compute actual feet travelled from committed displacement steps, not only the originally validated path.
-
-#### Condition timing
-
-- Apply the authored `charging` condition immediately after Charge validation succeeds and before displacement.
-- Retain it on every displacement/interruption path.
-- Remove it at the charger's next turn through the existing condition lifecycle.
-- A Charge that never begins validation must not leave the condition behind.
-
-#### Movement mode and range
-
-- Compute range from the movement mode actually capable of traversing the validated path.
-- A fly-only actor uses fly speed; a land actor cannot borrow an unrelated swim/fly speed merely to extend Charge range.
-- The targeting cursor and validation must use the same range resolver.
-
-#### Equipped-weapon reach
-
-- Carry `reachFt` and `strikesAdjacent` into `DnD35ResolvedStrikeProfile`.
-- Resolve the closest legal attacking position along the straight path using the scheduled strike's authored reach profile.
-- A reach weapon that cannot strike adjacent must stop at its legal distance; a 10-foot reach may remain at 10 feet.
-- After a defensive reaction moves the target, re-evaluate the legal distance before striking.
-
-**Focused proof:**
-
-- Level-11 non-Pounce fighter: one Charge strike, 15 feet recorded.
-- Pounce fighter: full iterative routine.
-- Interrupted Charge: -2 AC remains until next turn.
-- Fly-only Charge uses fly range.
-- Glaive: no adjacent strike and legal 10-foot strike succeeds.
-
-### Step 3.2 — Carry the exact weapon instance through strikes and coating effects (P3.5, P3.6, P2.8)
-
-**Files:** `src/rulesets/dnd35e/equipment/weapon_profile_parser.ts`, `src/rulesets/dnd35e/equipment_physics.ts`, `src/rulesets/dnd35e/combat/attack_routine.ts`, `src/rulesets/dnd35e/combat/combat_exchange_pipeline.ts`, `src/rulesets/dnd35e/combat/floor_hazard_resolver.ts`.
-
-Extend weapon profiles and strikes with instance identity:
-
-```ts
-export interface EquippedWeaponProfile {
-  // existing fields...
-  readonly itemEntityId?: EntityId | undefined;
-  readonly slotId?: string | undefined;
-  readonly limbGroupId?: string | undefined;
+export interface UIHelpEntry {
+  readonly title: string;
+  readonly summary: string;
+  readonly commandIds?: ReadonlyArray<string>;
 }
 
-export interface DnD35ResolvedStrikeProfile {
-  // existing fields...
-  readonly weaponEntityId?: EntityId | undefined;
-  readonly weaponSlotId?: string | undefined;
+export interface UIHelpSection {
+  readonly id: string;
+  readonly title: string;
+  readonly icon?: string;
+  /** Optional scopes where this section is promoted to the "Current Context" tab. */
+  readonly contextScopes?: ReadonlyArray<InputScopeId>;
+  readonly entries: ReadonlyArray<UIHelpEntry>;
 }
 ```
-
-- `parseEquippedItem` assigns `slot.equippedItem` as `itemEntityId`.
-- Synthesized off-hand/double-weapon profiles retain the same entity identity but carry a distinct slot/limb identity.
-- The exchange pipeline passes `strike.weaponEntityId` to coating resolution.
-- Natural and unarmed strikes carry no weapon entity and never consume an unrelated equipped weapon's coating.
-- The coating frame records the exact item entity, content ID, slot, and application source.
-- Coating consumption removes/decrements only that item's coating.
-
-### Step 3.3 — Make dip and hazard deployment declarative and consumptive (P3.6, P3.7, P5.4)
-
-**Files:** base item/campaign schemas, D&D item schemas, `src/systems/apply.system.ts`, `src/rulesets/dnd35e/combat/floor_hazard_resolver.ts`, `src/systems/inventory.system.ts`.
-
-Add generic authored descriptors rather than D&D-specific ID checks:
-
-```ts
-export const CoatingDefinitionSchema = z.object({
-  effectId: z.string().optional(),
-  statusId: z.string().optional(),
-  bonusDamage: z.object({ dice: z.string(), damageType: z.string() }).optional(),
-  charges: z.number().int().positive().default(1),
-  durationTurns: z.number().int().positive(),
-  targetCondition: EntityTagConditionSchema.optional(),
-  allowedTargetTags: z.array(z.string()).optional()
-});
-
-export const DeploymentDefinitionSchema = z.object({
-  fieldId: z.string(),
-  placement: z.enum(['target_tile', 'adjacent_tile']),
-  consumeMode: z.enum(['item', 'charge']),
-  radiusTiles: z.number().int().positive().optional()
-});
-```
-
-- Reuse/extract the canonical `EntityTagConditionSchema`; do not create a second target-condition language.
-- Dip requires a generic weapon/ammunition capability. Authored item profiles decide eligibility.
-- On success, consume exactly one source charge/item according to the descriptor. The canonical helper searches the actor's inventory and equipment, decrements charges, and removes the entity when exhausted.
-- On an authored mishap, apply the descriptor's declared outcome; do not silently consume or preserve by accident.
-- Deployment requires the referenced field definition to exist in the loaded registry. Missing definitions fail validation/load rather than being created at runtime.
-- A deployed source is consumed or transferred exactly once. Repeating the same deployment cannot leave the original bag/item available.
-- Remove `itemId.includes('poison'/'venom')`, the generic `alignment:evil` fallback, and hardcoded field IDs/durations/glyphs/colors.
-
-### Step 3.4 — Give floor hazards movement context and correct SRD parameters (P3.8)
-
-**Files:** `src/rulesets/dnd35e/combat/floor_hazard_resolver.ts`, displacement context/mode definitions, DAG projection.
-
-- Pass movement mode, effective speed, and running/charging state into hazard resolution.
-- Caltrops:
-  - half-speed or slower movement is safe;
-  - charging/running movement that is hit halts the actor;
-  - foot attack AC excludes equipment armor, shield, and deflection but includes Dexterity and natural armor;
-  - footwear retains its authored armor contribution.
-- Marbles:
-  - normal Balance DC from authored content;
-  - charging/running DC from authored content;
-  - movement context reaches the Balance resolver.
-- Add a canonical DAG query for the foot-attack AC rather than reconstructing it from unrelated AC fields.
-- Propagate a hazard-halt result through displacement so a charging actor stops immediately.
-
-### Step 3.5 — Hydrate and integrate real structural objects and doors (P3.9, P3.10, P3.11)
-
-**Files:** entity/item schemas, `src/core/ecs/ecs_spawner.ts`, `src/core/ecs/ecs_item_promoter.ts`, `src/systems/durability.system.ts`, `src/rulesets/dnd35e/combat/object_durability_resolver.ts`, D&D melee/projectile adapters, campaign door reactions.
-
-#### Hydration
-
-- Add authored `structural` data to generic entity/item definitions: material/hardness/HP/break DC/object size/door flag/spell storage as applicable.
-- Spawner and item promoter hydrate `StructuralComponent` from that data.
-- Enhancement bonuses use the canonical effective-stat resolver.
-
-#### Object attacks and wear
-
-- Route attacks against a Structural target through `applySrdObjectAttackDamage` before the Fighter-only living-target guard.
-- Apply the authored energy/ranged multipliers, hardness bypasses, wear chance, damage, and break/ruined transition.
-- Cover melee and projectile/energy object targets symmetrically.
-
-#### One effective maximum
-
-- `resolveEffectiveStructuralStats` becomes the single source for effective maximum HP, hardness, and break threshold.
-- Damage, repair, ruin, and break tests use that effective maximum. Repair cannot clamp a +2 item back to its base maximum.
-
-#### Door presentation
-
-- Structural open/close performs its lock/spike/jam guards, updates `StructuralComponent`, then invokes the existing declarative reaction/consequence path.
-- Add an authored broken-door reaction using the existing `impact` verb; its consequences remove solid/opaque, set the broken glyph/tags/intents, and invalidate FOV.
-- Do not hardcode glyphs, tile IDs, or tag arrays in TypeScript.
-- Open, close, break, and repair all leave movement/FOV/render state consistent with the authored door state.
-
-### Step 3.6 — Replace the rigging shortcut with complete recipes (P3.12)
-
-**Files:** crossing schemas/rules, `src/rulesets/dnd35e/spatial/terrain_traversal_resolver.ts`, `src/rulesets/dnd35e/skills/dungeon_skill_verbs.ts`, modular item content.
-
-Add a Tier 3 crossing recipe descriptor:
-
-```ts
-export const CrossingRecipeSchema = z.object({
-  crossingKind: z.string(),
-  requiredTagsAll: z.array(z.string()),
-  requiredTagsAny: z.array(z.string()).optional(),
-  anchorRule: z.object({ maxRangeTiles: z.number().int().positive(), requiresClearAnchor: z.boolean() }),
-  consumeMode: z.enum(['install_item', 'consume_item', 'consume_charge']),
-  skillCheck: z.object({ skillId: z.string(), dc: z.number().int().positive() }).optional()
-});
-```
-
-- A rope crossing requires the authored rope plus grappling-hook capabilities.
-- A ladder crossing requires an authored ladder item; add the missing modular ladder content with semantic tags.
-- Validate the gap/anchor, range, line, and recipe requirements before creating a crossing.
-- Consume or transfer each required item exactly as the recipe declares. Installed gear belongs to the world crossing and cannot be reused.
-- Prevent duplicate crossing creation for the same tile/recipe.
-- Append item, recipe, and crossing frames to the interaction chain.
-
-### Step 3.7 — Validate and route spellbook study/drop behavior (P3.13, P3.15, P3.16)
-
-**Files:** `src/rulesets/dnd35e/magic/spellbook_loot.ts`, death/drop assembly, spellbook UI/intents.
-
-#### Study time
-
-- Replace direct `globalTurn += studyHours * ...` with the canonical bulk/world-time advancement helper.
-- Use the existing hour/round conversion constant; do not duplicate the conversion.
-- Run all Phase 2 local elapsed systems for the study duration.
-- Preserve interruption/partial-study behavior.
-
-#### Transcription selection
-
-- Validate the requested `spellId` against the source book's `storedSpells`.
-- Validate that the actor has an eligible spellbook/class track and that the spell is available to that class (using spell `levelByClass`, domain, or access metadata).
-- Only then add the spell to the actor's class spellbook/known-spell state.
-- Record the source book item and learned spell in the interaction chain.
-
-#### Drop assembly
-
-- Build a spellbook drop only for a deceased actor with an eligible spellbook-bearing caster track.
-- Populate spells from that actor's actual class spellbook/prepared state.
-- Do not treat every known/prepared spell as an arcane book and do not give divine-only casters arbitrary arcane spellbooks.
-- Use authored rarity/bonus rules for the generated book.
-
-### Phase 3 gate
-
-- Charge, coating, deployment, floor-hazard, structural object/door, rigging, and spellbook focused suites pass.
-- Real spawned objects—not manually attached components—take damage, wear, repair, open, break, and affect movement/FOV.
-- Coating consumption targets the exact striking weapon instance.
-- Every consumed/deployed/installed item is present exactly once in its intended location.
-- Every new actor-driven effect carries the complete interaction chain.
-- Run the full eight-stage verification pipeline.
+- **3 Clean Tabs inside `HelpModal` (`F1`):**
+  1. **This Screen (Contextual):** Automatically lists controls & tips for the exact active `InputScope` + `UIMode` (e.g. World Exploration, Targeting, Inventory/Paperdoll, Trade, Character Builder, or Campaign Editor).
+  2. **All Keybinds (Live Searchable):** Displays every registered Console + active Cartridge command grouped by category with live user-rebound `<Keycap>`s and a "Customize in Settings" button.
+  3. **Ruleset Guide (Cartridge-Driven):** Renders declarative `helpSections` from `CartridgeUIDefinition` (e.g. D&D 3.5e Action Economy, Stances, Vancian vs Spontaneous Casting, Charge/Grapple/Stealth; Classic Ruleset basics) — zero hardcoded ruleset text in Console!
+- **Persistent `F1 Help` Reminder:** Subtle clickable `<HelpReminderChip />` (`[F1] Help`) anchored in the bottom-right HUD corner during gameplay and in `ModalShell` footers.
 
 ---
 
-## Phase 4 — Complete Production Integrations
-
-### Step 4.1 — Wire and correct disguise perception (P4.1, P4.8)
-
-**Files:** `src/utils/faction.ts`, `src/systems/disguise.system.ts`, Apply/skill verb resolvers, observation/AI paths, faction/mask content.
-
-Production paths:
-
-- Apply a disguise through a generic item/apply descriptor, not a test-only helper.
-- Evaluate suspicion when an observer performs Spot/observation or otherwise scrutinizes the disguised actor.
-- Both PCs and NPCs use the same mask application and scrutiny services.
-
-Faction precedence:
-
-1. The subject's own faction/attitude remains its actual state.
-2. Resolve the target's perceived faction from a valid target mask.
-3. Personal knowledge/grudges that identify the target may override the mask.
-4. A valid mask suppresses baseline faction/attitude hostility toward the target.
-5. If the mask is absent, blown, or invalid, use the actual faction/attitude relationship.
-
-Do not mutate the observer's faction and do not treat the observer as disguised merely because the target is.
-
-**Focused proof:** shipped Bandit King hostility is suppressed by a matching bandits mask; the disguised actor remains friendly to its real ally; personal recognition still defeats the mask.
-
-### Step 4.2 — Connect sound, sleeping awareness, and light interactions (P4.2, P4.3, P4.4)
-
-**Files:** `src/systems/sound.system.ts`, `src/systems/rest.system.ts`, movement/combat/thunderstone producers, `src/systems/apply.system.ts`, `src/rendering/ui/verb_menu.ui.ts`, `src/systems/light_emitter.system.ts`, `src/systems/rest.system.ts`.
-
-#### Sound and sleep
-
-- Route hearing through the canonical sleeping-awareness service.
-- A detected sound wakes a sleeping actor and applies the authored sleeping Listen penalty before the perception check.
-- Wire voluntary movement, stealth movement, combat attempts/hits, thunderstones, and existing door/object sounds through `emitSoundEvent`.
-- Pass the interaction chain into sound events.
-
-#### Ignite/refuel verb discovery
-
-- `getValidVerbsForTarget` and `processApplyIntent` must call the same generic fire-start/light predicate.
-- Project `ignite` when a valid light source and fire-start capability are present.
-- Keep lantern refueling reachable through the existing generic dip path.
-
-#### Camp illumination
-
-- Add a canonical active-illumination query in `light_emitter.system.ts`.
-- A camp light must be lit, retain fuel, and illuminate the camp position.
-- Include carried and ground emitters; exclude unlit/depleted emitters.
-- Use that query for camp preparedness and ambush-risk reduction.
-
-### Step 4.3 — Make corpse creation and harvesting real (P4.5, P4.6)
-
-**Files:** `src/systems/corpse.system.ts`, `src/systems/death.system.ts`, semantic type projection/Ruleset hook, Apply/verb UI, harvest recipes and item content.
-
-- Resolve corporeality from canonical semantic type/subtype data. Incorporeal elemental subtypes do not create physical corpses.
-- Add a user-visible `harvest` verb to the central `Verb`/`VERBS` contract and project it for eligible corpses.
-- Add a declarative harvest recipe: corpse tag → item template, quantity, required tool tag, destructive/non-destructive behavior, and source corpse.
-- A successful harvest spawns the yield and transfers it to the actor's inventory or the corpse tile.
-- A required tool must be present and is consumed only when the recipe says so.
-- Mark a non-destructive tag as harvested so it cannot yield twice; a destructive recipe removes the corpse.
-- Record corpse, tool, recipe, yield, and source entity in the interaction chain.
-
-### Step 4.4 — Wire religion and automatic lore persistence (P4.7, P4.9)
-
-**Files:** `src/systems/religion.system.ts`, altar/shrine content and Apply reactions, `src/rulesets/dnd35e/skills/monster_lore_tracker.ts`, sight/inspect paths.
-
-#### Religion
-
-- Add a user-visible `pray` verb/reaction path for altars and shrines.
-- The altar/shrine content supplies the deity/patron, accepted offerings, taboo data, favor adjustments, penance amount, and atonement result.
-- `recordDeityFavorDelta` and taboo recording require an explicit deity/patron. Do not silently create `pelor`.
-- An actor without an established patron cannot accrue favor/penance against an unrelated altar.
-- Wire prayer/offering/taboo actions to the canonical religion component.
-
-#### Lore
-
-- Invoke `evaluateAndRecordMonsterLore` on the first player sighting and on explicit inspection.
-- Retain the existing on-demand Inspect/Dossier lore projection; persistence must not duplicate it.
-- Store the observer's learned knowledge in the canonical Knowledge/Memory components.
-- Use the observer/target interaction chain for the learned-lore event.
-
-### Phase 4 gate
-
-- Every newly integrated mechanic is reachable through a production intent/verb or authored event, not only direct test calls.
-- UI verb discovery and execution use the same validity predicates.
-- PC and NPC paths use the same service implementations where the mechanic applies to both.
-- Full `bun test`, build, and validator pass.
-
-## Phase 5 — Restore Declarative Purity, Campaign Parity, and SSOT Truth
-
-### Step 5.1 — Separate full rest configuration from partial area overrides (P5.2)
-
-**Files:** `src/types/campaign/world.ts`, `src/systems/world_clock.system.ts`, area JSON fixtures.
-
-Define shared field shapes once, then create two schemas:
-
-```ts
-const RestPressureFields = {
-  safeRest: z.boolean(),
-  ambushChancePerWatch: z.number().min(0).max(1),
-  watchDurationHours: z.number().positive(),
-  schemeTickMultiplier: z.number().positive(),
-  respawnRateMultiplier: z.number().min(0),
-  alarmDecayTurns: z.number().int().nonnegative()
-};
-
-export const RestPressureConfigSchema = z.object({
-  safeRest: RestPressureFields.safeRest.default(false),
-  ambushChancePerWatch: RestPressureFields.ambushChancePerWatch.default(0.15),
-  watchDurationHours: RestPressureFields.watchDurationHours.default(2),
-  schemeTickMultiplier: RestPressureFields.schemeTickMultiplier.default(1),
-  respawnRateMultiplier: RestPressureFields.respawnRateMultiplier.default(1),
-  alarmDecayTurns: RestPressureFields.alarmDecayTurns.default(50)
-});
-
-export const RestPressureOverrideSchema = z.object(RestPressureFields).partial();
-```
-
-- `rules.json` uses the complete config schema.
-- `AreaDefinition.restPressure` uses the partial override schema.
-- Runtime resolves `{ ...campaignConfig, ...areaOverride }` only after parsing the area as a true partial object.
-
-**Focused proof:** an area specifying only `safeRest` inherits the campaign's watch duration, ambush chance, scheme multiplier, respawn multiplier, and alarm decay.
-
-### Step 5.2 — Promote shared antitoxin dependencies and validate every campaign (P5.1)
-
-**Files:** `public/data/rulesets/dnd35e/effects.json`, `public/data/rulesets/dnd35e/status.json`, D&D campaign status/effect mirrors, loader/validator.
-
-- Add `antitoxin_dose` and `antitoxin` to D&D ruleset base content, which the loader already merges before campaign overrides.
-- Remove redundant D&D campaign copies after the shared base is verified.
-- Every D&D campaign that can load the antitoxin item must resolve the effect and status.
-- Extend validator/reference checks to cover:
-  - system/campaign item consumable → effect;
-  - effect/status → status;
-  - field/deployment descriptor → field definition;
-  - crossing recipe → required item/tag capability;
-  - wand → spell;
-  - spellbook drop → stored spell.
-
-**Focused proof:** loading Realms of Shroudgarde resolves antitoxin item/effect/status together; drinking it consumes the vial and applies the authored effect.
-
-### Step 5.3 — Model antitoxin as a typed save modifier (P5.3)
-
-**Files:** status schema, D&D status JSON, DAG/save resolver, `dnd35e_ruleset.ts`.
-
-Add generic status metadata and modifiers:
-
-```ts
-export const StatusSaveModifierSchema = z.object({
-  saveType: z.enum(['fort', 'dex', 'con', 'wis', 'int', 'cha']),
-  bonusType: z.string(),
-  value: z.number(),
-  effectTagsAll: z.array(z.string()).optional()
-});
-```
-
-- Add `tags` and `saveModifiers` to `StatusEffectDefinitionSchema`.
-- Author poison with `tags: ['poison']`.
-- Author antitoxin with a Fortitude/alchemical/+5 modifier scoped to `effectTagsAll: ['poison']`.
-- Project status modifiers into the typed modifier/DAG pipeline with `sourcePath: 'status:<id>'`.
-- Resolve the secondary poison save through the normal save total; remove the manual `hasResistanceStatus ? 5 : 0` branch.
-- Preserve generic `resistedByStatusIds` only if another consumer still uses it; do not use it to carry numeric bonuses.
-
-### Step 5.4 — Make wand activation class-list driven (P5.5)
-
-**Files:** item schema, wand JSON, `src/rulesets/dnd35e/skill_verbs.ts`, `src/systems/zap.system.ts`, `RulesetContract`.
-
-- Add a generic `spellId` to the zappable/wand descriptor and author it on both wands.
-- Change the Ruleset hook to receive the wand item entity ID, or pass the resolved spell ID explicitly.
-- Add a generic class capability such as `spellTrigger: { enabled: true }` to class definitions rather than maintaining a class-ID array in TypeScript.
-- A Spell Trigger actor may activate a wand only when the wand's spell is available to that actor's class/track through authored `levelByClass`, domain, or access metadata.
-- Otherwise use the existing UMD check.
-
-### Step 5.5 — Make Charge-blocking conditions declarative (P5.6)
-
-**Files:** condition schema/content, Charge resolver, condition effect/rule-override resolver.
-
-- Add authored qualitative rule overrides to immobilizing conditions, for example `ruleKey: 'blocks_charge', value: true`.
-- Remove `CHARGE_BLOCKING_CONDITIONS` from `charge_resolver.ts`.
-- Charge validation reads the actor's active condition rule overrides through the canonical condition resolver.
-- A newly authored immobilizing condition can block Charge without TypeScript changes.
-
-### Step 5.6 — Remove implicit religion identities and values (P5.7)
-
-**Files:** `src/systems/religion.system.ts`, deity/altar/shrine content.
-
-- `recordDeityFavorDelta` requires an explicit deity/patron when no religion component exists; it returns failure instead of defaulting to Pelor.
-- Taboo IDs, penalties, and favor values come from authored deity/patron/altar data.
-- `atonePenanceAtAltar` receives the altar's declared favor/penance values rather than relying on a TypeScript default.
-- The generic `apply`/`pray` reaction path supplies the target's authored deity/patron.
-
-### Step 5.7 — Turn the default campaign into a live feature showcase (P5.8)
-
-**Files:** `public/data/campaigns/default/` content and smoke tests.
-
-Add classic-ruleset-appropriate, actively usable content for every new engine feature:
-
-- light source and fire-start capability for real ignition;
-- structural door with passability/FOV behavior;
-- corpse and a harvestable target/tool/yield;
-- shrine/altar and religious interaction;
-- disguise item/capability and an observer path;
-- rope/hook/ladder crossing content;
-- coating/hazard content using generic descriptors;
-- authored Structural/spellbook-adjacent showcase where the classic ruleset supports it.
-
-Each feature must be reachable from the default campaign's starting content, not merely represented by an unused schema.
-
-### Step 5.8 — Reconcile documentation, milestones, decisions, and SSOT (P5.9, P5.11)
-
-**Files:** `docs/ARCHITECTURE.md`, `docs/MILESTONES.md`, `docs/DECISIONS.md`, `docs/SSOT_CONSOLE.md`, `docs/SSOT_DND35E.md`, SSOT JSON registries, `docs/research_notes.md`, this plan.
-
-- Correct current component names to the canonical code contract:
-  - `spikedByEntityId`, not `spikedCount`;
-  - `decayTurn`, not `freshnessTurns`;
-  - `deityOrPatronId`, `favorScore`, `penanceDebt`, `taboosViolated`;
-  - `disguiseCheckTotal`, not `disguiseCheckResult`.
-- Document the interaction-chain contract separately from Rule 19 `sourcePath`.
-- Update ARCHITECTURE only after the implemented behavior matches it.
-- Keep M150–M156 completion status qualified until Phase 6 passes.
-- Add a DECISIONS entry explaining causal-chain ownership, persistence, and generic frame interception.
-- Regenerate SSOT maps after adding or moving source files:
-  - `bun scripts/map-codebase.ts`
-- Correct the `computeActorCarriedWeightLbs` JSDoc to match the current one-item-entity-per-entry model; do not add an unapproved stack model.
-
-### Step 5.9 — Remove or register duplicate campaign sprite sheets (P5.10)
-
-**Files:** the eight added campaign PNG copies and theme/sprite references.
-
-- Confirm that both campaigns reference the shared `32rogues` pack and have no campaign-local sheet consumer.
-- Remove the byte-identical unreferenced copies.
-- If a campaign-local override is intended instead, register it in theme data and add rendering/load tests. Do not retain both unused and active copies.
-
-### Phase 5 gate
-
-- All five campaigns load with valid schemas and complete references.
-- The New Content Mod fixture proves the new declarative paths require no TypeScript edits.
-- Default-campaign smoke scenarios exercise every new feature.
-- Documentation and SSOT describe implemented behavior, not intended behavior.
-- Full eight-stage verification and SSOT parity pass.
+## 6. Proposed Milestone Breakdown for `docs/MILESTONES.md` (Phases 43 & 44)
+
+### 🚀 Phase 43: Unified Preact UI Architecture, Semantic Theming, Full Keyboard Mapping & Gameplay UI Rewrite
+
+*Rebuilds the entire Gameplay UI and Input layer onto Preact (~4KB), a unified 3-theme Semantic CSS Token contract (`parchment`, `retro-crt`, `obsidian-brass`), a scoped `InputScopeManager` + `CommandRegistry` with automatic text-input protection, a contextual `F1` Help Panel, and Editor-ready shared primitives.*
+
+- **Milestone 157: UI Runtime Foundation, `.tsx` SSOT Parity & 3-Theme Semantic Token Engine**
+  - Add `preact` (and test devDeps `happy-dom`, `preact-render-to-string`), enable automatic JSX in `tsconfig.json` and `vite.config.ts`, mount `<AppUiRoot />` cleanly beside `#game-canvas-wrapper`, and upgrade `scripts/ssot_parity.ts`, `scripts/map-codebase.ts`, `scripts/check-file-length.ts`, `knip.json`, and `.dependency-cruiser.cjs` for `.tsx` and `src/rendering/ui/cartridges/{classic,dnd35e}/`.
+  - Author `src/styles/tokens.css` (`--ui-*` semantic + Editor-density tokens), `themes/{parchment,retro-crt,obsidian-brass}.css`, and `a11y.css` (UI scale, high contrast, reduced motion).
+  - Unify `console_theme.ts` as single theme authority (`auto | parchment | retro-crt | obsidian-brass`), sync `index.html` fonts and `docs/UI_UX_STANDARDS.md`, and remove unconditional theme overwrites.
+- **Milestone 158: Scoped `InputScopeManager`, `TextInputGuard`, Declarative `CommandRegistry` & Full Keymap Engine**
+  - Implement `InputScopeManager` (8-tier priority stack), `TextInputGuard` (`isEditableEventTarget`), `CommandRegistry` (Console + Cartridge + Editor commands, multi-slot `KeyChord`s with modifiers, scoped conflict detection, `event.code`/`event.key` normalization, browser-safe `F*`-key `preventDefault()` policy).
+  - Fix all default collisions (`Shift+L` Ledger, `\` Fold HUD reclaiming `Tab`, `Escape` Pause/Settings, `Shift+Up/Down` Hotbar Banks, `F1` Help, `F6` HUD Focus, Numpad `7/9/1/3` 8-way diagonals, selectable `Default Modern` / `Classic Vi-Keys` presets) and migrate v1 `localStorage` & `keybinds.json` losslessly.
+  - Add comprehensive headless test suite (`tests/input_scope_and_keymap.test.ts`) verifying zero text-input hijacking, modifier chords, scope precedence, conflict detection, and cartridge rebinding.
+- **Milestone 159: Editor-Ready Shared Primitive Kit, Live Focus Hooks, `ConsoleModalHost` & `DialogService`**
+  - Build `src/rendering/ui/core/ui_store.ts` (`PresentationDomain`-gated Preact bridge) and full shared primitive kit (`ModalShell`, `Panel`, `SplitPane`, `Toolbar`, `Accordion`, `Tabs`, `ListBox`, `GridNav`, `TreeList`, `Button`, `IconButton`, `Stepper`, `FormField`, `TextInput`, `NumberInput`, `Select`, `Checkbox`, `Chip`, `Badge`, `StatChip`, `Keycap`, `TooltipHost`, `ToastHost`).
+  - Build live `useFocusTrap` (dynamic DOM query + focus restoration) and `useRovingFocus` hooks, replacing stale `src/utils/a11y.ts`.
+  - Build `ConsoleModalHost.tsx` and async in-app `DialogService` + `DialogHost.tsx`, replacing `modal.ui.ts` and all gameplay `alert()`/`confirm()`/`prompt()` calls (`session_dom.ts`, `session_settings.ts`).
+  - Add Preact + `happy-dom` component tests (`tests/ui_primitives_focus.test.tsx`).
+- **Milestone 160: Contextual `F1` Help Panel, Menus, Selection Flows & Full Keybind Matrix Settings Rewrite**
+  - Build `HelpModal.tsx` (`F1` global contextual help, live searchable keymap, declarative `CartridgeUIDefinition.helpSections`) and persistent clickable `HelpReminderChip` (`[F1] Help`).
+  - Rewrite `MainMenu`, `RulesetSelectModal`, `CampaignSelectModal`, `GameOverModal`, `LoadingOverlay`, and `SettingsModal` (including multi-slot `KeyChord` capture modal, conflict badges, scope filters, keybind presets, live 3-theme / UI scale / tileset / auto-pause controls, and Credits & Attributions) with 100% keyboard navigation.
+- **Milestone 161: Tactical Floating HUD, `F6` Keyboard HUD Focus Mode & Context Verb Popover Rewrite**
+  - Rewrite `HudRoot`, `VitalsCard` (eliminating duplicate HP bar write), `ChronosStrip` (TB/RTwP, speed, camera rotate/3D/zoom), `CommandDockCard` (live `<Keycap>`s, 2D/ASCII toggle), `TacticalScannerCard`, `ChronicleLogCard` (keyboard-accessible filter tabs & scroll), `AlertsStack`, `BottomActionDock` (single `ui_store` `activeBank`, keyboard-operable stances & steppers, `Shift+Up/Down` bank switching, action pips, End Turn), and `VerbMenuPopover` (Arrow + `1–9` + `Enter` + `Esc`).
+  - Wire `HudFocusScope` (`F6` region cycling, `Esc` instant map return) so every HUD control is 100% keyboard-operable.
+- **Milestone 162: Console Master Dossier, Paperdoll/Stash, Trade & World Modals Rewrite**
+  - Rewrite `ConsoleDossierView`, `PaperDollWidget`, and `CompactStashWidget` with semantic `<button>` slots, 2D `GridNav` arrow navigation, keyboard-triggered Item Inspect Card (`?`/`Alt+I`), Weapon Set switching, category/sort controls, and full keyboard access to items `#27+` (zero `.innerHTML`).
+  - Rewrite `TradeModal` (dual-pane keyboard navigation, Buy/Sell via `Enter`, social haggle shortcuts, full theme compliance), `DialogueModal` (Arrow + `1–9` + `Enter`), `QuestsModal`, `FactionsModal`, `InvestigationModal` (keyboard filter chips + suspect/clue lists), `NemesisDossierModal`, `LedgerModal`, and `DebugOverlay`.
+- **Milestone 163: D&D 3.5e & Classic Cartridge Modals Rewrite (Sheet, Spellbook, Quickcast, Inspector)**
+  - Rewrite `src/rendering/ui/cartridges/classic/classic_ui_registration.tsx` (removing `#dnd35e-sheet-overlay` coupling & forced theme override, adding Classic `helpSections`).
+  - Rewrite `src/rendering/ui/cartridges/dnd35e/` views (`DnD35eSheetModal`, `DnD35eSpellbookModal`, `DnD35eQuickcastOverlay`, `DnD35eInspector`, `dnd35e_ui_registration.tsx`) onto `ConsoleModalHost` and shared primitives, registering canonical Cartridge commands (`dnd35e:sheet`, `dnd35e:inventory`, `dnd35e:quickcast`, `dnd35e:spellbook`, `dnd35e:rest_8h`, `dnd35e:level_up`) and declarative D&D 3.5e `helpSections` with 100% keyboard operation.
+- **Milestone 164: D&D 3.5e Character Creation Wizard & Level-Up Advancement Rewrite**
+  - Rewrite `DnD35eCharBuilderModal` (all steps: Race/Abilities point-buy steppers, Class/Domains/ACFs, Skills, Feats, Spells, Equipment Preset & Custom Gear Shop with search, Review & Identity with Name/Title/Traits/Glyph Color/Sprite Picker) and `DnD35eLevelUpModal` using shared primitives, `TextInputGuard`-protected inputs, and full keyboard navigation.
+- **Milestone 165: Legacy Gameplay DOM/CSS Eviction, `index.html` Slimdown & Phase 43 Verification Sweep**
+  - Strip all retired static overlays from `index.html` (reducing `index.html` to clean `#app` + `#game-canvas-wrapper` + `#ui-root` + `#editor-layout`), delete superseded legacy UI `.ts` files and legacy stylesheets (`core.css`, `hud.css`, `modals.css`, `console_prototype.css`), audit zero remaining gameplay `.innerHTML` / inline color hacks / native dialogs, sync `docs/UI_UX_STANDARDS.md`, `docs/ARCHITECTURE.md`, and 3-way SSOT registries, and pass full 8-stage `./verify.sh`.
 
 ---
 
-## Phase 6 — Integration Proof and Completion Closure
+### 🚀 Phase 44: Campaign Editor Rewrite on Shared Preact Primitives, Scoped Input & Unified Themes
 
-### Step 6.1 — Replace helper-only confidence with real-path regression suites (P6.1, P6.2, P6.3, P6.4, P6.5, P6.6, P6.7)
+*Migrates the entire Campaign Creator (`~26` editor UI modules) onto Phase 43's Preact Primitive Kit, `--ui-*` semantic theme tokens (`compact` density), `InputScopeManager` (`EditorScope`), and `DialogService` while preserving the pure `src/editor/` controller, JSON-Patch undo/redo stack, reference index, and validator.*
 
-| Regression suite                                   | Required proof                                                                                                                                                     |
-| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `tests/m152_displacement_charge.test.ts`           | Same-anchor rotation, bridge pathing, squeezed Jaunt, level-11 Charge, Pounce, fly range, reach/adjacency, interruption and -2 AC                                  |
-| `tests/m154_terrain_fields_hazards.test.ts`        | Real pit entry with one damage instance, field transmutation with one fire, caltrops/marbles movement contexts, complete crossing recipes and consumption          |
-| `tests/m156_durability_spellbooks_ecology.test.ts` | Real spawned door/weapon durability, door movement/FOV, valid spellbook transcription/drop eligibility, corpse yield/tool, religion/disguise/lore production paths |
-| `tests/m153_rest_pressure_logistics.test.ts`       | Partial area overrides, submerged rest interruption, local timers, status secondary stages, active camp illumination                                               |
-| `tests/m151_*` provenance suite                    | Actor→action→strike→weapon→effect→outcome ancestry, delayed persistence, hook interception, save/load                                                              |
-| UI/verb tests                                      | Ignite, harvest, pray, disguise, rigging discoverability and execution                                                                                             |
-| Campaign/validator tests                           | Cross-campaign item/effect/status references and New Content Mod fixture                                                                                           |
-
-Do not satisfy an integration requirement by directly invoking a private helper with a manually constructed component. The test must begin from a real spawn/content/apply/attack path.
-
-### Step 6.2 — Verify complete causal-chain behavior (P6.8)
-
-Required scenarios:
-
-1. **Basic attack:** Entity A attacks Entity B with longsword entity L.
-   - Chain contains A's intent/action, the strike, item entity L, damage, and death if applicable.
-2. **Coating:** L is coated; only L's coating is consumed and the coating frame identifies L and the application source.
-3. **Natural attack:** no weapon frame exists and no unrelated coating is consumed.
-4. **Nested effect:** a coating/rider creates a field or status; the delayed entity retains A's ancestry and appends its own effect frame.
-5. **Delayed trigger:** B enters a field originally deployed by A; the chain retains A as responsible originator and records B as triggering entity.
-6. **Reaction:** a reaction triggered by the attack can inspect the full chain before resolving.
-7. **Interception:** the generic before-frame hook can veto one frame without corrupting later chains.
-8. **Persistence:** save/load retains delayed-effect chains; legacy saves without chains still load.
-9. **Separation:** modifier `sourcePath` and runtime interaction chain remain distinct and both remain available.
-
-### Step 6.3 — Prove normal/bulk elapsed-time equivalence (P6.6)
-
-Compare N normal turns with one bulk advance of N turns for:
-
-- breath/submersion and drowning;
-- light fuel and expiry;
-- crossing duration/collapse;
-- AI alertness decay;
-- primary and secondary status stages;
-- death/interruption boundaries;
-- hunger and world-clock display;
-- spellbook study hours.
-
-The resulting components, deaths, messages summarized, and clock value must match except for explicitly summarized log volume.
-
-### Step 6.4 — Extend validation for the repaired data graph (P6.5)
-
-- Validate every loadable campaign's consumables against effect and status registries.
-- Validate deployment and field references.
-- Validate crossing recipe requirements against item/tag capabilities.
-- Validate wand spell references and spell-level metadata.
-- Validate stored spellbook spell references.
-- Validate Structural/harvest recipe item references.
-- Add a temporary New Content Mod fixture containing a new poison/coating, blocking condition, crossing kit, and spell-trigger class capability; remove it after proving the validator and runtime require no TypeScript changes.
-
-### Step 6.5 — Run the complete verification pipeline (P6.9)
-
-Run:
-
-```bash
-./verify.sh
-```
-
-Then explicitly confirm each stage:
-
-1. Strict TypeScript check.
-2. Format check.
-3. Lint check.
-4. Architectural dependency check.
-5. Dead-code/unused-export check.
-6. Full regression suite.
-7. Production build.
-8. Campaign/ruleset/SSOT parity validation.
-
-Also run:
-
-```bash
-bun scripts/map-codebase.ts --check
-git diff --check
-```
-
-Any failure returns work to the owning phase; do not carry a red gate into the next phase.
-
-### Step 6.6 — Manual play-test scenarios (P6.9)
-
-1. **Charge:** A level-11 fighter Charges a fleeing NPC; one attack occurs without Pounce, distance is recorded, and -2 AC remains until the next turn.
-2. **Pit:** A failed Jump over a real pit applies one fall; standing in the pit next turn does not repeat it.
-3. **Provenance:** A poisoned longsword hit creates a damage/status chain that the debug/event inspector displays in order.
-4. **Coatings:** A coated off-hand dagger remains coated when an uncoated primary weapon hits.
-5. **Objects:** A real door can be spiked, opened, broken, repaired, and blocks/unblocks movement and FOV consistently.
-6. **Bulk time:** A submerged eight-hour rest interrupts and drowns correctly; a lit torch burns down during elapsed time.
-7. **Disguise:** A matching disguise suppresses the Bandit King's baseline hostility without changing the disguised actor's relation to its real ally.
-8. **Campaign parity:** Antitoxin works in default-appropriate D&D campaigns and Realms of Shroudgarde.
-9. **Default showcase:** Every new engine feature is reachable and demonstrable from the default campaign.
-
-### Step 6.7 — Final documentation and cascading audit
-
-- Re-read the research ledger and confirm every P1.1–P6.9 ID is closed with evidence.
-- Update both cascading matrices with implementation-discovered effects.
-- Reconcile ARCHITECTURE, DECISIONS, MILESTONES, SSOT maps, and prompt-kit mirrors with the final implementation.
-- Restore M150–M156 completion wording only after all verification and manual scenarios pass.
-- Run the final full pipeline and report its exact results.
+- **Milestone 166: Campaign Editor Shell, `EditorScope` Input, `DialogService` Migration & Validation Dock**
+  - Rewrite `EditorShell`, `EditorToolbar`, `EditorActivityBar`, `EditorSidebar` (searchable `ListBox` + drag-and-drop), `EditorSplash`, `NewCampaignModal`, and `ValidationDock` onto Phase 43's `SplitPane`, `Toolbar`, `ModalShell`, and `--ui-*` tokens.
+  - Wire `EditorScope` (`Ctrl+Z`/`Ctrl+Shift+Z`/`Ctrl+Y` guarded by `TextInputGuard`, `Ctrl+S` save, `F2` playtest, `F1` Editor Help), eliminate `editor_ui.ts`'s leaked `document` mouse listeners, and replace all remaining 24 editor `alert()`/`confirm()`/`prompt()` calls with `DialogService` + `ToastHost`.
+- **Milestone 167: Declarative Preact Zod Form Engine, Reference Pickers & Where-Used Inspector**
+  - Rewrite `ZodFormRenderer`, `ZodFormContainers`, `ZodFormPrimitives`, `EditorForms`, `EditorObjectRenderer`, and `WhereUsedDrawer` onto Preact primitives (`Accordion`, `FormField`, `TextInput`, `NumberInput`, `Select`, `Checkbox`, drag-and-drop array items) with automatic focus/accordion preservation (no manual re-render cursor hacks) and inline validation paths.
+- **Milestone 168: Visual & Graph Editor Workspaces (Area Painter, World Graph, Dialogue Tree, Faction Matrix, Trigger Composer)**
+  - Rewrite `AreaEditor` & `AreaStaticPainter` (wrapping the Canvas2D painter cleanly inside Preact `SplitPane`/`Toolbar`/`GridNav` palette), `WorldGraph`, `DialogueEditor` + `DialogueSimulatorPanel` (`TreeList`), `FactionMatrixEditor`, and `TriggerComposer` onto shared primitives and `--ui-*` theme tokens.
+- **Milestone 169: Simulation Tooling Rewrite (AI Arena, Director Sandbox, Knowledge Sim, Narrative Fuzzer, Balance Lab) & Legacy Editor Eviction**
+  - Rewrite `AiArena`, `DirectorSandbox`, `KnowledgeSimulator`, `NarrativeFuzzer`, and `BalanceLab` onto Preact primitives, retire `src/rendering/editor_ui.ts`, `src/styles/editor.css`, and legacy `knip.json` ignores, sync `docs/SSOT_CONSOLE.md` and `docs/ARCHITECTURE.md`, and pass full 8-stage `./verify.sh`.
 
 ---
 
-## 5. Verification and Reporting Contract
+## 7. Verification & Testing Strategy
 
-For each phase, report:
-
-- files changed and behavior changed;
-- upstream/downstream/lateral effects discovered;
-- focused tests added and their assertions;
-- exact full-pipeline result;
-- remaining known limitations, if any;
-- any plan deviation and its rationale.
-
-No phase may be described as complete based only on compilation or direct helper tests.
-
----
-
-## 6. Approval Gate
-
-This update changes planning artifacts only. The original M150–M156 implementation is already committed in `c83c383`; this plan defines the corrective work required before those milestones are accurately considered complete.
-
-**No production code, tests, campaign data, assets, architecture claims, or milestone status may be changed until the user explicitly approves this implementation plan.**
-
-Recommended approval scope:
-
-- **Option A — Gate-first (recommended):** approve Phase 1 only, restore a green verification baseline, then review Phase 2's interaction-chain and elapsed-time design before implementation.
-- **Option B — Phases 1–2:** approve the verification gates and engine/provenance foundation, then review before mechanics.
-- **Option C — All six:** approve the complete sequential plan with a mandatory verification gate and rollback to the owning phase after any failure.
-
-After approval, execution begins with **Phase 1, Step 1.1** and proceeds one bounded task at a time.
+Every milestone in Phases 43 & 44 must pass:
+1. **New Automated Test Suites (`bun test`):**
+   - `tests/input_scope_and_keymap.test.ts`: Scope stack precedence, `TextInputGuard` (proving typing in `<input>`/`<textarea>`/`<select>` never triggers shortcuts), modifier `KeyChord` matching, browser `F1`/`F6` `preventDefault()`, scoped conflict detection, cartridge command registration & rebinding, v1→v2 settings/campaign `keybinds.json` migration.
+   - `tests/ui_primitives_focus.test.tsx`: `happy-dom` + Preact tests verifying live `useFocusTrap` survives re-renders & restores focus, `useRovingFocus` vertical/horizontal/2D grid navigation, `DialogService` async resolve/cancel, `<Keycap>` live binding updates, and `HelpModal` contextual filtering + Cartridge `helpSections`.
+   - Regression preservation: All existing 371+ tests (`canvas_mount.test.ts`, `console_ui_architecture.test.ts`, `dirty_domains.test.ts`, `dnd35e_phase26_ui_and_showcase.test.ts`, `hud_rest_and_display_name.test.ts`, `ssot_registry_parity.test.ts`, etc.).
+2. **Full 8-Stage `./verify.sh` Pipeline:** `tsc --noEmit`, `format`, `lint`, `depcruise` (`lint:arch`), `lint:filelength`, `knip` (`lint:deadcode`), `bun test`, `vite build`, and `scripts/run-validator.ts` (campaigns, rulesets, sprite packs, 3-way SSOT parity).
