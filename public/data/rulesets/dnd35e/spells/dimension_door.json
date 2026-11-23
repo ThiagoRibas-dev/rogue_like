@@ -31,7 +31,38 @@
     "allowsSpellResistance": false,
     "aoeShape": "single",
     "aoeRadiusFt": 0,
-    "effectUnits": [],
+    "effectUnits": [
+      {
+        "unitId": "dimension_door_buff",
+        "targetRole": "caster",
+        "type": "stat_bundle",
+        "effectBundle": {
+          "bundleId": "dimension_door_bundle",
+          "name": "Dimension Door",
+          "category": "trait",
+          "usageMode": "passive",
+          "modifiers": [],
+          "ruleOverrides": [
+            {
+              "id": "dim_door_rule",
+              "ruleKey": "dimension_door_active",
+              "value": true,
+              "priority": 10
+            }
+          ],
+          "grantedTags": [
+            "mobility:dimension_door"
+          ],
+          "grantedFeats": [],
+          "virtualFeatGrants": [],
+          "classSkillsAdded": [],
+          "immunities": [],
+          "vulnerabilities": [],
+          "energyResistances": {},
+          "activatedAbilities": []
+        }
+      }
+    ],
     "tags": [
       "conjuration",
       "teleportation",

@@ -36,11 +36,13 @@ export function spawnItem(state: GameState, itemId: string, x: number, y: number
     ...(def.spriteId !== undefined ? { spriteId: def.spriteId } : {})
   };
   const instanceId = toItemInstanceId(`${itemId}_${nextState.nextItemInstanceId}`);
+  const initialCharges =
+    def.consumable?.charges ?? def.zappable?.charges ?? def.zappable?.currentCharges ?? def.zappable?.maxCharges;
   const item: ItemComponent = {
     type: ComponentType.Item,
     itemId: def.id,
     instanceId,
-    ...(def.consumable !== undefined ? { charges: def.consumable.charges } : {})
+    ...(initialCharges !== undefined ? { charges: initialCharges } : {})
   };
 
   nextState = addComponent(nextState, entityId, pos);

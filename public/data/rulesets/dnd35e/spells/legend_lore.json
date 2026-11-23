@@ -36,7 +36,45 @@
     },
     "aoeShape": "single",
     "aoeRadiusFt": 0,
-    "effectUnits": [],
+    "effectUnits": [
+      {
+        "unitId": "legend_lore_buff",
+        "targetRole": "caster",
+        "type": "stat_bundle",
+        "effectBundle": {
+          "bundleId": "legend_lore_bundle",
+          "name": "Legend Lore",
+          "category": "trait",
+          "usageMode": "passive",
+          "modifiers": [
+            {
+              "id": "legend_lore_hist",
+              "target": "skill:knowledge_history",
+              "value": 10,
+              "type": "insight"
+            }
+          ],
+          "ruleOverrides": [
+            {
+              "id": "legend_lore_rule",
+              "ruleKey": "legend_lore_active",
+              "value": true,
+              "priority": 10
+            }
+          ],
+          "grantedTags": [
+            "senses:legend_lore"
+          ],
+          "grantedFeats": [],
+          "virtualFeatGrants": [],
+          "classSkillsAdded": [],
+          "immunities": [],
+          "vulnerabilities": [],
+          "energyResistances": {},
+          "activatedAbilities": []
+        }
+      }
+    ],
     "tags": [
       "divination",
       "lore",

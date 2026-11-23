@@ -34,7 +34,49 @@
     },
     "aoeShape": "single",
     "aoeRadiusFt": 0,
-    "effectUnits": [],
+    "effectUnits": [
+      {
+        "unitId": "screen_field",
+        "targetRole": "area_occupant",
+        "type": "spatial_field",
+        "fieldType": "field_illusory_screen",
+        "radiusFt": 15,
+        "anchorToCaster": false,
+        "blocksLoS": true,
+        "blocksLoE": false,
+        "suppressedTags": []
+      },
+      {
+        "unitId": "screen_ward",
+        "targetRole": "primary_target",
+        "type": "stat_bundle",
+        "effectBundle": {
+          "bundleId": "screen_bundle",
+          "name": "Screen",
+          "category": "trait",
+          "usageMode": "passive",
+          "modifiers": [],
+          "ruleOverrides": [
+            {
+              "id": "screen_rule",
+              "ruleKey": "screen_illusion_active",
+              "value": true,
+              "priority": 10
+            }
+          ],
+          "grantedTags": [
+            "ward:screen"
+          ],
+          "grantedFeats": [],
+          "virtualFeatGrants": [],
+          "classSkillsAdded": [],
+          "immunities": [],
+          "vulnerabilities": [],
+          "energyResistances": {},
+          "activatedAbilities": []
+        }
+      }
+    ],
     "tags": [
       "illusion",
       "glamer",

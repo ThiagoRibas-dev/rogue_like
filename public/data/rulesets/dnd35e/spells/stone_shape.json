@@ -33,7 +33,19 @@
     "allowsSpellResistance": false,
     "aoeShape": "single",
     "aoeRadiusFt": 0,
-    "effectUnits": [],
+    "effectUnits": [
+      {
+        "unitId": "stone_shape_field",
+        "targetRole": "area_occupant",
+        "type": "spatial_field",
+        "fieldType": "field_shaped_stone",
+        "radiusFt": 5,
+        "anchorToCaster": false,
+        "blocksLoS": false,
+        "blocksLoE": false,
+        "suppressedTags": []
+      }
+    ],
     "tags": [
       "transmutation",
       "earth",

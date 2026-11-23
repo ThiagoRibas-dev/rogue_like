@@ -31,12 +31,12 @@ export function CommandDockCard({ state, playerId, isHudFocused }: CommandDockCa
   const cartridgeCommands = (cartridgeUI?.dockCommands ?? []).filter(
     (cmd) => !cmd.isAvailable || cmd.isAvailable(state, playerId)
   );
-  const cartridgeOverridesInventory = cartridgeCommands.some(
-    (cmd) => cmd.defaultKey.toLowerCase() === 'i' || cmd.label === 'Pack'
+  const replacedCommandIds = new Set(
+    cartridgeCommands.flatMap((cmd) =>
+      [cmd.commandId, cmd.replacesCommandId].filter((id): id is string => id !== undefined)
+    )
   );
-  const consoleDockCommands = cartridgeOverridesInventory
-    ? DOCK_COMMANDS.filter((spec) => spec.commandId !== 'panel.inventory')
-    : DOCK_COMMANDS;
+  const consoleDockCommands = DOCK_COMMANDS.filter((spec) => !replacedCommandIds.has(spec.commandId));
 
   return (
     <section

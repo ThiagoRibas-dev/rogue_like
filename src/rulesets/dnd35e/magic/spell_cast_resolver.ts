@@ -6,6 +6,7 @@
 
 import { consumeResourcePool, getComponent } from '../../../core/ecs.ts';
 import { addMessage, MessageLogCategory } from '../../../systems/message.system.ts';
+import { matchesEntityTagCondition } from '../../../systems/reaction.system.ts';
 import {
   ComponentType,
   type FighterComponent,
@@ -13,6 +14,7 @@ import {
   type ResourcePoolComponent
 } from '../../../types/components.types.ts';
 import { EngineMode, type EntityId, type GameState } from '../../../types/game-state.types.ts';
+import { evaluateActiveSpellAuraContributions } from './spell_aura_resolver.ts';
 import { evaluateSpellEffectUnitsForTarget, projectSpellEffectTags } from './spell_effects.ts';
 import { applyResolvedSpellEffectsToTarget } from './spell_cast_effects.ts';
 import { evaluateReactiveCounterspellInterrupt } from './counterspell_interrupt.ts';
@@ -158,11 +160,32 @@ export function executeDnD35eSpellCast(
     casterDag.dndData.actionBudget ??
     (state.engineMode === EngineMode.RTwP ? hydrateEntityRoundActionBudget(state, casterId) : undefined);
 
+  let directQuickenMax = 0;
+  for (const mod of casterMods) {
+    if (mod.targetStat !== 'quicken_max_spell_level') continue;
+    if (mod.condition && !matchesEntityTagCondition(mod.condition, undefined, spellEffectTags, casterDag.selfTags)) {
+      continue;
+    }
+    if (mod.value > directQuickenMax) {
+      directQuickenMax = mod.value;
+    }
+  }
+  const auraQuickenMax = evaluateActiveSpellAuraContributions(state, casterId, casterDag.selfTags).quickenMaxSpellLevel;
+  const grantedQuickenMax = Math.max(directQuickenMax, auraQuickenMax);
+  const baseSpellLevel = castContext.spellLevel ?? spell.levelByClass[book.classId] ?? spell.level;
+  const effectiveSpellLevel = baseSpellLevel + meta.slotBump;
+  const useGrantedQuicken =
+    !meta.isQuickened &&
+    grantedQuickenMax > 0 &&
+    effectiveSpellLevel <= grantedQuickenMax &&
+    (effectiveBudget === undefined || effectiveBudget.swiftRemaining >= 1);
+  const effectiveMetaForBudget = useGrantedQuicken ? { ...meta, isQuickened: true } : meta;
+
   const actionRes = consumeSpellActionBudget(
     effectiveBudget,
     spell.castingTime,
     book.castingMode === 'spontaneous',
-    meta,
+    effectiveMetaForBudget,
     shouldUseMetamagicSpecialist
   );
   if (!actionRes.allowed) {
@@ -186,6 +209,14 @@ export function executeDnD35eSpellCast(
     spellbooksByClass: { ...(rawCasterDnd.spellbooksByClass ?? {}), [castContext.classId]: slotRes.updatedBook },
     ...(actionRes.budget !== undefined ? { actionBudget: actionRes.budget } : {})
   });
+
+  if (useGrantedQuicken) {
+    runningState = addMessage(
+      runningState,
+      `Quickened casting grant lets ${spell.name} be cast as a Swift action.`,
+      MessageLogCategory.System
+    );
+  }
 
   if (shouldUseMetamagicSpecialist) {
     const poolRes = consumeResourcePool(runningState, casterId, 'metamagic_specialist', 1);
@@ -266,6 +297,11 @@ export function executeDnD35eSpellCast(
   runningState = addMessage(runningState, `You cast ${spell.name}!`, MessageLogCategory.CombatHit);
 
   const placementUnits = spell.effectUnits.filter((u) => u.type === 'spatial_field' || u.type === 'summon');
+  const casterSelfUnits = evaluateSpellEffectUnitsForTarget(spell, {
+    casterSelfTags: casterDag.selfTags,
+    targetTags: casterDag.selfTags,
+    metamagic: meta.flags
+  }).filter((u) => u.type !== 'spatial_field' && u.type !== 'summon' && u.targetRole === 'caster');
   const chassis = aggregateProgressionChassis(casterDag.dndData.tracks, 0);
 
   if (placementUnits.length > 0) {
@@ -286,7 +322,25 @@ export function executeDnD35eSpellCast(
     });
   }
 
-  if (targets.length === 0 && placementUnits.length === 0) {
+  if (casterSelfUnits.length > 0) {
+    runningState = applyResolvedSpellEffectsToTarget({
+      state: runningState,
+      casterId,
+      targetId: casterId,
+      targetPos: { x: casterPos.x, y: casterPos.y },
+      spell,
+      units: casterSelfUnits,
+      casterLevel: effectiveCasterLevel,
+      castId,
+      metamagic: meta.flags,
+      casterAbilityMod: govAbMod,
+      totalBab: chassis.totalBab,
+      saveResultByUnitId: {},
+      sysContent
+    });
+  }
+
+  if (targets.length === 0 && placementUnits.length === 0 && casterSelfUnits.length === 0) {
     return {
       state: addMessage(runningState, `${spell.name} affects no creatures.`, MessageLogCategory.System),
       success: true
@@ -332,7 +386,7 @@ export function executeDnD35eSpellCast(
       ...(targetFighter ? { targetCurrentHp: targetFighter.hp } : {}),
       ...(targetChassis ? { targetHitDice: targetChassis.totalHD } : {})
     }).filter((u) => {
-      if (u.type === 'spatial_field' || u.type === 'summon') return false;
+      if (u.type === 'spatial_field' || u.type === 'summon' || u.targetRole === 'caster') return false;
       if (u.validTargetCategories && u.validTargetCategories.length > 0) {
         if (!matchesTargetCategoryFilter(runningState, casterId, targetId, u.validTargetCategories)) return false;
       }
@@ -377,8 +431,7 @@ export function executeDnD35eSpellCast(
       if (uSave && uSave.saveType !== 'none' && targetId !== casterId && targetDag) {
         const saveDag = resolveSaveTargetDag();
         const roll = rollD20('save', saveDag!.dagResult.saves[uSave.saveType]);
-        saveResultByUnitId[u.unitId] =
-          !roll.isAutoFailure && (roll.isAutoSuccess || roll.total >= effectiveSaveDC);
+        saveResultByUnitId[u.unitId] = !roll.isAutoFailure && (roll.isAutoSuccess || roll.total >= effectiveSaveDC);
       }
     }
 
@@ -401,4 +454,130 @@ export function executeDnD35eSpellCast(
 
   runningState = processDnD35eDamage(runningState);
   return { state: runningState, success: true };
+}
+
+const SPELL_EFFECT_ID_PREFIX = 'spell:';
+const BASE_MAGIC_ITEM_SAVE_DC = 10;
+const MIN_MAGIC_ITEM_CASTER_LEVEL = 1;
+const MAGIC_ITEM_CL_PER_SPELL_LEVEL = 2;
+const MAGIC_ITEM_CL_OFFSET = 1;
+const MAGIC_ITEM_ABILITY_MOD_DIVISOR = 2;
+
+/**
+ * Resolves a declarative `spell:<spellId>` consumable or wand/staff effect onto `explicitTargetId ?? userId`
+ * (or AoE victims when the spell defines a non-single area template) using the D&D 3.5e spell effect pipeline
+ * and standard DMG minimum item caster level (`max(1, level * 2 - 1)`).
+ */
+export function resolveDnD35eSpellItemEffect(
+  state: GameState,
+  userId: EntityId,
+  effectId: string,
+  _itemName: string,
+  explicitTargetId?: EntityId
+): GameState | null {
+  if (!effectId.startsWith(SPELL_EFFECT_ID_PREFIX)) return null;
+  const spellId = effectId.slice(SPELL_EFFECT_ID_PREFIX.length);
+  const sysContent = getDnD35SystemContent(state.campaign);
+  const spell = sysContent?.spells?.[spellId];
+  if (!spell) return null;
+
+  const targetId = explicitTargetId ?? userId;
+  const targetPosComp = getComponent(state, targetId, ComponentType.Position) as PositionComponent | undefined;
+  const userPosComp = getComponent(state, userId, ComponentType.Position) as PositionComponent | undefined;
+  const targetPos = targetPosComp
+    ? { x: targetPosComp.x, y: targetPosComp.y }
+    : userPosComp
+      ? { x: userPosComp.x, y: userPosComp.y }
+      : { x: 0, y: 0 };
+
+  const itemCasterLevel = Math.max(
+    MIN_MAGIC_ITEM_CASTER_LEVEL,
+    spell.level * MAGIC_ITEM_CL_PER_SPELL_LEVEL - MAGIC_ITEM_CL_OFFSET
+  );
+  const itemSaveDc = BASE_MAGIC_ITEM_SAVE_DC + spell.level + Math.floor(spell.level / MAGIC_ITEM_ABILITY_MOD_DIVISOR);
+  const noMetamagic = summarizeMetamagic(undefined, sysContent).flags;
+  const userDag = evaluateDnD35eEntityDAG(state, userId);
+  const spellEffectTags = projectSpellEffectTags(spell, noMetamagic);
+  const userTotalBab = userDag ? aggregateProgressionChassis(userDag.dndData.tracks, 0).totalBab : 0;
+  const itemAbilityMod = Math.floor(spell.level / MAGIC_ITEM_ABILITY_MOD_DIVISOR);
+  const castId = `item_${state.globalTurn}_${spell.id}`;
+
+  const isAreaSpell = spell.aoeShape !== 'single' && spell.aoeRadiusFt > 0;
+  const enumeratedTargets =
+    isAreaSpell && userPosComp ? enumerateSpellTargets(state, userId, userPosComp, targetPos, spell, 1, false) : [];
+  const targetIds: ReadonlyArray<EntityId> = enumeratedTargets.length > 0 ? enumeratedTargets : [targetId];
+
+  let runningState = state;
+  let emittedBundleMsg = spell.effectBundle !== undefined;
+
+  for (const currentTargetId of targetIds) {
+    const targetDag = evaluateDnD35eEntityDAG(runningState, currentTargetId);
+    const targetFighter = getComponent(runningState, currentTargetId, ComponentType.Fighter) as
+      FighterComponent | undefined;
+    const targetChassis = targetDag ? aggregateProgressionChassis(targetDag.dndData.tracks, 0) : undefined;
+    const units = evaluateSpellEffectUnitsForTarget(spell, {
+      casterSelfTags: userDag?.selfTags ?? [],
+      targetTags: targetDag?.selfTags ?? [],
+      metamagic: noMetamagic,
+      ...(targetFighter ? { targetCurrentHp: targetFighter.hp } : {}),
+      ...(targetChassis ? { targetHitDice: targetChassis.totalHD } : {})
+    });
+
+    if (units.some((u) => u.type === 'stat_bundle')) {
+      emittedBundleMsg = true;
+    }
+
+    const isUndeadTarget =
+      targetDag?.dndData.creatureType === 'undead' ||
+      (targetDag?.selfTags.includes('type:undead') ?? false) ||
+      (targetDag?.selfTags.includes('undead') ?? false);
+    const isLivingNonHostile =
+      !isUndeadTarget && (currentTargetId === userId || !isHostile(runningState, userId, currentTargetId));
+    const isPureHealingForLiving = units.length > 0 && units.every((u) => u.type === 'healing') && isLivingNonHostile;
+
+    const saveResultByUnitId: Record<string, boolean> = {};
+    if (currentTargetId !== userId && targetDag) {
+      const contextualSaveDag =
+        evaluateDnD35eEntityDAG(runningState, currentTargetId, {
+          effectTags: spellEffectTags,
+          targetTags: userDag?.selfTags ?? []
+        }) ?? targetDag;
+      const topSave = spell.savingThrow;
+      if (topSave && topSave.saveType !== 'none' && topSave.effect !== 'harmless' && !isPureHealingForLiving) {
+        const saveRoll = rollD20('save', contextualSaveDag.dagResult.saves[topSave.saveType]);
+        saveResultByUnitId['top_level'] =
+          !saveRoll.isAutoFailure && (saveRoll.isAutoSuccess || saveRoll.total >= itemSaveDc);
+      }
+      for (const u of units) {
+        if (u.type === 'healing' && isLivingNonHostile) continue;
+        const uSave = u.savingThrow ?? topSave;
+        if (uSave && uSave.saveType !== 'none' && uSave.effect !== 'harmless') {
+          const roll = rollD20('save', contextualSaveDag.dagResult.saves[uSave.saveType]);
+          saveResultByUnitId[u.unitId] = !roll.isAutoFailure && (roll.isAutoSuccess || roll.total >= itemSaveDc);
+        }
+      }
+    }
+
+    runningState = applyResolvedSpellEffectsToTarget({
+      state: runningState,
+      casterId: userId,
+      targetId: currentTargetId,
+      targetPos,
+      spell,
+      units,
+      casterLevel: itemCasterLevel,
+      castId,
+      metamagic: noMetamagic,
+      casterAbilityMod: itemAbilityMod,
+      totalBab: userTotalBab,
+      saveResultByUnitId,
+      sysContent
+    });
+  }
+
+  if (emittedBundleMsg) {
+    runningState = addMessage(runningState, `${spell.name} takes effect.`, MessageLogCategory.System);
+  }
+
+  return processDnD35eDamage(runningState);
 }

@@ -33,7 +33,45 @@
     },
     "aoeShape": "single",
     "aoeRadiusFt": 0,
-    "effectUnits": [],
+    "effectUnits": [
+      {
+        "unitId": "divination_omen",
+        "targetRole": "caster",
+        "type": "stat_bundle",
+        "effectBundle": {
+          "bundleId": "divination_bundle",
+          "name": "Divination",
+          "category": "trait",
+          "usageMode": "passive",
+          "modifiers": [
+            {
+              "id": "divination_save_omen",
+              "target": "saves",
+              "value": 1,
+              "type": "insight"
+            }
+          ],
+          "ruleOverrides": [
+            {
+              "id": "divination_rule",
+              "ruleKey": "divination_omen_active",
+              "value": true,
+              "priority": 10
+            }
+          ],
+          "grantedTags": [
+            "divination:omen"
+          ],
+          "grantedFeats": [],
+          "virtualFeatGrants": [],
+          "classSkillsAdded": [],
+          "immunities": [],
+          "vulnerabilities": [],
+          "energyResistances": {},
+          "activatedAbilities": []
+        }
+      }
+    ],
     "tags": [
       "divination",
       "omen",

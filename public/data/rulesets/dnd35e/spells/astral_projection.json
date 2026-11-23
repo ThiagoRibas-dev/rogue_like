@@ -35,7 +35,39 @@
     },
     "aoeShape": "single",
     "aoeRadiusFt": 0,
-    "effectUnits": [],
+    "effectUnits": [
+      {
+        "unitId": "astral_projection_state",
+        "targetRole": "primary_target",
+        "type": "stat_bundle",
+        "effectBundle": {
+          "bundleId": "astral_projection_bundle",
+          "name": "Astral Projection",
+          "category": "trait",
+          "usageMode": "passive",
+          "modifiers": [],
+          "ruleOverrides": [
+            {
+              "id": "astral_proj_rule",
+              "ruleKey": "astral_projection_active",
+              "value": true,
+              "priority": 10
+            }
+          ],
+          "grantedTags": [
+            "astral_projection_active",
+            "planar:astral"
+          ],
+          "grantedFeats": [],
+          "virtualFeatGrants": [],
+          "classSkillsAdded": [],
+          "immunities": [],
+          "vulnerabilities": [],
+          "energyResistances": {},
+          "activatedAbilities": []
+        }
+      }
+    ],
     "tags": [
       "necromancy",
       "planar",

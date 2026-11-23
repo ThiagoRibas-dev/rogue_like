@@ -31,7 +31,45 @@
     "allowsSpellResistance": false,
     "aoeShape": "single",
     "aoeRadiusFt": 0,
-    "effectUnits": [],
+    "effectUnits": [
+      {
+        "unitId": "locate_object_buff",
+        "targetRole": "caster",
+        "type": "stat_bundle",
+        "effectBundle": {
+          "bundleId": "locate_object_bundle",
+          "name": "Locate Object",
+          "category": "trait",
+          "usageMode": "passive",
+          "modifiers": [
+            {
+              "id": "locate_obj_search",
+              "target": "skill:search",
+              "value": 4,
+              "type": "insight"
+            }
+          ],
+          "ruleOverrides": [
+            {
+              "id": "locate_obj_rule",
+              "ruleKey": "locate_object_active",
+              "value": true,
+              "priority": 10
+            }
+          ],
+          "grantedTags": [
+            "senses:locate_object"
+          ],
+          "grantedFeats": [],
+          "virtualFeatGrants": [],
+          "classSkillsAdded": [],
+          "immunities": [],
+          "vulnerabilities": [],
+          "energyResistances": {},
+          "activatedAbilities": []
+        }
+      }
+    ],
     "tags": [
       "divination",
       "tracking"

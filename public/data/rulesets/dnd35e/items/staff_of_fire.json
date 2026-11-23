@@ -15,7 +15,8 @@
       "staff"
     ],
     "zappable": {
-      "effectId": "scroll_fireball",
+      "effectId": "spell:fireball",
+      "spellId": "fireball",
       "pattern": "bolt",
       "range": 6,
       "maxCharges": 50,

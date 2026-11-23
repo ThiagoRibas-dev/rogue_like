@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { applyRaceToActorChassis } from '../src/rulesets/dnd35e/races.ts';
 import { applyCreatureTemplate } from '../src/rulesets/dnd35e/templates.ts';
@@ -36,7 +36,8 @@ import type { StatModifier } from '../src/rulesets/dnd35e/types/dnd35e.types.ts'
 
 function loadModularRulesetRegistry(category: string): Record<string, unknown> {
   const baseDir = resolve(process.cwd(), 'public/data/rulesets/dnd35e');
-  const rootJson = JSON.parse(readFileSync(resolve(baseDir, `${category}.json`), 'utf-8')) as Record<string, unknown>;
+  const rootPath = resolve(baseDir, `${category}.json`);
+  const rootJson = existsSync(rootPath) ? (JSON.parse(readFileSync(rootPath, 'utf-8')) as Record<string, unknown>) : {};
   const subDir = resolve(baseDir, category);
   const merged: Record<string, unknown> = { ...rootJson };
   for (const file of readdirSync(subDir).sort()) {

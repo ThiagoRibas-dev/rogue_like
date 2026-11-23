@@ -30,7 +30,35 @@
     "allowsSpellResistance": false,
     "aoeShape": "single",
     "aoeRadiusFt": 0,
-    "effectUnits": [],
+    "effectUnits": [
+      {
+        "unitId": "raise_dead_restore",
+        "targetRole": "primary_target",
+        "type": "healing",
+        "dice": "1d8",
+        "flatBonusScaling": {
+          "baseValue": 0,
+          "perCL": 1,
+          "clStepInterval": 1,
+          "startAboveCL": 0,
+          "maxCap": 15
+        },
+        "invertsForUndead": false,
+        "isTemporaryHp": false,
+        "metamagicScalable": false
+      },
+      {
+        "unitId": "raise_dead_clear_conditions",
+        "targetRole": "primary_target",
+        "type": "condition",
+        "conditionId": "none",
+        "curesConditions": [
+          "paralyzed",
+          "stunned",
+          "unconscious"
+        ]
+      }
+    ],
     "tags": [
       "divine",
       "healing",

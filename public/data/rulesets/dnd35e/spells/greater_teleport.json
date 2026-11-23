@@ -30,7 +30,38 @@
     "allowsSpellResistance": false,
     "aoeShape": "single",
     "aoeRadiusFt": 0,
-    "effectUnits": [],
+    "effectUnits": [
+      {
+        "unitId": "greater_teleport_buff",
+        "targetRole": "caster",
+        "type": "stat_bundle",
+        "effectBundle": {
+          "bundleId": "greater_teleport_bundle",
+          "name": "Greater Teleport",
+          "category": "trait",
+          "usageMode": "passive",
+          "modifiers": [],
+          "ruleOverrides": [
+            {
+              "id": "gtp_rule",
+              "ruleKey": "greater_teleport_active",
+              "value": true,
+              "priority": 10
+            }
+          ],
+          "grantedTags": [
+            "mobility:greater_teleport"
+          ],
+          "grantedFeats": [],
+          "virtualFeatGrants": [],
+          "classSkillsAdded": [],
+          "immunities": [],
+          "vulnerabilities": [],
+          "energyResistances": {},
+          "activatedAbilities": []
+        }
+      }
+    ],
     "tags": [
       "conjuration",
       "teleportation",

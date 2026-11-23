@@ -18,6 +18,7 @@ import type {
   DnD35SystemContent
 } from '../../../../rulesets/dnd35e/types/dnd35e_system.types.ts';
 import { Chip } from '../../primitives/DataDisplay.tsx';
+import { resolveClassFeatureLabel } from './CharBuilderClassStep.tsx';
 
 /** Hit Dice interval for ability score increases (`4`). */
 export const ABILITY_INCREASE_HD_STEP = 4;
@@ -191,9 +192,7 @@ export function DnD35eLevelUpClassStep({
           <div className="ui-dnd-card__sub">
             {`Features: ${
               rowDef?.features && rowDef.features.length > 0
-                ? rowDef.features
-                    .map((fId) => activeCls.featureDetails[fId]?.name ?? sys.feats[fId]?.name ?? fId)
-                    .join(', ')
+                ? rowDef.features.map((fId) => resolveClassFeatureLabel(fId, activeCls, sys)).join(', ')
                 : 'None'
             }`}
           </div>
@@ -252,14 +251,8 @@ export function DnD35eLevelUpClassStep({
             <div className="ui-dnd-card-list">
               {eligibleAcfs.map((acf) => {
                 const isChecked = (draft.selectedAcfs ?? []).includes(acf.acfId);
-                const replacesLabel =
-                  activeCls.featureDetails[acf.replacesFeature]?.name ??
-                  sys.feats[acf.replacesFeature]?.name ??
-                  acf.replacesFeature;
-                const grantedLabel =
-                  activeCls.featureDetails[acf.grantedFeature]?.name ??
-                  sys.feats[acf.grantedFeature]?.name ??
-                  acf.grantedFeature;
+                const replacesLabel = resolveClassFeatureLabel(acf.replacesFeature, activeCls, sys);
+                const grantedLabel = resolveClassFeatureLabel(acf.grantedFeature, activeCls, sys);
                 return (
                   <button
                     key={acf.acfId}

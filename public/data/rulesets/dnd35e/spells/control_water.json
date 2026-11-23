@@ -37,7 +37,20 @@
     },
     "aoeShape": "single",
     "aoeRadiusFt": 0,
-    "effectUnits": [],
+    "effectUnits": [
+      {
+        "unitId": "control_water_field",
+        "targetRole": "area_occupant",
+        "type": "spatial_field",
+        "fieldType": "field_water_surge",
+        "radiusFt": 20,
+        "anchorToCaster": false,
+        "blocksLoS": false,
+        "blocksLoE": false,
+        "movementCostMultiplier": 2,
+        "suppressedTags": []
+      }
+    ],
     "tags": [
       "transmutation",
       "water",

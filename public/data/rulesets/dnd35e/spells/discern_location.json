@@ -34,7 +34,38 @@
     },
     "aoeShape": "single",
     "aoeRadiusFt": 0,
-    "effectUnits": [],
+    "effectUnits": [
+      {
+        "unitId": "discern_location_buff",
+        "targetRole": "caster",
+        "type": "stat_bundle",
+        "effectBundle": {
+          "bundleId": "discern_location_bundle",
+          "name": "Discern Location",
+          "category": "trait",
+          "usageMode": "passive",
+          "modifiers": [],
+          "ruleOverrides": [
+            {
+              "id": "discern_loc_rule",
+              "ruleKey": "discern_location_active",
+              "value": true,
+              "priority": 10
+            }
+          ],
+          "grantedTags": [
+            "senses:discern_location"
+          ],
+          "grantedFeats": [],
+          "virtualFeatGrants": [],
+          "classSkillsAdded": [],
+          "immunities": [],
+          "vulnerabilities": [],
+          "energyResistances": {},
+          "activatedAbilities": []
+        }
+      }
+    ],
     "tags": [
       "divination",
       "scrying",

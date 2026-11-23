@@ -34,7 +34,22 @@
     },
     "aoeShape": "single",
     "aoeRadiusFt": 0,
-    "effectUnits": [],
+    "effectUnits": [
+      {
+        "unitId": "control_winds_field",
+        "targetRole": "area_occupant",
+        "type": "spatial_field",
+        "fieldType": "field_high_winds",
+        "radiusFt": 40,
+        "anchorToCaster": false,
+        "blocksLoS": false,
+        "blocksLoE": false,
+        "movementCostMultiplier": 2,
+        "suppressedTags": [
+          "ranged_projectile"
+        ]
+      }
+    ],
     "tags": [
       "transmutation",
       "air",

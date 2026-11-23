@@ -1,7 +1,7 @@
 import type { GameState } from '../types/game-state.types.ts';
 import type { ApplyIntent } from '../types/intents/interaction.intents.ts';
 import { ComponentType, type ItemComponent, type PositionComponent } from '../types/components.types.ts';
-import { getComponent, resolveEntityDisplayName } from '../core/ecs.ts';
+import { addComponent, getComponent, resolveEntityDisplayName } from '../core/ecs.ts';
 import { getActiveRuleset } from '../rulesets/registry.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import { getBresenhamLine } from '../utils/grid.ts';
@@ -58,6 +58,14 @@ export function processWandZap(state: GameState, intent: ApplyIntent): { state: 
   const itemName = state.identifiedItems.has(itemComp.itemId)
     ? itemDef.name
     : (state.itemUnidentifiedNames.get(itemComp.itemId) ?? itemDef.unidentifiedName ?? itemComp.itemId);
+
+  const currentCharges = itemComp.charges ?? zappable.charges ?? zappable.currentCharges ?? zappable.maxCharges;
+  if (currentCharges !== undefined && currentCharges <= 0) {
+    return {
+      state: addMessage(state, `The ${itemName} has no charges remaining.`, MessageLogCategory.System),
+      success: false
+    };
+  }
 
   let nextState = addMessage(state, `${userName} ${verb} the ${itemName}.`, MessageLogCategory.System);
 
@@ -152,6 +160,10 @@ export function processWandZap(state: GameState, intent: ApplyIntent): { state: 
 
   if (!hitSomeone) {
     nextState = addMessage(nextState, 'The magic dissipates harmlessly.', MessageLogCategory.System);
+  }
+
+  if (currentCharges !== undefined) {
+    nextState = addComponent(nextState, intent.toolEntityId, { ...itemComp, charges: currentCharges - 1 });
   }
 
   return { state: nextState, success: true };

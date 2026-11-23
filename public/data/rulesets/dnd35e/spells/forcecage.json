@@ -32,7 +32,22 @@
     "allowsSpellResistance": false,
     "aoeShape": "single",
     "aoeRadiusFt": 0,
-    "effectUnits": [],
+    "effectUnits": [
+      {
+        "unitId": "forcecage_field",
+        "targetRole": "area_occupant",
+        "type": "spatial_field",
+        "fieldType": "field_forcecage",
+        "radiusFt": 10,
+        "anchorToCaster": false,
+        "blocksLoS": false,
+        "blocksLoE": true,
+        "movementCostMultiplier": 4,
+        "suppressedTags": [
+          "teleport_blocked"
+        ]
+      }
+    ],
     "tags": [
       "evocation",
       "force",

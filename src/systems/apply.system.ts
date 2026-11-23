@@ -462,12 +462,12 @@ export function processApplyIntent(
  * Returns a list of valid verbs for a given target combination,
  * evaluating both hardcoded item mechanics (throw/zap) and data-driven reactions.
  */
-export function getValidVerbsForTarget(
+function collectRawValidVerbsForTarget(
   state: GameState,
   sourceEntityId: EntityId,
   target: ApplyIntentTarget,
   toolEntityId?: EntityId
-): Verb[] {
+): ReadonlyArray<Verb> {
   const validVerbs = new Set<Verb>();
 
   // 1. Check hardcoded fallback verb systems (if holding a tool)
@@ -542,8 +542,34 @@ export function getValidVerbsForTarget(
     validVerbs.add(verb);
   }
 
+  return Array.from(validVerbs);
+}
+
+/**
+ * Returns `true` if `target` has at least one contextually valid verb that was blocked solely
+ * because `target` is outside `sourceEntityId`'s resolved physical/touch interaction reach.
+ */
+export function hasOutOfReachVerbsForTarget(
+  state: GameState,
+  sourceEntityId: EntityId,
+  target: ApplyIntentTarget,
+  toolEntityId?: EntityId
+): boolean {
+  const rawVerbs = collectRawValidVerbsForTarget(state, sourceEntityId, target, toolEntityId);
+  return (
+    rawVerbs.length > 0 &&
+    rawVerbs.every((verb) => !isTargetWithinInteractionReach(state, sourceEntityId, verb, target, toolEntityId))
+  );
+}
+
+export function getValidVerbsForTarget(
+  state: GameState,
+  sourceEntityId: EntityId,
+  target: ApplyIntentTarget,
+  toolEntityId?: EntityId
+): Verb[] {
   // 5. Enforce physical/touch interaction reach
-  return Array.from(validVerbs).filter((verb) =>
+  return collectRawValidVerbsForTarget(state, sourceEntityId, target, toolEntityId).filter((verb) =>
     isTargetWithinInteractionReach(state, sourceEntityId, verb, target, toolEntityId)
   );
 }

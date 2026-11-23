@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'bun:test';
-import { addComponent, getComponent, spawnEntity, spawnItem } from '../src/core/ecs.ts';
+import { addComponent, createEntity, getComponent, spawnEntity, spawnItem } from '../src/core/ecs.ts';
 import { getGameState, setGameState } from '../src/core/game-loop.ts';
 import { handleGameplayOrTargetingKey, resetMoveThrottle } from '../src/core/input/gameplay_input.ts';
 import { ACTION_TO_COMMAND_ID, migrateV1KeybindsToV2 } from '../src/core/input/keybind_migration.ts';
@@ -18,6 +18,7 @@ import { REACH_PROBE_ITEM_TAG } from '../src/systems/durability.system.ts';
 import {
   computeInteractionTargetDistanceTiles,
   getValidVerbsForTarget,
+  hasOutOfReachVerbsForTarget,
   isTargetWithinInteractionReach,
   processApplyIntent,
   resolveActorInteractionReachTiles
@@ -59,6 +60,9 @@ function getPlayerId(state: GameState): EntityId {
 }
 
 describe('Milestone 166: Post-Phase-43 UI, Inspect Hook, Look+Enter Reach & Fuzzy VerbMenu', () => {
+  const sharedDndCampaign = loadCampaignFromDisk('dnd35e-crypt');
+  const sharedClassicCampaign = loadCampaignFromDisk('default');
+
   afterEach(() => {
     clearInputQueue();
     clearScheduler();
@@ -67,8 +71,7 @@ describe('Milestone 166: Post-Phase-43 UI, Inspect Hook, Look+Enter Reach & Fuzz
   });
 
   it('projects D&D 3.5e Inspect stats via RulesetContract while keeping Classic fallback & Patience', () => {
-    const dndCampaign = loadCampaignFromDisk('dnd35e-crypt');
-    const dndState = buildGameState(dndCampaign);
+    const dndState = buildGameState(sharedDndCampaign);
     const dndPlayerId = getPlayerId(dndState);
     const dndPos = getComponent(dndState, dndPlayerId, ComponentType.Position) as PositionComponent;
 
@@ -117,8 +120,7 @@ describe('Milestone 166: Post-Phase-43 UI, Inspect Hook, Look+Enter Reach & Fuzz
     );
     expect(patienceTooltip.sections.some((s) => s.type === 'stat' && s.label === 'Patience')).toBe(true);
 
-    const classicCampaign = loadCampaignFromDisk('default');
-    const classicState = buildGameState(classicCampaign);
+    const classicState = buildGameState(sharedClassicCampaign);
     const classicPlayerId = getPlayerId(classicState);
     const classicPos = getComponent(classicState, classicPlayerId, ComponentType.Position) as PositionComponent;
 
@@ -139,8 +141,7 @@ describe('Milestone 166: Post-Phase-43 UI, Inspect Hook, Look+Enter Reach & Fuzz
   });
 
   it('enforces touch/melee interaction reach and supports reach_probe tools & interaction_reach_tiles modifiers', () => {
-    const campaign = loadCampaignFromDisk('dnd35e-crypt');
-    let state = buildGameState(campaign);
+    let state = buildGameState(sharedDndCampaign);
     const playerId = getPlayerId(state);
     const playerPos = getComponent(state, playerId, ComponentType.Position) as PositionComponent;
 
@@ -232,11 +233,24 @@ describe('Milestone 166: Post-Phase-43 UI, Inspect Hook, Look+Enter Reach & Fuzz
     ).toBe(true);
     const extendedVerbs = getValidVerbsForTarget(state, playerId, { type: 'entity', entityId: distantChestId });
     expect(extendedVerbs).toContain('open');
+
+    // hasOutOfReachVerbsForTarget accurately distinguishes distant interactable chests from uninteractable targets
+    expect(hasOutOfReachVerbsForTarget(state, playerId, { type: 'entity', entityId: distantChestId })).toBe(false);
+    const shortReachState = setDnD35EntityData(state, playerId, {
+      ...dndData,
+      statModifiers: (dndData.statModifiers ?? []).filter((m) => m.targetStat !== 'interaction_reach_tiles')
+    });
+    expect(
+      hasOutOfReachVerbsForTarget(shortReachState, playerId, { type: 'entity', entityId: distantChestId })
+    ).toBe(true);
+    let inertId: EntityId;
+    [state, inertId] = createEntity(shortReachState);
+    state = addComponent(state, inertId, { type: ComponentType.Position, x: playerPos.x + 10, y: playerPos.y });
+    expect(hasOutOfReachVerbsForTarget(state, playerId, { type: 'entity', entityId: inertId })).toBe(false);
   });
 
   it('targets Look reticle coordinates on Enter instead of player tile and blocks out-of-reach targets cleanly', () => {
-    const campaign = loadCampaignFromDisk('dnd35e-crypt');
-    let state = buildGameState(campaign);
+    let state = buildGameState(sharedDndCampaign);
     const playerId = getPlayerId(state);
     const playerPos = getComponent(state, playerId, ComponentType.Position) as PositionComponent;
 
@@ -301,14 +315,13 @@ describe('Milestone 166: Post-Phase-43 UI, Inspect Hook, Look+Enter Reach & Fuzz
   });
 
   it('enforces complete class featureDetails in validator & removes duplicate D&D 3.5e dock Sheet button', () => {
-    const campaign = loadCampaignFromDisk('dnd35e-crypt');
-    const validationErrors = getRuleset('dnd35e').validateCampaignRuleset?.(campaign) ?? [];
+    const validationErrors = getRuleset('dnd35e').validateCampaignRuleset?.(sharedDndCampaign) ?? [];
     const featureDetailErrors = validationErrors.filter((e) =>
       e.message.includes('missing from both class featureDetails and systemContent.feats')
     );
     expect(featureDetailErrors).toEqual([]);
 
-    const sys = getDnD35SystemContent(campaign);
+    const sys = getDnD35SystemContent(sharedDndCampaign);
     expect(sys).toBeDefined();
     if (sys) {
       const brokenSys = {

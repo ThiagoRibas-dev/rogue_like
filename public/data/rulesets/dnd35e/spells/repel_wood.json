@@ -32,7 +32,21 @@
     },
     "aoeShape": "single",
     "aoeRadiusFt": 0,
-    "effectUnits": [],
+    "effectUnits": [
+      {
+        "unitId": "repel_wood_field",
+        "targetRole": "area_occupant",
+        "type": "spatial_field",
+        "fieldType": "field_repel_wood",
+        "radiusFt": 30,
+        "anchorToCaster": false,
+        "blocksLoS": false,
+        "blocksLoE": false,
+        "suppressedTags": [
+          "wooden_projectile"
+        ]
+      }
+    ],
     "tags": [
       "transmutation",
       "wood",

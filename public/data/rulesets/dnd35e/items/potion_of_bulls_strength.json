@@ -16,7 +16,7 @@
       "spell:bulls_strength"
     ],
     "consumable": {
-      "effectId": "heal_5",
+      "effectId": "spell:bulls_strength",
       "charges": 1
     },
     "spriteId": "item_red_potion"

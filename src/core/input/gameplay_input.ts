@@ -8,9 +8,9 @@ import {
 } from '../../actions/targeting.actions.ts';
 import { addMessage, MessageLogCategory } from '../../systems/message.system.ts';
 import {
-  computeInteractionTargetDistanceTiles,
   getValidVerbsForTarget,
-  getVerbOptionsForTarget
+  getVerbOptionsForTarget,
+  hasOutOfReachVerbsForTarget
 } from '../../systems/apply.system.ts';
 import { ComponentType, type FighterComponent, type PositionComponent } from '../../types/components.types.ts';
 import { EngineMode, type EntityId, type GameState, UIMode } from '../../types/game-state.types.ts';
@@ -45,12 +45,9 @@ function handleSmartInteraction(
   const validVerbs = getValidVerbsForTarget(state, playerEntityId, target, toolEntityId);
 
   if (validVerbs.length === 0) {
-    const dist = computeInteractionTargetDistanceTiles(state, playerEntityId, target);
-    const hasOutOfReachSubject = target.type === 'entity' || target.type === 'item';
-    const message =
-      dist !== null && dist > 1 && hasOutOfReachSubject
-        ? 'That is out of reach.'
-        : 'Nothing interesting to interact with there.';
+    const message = hasOutOfReachVerbsForTarget(state, playerEntityId, target, toolEntityId)
+      ? 'That is out of reach.'
+      : 'Nothing interesting to interact with there.';
     setGameState(addMessage(state, message, MessageLogCategory.System));
     return;
   }
@@ -206,7 +203,7 @@ export function handleGameplayOrTargetingKey(
 
   if (isTargeting && targeting !== undefined && isCommandMatched(event, 'action.verb_menu')) {
     event.preventDefault();
-    handleSmartInteraction(currentState, playerEntityId, { type: 'tile', x: targeting.x, y: targeting.y });
+    interactWithTile(currentState, playerEntityId, targeting.x, targeting.y);
     return true;
   }
 

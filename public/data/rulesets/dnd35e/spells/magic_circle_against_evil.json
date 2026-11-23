@@ -33,7 +33,83 @@
     "allowsSpellResistance": false,
     "aoeShape": "emanation",
     "aoeRadiusFt": 10,
-    "effectUnits": [],
+    "effectUnits": [
+      {
+        "unitId": "magic_circle_against_evil_aura_field",
+        "targetRole": "caster",
+        "type": "spatial_field",
+        "fieldType": "field_magic_circle_against_evil",
+        "radiusFt": 10,
+        "anchorToCaster": true,
+        "blocksLoS": false,
+        "blocksLoE": false,
+        "suppressedTags": []
+      },
+      {
+        "unitId": "magic_circle_against_evil_ward_bundle",
+        "targetRole": "primary_target",
+        "type": "stat_bundle",
+        "effectBundle": {
+          "bundleId": "magic_circle_against_evil_bundle",
+          "name": "Magic Circle against Evil",
+          "category": "trait",
+          "usageMode": "passive",
+          "modifiers": [
+            {
+              "id": "magic_circle_against_evil_ac",
+              "target": "ac",
+              "value": 2,
+              "type": "deflection",
+              "condition": {
+                "targetTagsAny": [
+                  "alignment:LE",
+                  "alignment:NE",
+                  "alignment:CE"
+                ]
+              }
+            },
+            {
+              "id": "magic_circle_against_evil_save",
+              "target": "saves",
+              "value": 2,
+              "type": "resistance",
+              "condition": {
+                "targetTagsAny": [
+                  "alignment:LE",
+                  "alignment:NE",
+                  "alignment:CE"
+                ]
+              }
+            }
+          ],
+          "ruleOverrides": [
+            {
+              "id": "magic_circle_against_evil_mental",
+              "ruleKey": "immune_mental_control_evil",
+              "value": true,
+              "priority": 10
+            },
+            {
+              "id": "magic_circle_against_evil_contact",
+              "ruleKey": "block_summoned_bodily_contact_evil",
+              "value": true,
+              "priority": 10
+            }
+          ],
+          "grantedTags": [
+            "ward:magic_circle_against_evil",
+            "ward:anti_evil"
+          ],
+          "grantedFeats": [],
+          "virtualFeatGrants": [],
+          "classSkillsAdded": [],
+          "immunities": [],
+          "vulnerabilities": [],
+          "energyResistances": {},
+          "activatedAbilities": []
+        }
+      }
+    ],
     "tags": [
       "abjuration",
       "good",

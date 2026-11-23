@@ -34,7 +34,45 @@
     },
     "aoeShape": "single",
     "aoeRadiusFt": 0,
-    "effectUnits": [],
+    "effectUnits": [
+      {
+        "unitId": "find_the_path_guidance",
+        "targetRole": "caster",
+        "type": "stat_bundle",
+        "effectBundle": {
+          "bundleId": "find_the_path_bundle",
+          "name": "Find the Path",
+          "category": "trait",
+          "usageMode": "passive",
+          "modifiers": [
+            {
+              "id": "ftp_survival",
+              "target": "skill:survival",
+              "value": 10,
+              "type": "insight"
+            }
+          ],
+          "ruleOverrides": [
+            {
+              "id": "ftp_rule",
+              "ruleKey": "find_the_path_active",
+              "value": true,
+              "priority": 10
+            }
+          ],
+          "grantedTags": [
+            "navigation:find_the_path"
+          ],
+          "grantedFeats": [],
+          "virtualFeatGrants": [],
+          "classSkillsAdded": [],
+          "immunities": [],
+          "vulnerabilities": [],
+          "energyResistances": {},
+          "activatedAbilities": []
+        }
+      }
+    ],
     "tags": [
       "divination",
       "navigation",

@@ -242,7 +242,19 @@ const RACE_IDS: ReadonlyArray<string> = [
   'elemental_air',
   'elemental_earth',
   'elemental_fire',
-  'elemental_water'
+  'elemental_water',
+  'bat',
+  'cat',
+  'hawk',
+  'owl',
+  'rat',
+  'raven',
+  'viper',
+  'toad',
+  'weasel',
+  'badger',
+  'riding_dog',
+  'eagle'
 ];
 
 const CONDITION_IDS: ReadonlyArray<string> = [
@@ -284,27 +296,16 @@ const CONDITION_IDS: ReadonlyArray<string> = [
  * Multiple descriptors sharing the same `key` are shallow-merged by `loader.ts`, `tests/helpers.ts`, and `run-validator.ts`.
  */
 export const DND35E_SYSTEM_CONTENT_FILES: ReadonlyArray<RulesetSystemFileDescriptor> = [
-  { key: 'classes', filename: 'classes.json' },
   ...CLASS_IDS.map((id) => ({ key: 'classes', filename: `classes/${id}.json` })),
-  { key: 'domains', filename: 'domains.json' },
   ...DOMAIN_IDS.map((id) => ({ key: 'domains', filename: `domains/${id}.json` })),
-  { key: 'skills', filename: 'skills.json' },
   ...SKILL_IDS.map((id) => ({ key: 'skills', filename: `skills/${id}.json` })),
-  { key: 'feats', filename: 'feats.json' },
   ...FEAT_IDS.map((id) => ({ key: 'feats', filename: `feats/${id}.json` })),
-  { key: 'spells', filename: 'spells.json' },
   ...SPELL_IDS.map((id) => ({ key: 'spells', filename: `spells/${id}.json` })),
-  { key: 'templates', filename: 'templates.json' },
   ...TEMPLATE_IDS.map((id) => ({ key: 'templates', filename: `templates/${id}.json` })),
-  { key: 'races', filename: 'races.json' },
   ...RACE_IDS.map((id) => ({ key: 'races', filename: `races/${id}.json` })),
-  { key: 'creatureTypes', filename: 'creature_types.json' },
   ...CREATURE_TYPE_IDS.map((id) => ({ key: 'creatureTypes', filename: `creature_types/${id}.json` })),
-  { key: 'subtypes', filename: 'subtypes.json' },
   ...SUBTYPE_IDS.map((id) => ({ key: 'subtypes', filename: `subtypes/${id}.json` })),
-  { key: 'items', filename: 'items.json' },
   ...ITEM_IDS.map((id) => ({ key: 'items', filename: `items/${id}.json` })),
   { key: 'itemEnhancements', filename: 'item_enhancements.json' },
-  { key: 'conditionEffects', filename: 'conditions.json' },
   ...CONDITION_IDS.map((id) => ({ key: 'conditionEffects', filename: `conditions/${id}.json` }))
 ];

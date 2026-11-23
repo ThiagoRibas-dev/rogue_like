@@ -94,6 +94,8 @@ export const ItemDefinitionSchema = z.object({
       pattern: z.enum(['beam', 'bolt', 'cone']),
       effectId: z.string(),
       charges: z.number().int().positive().optional(),
+      maxCharges: z.number().int().positive().optional(),
+      currentCharges: z.number().int().nonnegative().optional(),
       spellId: z.string().optional()
     })
     .optional(),

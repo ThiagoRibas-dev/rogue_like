@@ -16,7 +16,7 @@
       "spell:mage_armor"
     ],
     "consumable": {
-      "effectId": "heal_5",
+      "effectId": "spell:mage_armor",
       "charges": 1
     },
     "spriteId": "item_scroll"

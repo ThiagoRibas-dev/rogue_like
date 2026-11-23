@@ -103,6 +103,7 @@ export function VerbMenuPopover(): JSX.Element | null {
     if (!isOpen) return;
     setSearchQuery('');
     setSelectedIndex(0);
+    searchInputRef.current?.focus();
     const frameId = requestAnimationFrame(() => {
       searchInputRef.current?.focus();
     });
@@ -248,7 +249,7 @@ export function VerbMenuPopover(): JSX.Element | null {
         )}
       </div>
       <div className="ui-verb-popover__footer">
-        <Button variant="ghost" size="sm" onClick={closeMenu}>
+        <Button variant="ghost" size="sm" tabIndex={-1} onClick={closeMenu}>
           Cancel [Esc]
         </Button>
       </div>

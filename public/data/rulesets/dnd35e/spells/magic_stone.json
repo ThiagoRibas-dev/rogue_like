@@ -29,7 +29,58 @@
     "allowsSpellResistance": false,
     "aoeShape": "single",
     "aoeRadiusFt": 0,
-    "effectUnits": [],
+    "effectUnits": [
+      {
+        "unitId": "magic_stone_buff",
+        "targetRole": "primary_target",
+        "type": "stat_bundle",
+        "effectBundle": {
+          "bundleId": "magic_stone_bundle",
+          "name": "Magic Stone",
+          "category": "trait",
+          "usageMode": "passive",
+          "modifiers": [
+            {
+              "id": "magic_stone_atk",
+              "target": "attack",
+              "value": 1,
+              "type": "enhancement",
+              "condition": {
+                "effectTagsAny": [
+                  "ranged",
+                  "thrown",
+                  "sling"
+                ]
+              }
+            },
+            {
+              "id": "magic_stone_dmg",
+              "target": "damage",
+              "value": 1,
+              "type": "enhancement",
+              "condition": {
+                "effectTagsAny": [
+                  "ranged",
+                  "thrown",
+                  "sling"
+                ]
+              }
+            }
+          ],
+          "ruleOverrides": [],
+          "grantedTags": [
+            "magic_stone_imbued"
+          ],
+          "grantedFeats": [],
+          "virtualFeatGrants": [],
+          "classSkillsAdded": [],
+          "immunities": [],
+          "vulnerabilities": [],
+          "energyResistances": {},
+          "activatedAbilities": []
+        }
+      }
+    ],
     "tags": [
       "divine",
       "transmutation",

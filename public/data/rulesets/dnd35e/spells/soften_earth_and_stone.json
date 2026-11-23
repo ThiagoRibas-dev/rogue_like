@@ -30,7 +30,20 @@
     "allowsSpellResistance": false,
     "aoeShape": "single",
     "aoeRadiusFt": 0,
-    "effectUnits": [],
+    "effectUnits": [
+      {
+        "unitId": "soften_earth_field",
+        "targetRole": "area_occupant",
+        "type": "spatial_field",
+        "fieldType": "field_mud_mire",
+        "radiusFt": 10,
+        "anchorToCaster": false,
+        "blocksLoS": false,
+        "blocksLoE": false,
+        "movementCostMultiplier": 2,
+        "suppressedTags": []
+      }
+    ],
     "tags": [
       "divine",
       "transmutation",

@@ -16,7 +16,7 @@
       "spell:cure_light_wounds"
     ],
     "zappable": {
-      "effectId": "heal_5",
+      "effectId": "spell:cure_light_wounds",
       "spellId": "cure_light_wounds",
       "pattern": "bolt",
       "range": 6,

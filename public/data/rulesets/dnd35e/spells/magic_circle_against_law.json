@@ -32,7 +32,83 @@
     "allowsSpellResistance": false,
     "aoeShape": "emanation",
     "aoeRadiusFt": 10,
-    "effectUnits": [],
+    "effectUnits": [
+      {
+        "unitId": "magic_circle_against_law_aura_field",
+        "targetRole": "caster",
+        "type": "spatial_field",
+        "fieldType": "field_magic_circle_against_law",
+        "radiusFt": 10,
+        "anchorToCaster": true,
+        "blocksLoS": false,
+        "blocksLoE": false,
+        "suppressedTags": []
+      },
+      {
+        "unitId": "magic_circle_against_law_ward_bundle",
+        "targetRole": "primary_target",
+        "type": "stat_bundle",
+        "effectBundle": {
+          "bundleId": "magic_circle_against_law_bundle",
+          "name": "Magic Circle against Law",
+          "category": "trait",
+          "usageMode": "passive",
+          "modifiers": [
+            {
+              "id": "magic_circle_against_law_ac",
+              "target": "ac",
+              "value": 2,
+              "type": "deflection",
+              "condition": {
+                "targetTagsAny": [
+                  "alignment:LG",
+                  "alignment:LN",
+                  "alignment:LE"
+                ]
+              }
+            },
+            {
+              "id": "magic_circle_against_law_save",
+              "target": "saves",
+              "value": 2,
+              "type": "resistance",
+              "condition": {
+                "targetTagsAny": [
+                  "alignment:LG",
+                  "alignment:LN",
+                  "alignment:LE"
+                ]
+              }
+            }
+          ],
+          "ruleOverrides": [
+            {
+              "id": "magic_circle_against_law_mental",
+              "ruleKey": "immune_mental_control_law",
+              "value": true,
+              "priority": 10
+            },
+            {
+              "id": "magic_circle_against_law_contact",
+              "ruleKey": "block_summoned_bodily_contact_law",
+              "value": true,
+              "priority": 10
+            }
+          ],
+          "grantedTags": [
+            "ward:magic_circle_against_law",
+            "ward:anti_law"
+          ],
+          "grantedFeats": [],
+          "virtualFeatGrants": [],
+          "classSkillsAdded": [],
+          "immunities": [],
+          "vulnerabilities": [],
+          "energyResistances": {},
+          "activatedAbilities": []
+        }
+      }
+    ],
     "tags": [
       "abjuration",
       "chaotic",

@@ -16,7 +16,7 @@
       "spell:cure_light_wounds"
     ],
     "consumable": {
-      "effectId": "heal_5",
+      "effectId": "spell:cure_light_wounds",
       "charges": 1
     },
     "spriteId": "item_red_potion"

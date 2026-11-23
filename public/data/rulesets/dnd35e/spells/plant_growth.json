@@ -29,7 +29,20 @@
     "allowsSpellResistance": false,
     "aoeShape": "single",
     "aoeRadiusFt": 0,
-    "effectUnits": [],
+    "effectUnits": [
+      {
+        "unitId": "plant_growth_field",
+        "targetRole": "area_occupant",
+        "type": "spatial_field",
+        "fieldType": "field_overgrowth",
+        "radiusFt": 20,
+        "anchorToCaster": false,
+        "blocksLoS": false,
+        "blocksLoE": false,
+        "movementCostMultiplier": 4,
+        "suppressedTags": []
+      }
+    ],
     "tags": [
       "divine",
       "plants",

@@ -34,6 +34,45 @@
       "arcane",
       "transmutation",
       "telekinesis"
+    ],
+    "effectUnits": [
+      {
+        "unitId": "mage_hand_telekinesis",
+        "targetRole": "caster",
+        "type": "stat_bundle",
+        "effectBundle": {
+          "bundleId": "mage_hand_bundle",
+          "name": "Mage Hand",
+          "category": "trait",
+          "usageMode": "passive",
+          "modifiers": [
+            {
+              "id": "mage_hand_reach",
+              "target": "interaction_reach_tiles",
+              "value": 5,
+              "type": "untyped"
+            }
+          ],
+          "ruleOverrides": [
+            {
+              "id": "mage_hand_rule",
+              "ruleKey": "telekinetic_object_manipulation",
+              "value": true,
+              "priority": 10
+            }
+          ],
+          "grantedTags": [
+            "mage_hand_active"
+          ],
+          "grantedFeats": [],
+          "virtualFeatGrants": [],
+          "classSkillsAdded": [],
+          "immunities": [],
+          "vulnerabilities": [],
+          "energyResistances": {},
+          "activatedAbilities": []
+        }
+      }
     ]
   }
 }

@@ -1,0 +1,56 @@
+{
+  "riding_dog": {
+    "id": "riding_dog",
+    "name": "Riding Dog",
+    "isPlayableRace": false,
+    "creatureType": "animal",
+    "subtypes": [],
+    "size": "medium",
+    "baseLandSpeedFt": 40,
+    "naturalArmorBonus": 4,
+    "abilityAdjustments": {
+      "str": 5,
+      "dex": 5,
+      "con": 5,
+      "int": -8,
+      "wis": 2,
+      "cha": -4
+    },
+    "defaultAbilityScores": {
+      "str": 15,
+      "dex": 15,
+      "con": 15,
+      "int": 2,
+      "wis": 12,
+      "cha": 6
+    },
+    "rhdProgression": {
+      "baseHdCount": 2,
+      "saveCurveOverrides": {
+        "fortCurve": "good",
+        "refCurve": "good",
+        "willCurve": "poor"
+      }
+    },
+    "defaultClassLevels": [],
+    "levelAdjustment": 0,
+    "favoredClass": "any",
+    "companionTags": [
+      "animal_companion",
+      "mount"
+    ],
+    "naturalWeapons": [
+      {
+        "id": "bite",
+        "name": "Bite",
+        "naturalType": "bite",
+        "isPrimary": true,
+        "count": 1,
+        "damageDice": "1d6",
+        "damageType": "piercing",
+        "critThreatMin": 20,
+        "critMultiplier": 2
+      }
+    ]
+  }
+}

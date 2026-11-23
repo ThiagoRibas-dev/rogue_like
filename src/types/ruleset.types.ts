@@ -565,6 +565,18 @@ export interface RulesetContract {
     baseReachTiles: number,
     toolEntityId?: EntityId
   ) => number;
+
+  /**
+   * Optional cartridge hook to apply a ruleset-native item or ability effect (such as `spell:<spellId>`
+   * on potions, scrolls, wands, and staves). Returns `null` if unhandled by the ruleset.
+   */
+  readonly resolveItemEffect?: (
+    state: GameState,
+    userId: EntityId,
+    effectId: string,
+    itemName: string,
+    explicitTargetId?: EntityId
+  ) => GameState | null;
 }
 
 /** Context passed to `RulesetContract.evaluateTradePriceModifier`. */

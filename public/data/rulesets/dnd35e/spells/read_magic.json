@@ -36,6 +36,45 @@
       "arcane",
       "divine",
       "divination"
+    ],
+    "effectUnits": [
+      {
+        "unitId": "read_magic_buff",
+        "targetRole": "caster",
+        "type": "stat_bundle",
+        "effectBundle": {
+          "bundleId": "read_magic_bundle",
+          "name": "Read Magic",
+          "category": "trait",
+          "usageMode": "passive",
+          "modifiers": [
+            {
+              "id": "read_magic_sc",
+              "target": "skill:spellcraft",
+              "value": 5,
+              "type": "insight"
+            }
+          ],
+          "ruleOverrides": [
+            {
+              "id": "read_magic_rule",
+              "ruleKey": "read_magic_active",
+              "value": true,
+              "priority": 10
+            }
+          ],
+          "grantedTags": [
+            "senses:read_magic"
+          ],
+          "grantedFeats": [],
+          "virtualFeatGrants": [],
+          "classSkillsAdded": [],
+          "immunities": [],
+          "vulnerabilities": [],
+          "energyResistances": {},
+          "activatedAbilities": []
+        }
+      }
     ]
   }
 }

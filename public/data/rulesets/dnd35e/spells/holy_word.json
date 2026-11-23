@@ -31,7 +31,37 @@
     "allowsSpellResistance": true,
     "aoeShape": "burst",
     "aoeRadiusFt": 40,
-    "effectUnits": [],
+    "effectUnits": [
+      {
+        "unitId": "holy_word_deafen",
+        "targetRole": "area_occupant",
+        "type": "condition",
+        "conditionId": "deafened",
+        "condition": {
+          "targetTagsNone": [
+            "alignment:LG",
+            "alignment:NG",
+            "alignment:CG"
+          ]
+        }
+      },
+      {
+        "unitId": "holy_word_banish",
+        "targetRole": "area_occupant",
+        "type": "save_or_die",
+        "onFailOutcome": "banished",
+        "condition": {
+          "targetTagsAll": [
+            "subtype:extraplanar"
+          ],
+          "targetTagsAny": [
+            "alignment:LE",
+            "alignment:NE",
+            "alignment:CE"
+          ]
+        }
+      }
+    ],
     "tags": [
       "divine",
       "evocation",

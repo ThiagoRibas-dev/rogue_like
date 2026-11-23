@@ -217,7 +217,9 @@ export function resolveActorSkillsSnapshot(
   const conditionSkillMods = buildConditionStatModifiers(
     conditions as ReadonlyArray<DnD35ConditionId>,
     conditionRegistry
-  ).filter((m) => isAllSkillsTarget(m.targetStat) || m.targetStat.startsWith('skill:') || m.targetStat.startsWith('skill_'));
+  ).filter(
+    (m) => isAllSkillsTarget(m.targetStat) || m.targetStat.startsWith('skill:') || m.targetStat.startsWith('skill_')
+  );
   const existingSourceIds = new Set(statModifiers.map((m) => m.sourceId));
   const missingConditionMods = conditionSkillMods.filter((m) => !existingSourceIds.has(m.sourceId));
 

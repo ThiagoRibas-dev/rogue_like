@@ -49,7 +49,7 @@ import { executeDruidShapeshift, type DnD35ShapeshiftFormId } from './shapeshift
 import { resolveDnD35eActorSpatialProfile, syncDnD35eActorSpatialFootprint } from './spatial/footprint_resolver.ts';
 import { toggleActorFastStealth, toggleActorStealth } from './spatial/stealth_resolver.ts';
 import { evaluateActorTileHazardOccupation } from './spatial/terrain_traversal_resolver.ts';
-import { executeDnD35eSpellCast } from './magic/spell_cast_resolver.ts';
+import { executeDnD35eSpellCast, resolveDnD35eSpellItemEffect } from './magic/spell_cast_resolver.ts';
 import { spawnArcaneCasterSpellbookLoot } from './magic/spellbook_loot.ts';
 import { DND35E_SYSTEM_CONTENT_FILES } from './system_content_files.ts';
 import { getDnD35SystemContent, parseDnD35SystemContent } from './types/dnd35e_system.types.ts';
@@ -231,6 +231,7 @@ export const dnd35eRulesetContract: RulesetContract = {
   projectHudVitals: projectDnD35eHudVitals,
   projectInspectStats: projectDnD35eInspectStats,
   resolveInteractionReachTiles: resolveDnD35eInteractionReachTiles,
+  resolveItemEffect: resolveDnD35eSpellItemEffect,
   getEditorViewGroups(baseGroups: ReadonlyArray<ViewGroup>): ReadonlyArray<ViewGroup> {
     return baseGroups;
   },

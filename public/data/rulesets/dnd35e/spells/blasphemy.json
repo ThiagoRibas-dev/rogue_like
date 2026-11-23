@@ -31,7 +31,37 @@
     "allowsSpellResistance": true,
     "aoeShape": "burst",
     "aoeRadiusFt": 40,
-    "effectUnits": [],
+    "effectUnits": [
+      {
+        "unitId": "blasphemy_daze",
+        "targetRole": "area_occupant",
+        "type": "condition",
+        "conditionId": "dazed",
+        "condition": {
+          "targetTagsNone": [
+            "alignment:LE",
+            "alignment:NE",
+            "alignment:CE"
+          ]
+        }
+      },
+      {
+        "unitId": "blasphemy_banish",
+        "targetRole": "area_occupant",
+        "type": "save_or_die",
+        "onFailOutcome": "banished",
+        "condition": {
+          "targetTagsAll": [
+            "subtype:extraplanar"
+          ],
+          "targetTagsAny": [
+            "alignment:LG",
+            "alignment:NG",
+            "alignment:CG"
+          ]
+        }
+      }
+    ],
     "tags": [
       "divine",
       "evocation",

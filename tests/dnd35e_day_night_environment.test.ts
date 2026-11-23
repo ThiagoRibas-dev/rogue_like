@@ -58,9 +58,9 @@ describe('World Clock, Area Environment, Condition Effects, Hunger Scaling & D&D
   const sharedCryptCampaign = loadCampaignFromDisk('dnd35e-crypt');
   const sysContent = getDnD35SystemContent(sharedCryptCampaign)!;
 
-  test('Phase 0: 21 declarative conditionEffects JSONs match exact mechanics and dazzled penalizes Attack/Spot/Search', () => {
+  test('Phase 0: 31 declarative conditionEffects JSONs match exact mechanics and dazzled penalizes Attack/Spot/Search', () => {
     const condReg = sysContent.conditionEffects;
-    expect(Object.keys(condReg).length).toBe(21);
+    expect(Object.keys(condReg).length).toBe(31);
 
     const expected: Record<
       DnD35ConditionId,

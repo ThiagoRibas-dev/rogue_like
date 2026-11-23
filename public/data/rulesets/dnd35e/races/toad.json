@@ -1,0 +1,62 @@
+{
+  "toad": {
+    "id": "toad",
+    "name": "Toad",
+    "isPlayableRace": false,
+    "creatureType": "animal",
+    "subtypes": [],
+    "size": "diminutive",
+    "baseLandSpeedFt": 5,
+    "naturalArmorBonus": 0,
+    "abilityAdjustments": {
+      "str": -9,
+      "dex": 2,
+      "con": 1,
+      "int": -9,
+      "wis": 4,
+      "cha": -6
+    },
+    "defaultAbilityScores": {
+      "str": 1,
+      "dex": 12,
+      "con": 11,
+      "int": 1,
+      "wis": 14,
+      "cha": 4
+    },
+    "rhdProgression": {
+      "baseHdCount": 1,
+      "saveCurveOverrides": {
+        "fortCurve": "good",
+        "refCurve": "good",
+        "willCurve": "poor"
+      }
+    },
+    "defaultClassLevels": [],
+    "levelAdjustment": 0,
+    "favoredClass": "any",
+    "companionTags": [
+      "familiar"
+    ],
+    "masterEffectBundle": {
+      "bundleId": "familiar_toad_bundle",
+      "name": "Familiar Master Bonus (Toad)",
+      "category": "ex",
+      "modifiers": [
+        {
+          "id": "familiar_toad_hp",
+          "target": "max_hp",
+          "value": 3,
+          "type": "untyped"
+        }
+      ],
+      "virtualFeatGrants": [
+        {
+          "featId": "alertness",
+          "ignorePrerequisites": true
+        }
+      ]
+    },
+    "naturalWeapons": []
+  }
+}

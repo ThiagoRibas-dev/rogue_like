@@ -194,6 +194,15 @@ export class InputScopeManager {
         }
         return false;
       }
+      if (
+        state.uiMode === UIMode.VerbMenu &&
+        typeof HTMLElement !== 'undefined' &&
+        event.target instanceof HTMLElement &&
+        event.target.closest('.ui-verb-popover') !== null &&
+        (event.key === 'ArrowUp' || event.key === 'ArrowDown' || event.key === 'Enter')
+      ) {
+        return false;
+      }
       handleModalKey(event, state, playerEntityId);
       return true;
     }

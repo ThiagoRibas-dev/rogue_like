@@ -16,7 +16,7 @@
       "spell:magic_missile"
     ],
     "zappable": {
-      "effectId": "damage_5_cold",
+      "effectId": "spell:magic_missile",
       "spellId": "magic_missile",
       "pattern": "bolt",
       "range": 6,

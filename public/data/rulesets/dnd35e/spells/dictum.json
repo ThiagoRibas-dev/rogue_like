@@ -31,7 +31,37 @@
     "allowsSpellResistance": true,
     "aoeShape": "burst",
     "aoeRadiusFt": 40,
-    "effectUnits": [],
+    "effectUnits": [
+      {
+        "unitId": "dictum_slow",
+        "targetRole": "area_occupant",
+        "type": "condition",
+        "conditionId": "slowed",
+        "condition": {
+          "targetTagsNone": [
+            "alignment:LG",
+            "alignment:LN",
+            "alignment:LE"
+          ]
+        }
+      },
+      {
+        "unitId": "dictum_banish",
+        "targetRole": "area_occupant",
+        "type": "save_or_die",
+        "onFailOutcome": "banished",
+        "condition": {
+          "targetTagsAll": [
+            "subtype:extraplanar"
+          ],
+          "targetTagsAny": [
+            "alignment:CG",
+            "alignment:CN",
+            "alignment:CE"
+          ]
+        }
+      }
+    ],
     "tags": [
       "divine",
       "evocation",

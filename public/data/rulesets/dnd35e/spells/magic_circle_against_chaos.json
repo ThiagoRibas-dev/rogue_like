@@ -33,7 +33,83 @@
     "allowsSpellResistance": false,
     "aoeShape": "emanation",
     "aoeRadiusFt": 10,
-    "effectUnits": [],
+    "effectUnits": [
+      {
+        "unitId": "magic_circle_against_chaos_aura_field",
+        "targetRole": "caster",
+        "type": "spatial_field",
+        "fieldType": "field_magic_circle_against_chaos",
+        "radiusFt": 10,
+        "anchorToCaster": true,
+        "blocksLoS": false,
+        "blocksLoE": false,
+        "suppressedTags": []
+      },
+      {
+        "unitId": "magic_circle_against_chaos_ward_bundle",
+        "targetRole": "primary_target",
+        "type": "stat_bundle",
+        "effectBundle": {
+          "bundleId": "magic_circle_against_chaos_bundle",
+          "name": "Magic Circle against Chaos",
+          "category": "trait",
+          "usageMode": "passive",
+          "modifiers": [
+            {
+              "id": "magic_circle_against_chaos_ac",
+              "target": "ac",
+              "value": 2,
+              "type": "deflection",
+              "condition": {
+                "targetTagsAny": [
+                  "alignment:CG",
+                  "alignment:CN",
+                  "alignment:CE"
+                ]
+              }
+            },
+            {
+              "id": "magic_circle_against_chaos_save",
+              "target": "saves",
+              "value": 2,
+              "type": "resistance",
+              "condition": {
+                "targetTagsAny": [
+                  "alignment:CG",
+                  "alignment:CN",
+                  "alignment:CE"
+                ]
+              }
+            }
+          ],
+          "ruleOverrides": [
+            {
+              "id": "magic_circle_against_chaos_mental",
+              "ruleKey": "immune_mental_control_chaos",
+              "value": true,
+              "priority": 10
+            },
+            {
+              "id": "magic_circle_against_chaos_contact",
+              "ruleKey": "block_summoned_bodily_contact_chaos",
+              "value": true,
+              "priority": 10
+            }
+          ],
+          "grantedTags": [
+            "ward:magic_circle_against_chaos",
+            "ward:anti_chaos"
+          ],
+          "grantedFeats": [],
+          "virtualFeatGrants": [],
+          "classSkillsAdded": [],
+          "immunities": [],
+          "vulnerabilities": [],
+          "energyResistances": {},
+          "activatedAbilities": []
+        }
+      }
+    ],
     "tags": [
       "abjuration",
       "lawful",

@@ -1,0 +1,85 @@
+{
+  "cat": {
+    "id": "cat",
+    "name": "Cat",
+    "isPlayableRace": false,
+    "creatureType": "animal",
+    "subtypes": [],
+    "size": "tiny",
+    "baseLandSpeedFt": 30,
+    "naturalArmorBonus": 0,
+    "abilityAdjustments": {
+      "str": -7,
+      "dex": 5,
+      "con": 0,
+      "int": -8,
+      "wis": 2,
+      "cha": -3
+    },
+    "defaultAbilityScores": {
+      "str": 3,
+      "dex": 15,
+      "con": 10,
+      "int": 2,
+      "wis": 12,
+      "cha": 7
+    },
+    "rhdProgression": {
+      "baseHdCount": 1,
+      "saveCurveOverrides": {
+        "fortCurve": "good",
+        "refCurve": "good",
+        "willCurve": "poor"
+      }
+    },
+    "defaultClassLevels": [],
+    "levelAdjustment": 0,
+    "favoredClass": "any",
+    "companionTags": [
+      "familiar"
+    ],
+    "masterEffectBundle": {
+      "bundleId": "familiar_cat_bundle",
+      "name": "Familiar Master Bonus (Cat)",
+      "category": "ex",
+      "modifiers": [
+        {
+          "id": "familiar_cat_move_silently",
+          "target": "skill:move_silently",
+          "value": 3,
+          "type": "untyped"
+        }
+      ],
+      "virtualFeatGrants": [
+        {
+          "featId": "alertness",
+          "ignorePrerequisites": true
+        }
+      ]
+    },
+    "naturalWeapons": [
+      {
+        "id": "claw",
+        "name": "Claw",
+        "naturalType": "claw",
+        "isPrimary": true,
+        "count": 2,
+        "damageDice": "1d2",
+        "damageType": "slashing",
+        "critThreatMin": 20,
+        "critMultiplier": 2
+      },
+      {
+        "id": "bite",
+        "name": "Bite",
+        "naturalType": "bite",
+        "isPrimary": false,
+        "count": 1,
+        "damageDice": "1d3",
+        "damageType": "piercing",
+        "critThreatMin": 20,
+        "critMultiplier": 2
+      }
+    ]
+  }
+}

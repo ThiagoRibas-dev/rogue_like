@@ -36,7 +36,45 @@
     },
     "aoeShape": "cone",
     "aoeRadiusFt": 60,
-    "effectUnits": [],
+    "effectUnits": [
+      {
+        "unitId": "detect_thoughts_aura",
+        "targetRole": "caster",
+        "type": "stat_bundle",
+        "effectBundle": {
+          "bundleId": "detect_thoughts_bundle",
+          "name": "Detect Thoughts",
+          "category": "trait",
+          "usageMode": "passive",
+          "modifiers": [
+            {
+              "id": "detect_thoughts_sm",
+              "target": "skill:sense_motive",
+              "value": 4,
+              "type": "insight"
+            }
+          ],
+          "ruleOverrides": [
+            {
+              "id": "detect_thoughts_rule",
+              "ruleKey": "detect_thoughts_active",
+              "value": true,
+              "priority": 10
+            }
+          ],
+          "grantedTags": [
+            "senses:detect_thoughts"
+          ],
+          "grantedFeats": [],
+          "virtualFeatGrants": [],
+          "classSkillsAdded": [],
+          "immunities": [],
+          "vulnerabilities": [],
+          "energyResistances": {},
+          "activatedAbilities": []
+        }
+      }
+    ],
     "tags": [
       "divination",
       "mind_affecting",

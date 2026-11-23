@@ -35,7 +35,48 @@
     },
     "aoeShape": "single",
     "aoeRadiusFt": 0,
-    "effectUnits": [],
+    "effectUnits": [
+      {
+        "unitId": "restoration_cure_fatigue",
+        "targetRole": "primary_target",
+        "type": "condition",
+        "conditionId": "none",
+        "curesConditions": [
+          "fatigued",
+          "exhausted"
+        ]
+      },
+      {
+        "unitId": "restoration_cleansing",
+        "targetRole": "primary_target",
+        "type": "stat_bundle",
+        "effectBundle": {
+          "bundleId": "restoration_bundle",
+          "name": "Restoration",
+          "category": "trait",
+          "usageMode": "passive",
+          "modifiers": [],
+          "ruleOverrides": [
+            {
+              "id": "restoration_rule",
+              "ruleKey": "clears_negative_levels_and_ability_drain",
+              "value": true,
+              "priority": 10
+            }
+          ],
+          "grantedTags": [
+            "restoration_cleansed"
+          ],
+          "grantedFeats": [],
+          "virtualFeatGrants": [],
+          "classSkillsAdded": [],
+          "immunities": [],
+          "vulnerabilities": [],
+          "energyResistances": {},
+          "activatedAbilities": []
+        }
+      }
+    ],
     "tags": [
       "divine",
       "healing",

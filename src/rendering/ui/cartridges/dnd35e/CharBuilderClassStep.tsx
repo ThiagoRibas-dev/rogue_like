@@ -17,7 +17,12 @@ import type { GameState } from '../../../../types/game-state.types.ts';
 import { Chip } from '../../primitives/DataDisplay.tsx';
 import { CharBuilderClassOptions } from './CharBuilderClassOptions.tsx';
 
-function resolveClassFeatureLabel(featureId: string, classDef: DnD35ClassDefinition, sys: DnD35SystemContent): string {
+/** Resolves a human-readable D&D 3.5e class feature display name from `featureDetails` or `feats`. */
+export function resolveClassFeatureLabel(
+  featureId: string,
+  classDef: DnD35ClassDefinition,
+  sys: DnD35SystemContent
+): string {
   return classDef.featureDetails[featureId]?.name ?? sys.feats[featureId]?.name ?? featureId;
 }
 

@@ -27,7 +27,13 @@ import {
   syncDnD35eActorSpatialFootprint
 } from '../spatial/footprint_resolver.ts';
 import { getDnD35EntityData, setDnD35EntityData } from '../srd_registry.ts';
-import type { DnD35ConditionId, StatModifier } from '../types/dnd35e.types.ts';
+import {
+  ALL_ABILITY_IDS,
+  type AbilityScoresRecord,
+  type DnD35ConditionId,
+  type StatModifier
+} from '../types/dnd35e.types.ts';
+import { applyNegativeLevelsToActor } from '../progression/ledger_level_drain.ts';
 import type { DnD35RaceDefinition, DnD35SystemContent } from '../types/dnd35e_system.types.ts';
 import type { DnD35SpellDefinition, DnD35SpellEffectUnit } from '../types/system/spell_system.types.ts';
 import { evaluateMetamagicDamage, type MetamagicSpellModifiers } from './metamagic_dispel.ts';
@@ -251,13 +257,57 @@ function applySingleSpellUnit(ctx: ApplySpellEffectsContext, unit: DnD35SpellEff
       return addMessage(runningState, `${spell.name} heals ${restored} HP.`, MessageLogCategory.System);
     }
 
-    case 'stat_bundle':
-      return appendTargetModifiers(
+    case 'stat_bundle': {
+      runningState = appendTargetModifiers(
         runningState,
         targetId,
         spell.id,
         materializeSpellUnitModifiers(spell, unit, casterLevel, castId)
       );
+      const clearsDrain = unit.effectBundle.ruleOverrides.some(
+        (r) => r.ruleKey === 'clears_negative_levels_and_ability_drain' && r.value === true
+      );
+      if (clearsDrain) {
+        let restoredAnything = false;
+        const preDnd = getDnD35EntityData(runningState, targetId);
+        if ((preDnd.negativeLevels ?? 0) > 0) {
+          runningState = applyNegativeLevelsToActor(runningState, targetId, 0);
+          restoredAnything = true;
+        }
+        const curDnd = getDnD35EntityData(runningState, targetId);
+        const nextAbilities: Record<string, AbilityScoresRecord[keyof AbilityScoresRecord]> = {
+          ...curDnd.abilityScores
+        };
+        for (const abId of ALL_ABILITY_IDS) {
+          const score = curDnd.abilityScores[abId];
+          if (score.damage > 0 || score.drain > 0 || score.tempPenalty > 0) {
+            nextAbilities[abId] = { ...score, damage: 0, drain: 0, tempPenalty: 0 };
+            restoredAnything = true;
+          }
+        }
+        const abilityIdSet = new Set<string>(ALL_ABILITY_IDS);
+        const existingMods = curDnd.statModifiers ?? [];
+        const cleanedMods = existingMods.filter(
+          (m) => !(m.origin === 'spell' && m.value < 0 && abilityIdSet.has(m.targetStat))
+        );
+        if (cleanedMods.length !== existingMods.length) {
+          restoredAnything = true;
+        }
+        if (restoredAnything) {
+          runningState = setDnD35EntityData(runningState, targetId, {
+            ...curDnd,
+            abilityScores: nextAbilities as unknown as AbilityScoresRecord,
+            statModifiers: cleanedMods
+          });
+          runningState = addMessage(
+            runningState,
+            `${spell.name} restores drained abilities and dispels negative levels.`,
+            MessageLogCategory.System
+          );
+        }
+      }
+      return runningState;
+    }
 
     case 'condition': {
       const targetDnd = getDnD35EntityData(runningState, targetId);

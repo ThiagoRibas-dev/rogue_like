@@ -75,7 +75,24 @@ export function partitionDAGModifiers(allModifiers: ReadonlyArray<StatModifier>)
     ac_insight: 'ac'
   };
 
-  for (const m of allModifiers) {
+  const FEAR_SAVE_EFFECT_TAGS: ReadonlyArray<string> = ['fear', 'descriptor:fear'];
+
+  for (const rawMod of allModifiers) {
+    let m = rawMod;
+    if (rawMod.targetStat === 'save_fear' && !rawMod.condition?.effectTagsAny) {
+      m = {
+        ...rawMod,
+        condition: {
+          ...(rawMod.condition ?? {}),
+          effectTagsAny: FEAR_SAVE_EFFECT_TAGS
+        }
+      };
+    } else if (rawMod.targetStat === 'ac_deflection' && rawMod.bonusType === 'untyped') {
+      m = { ...rawMod, bonusType: 'deflection' };
+    } else if (rawMod.targetStat === 'ac_insight' && rawMod.bonusType === 'untyped') {
+      m = { ...rawMod, bonusType: 'insight' };
+    }
+
     const canonicalStat =
       ALIAS_MAP[m.targetStat] ?? (m.targetStat.startsWith('skill:') ? m.targetStat.slice(6) : m.targetStat);
     const statBucket = modsByStat[canonicalStat];

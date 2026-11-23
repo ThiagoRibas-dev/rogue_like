@@ -105,14 +105,40 @@ export function enumerateSpellTargets(
   areaMultiplier: number,
   skipAllies = false
 ): ReadonlyArray<EntityId> {
+  const isArea =
+    spell.targeting?.mode === 'area' ||
+    spell.aoeShape === 'burst' ||
+    spell.aoeShape === 'spread' ||
+    spell.aoeShape === 'cone' ||
+    spell.aoeShape === 'line' ||
+    spell.aoeShape === 'emanation';
+  const hasNonCasterUnits =
+    spell.effectUnits.length > 0
+      ? spell.effectUnits.some((u) => u.type !== 'spatial_field' && u.type !== 'summon' && u.targetRole !== 'caster')
+      : Boolean(spell.damageDice);
+
   const isSelfAnchoredField = spell.effectUnits.some((u) => u.type === 'spatial_field' && u.anchorToCaster);
-  if (spell.range === 'personal' || spell.targeting?.mode === 'personal' || isSelfAnchoredField) {
+  if (isSelfAnchoredField) {
+    return [casterId];
+  }
+  if (
+    (spell.range === 'personal' || spell.targeting?.mode === 'personal') &&
+    (!isArea || spell.aoeRadiusFt <= 0 || !hasNonCasterUnits)
+  ) {
     return [casterId];
   }
 
   const validCategories = spell.targeting?.validTargetCategories;
   const shouldSkipAllies = skipAllies && isOffensiveDnD35Spell(spell);
+  const excludesCasterFromPersonalAoE =
+    spell.range === 'personal' &&
+    !(validCategories?.includes('self') ?? false) &&
+    (isOffensiveDnD35Spell(spell) ||
+      spell.effectUnits.some((u) => u.type === 'condition' && u.curesConditions.length === 0));
   const isEligible = (id: EntityId): boolean => {
+    if (excludesCasterFromPersonalAoE && id === casterId) {
+      return false;
+    }
     if (validCategories !== undefined && validCategories.length > 0) {
       if (!matchesTargetCategoryFilter(state, casterId, id, validCategories)) return false;
     } else {
@@ -124,18 +150,13 @@ export function enumerateSpellTargets(
     return true;
   };
 
-  const isArea =
-    spell.targeting?.mode === 'area' ||
-    spell.aoeShape === 'burst' ||
-    spell.aoeShape === 'spread' ||
-    spell.aoeShape === 'cone' ||
-    spell.aoeShape === 'line' ||
-    spell.aoeShape === 'emanation';
-
   if (isArea && spell.aoeRadiusFt > 0) {
     const shape: AoETemplateShape =
       spell.aoeShape === 'cone' || spell.aoeShape === 'line' || spell.aoeShape === 'burst' ? spell.aoeShape : 'spread';
-    const origin = shape === 'cone' || shape === 'line' ? { x: casterPos.x, y: casterPos.y } : targetPos;
+    const origin =
+      shape === 'cone' || shape === 'line' || spell.range === 'personal'
+        ? { x: casterPos.x, y: casterPos.y }
+        : targetPos;
     const isWallAt = (x: number, y: number): boolean => {
       if (x < 0 || x >= state.map.width || y < 0 || y >= state.map.height) return true;
       const tile = state.map.tiles[y * state.map.width + x];

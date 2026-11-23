@@ -29,7 +29,45 @@
     "allowsSpellResistance": false,
     "aoeShape": "single",
     "aoeRadiusFt": 0,
-    "effectUnits": [],
+    "effectUnits": [
+      {
+        "unitId": "commune_with_nature_buff",
+        "targetRole": "caster",
+        "type": "stat_bundle",
+        "effectBundle": {
+          "bundleId": "commune_nature_bundle",
+          "name": "Commune with Nature",
+          "category": "trait",
+          "usageMode": "passive",
+          "modifiers": [
+            {
+              "id": "commune_nature_know",
+              "target": "skill:knowledge_nature",
+              "value": 5,
+              "type": "insight"
+            }
+          ],
+          "ruleOverrides": [
+            {
+              "id": "commune_nature_rule",
+              "ruleKey": "wilderness_lore_revealed",
+              "value": true,
+              "priority": 10
+            }
+          ],
+          "grantedTags": [
+            "senses:commune_with_nature"
+          ],
+          "grantedFeats": [],
+          "virtualFeatGrants": [],
+          "classSkillsAdded": [],
+          "immunities": [],
+          "vulnerabilities": [],
+          "energyResistances": {},
+          "activatedAbilities": []
+        }
+      }
+    ],
     "tags": [
       "divination",
       "nature",

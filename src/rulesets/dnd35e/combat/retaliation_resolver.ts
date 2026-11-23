@@ -146,10 +146,7 @@ function collectDirectSpellRetaliationRiders(
     );
     if (!unit) continue;
     const effectTags = projectSpellEffectTags(spell);
-    if (
-      unit.condition &&
-      !matchesEntityTagCondition(unit.condition, defenderSelfTags, effectTags, defenderSelfTags)
-    ) {
+    if (unit.condition && !matchesEntityTagCondition(unit.condition, defenderSelfTags, effectTags, defenderSelfTags)) {
       continue;
     }
     directRiders.push({

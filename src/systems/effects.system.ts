@@ -40,6 +40,14 @@ export function applyItemEffect(
   itemName: string,
   explicitTargetId?: EntityId
 ): GameState {
+  const activeRuleset = getActiveRuleset(state);
+  if (activeRuleset.resolveItemEffect) {
+    const rulesetState = activeRuleset.resolveItemEffect(state, userId, effectId, itemName, explicitTargetId);
+    if (rulesetState !== null) {
+      return rulesetState;
+    }
+  }
+
   const effectDef = state.campaign.effects[effectId];
   if (!effectDef) {
     return addMessage(state, `Unknown effect: ${effectId}`, MessageLogCategory.System);

@@ -1,6 +1,17 @@
 import type { CampaignData } from '../../types/campaign.types.ts';
 import type { ValidationError } from './validator.types.ts';
 
+function isValidItemEffectRef(
+  effectId: string,
+  campaignEffects: Readonly<Record<string, unknown>>,
+  sysSpells: Readonly<Record<string, unknown>> | undefined
+): boolean {
+  if (effectId.startsWith('spell:')) {
+    return Boolean(sysSpells?.[effectId.slice('spell:'.length)]);
+  }
+  return Boolean(campaignEffects[effectId]);
+}
+
 /**
  * Validates Item definitions in the campaign.
  * Specifically checks that key/unique items cannot be thrown and silently destroyed.
@@ -21,11 +32,19 @@ export async function validateItems(campaign: Readonly<CampaignData>): Promise<V
       });
     }
 
-    if (item.consumable?.effectId && !campaign.effects[item.consumable.effectId]) {
+    if (item.consumable?.effectId && !isValidItemEffectRef(item.consumable.effectId, campaign.effects, sysSpells)) {
       errors.push({
         severity: 'error',
         message: `Item "${item.id}" references non-existent consumable effectId "${item.consumable.effectId}".`,
         path: `items.${item.id}.consumable.effectId`
+      });
+    }
+
+    if (item.zappable?.effectId && !isValidItemEffectRef(item.zappable.effectId, campaign.effects, sysSpells)) {
+      errors.push({
+        severity: 'error',
+        message: `Item "${item.id}" references non-existent zappable effectId "${item.zappable.effectId}".`,
+        path: `items.${item.id}.zappable.effectId`
       });
     }
 

@@ -12,6 +12,7 @@ import type { ConsoleThemeMode, UIHotbarModel } from '../../types/ui_adapter.typ
 export interface CartridgeDockCommandDescriptor {
   readonly id: string;
   readonly commandId?: string | undefined;
+  readonly replacesCommandId?: string | undefined;
   readonly label: string;
   readonly icon?: string | undefined;
   readonly modalId?: string | undefined;

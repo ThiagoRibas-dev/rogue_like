@@ -53,11 +53,23 @@ export function auditCampaignLinks(data: CampaignData, errors: ValidationError[]
     }
   }
 
+  const sysSpells = (data.systemContent as Record<string, unknown> | undefined)?.['spells'] as
+    Record<string, unknown> | undefined;
+  const isValidItemEffectRef = (effId: string): boolean =>
+    effId.startsWith('spell:') ? Boolean(sysSpells?.[effId.slice('spell:'.length)]) : effects.includes(effId);
+
   for (const [id, item] of Object.entries(data.items)) {
-    if (item.consumable?.effectId && !effects.includes(item.consumable.effectId)) {
+    if (item.consumable?.effectId && !isValidItemEffectRef(item.consumable.effectId)) {
       errors.push({
         path: `/items/${id}/consumable/effectId`,
         message: `Item '${item.name}' consumable references non-existent effect '${item.consumable.effectId}'.`,
+        severity: 'error'
+      });
+    }
+    if (item.zappable?.effectId && !isValidItemEffectRef(item.zappable.effectId)) {
+      errors.push({
+        path: `/items/${id}/zappable/effectId`,
+        message: `Item '${item.name}' zappable references non-existent effect '${item.zappable.effectId}'.`,
         severity: 'error'
       });
     }

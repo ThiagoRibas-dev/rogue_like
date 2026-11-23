@@ -32,7 +32,51 @@
     "allowsSpellResistance": false,
     "aoeShape": "single",
     "aoeRadiusFt": 0,
-    "effectUnits": [],
+    "effectUnits": [
+      {
+        "unitId": "clairaudience_clairvoyance_buff",
+        "targetRole": "caster",
+        "type": "stat_bundle",
+        "effectBundle": {
+          "bundleId": "clairvoyance_bundle",
+          "name": "Clairaudience/Clairvoyance",
+          "category": "trait",
+          "usageMode": "passive",
+          "modifiers": [
+            {
+              "id": "clair_spot",
+              "target": "skill:spot",
+              "value": 2,
+              "type": "insight"
+            },
+            {
+              "id": "clair_listen",
+              "target": "skill:listen",
+              "value": 2,
+              "type": "insight"
+            }
+          ],
+          "ruleOverrides": [
+            {
+              "id": "clair_remote_sense",
+              "ruleKey": "remote_perception_active",
+              "value": true,
+              "priority": 10
+            }
+          ],
+          "grantedTags": [
+            "senses:clairaudience_clairvoyance"
+          ],
+          "grantedFeats": [],
+          "virtualFeatGrants": [],
+          "classSkillsAdded": [],
+          "immunities": [],
+          "vulnerabilities": [],
+          "energyResistances": {},
+          "activatedAbilities": []
+        }
+      }
+    ],
     "tags": [
       "divination",
       "scrying",
