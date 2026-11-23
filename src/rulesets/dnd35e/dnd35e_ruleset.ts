@@ -21,8 +21,13 @@ import { resolveSavingThrow } from './combat/damage_vitality.ts';
 import { DND35E_DEFAULT_CURRENCY_CONFIG } from './currency.ts';
 import { checkDnD35eRuleset } from './dnd35e_validator.ts';
 import { resolveDnD35eItemHandRequirement } from './equipment_physics.ts';
-import { DND35E_BASE_AC } from './modifiers.ts';
-import { calculateMulticlassXpMultiplier, computeXpThresholdForLevel } from './progression.ts';
+import { DND35E_BASE_AC, resolveTypedModifiers } from './modifiers.ts';
+import type { Verb } from '../../constants/verbs.constants.ts';
+import {
+  aggregateProgressionChassis,
+  calculateMulticlassXpMultiplier,
+  computeXpThresholdForLevel
+} from './progression.ts';
 import { resolveDnD35eKillXpReward } from './progression/cr_xp_table.ts';
 import {
   getDnD35eValidVerbsForTarget,
@@ -140,6 +145,65 @@ function projectDnD35eHudVitals(state: GameState, playerEntityId: EntityId): Hud
   };
 }
 
+function formatSignedBonus(value: number): string {
+  return value >= 0 ? `+${value}` : `${value}`;
+}
+
+/**
+ * Projects D&D 3.5e combat stats (HP, Full/Touch/Flat-Footed AC, BAB, Saves) for the HUD Inspect panel.
+ */
+function projectDnD35eInspectStats(
+  state: GameState,
+  targetEntityId: EntityId
+): ReadonlyArray<{ readonly label: string; readonly value: string; readonly color?: string | undefined }> {
+  const fighter = getComponent(state, targetEntityId, ComponentType.Fighter) as FighterComponent | undefined;
+  if (!fighter) return [];
+
+  const stats = computeDnD35eEffectiveStats(state, targetEntityId);
+  const dag = evaluateDnD35eEntityDAG(state, targetEntityId);
+  if (!dag) {
+    return [
+      { label: 'HP', value: `${fighter.hp}/${stats.maxHp}` },
+      { label: 'AC', value: `${DND35E_BASE_AC + stats.defense}` },
+      { label: 'BAB', value: formatSignedBonus(stats.attack) }
+    ];
+  }
+
+  const { acBreakdown, saves } = dag.dagResult;
+  const totalBab = aggregateProgressionChassis(dag.dndData.tracks, 0).totalBab;
+  const formattedBab = formatSignedBonus(totalBab);
+  return [
+    { label: 'HP', value: `${fighter.hp}/${stats.maxHp}` },
+    {
+      label: 'AC',
+      value: `${acBreakdown.fullAC} (T ${acBreakdown.touchAC} / FF ${acBreakdown.flatFootedAC})`
+    },
+    { label: 'BAB', value: formattedBab },
+    {
+      label: 'Saves',
+      value: `F ${formatSignedBonus(saves.fort)} / R ${formatSignedBonus(saves.ref)} / W ${formatSignedBonus(saves.will)}`
+    }
+  ];
+}
+
+/**
+ * Evaluates declarative `'interaction_reach_tiles'` StatModifiers (e.g., Mage Hand or telekinesis buffs)
+ * to extend an actor's effective physical/touch interaction reach beyond baseline natural/probe reach.
+ */
+function resolveDnD35eInteractionReachTiles(
+  state: GameState,
+  actorId: EntityId,
+  _verb: Verb,
+  baseReachTiles: number
+): number {
+  const dag = evaluateDnD35eEntityDAG(state, actorId);
+  if (!dag) return baseReachTiles;
+  const reachMods = (dag.statModifiers ?? []).filter((m) => m.targetStat === 'interaction_reach_tiles');
+  if (reachMods.length === 0) return baseReachTiles;
+  const bonusReach = resolveTypedModifiers(reachMods, { selfTags: dag.selfTags });
+  return Math.max(baseReachTiles, baseReachTiles + bonusReach);
+}
+
 /**
  * The `dnd35e` (Dungeons & Dragons 3.5e SRD) ruleset cartridge entry point.
  */
@@ -165,6 +229,8 @@ export const dnd35eRulesetContract: RulesetContract = {
   processDamage: processDnD35eDamage,
   grantActorXp: grantDnD35eXp,
   projectHudVitals: projectDnD35eHudVitals,
+  projectInspectStats: projectDnD35eInspectStats,
+  resolveInteractionReachTiles: resolveDnD35eInteractionReachTiles,
   getEditorViewGroups(baseGroups: ReadonlyArray<ViewGroup>): ReadonlyArray<ViewGroup> {
     return baseGroups;
   },

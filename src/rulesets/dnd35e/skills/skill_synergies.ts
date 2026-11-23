@@ -209,16 +209,21 @@ export function resolveActorSkillsSnapshot(
     context
   } = params;
 
+  const isAllSkillsTarget = (targetStat: string): boolean =>
+    targetStat === 'skills' || targetStat === 'skill_all' || targetStat === 'skill_check';
+  const isSpecificSkillTarget = (targetStat: string, skillId: string): boolean =>
+    targetStat === `skill:${skillId}` || targetStat === `skill_${skillId}`;
+
   const conditionSkillMods = buildConditionStatModifiers(
     conditions as ReadonlyArray<DnD35ConditionId>,
     conditionRegistry
-  ).filter((m) => m.targetStat === 'skills' || m.targetStat.startsWith('skill:'));
+  ).filter((m) => isAllSkillsTarget(m.targetStat) || m.targetStat.startsWith('skill:') || m.targetStat.startsWith('skill_'));
   const existingSourceIds = new Set(statModifiers.map((m) => m.sourceId));
   const missingConditionMods = conditionSkillMods.filter((m) => !existingSourceIds.has(m.sourceId));
 
   const sharedSkillMods = [
-    ...statModifiers.filter((m) => m.targetStat === 'skills'),
-    ...missingConditionMods.filter((m) => m.targetStat === 'skills')
+    ...statModifiers.filter((m) => isAllSkillsTarget(m.targetStat)),
+    ...missingConditionMods.filter((m) => isAllSkillsTarget(m.targetStat))
   ];
   const allSkillIds = new Set<string>([...Object.keys(skillRegistry), ...Object.keys(skillRanks)]);
   const resolved: Record<string, DnD35SkillResolution> = {};
@@ -236,9 +241,8 @@ export function resolveActorSkillsSnapshot(
     const acpMultiplier = def?.acpMultiplier ?? 0;
     const acpApplied = -Math.abs(armorCheckPenalty) * acpMultiplier;
 
-    const targetKey = `skill:${skillId}`;
-    const specificMods = statModifiers.filter((m) => m.targetStat === targetKey);
-    const specificCondMods = missingConditionMods.filter((m) => m.targetStat === targetKey);
+    const specificMods = statModifiers.filter((m) => isSpecificSkillTarget(m.targetStat, skillId));
+    const specificCondMods = missingConditionMods.filter((m) => isSpecificSkillTarget(m.targetStat, skillId));
     const combinedMods: StatModifier[] = [...specificMods, ...specificCondMods, ...sharedSkillMods];
 
     const modifierBreakdown = resolveTypedModifiersWithBreakdown(combinedMods, context);

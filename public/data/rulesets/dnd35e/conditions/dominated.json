@@ -1,0 +1,12 @@
+{
+  "dominated": {
+    "id": "dominated",
+    "name": "Dominated",
+    "description": "The creature's will is telepathically subordinated to the caster, obeying commands as an ally for the duration.",
+    "grantedTags": ["condition:dominated"],
+    "modifiers": [],
+    "ruleOverrides": [
+      { "id": "dominated_flag", "ruleKey": "mind_controlled", "value": true, "priority": 10 }
+    ]
+  }
+}

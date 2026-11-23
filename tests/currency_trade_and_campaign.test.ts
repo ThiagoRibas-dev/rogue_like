@@ -790,9 +790,10 @@ describe('Phase 40 Remediation Regressions (Trade Arbitrage, Haggling, Dialogue 
     const campaign = loadCampaignFromDisk('realms-of-shroudgarde');
     let state = buildGameState(campaign);
     const playerId = getPlayerId(state);
+    const playerPos = getComponent(state, playerId, ComponentType.Position) as PositionComponent;
 
     let rationId: EntityId;
-    [state, rationId] = spawnItem(state, 'ration_iron', 0, 0);
+    [state, rationId] = spawnItem(state, 'ration_iron', playerPos.x, playerPos.y);
     const consumeRes = processApplyIntent(state, {
       type: IntentType.Apply,
       entityId: playerId,
@@ -802,7 +803,7 @@ describe('Phase 40 Remediation Regressions (Trade Arbitrage, Haggling, Dialogue 
     expect(consumeRes.success).toBe(true);
 
     let chestId: EntityId;
-    [state, chestId] = spawnEntity(consumeRes.state, 'wooden_chest', 5, 5);
+    [state, chestId] = spawnEntity(consumeRes.state, 'wooden_chest', playerPos.x + 1, playerPos.y);
     const chestLock = getComponent(state, chestId, ComponentType.Lock) as LockComponent | undefined;
     expect(chestLock?.locked).toBe(false);
 

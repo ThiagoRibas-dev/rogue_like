@@ -8,10 +8,18 @@ import {
   resolveClassSpellAcquisitionMode
 } from '../../../../rulesets/dnd35e/character_builder.ts';
 import type { DnD35Alignment } from '../../../../rulesets/dnd35e/types/dnd35e.types.ts';
-import { getDnD35SystemContent } from '../../../../rulesets/dnd35e/types/dnd35e_system.types.ts';
+import {
+  type DnD35ClassDefinition,
+  type DnD35SystemContent,
+  getDnD35SystemContent
+} from '../../../../rulesets/dnd35e/types/dnd35e_system.types.ts';
 import type { GameState } from '../../../../types/game-state.types.ts';
 import { Chip } from '../../primitives/DataDisplay.tsx';
 import { CharBuilderClassOptions } from './CharBuilderClassOptions.tsx';
+
+function resolveClassFeatureLabel(featureId: string, classDef: DnD35ClassDefinition, sys: DnD35SystemContent): string {
+  return classDef.featureDetails[featureId]?.name ?? sys.feats[featureId]?.name ?? featureId;
+}
 
 const ALL_ALIGNMENTS: ReadonlyArray<DnD35Alignment> = ['LG', 'NG', 'CG', 'LN', 'N', 'CN', 'LE', 'NE', 'CE'];
 
@@ -100,7 +108,8 @@ export function CharBuilderClassStep({
 
             <div className="ui-dnd-card">
               {activeCls.progression.slice(0, 5).map((row) => {
-                const featsStr = row.features.length > 0 ? ` [${row.features.join(', ')}]` : '';
+                const featureLabels = row.features.map((fId) => resolveClassFeatureLabel(fId, activeCls, sys));
+                const featsStr = featureLabels.length > 0 ? ` [${featureLabels.join(', ')}]` : '';
                 return (
                   <div key={row.level} className="ui-dnd-card__sub ui-dnd-mono">
                     {`Lv ${row.level}: BAB +${row.bab} | Fort +${row.fortSave}, Ref +${row.refSave}, Will +${row.willSave}${featsStr}`}
@@ -141,6 +150,8 @@ export function CharBuilderClassStep({
                         acf.requiredArcaneSchool && !meetsSchool
                           ? ` [Requires ${acf.requiredArcaneSchool} specialist]`
                           : '';
+                      const replacesLabel = resolveClassFeatureLabel(acf.replacesFeature, activeCls, sys);
+                      const grantedLabel = resolveClassFeatureLabel(acf.grantedFeature, activeCls, sys);
                       return (
                         <button
                           key={acf.acfId}
@@ -167,7 +178,7 @@ export function CharBuilderClassStep({
                           }}
                         >
                           <span>
-                            {`${isChecked ? '☑' : '☐'} [ACF] ${acf.name} (Replaces ${acf.replacesFeature} → ${acf.grantedFeature})${reqSuffix}`}
+                            {`${isChecked ? '☑' : '☐'} [ACF] ${acf.name} (Replaces ${replacesLabel} → ${grantedLabel})${reqSuffix}`}
                           </span>
                         </button>
                       );

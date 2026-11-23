@@ -20,8 +20,9 @@ import {
   measureFootprintToFootprintDistanceFt,
   syncDnD35eActorSpatialFootprint
 } from '../spatial/footprint_resolver.ts';
+import { resolveTypedModifiers } from '../modifiers/stacking_engine.ts';
 import { getDnD35EntityData, setDnD35EntityData } from '../srd_registry.ts';
-import type { DnD35EntityData } from '../types/dnd35e.types.ts';
+import type { DnD35EntityData, StatModifier } from '../types/dnd35e.types.ts';
 import { getDnD35SystemContent } from '../types/dnd35e_system.types.ts';
 import { executeWildShapePoolActivation } from '../wild_shape.ts';
 import { executeInvisibleFistImmediate, initiateAbruptJauntTargeting } from './immediate_reactions.ts';
@@ -64,12 +65,24 @@ function getEffectiveActorLevel(dndData: DnD35EntityData): number {
   return Math.max(1, total);
 }
 
-function getEffectiveTurningLevel(dndData: DnD35EntityData): number {
+function getEffectiveTurningLevel(
+  dndData: DnD35EntityData,
+  statModifiers: ReadonlyArray<StatModifier> = [],
+  selfTags: ReadonlyArray<string> = []
+): number {
   const poolLvl = dndData.scalingPools?.['turn_undead_level'];
-  if (poolLvl !== undefined && poolLvl > 0) return poolLvl;
   const clericTrack = dndData.tracks.find((t) => t.trackId === 'cleric');
-  if (clericTrack && clericTrack.levels > 0) return clericTrack.levels;
-  return getEffectiveActorLevel(dndData);
+  const baseLevel =
+    poolLvl !== undefined && poolLvl > 0
+      ? poolLvl
+      : clericTrack && clericTrack.levels > 0
+        ? clericTrack.levels
+        : getEffectiveActorLevel(dndData);
+  const bonus = resolveTypedModifiers(
+    statModifiers.filter((m) => m.targetStat === 'effective_turning_level'),
+    { selfTags }
+  );
+  return Math.max(1, baseLevel + bonus);
 }
 
 function computeTurnCheckMaxHdDelta(checkTotal: number): number {
@@ -101,7 +114,11 @@ function resolveTurnUndeadPool(state: GameState, actorId: EntityId, poolId: stri
   const dag = evaluateDnD35eEntityDAG(state, actorId);
   const dndData = dag?.dndData ?? getDnD35EntityData(state, actorId);
   const chaMod = dag?.dagResult.effectiveAbilityModifiers.cha ?? 0;
-  const turningLevel = getEffectiveTurningLevel(dndData);
+  const turningLevel = getEffectiveTurningLevel(
+    dndData,
+    dag?.statModifiers ?? dndData.statModifiers ?? [],
+    dag?.selfTags ?? []
+  );
   const isGreaterTurning = poolId.includes('greater');
 
   const checkRoll = rollD20('ability_check', chaMod);

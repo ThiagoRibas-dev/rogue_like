@@ -1,0 +1,15 @@
+{
+  "petrified": {
+    "id": "petrified",
+    "name": "Petrified",
+    "description": "A petrified creature has been turned to stone and is considered unconscious and helpless, gaining Hardness 8 (+8 natural armor) while unable to take actions.",
+    "grantedTags": ["condition:petrified", "condition:helpless"],
+    "modifiers": [
+      { "id": "petrified_na", "target": "natural_armor", "value": 8, "type": "natural_armor" }
+    ],
+    "ruleOverrides": [
+      { "id": "petrified_loses_dex", "ruleKey": "loses_dex_to_ac", "value": true, "priority": 10 },
+      { "id": "petrified_no_actions", "ruleKey": "can_take_actions", "value": false, "priority": 10 }
+    ]
+  }
+}

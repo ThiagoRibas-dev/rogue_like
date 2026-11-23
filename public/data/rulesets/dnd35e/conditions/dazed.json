@@ -1,0 +1,12 @@
+{
+  "dazed": {
+    "id": "dazed",
+    "name": "Dazed",
+    "description": "Unable to act normally, a dazed creature can take no actions, though it takes no penalty to AC.",
+    "grantedTags": ["condition:dazed"],
+    "modifiers": [],
+    "ruleOverrides": [
+      { "id": "dazed_no_actions", "ruleKey": "can_take_actions", "value": false, "priority": 10 }
+    ]
+  }
+}

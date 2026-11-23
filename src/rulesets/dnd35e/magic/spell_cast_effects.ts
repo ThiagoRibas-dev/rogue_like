@@ -10,13 +10,16 @@ import {
   ComponentType,
   type DamageComponent,
   type FighterComponent,
+  type MovementModes,
   type PositionComponent,
+  type PropertyOverlayComponent,
   type StatusEffectsComponent
 } from '../../../types/components.types.ts';
 import type { EntityId, GameState } from '../../../types/game-state.types.ts';
 import { assertNever } from '../../../utils/assert.ts';
 import { isHostile } from '../../../utils/faction.ts';
 import { evaluateDnD35eEntityDAG } from '../cartridge/dnd35e_dag_adapter.ts';
+import { applyConditionWithEscalation } from '../combat/condition_registry.ts';
 import { evaluateDiceExpression } from '../math/dice.ts';
 import { revokeModifiersByPathPrefix } from '../modifiers/provenance.ts';
 import {
@@ -25,7 +28,7 @@ import {
 } from '../spatial/footprint_resolver.ts';
 import { getDnD35EntityData, setDnD35EntityData } from '../srd_registry.ts';
 import type { DnD35ConditionId, StatModifier } from '../types/dnd35e.types.ts';
-import type { DnD35SystemContent } from '../types/dnd35e_system.types.ts';
+import type { DnD35RaceDefinition, DnD35SystemContent } from '../types/dnd35e_system.types.ts';
 import type { DnD35SpellDefinition, DnD35SpellEffectUnit } from '../types/system/spell_system.types.ts';
 import { evaluateMetamagicDamage, type MetamagicSpellModifiers } from './metamagic_dispel.ts';
 import { applySpecialSpellUnit } from './spell_cast_units.ts';
@@ -36,6 +39,16 @@ import {
 } from './spell_effects.ts';
 
 const MIN_ABILITY_SCORE_DEFAULT = 1;
+const DEFAULT_FORM_ABILITY_SCORE = 10;
+const DEFAULT_FORM_LAND_SPEED_FT = 30;
+const SHAPECHANGE_OVERLAY_PRIORITY = 115;
+const POLYMORPH_OVERLAY_PRIORITY = 110;
+const CURE_ONLY_CONDITION_SENTINELS: ReadonlySet<string> = new Set([
+  'none',
+  'heal_restoration',
+  'flesh_restored',
+  'poison_neutralized'
+]);
 
 /** Maximum radius in feet for Healing Hymn performance aura (`30 ft`, Complete Champion p. 47). */
 export const HEALING_HYMN_RADIUS_FT = 30;
@@ -250,9 +263,27 @@ function applySingleSpellUnit(ctx: ApplySpellEffectsContext, unit: DnD35SpellEff
       const targetDnd = getDnD35EntityData(runningState, targetId);
       const cureSet = new Set(unit.curesConditions);
       const filtered = targetDnd.conditions.filter((c) => !cureSet.has(c));
-      const condId = unit.conditionId as DnD35ConditionId;
-      const nextConds = filtered.includes(condId) ? filtered : [...filtered, condId];
-      return setDnD35EntityData(runningState, targetId, { ...targetDnd, conditions: nextConds });
+      const rawCondId = unit.conditionId;
+      const isValidCondition =
+        rawCondId !== 'none' &&
+        (sysContent?.conditionEffects === undefined
+          ? !CURE_ONLY_CONDITION_SENTINELS.has(rawCondId)
+          : sysContent.conditionEffects[rawCondId] !== undefined);
+      const nextConds = isValidCondition
+        ? applyConditionWithEscalation(filtered, rawCondId as DnD35ConditionId, sysContent?.conditionEffects)
+        : filtered;
+      runningState = setDnD35EntityData(runningState, targetId, { ...targetDnd, conditions: nextConds });
+      const statusComp = getComponent(runningState, targetId, ComponentType.StatusEffects) as
+        StatusEffectsComponent | undefined;
+      if (statusComp && cureSet.size > 0) {
+        const nextActive = statusComp.activeEffects.filter(
+          (eff) => !cureSet.has(eff.effectId) && !(eff.effectId === 'poison' && cureSet.has('poisoned'))
+        );
+        if (nextActive.length !== statusComp.activeEffects.length) {
+          runningState = addComponent(runningState, targetId, { ...statusComp, activeEffects: nextActive });
+        }
+      }
+      return runningState;
     }
 
     case 'ability_harm': {
@@ -298,10 +329,121 @@ function applySingleSpellUnit(ctx: ApplySpellEffectsContext, unit: DnD35SpellEff
         buildDice: buildScaledDiceExpression
       });
 
-    case 'quicken_cast_grant':
-    case 'retaliation_rider':
-    case 'form_overlay':
-      return runningState;
+    case 'quicken_cast_grant': {
+      const maxQuickenLevel = evaluateSpellScalingRule(unit.maxSpellLevelScaling, casterLevel);
+      const quickenMod: StatModifier = {
+        sourceId: unit.unitId,
+        sourcePath: `spell:${spell.id}:${castId}/unit:${unit.unitId}`,
+        targetStat: 'quicken_max_spell_level',
+        bonusType: 'untyped',
+        value: maxQuickenLevel,
+        origin: 'spell',
+        ...(unit.condition !== undefined ? { condition: unit.condition } : {})
+      };
+      runningState = appendTargetModifiers(runningState, targetId, spell.id, [quickenMod]);
+      return addMessage(
+        runningState,
+        `${spell.name} enables quickened casting up to spell level ${maxQuickenLevel}.`,
+        MessageLogCategory.System
+      );
+    }
+
+    case 'retaliation_rider': {
+      const riderMod: StatModifier = {
+        sourceId: unit.unitId,
+        sourcePath: `spell:${spell.id}:${castId}/unit:${unit.unitId}`,
+        targetStat: 'retaliation_rider_active',
+        bonusType: 'untyped',
+        value: Math.max(1, casterLevel),
+        origin: 'spell',
+        ...(unit.condition !== undefined ? { condition: unit.condition } : {})
+      };
+      return appendTargetModifiers(runningState, targetId, spell.id, [riderMod]);
+    }
+
+    case 'form_overlay': {
+      const races = sysContent?.races ?? {};
+      const maxHd =
+        typeof unit.maxHitDiceScaling === 'number'
+          ? unit.maxHitDiceScaling
+          : unit.maxHitDiceScaling !== undefined
+            ? evaluateSpellScalingRule(unit.maxHitDiceScaling, casterLevel)
+            : unit.overlayMode === 'baleful_polymorph'
+              ? 1
+              : Math.max(1, casterLevel);
+      const getRaceHd = (race: DnD35RaceDefinition): number =>
+        Math.max(1, race.rhdProgression?.baseHdCount || race.racialHitDice?.count || 1);
+      const eligible = Object.values(races).filter((race) => {
+        if (unit.allowedCreatureTypes.length > 0 && !unit.allowedCreatureTypes.includes(race.creatureType)) {
+          return false;
+        }
+        return getRaceHd(race) <= maxHd;
+      });
+      if (eligible.length === 0) return runningState;
+
+      eligible.sort((a, b) => {
+        const hdA = getRaceHd(a);
+        const hdB = getRaceHd(b);
+        const strA = a.defaultAbilityScores?.str ?? DEFAULT_FORM_ABILITY_SCORE + (a.abilityAdjustments?.str ?? 0);
+        const strB = b.defaultAbilityScores?.str ?? DEFAULT_FORM_ABILITY_SCORE + (b.abilityAdjustments?.str ?? 0);
+        if (unit.overlayMode === 'baleful_polymorph') {
+          return hdA - hdB || strA - strB;
+        }
+        const naA = a.naturalArmorBonus ?? 0;
+        const naB = b.naturalArmorBonus ?? 0;
+        return hdB - hdA || strB + naB - (strA + naA);
+      });
+
+      const chosen = eligible[0]!;
+      const str =
+        chosen.defaultAbilityScores?.str ?? DEFAULT_FORM_ABILITY_SCORE + (chosen.abilityAdjustments?.str ?? 0);
+      const dex =
+        chosen.defaultAbilityScores?.dex ?? DEFAULT_FORM_ABILITY_SCORE + (chosen.abilityAdjustments?.dex ?? 0);
+      const con =
+        chosen.defaultAbilityScores?.con ?? DEFAULT_FORM_ABILITY_SCORE + (chosen.abilityAdjustments?.con ?? 0);
+      const movementModesOverride: MovementModes = {
+        land: chosen.movementModes?.land ?? chosen.baseLandSpeedFt ?? DEFAULT_FORM_LAND_SPEED_FT,
+        ...(chosen.movementModes?.fly !== undefined ? { fly: chosen.movementModes.fly } : {}),
+        ...(chosen.movementModes?.swim !== undefined ? { swim: chosen.movementModes.swim } : {}),
+        ...(chosen.movementModes?.climb !== undefined ? { climb: chosen.movementModes.climb } : {}),
+        ...(chosen.movementModes?.burrow !== undefined ? { burrow: chosen.movementModes.burrow } : {})
+      };
+      const isPermanent = spell.duration === 'instantaneous' || unit.overlayMode === 'baleful_polymorph';
+      const durationTurns = Math.max(1, casterLevel) * (metamagic.extend ? 2 : 1);
+      const overlay: PropertyOverlayComponent = {
+        type: ComponentType.PropertyOverlay,
+        source: `spell:${spell.id}:${castId}`,
+        priority: unit.overlayMode === 'shapechange' ? SHAPECHANGE_OVERLAY_PRIORITY : POLYMORPH_OVERLAY_PRIORITY,
+        ...(!isPermanent ? { durationTurns } : {}),
+        sizeCategoryOverride: chosen.size,
+        creatureTypeOverride: chosen.creatureType,
+        movementModesOverride,
+        ...(chosen.naturalWeapons && chosen.naturalWeapons.length > 0
+          ? { naturalWeaponsOverride: chosen.naturalWeapons }
+          : {}),
+        ...(chosen.footprint !== undefined ? { footprintOverride: chosen.footprint } : {}),
+        ...(chosen.footprintsBySize !== undefined ? { footprintsBySizeOverride: chosen.footprintsBySize } : {}),
+        statOverrides: {
+          str,
+          dex,
+          con,
+          naturalArmorBonus: chosen.naturalArmorBonus ?? 0
+        },
+        grantedTags: [
+          `form:${chosen.id}`,
+          chosen.creatureType,
+          `overlay:${unit.overlayMode}`,
+          unit.overlayMode === 'baleful_polymorph' ? 'baleful_polymorphed' : 'polymorphed'
+        ]
+      };
+      runningState = addComponent(runningState, targetId, overlay);
+      runningState = addFloatingText(runningState, targetId, chosen.name.toUpperCase(), '#a855f7');
+      return addMessage(
+        runningState,
+        `${spell.name} transforms target into a ${chosen.name}!`,
+        MessageLogCategory.CombatHit
+      );
+    }
 
     default:
       return assertNever(unit);

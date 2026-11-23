@@ -58,7 +58,7 @@
           "modifiers": [
             {
               "id": "glitterdust_hide_pen",
-              "target": "skill_hide",
+              "target": "skill:hide",
               "value": -40,
               "type": "untyped"
             }

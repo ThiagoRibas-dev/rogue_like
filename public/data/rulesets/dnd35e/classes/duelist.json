@@ -112,6 +112,42 @@
         "name": "Precise Strike +1d6",
         "category": "ex",
         "description": "Gain the ability to strike precisely with a light or one-handed piercing weapon, adding +1d6 damage (+2d6 at 10th level)."
+      },
+      "enhanced_mobility": {
+        "id": "enhanced_mobility",
+        "name": "Enhanced Mobility",
+        "category": "ex",
+        "description": "Gain an additional +4 dodge bonus to AC against attacks of opportunity provoked by movement when wearing light or no armor."
+      },
+      "acrobatic_charge": {
+        "id": "acrobatic_charge",
+        "name": "Acrobatic Charge",
+        "category": "ex",
+        "description": "Charge over difficult terrain that normally slows movement or blocks charging."
+      },
+      "elaborate_parry": {
+        "id": "elaborate_parry",
+        "name": "Elaborate Parry",
+        "category": "ex",
+        "description": "When fighting defensively or using total defense, add Duelist level to AC."
+      },
+      "improved_reaction_4": {
+        "id": "improved_reaction_4",
+        "name": "Improved Reaction +4",
+        "category": "ex",
+        "description": "Initiative bonus increases to +4."
+      },
+      "deflect_arrows_duelist": {
+        "id": "deflect_arrows_duelist",
+        "name": "Deflect Arrows (Duelist)",
+        "category": "ex",
+        "description": "Deflect one ranged weapon attack per round with a light or one-handed piercing weapon."
+      },
+      "precise_strike_2d6": {
+        "id": "precise_strike_2d6",
+        "name": "Precise Strike +2d6",
+        "category": "ex",
+        "description": "Deal an extra 2d6 damage when attacking with a light or one-handed piercing weapon with your off hand empty."
       }
     },
     "acfSwaps": [],

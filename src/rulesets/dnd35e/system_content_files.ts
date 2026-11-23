@@ -246,11 +246,18 @@ const RACE_IDS: ReadonlyArray<string> = [
 ];
 
 const CONDITION_IDS: ReadonlyArray<string> = [
+  'asleep',
   'blinded',
   'bound',
+  'calmed',
   'charging',
+  'charmed',
+  'confused',
+  'dazed',
   'dazzled',
   'deafened',
+  'diseased',
+  'dominated',
   'entangled',
   'exhausted',
   'fatigued',
@@ -261,9 +268,12 @@ const CONDITION_IDS: ReadonlyArray<string> = [
   'nauseated',
   'panicked',
   'paralyzed',
+  'petrified',
+  'pinned',
   'prone',
   'shaken',
   'sickened',
+  'slowed',
   'staggered',
   'stunned',
   'unconscious'

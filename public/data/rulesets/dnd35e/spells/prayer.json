@@ -60,7 +60,7 @@
             },
             {
               "id": "prayer_ally_skill",
-              "target": "skill_check",
+              "target": "skills",
               "value": 1,
               "type": "luck"
             }
@@ -109,7 +109,7 @@
             },
             {
               "id": "prayer_foe_skill",
-              "target": "skill_check",
+              "target": "skills",
               "value": -1,
               "type": "luck"
             }

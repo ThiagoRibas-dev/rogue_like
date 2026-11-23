@@ -1,0 +1,12 @@
+{
+  "confused": {
+    "id": "confused",
+    "name": "Confused",
+    "description": "A confused creature behaves unpredictably each round (acting normally, babbling incoherently, fleeing, attacking itself, or attacking the nearest creature).",
+    "grantedTags": ["condition:confused"],
+    "modifiers": [],
+    "ruleOverrides": [
+      { "id": "confused_erratic", "ruleKey": "confused_behavior", "value": true, "priority": 10 }
+    ]
+  }
+}

@@ -48,7 +48,7 @@
       "modifiers": [
         {
           "id": "invis_hide_bonus",
-          "target": "skill_hide",
+          "target": "skill:hide",
           "value": 20,
           "type": "untyped"
         }

@@ -12,7 +12,7 @@
     "modifiers": [
       {
         "id": "subtype_aquatic_swim",
-        "target": "skill_swim",
+        "target": "skill:swim",
         "value": 8,
         "type": "racial"
       }

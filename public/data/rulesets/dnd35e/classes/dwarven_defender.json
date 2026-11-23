@@ -101,6 +101,84 @@
         "name": "Mobile Defense",
         "category": "ex",
         "description": "Take one 5-foot step each round while in a defensive stance without losing the benefit of the stance."
+      },
+      "uncanny_dodge": {
+        "id": "uncanny_dodge",
+        "name": "Uncanny Dodge",
+        "category": "ex",
+        "description": "Retain Dexterity bonus to AC even if caught flat-footed or struck by an invisible attacker."
+      },
+      "defensive_stance_2": {
+        "id": "defensive_stance_2",
+        "name": "Defensive Stance (2/day)",
+        "category": "ex",
+        "description": "Enter a rooted defensive stance twice per day."
+      },
+      "dd_ac_bonus_2": {
+        "id": "dd_ac_bonus_2",
+        "name": "AC Bonus (+2)",
+        "category": "ex",
+        "description": "Dwarven Defender dodge bonus to AC increases to +2."
+      },
+      "trap_sense_1": {
+        "id": "trap_sense_1",
+        "name": "Trap Sense +1",
+        "category": "ex",
+        "description": "Gain +1 bonus on Reflex saves and +1 dodge bonus to AC against traps."
+      },
+      "defensive_stance_3": {
+        "id": "defensive_stance_3",
+        "name": "Defensive Stance (3/day)",
+        "category": "ex",
+        "description": "Enter a rooted defensive stance three times per day."
+      },
+      "damage_reduction_3": {
+        "id": "damage_reduction_3",
+        "name": "Damage Reduction 3/-",
+        "category": "ex",
+        "description": "Subtract 3 from damage dealt by weapons and natural attacks."
+      },
+      "improved_uncanny_dodge": {
+        "id": "improved_uncanny_dodge",
+        "name": "Improved Uncanny Dodge",
+        "category": "ex",
+        "description": "Can no longer be flanked; rogues must be at least 4 levels higher to sneak attack via flanking."
+      },
+      "dd_ac_bonus_3": {
+        "id": "dd_ac_bonus_3",
+        "name": "AC Bonus (+3)",
+        "category": "ex",
+        "description": "Dwarven Defender dodge bonus to AC increases to +3."
+      },
+      "defensive_stance_4": {
+        "id": "defensive_stance_4",
+        "name": "Defensive Stance (4/day)",
+        "category": "ex",
+        "description": "Enter a rooted defensive stance four times per day."
+      },
+      "trap_sense_2": {
+        "id": "trap_sense_2",
+        "name": "Trap Sense +2",
+        "category": "ex",
+        "description": "Gain +2 bonus on Reflex saves and +2 dodge bonus to AC against traps."
+      },
+      "defensive_stance_5": {
+        "id": "defensive_stance_5",
+        "name": "Defensive Stance (5/day)",
+        "category": "ex",
+        "description": "Enter a rooted defensive stance five times per day."
+      },
+      "damage_reduction_6": {
+        "id": "damage_reduction_6",
+        "name": "Damage Reduction 6/-",
+        "category": "ex",
+        "description": "Subtract 6 from damage dealt by weapons and natural attacks."
+      },
+      "dd_ac_bonus_4": {
+        "id": "dd_ac_bonus_4",
+        "name": "AC Bonus (+4)",
+        "category": "ex",
+        "description": "Dwarven Defender dodge bonus to AC increases to +4."
       }
     },
     "acfSwaps": [],

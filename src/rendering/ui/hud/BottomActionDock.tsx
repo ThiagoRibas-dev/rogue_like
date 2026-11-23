@@ -171,6 +171,7 @@ export function BottomActionDock({ state, playerId, isHudFocused }: BottomAction
           <Button
             variant="primary"
             size="sm"
+            className="ui-hotbar-end-turn"
             title="End Turn / Wait (Space)"
             onClick={(): void => queuePlayerIntent(createWaitAction(playerId))}
           >

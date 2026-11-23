@@ -38,13 +38,13 @@
       "modifiers": [
         {
           "id": "fs_ac",
-          "target": "ac_insight",
+          "target": "ac",
           "value": 2,
           "type": "insight"
         },
         {
           "id": "fs_ref",
-          "target": "save_reflex",
+          "target": "ref",
           "value": 2,
           "type": "insight"
         }

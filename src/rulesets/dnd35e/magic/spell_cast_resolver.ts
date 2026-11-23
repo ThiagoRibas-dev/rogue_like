@@ -13,9 +13,10 @@ import {
   type ResourcePoolComponent
 } from '../../../types/components.types.ts';
 import { EngineMode, type EntityId, type GameState } from '../../../types/game-state.types.ts';
-import { evaluateSpellEffectUnitsForTarget } from './spell_effects.ts';
+import { evaluateSpellEffectUnitsForTarget, projectSpellEffectTags } from './spell_effects.ts';
 import { applyResolvedSpellEffectsToTarget } from './spell_cast_effects.ts';
 import { evaluateReactiveCounterspellInterrupt } from './counterspell_interrupt.ts';
+import { resolveSpellEffectiveCasterLevel } from './spell_modifiers.ts';
 import {
   collectEquippedArcaneSpellFailure,
   computeSpellRangeTiles,
@@ -33,6 +34,7 @@ import { processDnD35eDamage } from '../cartridge/dnd35e_combat_adapter.ts';
 import { evaluateDnD35eEntityDAG } from '../cartridge/dnd35e_dag_adapter.ts';
 import { hydrateEntityRoundActionBudget } from '../cartridge/dnd35e_turn_budget.ts';
 import { rollD20 } from '../math/dice.ts';
+import { resolveTypedModifiers } from '../modifiers/stacking_engine.ts';
 import { aggregateProgressionChassis } from '../progression.ts';
 import {
   measureFootprintToFootprintDistanceFt,
@@ -76,9 +78,26 @@ export function executeDnD35eSpellCast(
   }
 
   const meta = summarizeMetamagic(castContext.metamagicFeatIds, sysContent);
+  const casterMods = casterDag.statModifiers ?? casterDag.dndData.statModifiers ?? [];
+  const spellEffectTags = projectSpellEffectTags(spell, meta.flags);
+  const effectiveCasterLevel = resolveSpellEffectiveCasterLevel(spell, book.effectiveCasterLevel, casterMods, {
+    casterSelfTags: casterDag.selfTags,
+    metamagic: meta.flags
+  });
+  const dcMods = casterMods.filter((m) => m.targetStat === 'spell_save_dc' || m.targetStat === 'spell_dc');
+  const srPenMods = casterMods.filter((m) => m.targetStat === 'caster_level_check_vs_sr');
+  const dcBonus = resolveTypedModifiers(dcMods, {
+    selfTags: casterDag.selfTags,
+    effectTags: spellEffectTags
+  });
+  const spellPenetrationBonus = resolveTypedModifiers(srPenMods, {
+    selfTags: casterDag.selfTags,
+    effectTags: spellEffectTags
+  });
+
   const maxRangeTiles = computeSpellRangeTiles(
     spell.range,
-    book.effectiveCasterLevel,
+    effectiveCasterLevel,
     meta.rangeMultiplier,
     meta.flags.projectTouch
   );
@@ -205,14 +224,16 @@ export function executeDnD35eSpellCast(
   const basePipe = resolveCastPipeline({
     classification: spell.classification,
     spellLevel: spell.level,
-    casterLevel: book.effectiveCasterLevel,
+    casterLevel: effectiveCasterLevel,
     keyAbilityScore: govAbScore,
     concentrationModifier: concMod,
     hasVerbalComponent: spell.components.verbal && !meta.flags.silent,
     hasSomaticComponent: spell.components.somatic && !meta.flags.still,
     arcaneSpellFailurePercent: asfPercent,
     isCasterDeafened: casterDag.dndData.conditions.includes('deafened'),
-    castDefensively: isThreatened
+    castDefensively: isThreatened,
+    dcBonus,
+    spellPenetrationBonus
   });
 
   if (!basePipe.succeeded) {
@@ -255,7 +276,7 @@ export function executeDnD35eSpellCast(
       targetPos,
       spell,
       units: placementUnits,
-      casterLevel: book.effectiveCasterLevel,
+      casterLevel: effectiveCasterLevel,
       castId,
       metamagic: meta.flags,
       casterAbilityMod: govAbMod,
@@ -278,13 +299,19 @@ export function executeDnD35eSpellCast(
     if (!targetDag && !hasExplicitCategories) continue;
     const targetSr = targetDag?.dndData.spellResistance ?? 0;
     if (spell.allowsSpellResistance && targetSr > 0 && targetId !== casterId) {
+      const targetSrPenBonus = resolveTypedModifiers(srPenMods, {
+        selfTags: casterDag.selfTags,
+        targetTags: targetDag?.selfTags,
+        effectTags: spellEffectTags
+      });
       const srCheck = resolveCastPipeline({
         classification: spell.classification,
         spellLevel: spell.level,
-        casterLevel: book.effectiveCasterLevel,
+        casterLevel: effectiveCasterLevel,
         keyAbilityScore: govAbScore,
         concentrationModifier: concMod,
-        targetSpellResistance: targetSr
+        targetSpellResistance: targetSr,
+        spellPenetrationBonus: targetSrPenBonus
       });
       if (!srCheck.succeeded) {
         runningState = addMessage(
@@ -321,16 +348,37 @@ export function executeDnD35eSpellCast(
 
     const saveResultByUnitId: Record<string, boolean> = {};
     const topSave = spell.savingThrow;
+    let contextualSaveTargetDag = undefined as typeof targetDag;
+    const resolveSaveTargetDag = (): typeof targetDag => {
+      if (!targetDag) return undefined;
+      if (contextualSaveTargetDag !== undefined) return contextualSaveTargetDag;
+      contextualSaveTargetDag =
+        evaluateDnD35eEntityDAG(runningState, targetId, {
+          effectTags: spellEffectTags,
+          targetTags: casterDag.selfTags
+        }) ?? targetDag;
+      return contextualSaveTargetDag;
+    };
+    const targetDcBonus = resolveTypedModifiers(dcMods, {
+      selfTags: casterDag.selfTags,
+      targetTags: targetDag?.selfTags,
+      effectTags: spellEffectTags
+    });
+    const effectiveSaveDC = basePipe.saveDC - dcBonus + targetDcBonus;
+
     if (topSave && topSave.saveType !== 'none' && targetId !== casterId && targetDag) {
-      const saveRoll = rollD20('save', targetDag.dagResult.saves[topSave.saveType]);
+      const saveDag = resolveSaveTargetDag();
+      const saveRoll = rollD20('save', saveDag!.dagResult.saves[topSave.saveType]);
       saveResultByUnitId['top_level'] =
-        !saveRoll.isAutoFailure && (saveRoll.isAutoSuccess || saveRoll.total >= basePipe.saveDC);
+        !saveRoll.isAutoFailure && (saveRoll.isAutoSuccess || saveRoll.total >= effectiveSaveDC);
     }
     for (const u of units) {
       const uSave = u.savingThrow ?? topSave;
       if (uSave && uSave.saveType !== 'none' && targetId !== casterId && targetDag) {
-        const roll = rollD20('save', targetDag.dagResult.saves[uSave.saveType]);
-        saveResultByUnitId[u.unitId] = !roll.isAutoFailure && (roll.isAutoSuccess || roll.total >= basePipe.saveDC);
+        const saveDag = resolveSaveTargetDag();
+        const roll = rollD20('save', saveDag!.dagResult.saves[uSave.saveType]);
+        saveResultByUnitId[u.unitId] =
+          !roll.isAutoFailure && (roll.isAutoSuccess || roll.total >= effectiveSaveDC);
       }
     }
 
@@ -341,7 +389,7 @@ export function executeDnD35eSpellCast(
       targetPos,
       spell,
       units,
-      casterLevel: book.effectiveCasterLevel,
+      casterLevel: effectiveCasterLevel,
       castId,
       metamagic: meta.flags,
       casterAbilityMod: govAbMod,

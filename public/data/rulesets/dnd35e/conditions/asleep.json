@@ -1,0 +1,15 @@
+{
+  "asleep": {
+    "id": "asleep",
+    "name": "Asleep",
+    "description": "A sleeping creature is helpless, prone, loses its Dexterity bonus to AC, and takes a -4 penalty to AC against melee attacks until awakened or damaged.",
+    "grantedTags": ["condition:asleep", "condition:helpless"],
+    "modifiers": [
+      { "id": "asleep_ac", "target": "ac", "value": -4, "type": "untyped" }
+    ],
+    "ruleOverrides": [
+      { "id": "asleep_loses_dex", "ruleKey": "loses_dex_to_ac", "value": true, "priority": 10 },
+      { "id": "asleep_no_actions", "ruleKey": "can_take_actions", "value": false, "priority": 10 }
+    ]
+  }
+}

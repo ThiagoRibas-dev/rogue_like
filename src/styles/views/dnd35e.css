@@ -179,7 +179,7 @@
   max-height: 280px;
   border: 1px solid var(--ui-border-subtle);
   border-radius: var(--ui-radius-sm);
-  background: var(--ui-bg-canvas);
+  background: var(--ui-bg-panel-alt);
 }
 
 .ui-dnd-table-scroll--tall {
@@ -432,7 +432,7 @@
 .ui-dnd-quickcast-count {
   padding: 1px 5px;
   border-radius: var(--ui-radius-sm);
-  background: var(--ui-bg-canvas);
+  background: var(--ui-bg-panel-alt);
   font-family: var(--ui-font-mono);
   font-weight: 700;
   color: var(--ui-accent-primary);
@@ -482,15 +482,23 @@
 
 .ui-dnd-wizard-stage {
   display: grid;
-  grid-template-columns: minmax(320px, 1.15fr) minmax(260px, 0.85fr);
+  grid-template-columns: minmax(280px, max-content) minmax(0, 1fr);
   gap: var(--ui-space-3);
   min-height: 0;
   flex: 1;
 }
 
+.ui-dnd-wizard-stage > .ui-dnd-wizard-pane:first-child {
+  max-width: 420px;
+}
+
 @media (max-width: 900px) {
   .ui-dnd-wizard-stage {
     grid-template-columns: 1fr;
+  }
+
+  .ui-dnd-wizard-stage > .ui-dnd-wizard-pane:first-child {
+    max-width: none;
   }
 }
 
@@ -550,7 +558,7 @@
 
 .ui-dnd-list-row:hover:not(:disabled) {
   border-color: var(--ui-border-strong);
-  background: var(--ui-bg-canvas);
+  background: var(--ui-bg-hover);
 }
 
 .ui-dnd-list-row--selected {

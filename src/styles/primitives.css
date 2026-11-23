@@ -120,9 +120,9 @@
   min-width: 1.4em;
   padding: 0.12rem 0.38rem;
   border-radius: var(--ui-radius-sm);
-  border: 1px solid var(--ui-border-strong);
-  background: var(--ui-bg-socket);
-  color: var(--ui-ink-heading);
+  border: 1px solid var(--ui-kbd-border);
+  background: var(--ui-kbd-bg);
+  color: var(--ui-kbd-ink);
   font-family: var(--ui-font-mono);
   font-size: var(--ui-text-xs);
   font-weight: 600;
@@ -516,6 +516,10 @@
 
 .ui-modal--xl {
   width: min(96vw, 1240px);
+}
+
+.ui-modal--full-height {
+  height: 90vh;
 }
 
 .ui-modal__header {

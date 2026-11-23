@@ -540,6 +540,31 @@ export interface RulesetContract {
     chain: InteractionChain,
     frame: InteractionFrame
   ): { readonly state: GameState; readonly prevented: boolean; readonly reason?: string | undefined };
+
+  /**
+   * Optional cartridge hook to project ruleset-native combat stats into the HUD Inspect panel
+   * (e.g., D&D 3.5e HP, Full/Touch/Flat-Footed AC, BAB, and Fort/Ref/Will saves) instead of Classic ATK/DEF.
+   */
+  readonly projectInspectStats?: (
+    state: GameState,
+    targetEntityId: EntityId
+  ) => ReadonlyArray<{
+    readonly label: string;
+    readonly value: string;
+    readonly color?: string | undefined;
+  }>;
+
+  /**
+   * Optional cartridge hook to compute an actor's effective interaction reach (in Chebyshev footprint tiles)
+   * for a physical/touch verb (e.g., evaluating `interaction_reach_tiles` StatModifiers from Mage Hand).
+   */
+  readonly resolveInteractionReachTiles?: (
+    state: GameState,
+    actorId: EntityId,
+    verb: Verb,
+    baseReachTiles: number,
+    toolEntityId?: EntityId
+  ) => number;
 }
 
 /** Context passed to `RulesetContract.evaluateTradePriceModifier`. */

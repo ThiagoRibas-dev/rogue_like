@@ -55,6 +55,11 @@
   --ui-btn-primary-ink: var(--ui-accent-primary-ink);
   --ui-btn-primary-shadow: none;
 
+  /* Keycap (<kbd>) Surface & Ink Defaults */
+  --ui-kbd-bg: var(--ui-bg-socket);
+  --ui-kbd-ink: var(--ui-ink-heading);
+  --ui-kbd-border: var(--ui-border-strong);
+
   /* Typography Families */
   --ui-font-display: 'Cinzel', Georgia, serif;
   --ui-font-body: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;

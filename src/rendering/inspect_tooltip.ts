@@ -43,10 +43,23 @@ const STANCE_TOOLTIP_LABELS: Readonly<Record<CompanionStance, string>> = {
 function appendEntityComponentSections(state: GameState, entityId: EntityId, sections: InspectSectionDTO[]): void {
   const fighter = getComponent(state, entityId, ComponentType.Fighter) as FighterComponent | undefined;
   if (fighter) {
-    const stats = getEffectiveStats(state, entityId);
-    sections.push({ type: 'stat', label: 'HP', value: `${fighter.hp}/${stats.maxHp}` });
-    sections.push({ type: 'stat', label: 'ATK', value: `${stats.attack}` });
-    sections.push({ type: 'stat', label: 'DEF', value: `${stats.defense}` });
+    const activeRuleset = getActiveRuleset(state);
+    const customStats = activeRuleset.projectInspectStats?.(state, entityId);
+    if (customStats && customStats.length > 0) {
+      for (const stat of customStats) {
+        sections.push({
+          type: 'stat',
+          label: stat.label,
+          value: stat.value,
+          ...(stat.color !== undefined ? { color: stat.color } : {})
+        });
+      }
+    } else {
+      const stats = getEffectiveStats(state, entityId);
+      sections.push({ type: 'stat', label: 'HP', value: `${fighter.hp}/${stats.maxHp}` });
+      sections.push({ type: 'stat', label: 'ATK', value: `${stats.attack}` });
+      sections.push({ type: 'stat', label: 'DEF', value: `${stats.defense}` });
+    }
   }
 
   const item = getComponent(state, entityId, ComponentType.Item) as ItemComponent | undefined;

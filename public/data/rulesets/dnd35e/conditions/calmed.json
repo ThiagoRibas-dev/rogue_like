@@ -1,0 +1,12 @@
+{
+  "calmed": {
+    "id": "calmed",
+    "name": "Calmed",
+    "description": "Strong emotions are suppressed; the creature cannot initiate violent actions, rage effects are suppressed, and fear or confusion effects are held in abeyance.",
+    "grantedTags": ["condition:calmed"],
+    "modifiers": [],
+    "ruleOverrides": [
+      { "id": "calmed_suppress_violent", "ruleKey": "can_attack", "value": false, "priority": 10 }
+    ]
+  }
+}

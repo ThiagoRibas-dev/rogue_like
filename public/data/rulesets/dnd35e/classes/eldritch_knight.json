@@ -45,6 +45,54 @@
         "name": "+1 Existing Arcane Spellcasting Class",
         "category": "caster_advancement",
         "description": "From 2nd through 10th level, gain new spells per day and caster level as if also gaining a level in an arcane spellcasting class."
+      },
+      "ek_arcane_spellcasting_2": {
+        "id": "ek_arcane_spellcasting_2",
+        "name": "+1 Arcane Spellcasting Level (2)",
+        "category": "caster_advancement",
+        "description": "Gain new spells per day and caster level as if you had also gained a level in an arcane spellcasting class."
+      },
+      "ek_arcane_spellcasting_3": {
+        "id": "ek_arcane_spellcasting_3",
+        "name": "+1 Arcane Spellcasting Level (3)",
+        "category": "caster_advancement",
+        "description": "Gain new spells per day and caster level as if you had also gained a level in an arcane spellcasting class."
+      },
+      "ek_arcane_spellcasting_4": {
+        "id": "ek_arcane_spellcasting_4",
+        "name": "+1 Arcane Spellcasting Level (4)",
+        "category": "caster_advancement",
+        "description": "Gain new spells per day and caster level as if you had also gained a level in an arcane spellcasting class."
+      },
+      "ek_arcane_spellcasting_5": {
+        "id": "ek_arcane_spellcasting_5",
+        "name": "+1 Arcane Spellcasting Level (5)",
+        "category": "caster_advancement",
+        "description": "Gain new spells per day and caster level as if you had also gained a level in an arcane spellcasting class."
+      },
+      "ek_arcane_spellcasting_6": {
+        "id": "ek_arcane_spellcasting_6",
+        "name": "+1 Arcane Spellcasting Level (6)",
+        "category": "caster_advancement",
+        "description": "Gain new spells per day and caster level as if you had also gained a level in an arcane spellcasting class."
+      },
+      "ek_arcane_spellcasting_7": {
+        "id": "ek_arcane_spellcasting_7",
+        "name": "+1 Arcane Spellcasting Level (7)",
+        "category": "caster_advancement",
+        "description": "Gain new spells per day and caster level as if you had also gained a level in an arcane spellcasting class."
+      },
+      "ek_arcane_spellcasting_8": {
+        "id": "ek_arcane_spellcasting_8",
+        "name": "+1 Arcane Spellcasting Level (8)",
+        "category": "caster_advancement",
+        "description": "Gain new spells per day and caster level as if you had also gained a level in an arcane spellcasting class."
+      },
+      "ek_arcane_spellcasting_9": {
+        "id": "ek_arcane_spellcasting_9",
+        "name": "+1 Arcane Spellcasting Level (9)",
+        "category": "caster_advancement",
+        "description": "Gain new spells per day and caster level as if you had also gained a level in an arcane spellcasting class."
       }
     },
     "acfSwaps": [],

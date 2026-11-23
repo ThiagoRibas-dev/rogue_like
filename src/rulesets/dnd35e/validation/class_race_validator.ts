@@ -58,6 +58,15 @@ export function validateDnD35eClassesRacesTemplates(
       }
       for (const feat of row.features) {
         grantedFeatures.add(feat);
+        const hasDetail = classDef.featureDetails && classDef.featureDetails[feat] !== undefined;
+        const hasFeat = sys.feats && sys.feats[feat] !== undefined;
+        if (!hasDetail && !hasFeat) {
+          errors.push({
+            path: `systemContent.classes.${classKey}.progression[${i}].features`,
+            message: `Class "${classKey}" level ${row.level} grants feature "${feat}" which is missing from both class featureDetails and systemContent.feats.`,
+            severity: 'error'
+          });
+        }
       }
     }
 

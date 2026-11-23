@@ -185,7 +185,11 @@ export class InputScopeManager {
       if (isTextInput) {
         if (this.isCommandBound(event, 'system.escape_or_pause', overrides, true, activeRulesetId)) {
           event.preventDefault();
-          blurActiveElement();
+          if (state.uiMode === UIMode.VerbMenu) {
+            handleModalKey(event, state, playerEntityId);
+          } else {
+            blurActiveElement();
+          }
           return true;
         }
         return false;

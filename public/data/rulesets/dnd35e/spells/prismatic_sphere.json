@@ -41,7 +41,7 @@
       "modifiers": [
         {
           "id": "ps_ac",
-          "target": "ac_deflection",
+          "target": "ac",
           "value": 8,
           "type": "deflection"
         }

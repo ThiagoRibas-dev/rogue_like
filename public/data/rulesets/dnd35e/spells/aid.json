@@ -70,7 +70,7 @@
             },
             {
               "id": "aid_fear_save",
-              "target": "save_fear",
+              "target": "saves",
               "value": 1,
               "type": "morale",
               "condition": {

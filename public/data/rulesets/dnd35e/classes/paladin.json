@@ -160,6 +160,60 @@
           "feature:charging_smite",
           "trait:charging_smite"
         ]
+      },
+      "smite_evil_2": {
+        "id": "smite_evil_2",
+        "name": "Smite Evil (2/day)",
+        "category": "su",
+        "description": "Add Charisma bonus to attack roll and Paladin level to damage against an evil foe (2/day)."
+      },
+      "remove_disease_1": {
+        "id": "remove_disease_1",
+        "name": "Remove Disease (1/week)",
+        "category": "sp",
+        "description": "Produce a Remove Disease effect once per week."
+      },
+      "remove_disease_2": {
+        "id": "remove_disease_2",
+        "name": "Remove Disease (2/week)",
+        "category": "sp",
+        "description": "Produce a Remove Disease effect twice per week."
+      },
+      "smite_evil_3": {
+        "id": "smite_evil_3",
+        "name": "Smite Evil (3/day)",
+        "category": "su",
+        "description": "Add Charisma bonus to attack roll and Paladin level to damage against an evil foe (3/day)."
+      },
+      "remove_disease_3": {
+        "id": "remove_disease_3",
+        "name": "Remove Disease (3/week)",
+        "category": "sp",
+        "description": "Produce a Remove Disease effect three times per week."
+      },
+      "remove_disease_4": {
+        "id": "remove_disease_4",
+        "name": "Remove Disease (4/week)",
+        "category": "sp",
+        "description": "Produce a Remove Disease effect four times per week."
+      },
+      "smite_evil_4": {
+        "id": "smite_evil_4",
+        "name": "Smite Evil (4/day)",
+        "category": "su",
+        "description": "Add Charisma bonus to attack roll and Paladin level to damage against an evil foe (4/day)."
+      },
+      "remove_disease_5": {
+        "id": "remove_disease_5",
+        "name": "Remove Disease (5/week)",
+        "category": "sp",
+        "description": "Produce a Remove Disease effect five times per week."
+      },
+      "smite_evil_5": {
+        "id": "smite_evil_5",
+        "name": "Smite Evil (5/day)",
+        "category": "su",
+        "description": "Add Charisma bonus to attack roll and Paladin level to damage against an evil foe (5/day)."
       }
     },
     "acfSwaps": [

@@ -51,7 +51,7 @@
           "modifiers": [
             {
               "id": "faerie_fire_hide_penalty",
-              "target": "skill_hide",
+              "target": "skill:hide",
               "value": -20,
               "type": "untyped"
             }

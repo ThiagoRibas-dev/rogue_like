@@ -133,6 +133,54 @@
           "offset": 0,
           "minClassLevel": 2
         }
+      },
+      "darkvision_60": {
+        "id": "darkvision_60",
+        "name": "Darkvision 60 ft.",
+        "category": "ex",
+        "description": "See in complete darkness out to 60 feet in black and white."
+      },
+      "evasion": {
+        "id": "evasion",
+        "name": "Evasion",
+        "category": "ex",
+        "description": "Take no damage instead of half damage on a successful Reflex save."
+      },
+      "improved_uncanny_dodge": {
+        "id": "improved_uncanny_dodge",
+        "name": "Improved Uncanny Dodge",
+        "category": "ex",
+        "description": "Can no longer be flanked; rogues must be at least 4 levels higher to sneak attack via flanking."
+      },
+      "shadow_jump_40": {
+        "id": "shadow_jump_40",
+        "name": "Shadow Jump (40 ft./day)",
+        "category": "su",
+        "description": "Travel between shadows up to a total of 40 feet per day."
+      },
+      "shadow_jump_80": {
+        "id": "shadow_jump_80",
+        "name": "Shadow Jump (80 ft./day)",
+        "category": "su",
+        "description": "Travel between shadows up to a total of 80 feet per day."
+      },
+      "improved_evasion": {
+        "id": "improved_evasion",
+        "name": "Improved Evasion",
+        "category": "ex",
+        "description": "Take no damage on a successful Reflex save, and only half damage even on a failed save."
+      },
+      "shadow_jump_160": {
+        "id": "shadow_jump_160",
+        "name": "Shadow Jump (160 ft./day)",
+        "category": "su",
+        "description": "Travel between shadows up to a total of 160 feet per day."
+      },
+      "shadow_master": {
+        "id": "shadow_master",
+        "name": "Shadow Master",
+        "category": "ex",
+        "description": "No longer provoke attacks of opportunity when casting or using shadow abilities; defensive roll mastery."
       }
     },
     "acfSwaps": [],

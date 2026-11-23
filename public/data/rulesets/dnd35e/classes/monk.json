@@ -200,6 +200,186 @@
           "feature:invisible_fist",
           "ability:invisible_fist"
         ]
+      },
+      "fast_movement_monk_1": {
+        "id": "fast_movement_monk_1",
+        "name": "Fast Movement (+10 ft.)",
+        "category": "ex",
+        "description": "Unarmored land speed increases by +10 feet."
+      },
+      "ki_strike_magic": {
+        "id": "ki_strike_magic",
+        "name": "Ki Strike (Magic)",
+        "category": "su",
+        "description": "Unarmed attacks are treated as magic weapons for overcoming damage reduction."
+      },
+      "slow_fall_20": {
+        "id": "slow_fall_20",
+        "name": "Slow Fall (20 ft.)",
+        "category": "ex",
+        "description": "Ignore up to 20 feet of falling distance when near a wall."
+      },
+      "monk_ac_bonus_1": {
+        "id": "monk_ac_bonus_1",
+        "name": "Monk AC Bonus (+1)",
+        "category": "ex",
+        "description": "Unarmored AC bonus increases to +1."
+      },
+      "purity_of_body": {
+        "id": "purity_of_body",
+        "name": "Purity of Body",
+        "category": "ex",
+        "description": "Gain immunity to all diseases except supernatural and magical diseases."
+      },
+      "fast_movement_monk_2": {
+        "id": "fast_movement_monk_2",
+        "name": "Fast Movement (+20 ft.)",
+        "category": "ex",
+        "description": "Unarmored land speed increases by +20 feet."
+      },
+      "slow_fall_30": {
+        "id": "slow_fall_30",
+        "name": "Slow Fall (30 ft.)",
+        "category": "ex",
+        "description": "Ignore up to 30 feet of falling distance when near a wall."
+      },
+      "slow_fall_40": {
+        "id": "slow_fall_40",
+        "name": "Slow Fall (40 ft.)",
+        "category": "ex",
+        "description": "Ignore up to 40 feet of falling distance when near a wall."
+      },
+      "fast_movement_monk_3": {
+        "id": "fast_movement_monk_3",
+        "name": "Fast Movement (+30 ft.)",
+        "category": "ex",
+        "description": "Unarmored land speed increases by +30 feet."
+      },
+      "improved_evasion": {
+        "id": "improved_evasion",
+        "name": "Improved Evasion",
+        "category": "ex",
+        "description": "Take no damage on a successful Reflex save, and only half damage even on a failed save."
+      },
+      "ki_strike_lawful": {
+        "id": "ki_strike_lawful",
+        "name": "Ki Strike (Lawful)",
+        "category": "su",
+        "description": "Unarmed attacks are also treated as lawful-aligned weapons for overcoming damage reduction."
+      },
+      "monk_ac_bonus_2": {
+        "id": "monk_ac_bonus_2",
+        "name": "Monk AC Bonus (+2)",
+        "category": "ex",
+        "description": "Unarmored AC bonus increases to +2."
+      },
+      "slow_fall_50": {
+        "id": "slow_fall_50",
+        "name": "Slow Fall (50 ft.)",
+        "category": "ex",
+        "description": "Ignore up to 50 feet of falling distance when near a wall."
+      },
+      "diamond_body": {
+        "id": "diamond_body",
+        "name": "Diamond Body",
+        "category": "su",
+        "description": "Gain immunity to poisons of all kinds."
+      },
+      "greater_flurry": {
+        "id": "greater_flurry",
+        "name": "Greater Flurry",
+        "category": "ex",
+        "description": "Make a second extra attack at highest base attack bonus during a Flurry of Blows."
+      },
+      "abundant_step": {
+        "id": "abundant_step",
+        "name": "Abundant Step",
+        "category": "su",
+        "description": "Slip magically between spaces as if using Dimension Door once per day."
+      },
+      "fast_movement_monk_4": {
+        "id": "fast_movement_monk_4",
+        "name": "Fast Movement (+40 ft.)",
+        "category": "ex",
+        "description": "Unarmored land speed increases by +40 feet."
+      },
+      "slow_fall_60": {
+        "id": "slow_fall_60",
+        "name": "Slow Fall (60 ft.)",
+        "category": "ex",
+        "description": "Ignore up to 60 feet of falling distance when near a wall."
+      },
+      "slow_fall_70": {
+        "id": "slow_fall_70",
+        "name": "Slow Fall (70 ft.)",
+        "category": "ex",
+        "description": "Ignore up to 70 feet of falling distance when near a wall."
+      },
+      "fast_movement_monk_5": {
+        "id": "fast_movement_monk_5",
+        "name": "Fast Movement (+50 ft.)",
+        "category": "ex",
+        "description": "Unarmored land speed increases by +50 feet."
+      },
+      "monk_ac_bonus_3": {
+        "id": "monk_ac_bonus_3",
+        "name": "Monk AC Bonus (+3)",
+        "category": "ex",
+        "description": "Unarmored AC bonus increases to +3."
+      },
+      "ki_strike_adamantine": {
+        "id": "ki_strike_adamantine",
+        "name": "Ki Strike (Adamantine)",
+        "category": "su",
+        "description": "Unarmed attacks are treated as adamantine weapons for overcoming damage reduction and hardness."
+      },
+      "slow_fall_80": {
+        "id": "slow_fall_80",
+        "name": "Slow Fall (80 ft.)",
+        "category": "ex",
+        "description": "Ignore up to 80 feet of falling distance when near a wall."
+      },
+      "timeless_body": {
+        "id": "timeless_body",
+        "name": "Timeless Body",
+        "category": "ex",
+        "description": "No longer take ability score penalties for aging and cannot be magically aged."
+      },
+      "tongue_of_the_sun_and_moon": {
+        "id": "tongue_of_the_sun_and_moon",
+        "name": "Tongue of the Sun and Moon",
+        "category": "ex",
+        "description": "Speak with any living creature."
+      },
+      "fast_movement_monk_6": {
+        "id": "fast_movement_monk_6",
+        "name": "Fast Movement (+60 ft.)",
+        "category": "ex",
+        "description": "Unarmored land speed increases by +60 feet."
+      },
+      "slow_fall_90": {
+        "id": "slow_fall_90",
+        "name": "Slow Fall (90 ft.)",
+        "category": "ex",
+        "description": "Ignore up to 90 feet of falling distance when near a wall."
+      },
+      "empty_body": {
+        "id": "empty_body",
+        "name": "Empty Body",
+        "category": "su",
+        "description": "Become ethereal (as Etherealness) for 1 round per Monk level each day."
+      },
+      "monk_ac_bonus_4": {
+        "id": "monk_ac_bonus_4",
+        "name": "Monk AC Bonus (+4)",
+        "category": "ex",
+        "description": "Unarmored AC bonus increases to +4."
+      },
+      "slow_fall_any": {
+        "id": "slow_fall_any",
+        "name": "Slow Fall (Any Distance)",
+        "category": "ex",
+        "description": "Take no falling damage from any height when within arm’s reach of a wall."
       }
     },
     "acfSwaps": [

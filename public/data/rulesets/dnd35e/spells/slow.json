@@ -68,7 +68,7 @@
             },
             {
               "id": "slow_ref_pen",
-              "target": "save_ref",
+              "target": "ref",
               "value": -1,
               "type": "untyped"
             }

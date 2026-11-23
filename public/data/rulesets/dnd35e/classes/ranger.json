@@ -153,6 +153,54 @@
           "feature:distracting_attack",
           "trait:distracting_attack"
         ]
+      },
+      "wild_empathy": {
+        "id": "wild_empathy",
+        "name": "Wild Empathy",
+        "category": "ex",
+        "description": "Use body language and vocalizations to improve the attitude of an animal."
+      },
+      "favored_enemy_2": {
+        "id": "favored_enemy_2",
+        "name": "2nd Favored Enemy",
+        "category": "ex",
+        "description": "Select an additional favored enemy type and increase an existing favored enemy bonus by +2."
+      },
+      "woodland_stride": {
+        "id": "woodland_stride",
+        "name": "Woodland Stride",
+        "category": "ex",
+        "description": "Move through natural undergrowth at normal speed without taking damage or impairment."
+      },
+      "swift_tracker": {
+        "id": "swift_tracker",
+        "name": "Swift Tracker",
+        "category": "ex",
+        "description": "Move at normal speed while using Survival to follow tracks without penalty."
+      },
+      "favored_enemy_3": {
+        "id": "favored_enemy_3",
+        "name": "3rd Favored Enemy",
+        "category": "ex",
+        "description": "Select an additional favored enemy type and increase an existing favored enemy bonus by +2."
+      },
+      "camouflage": {
+        "id": "camouflage",
+        "name": "Camouflage",
+        "category": "ex",
+        "description": "Use the Hide skill in any sort of natural terrain even without cover or concealment."
+      },
+      "favored_enemy_4": {
+        "id": "favored_enemy_4",
+        "name": "4th Favored Enemy",
+        "category": "ex",
+        "description": "Select an additional favored enemy type and increase an existing favored enemy bonus by +2."
+      },
+      "favored_enemy_5": {
+        "id": "favored_enemy_5",
+        "name": "5th Favored Enemy",
+        "category": "ex",
+        "description": "Select an additional favored enemy type and increase an existing favored enemy bonus by +2."
       }
     },
     "acfSwaps": [

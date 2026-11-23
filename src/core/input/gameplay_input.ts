@@ -7,7 +7,11 @@ import {
   createToggleTargetingAction
 } from '../../actions/targeting.actions.ts';
 import { addMessage, MessageLogCategory } from '../../systems/message.system.ts';
-import { getValidVerbsForTarget, getVerbOptionsForTarget } from '../../systems/apply.system.ts';
+import {
+  computeInteractionTargetDistanceTiles,
+  getValidVerbsForTarget,
+  getVerbOptionsForTarget
+} from '../../systems/apply.system.ts';
 import { ComponentType, type FighterComponent, type PositionComponent } from '../../types/components.types.ts';
 import { EngineMode, type EntityId, type GameState, UIMode } from '../../types/game-state.types.ts';
 import type { ApplyIntentTarget } from '../../types/intents/interaction.intents.ts';
@@ -41,19 +45,29 @@ function handleSmartInteraction(
   const validVerbs = getValidVerbsForTarget(state, playerEntityId, target, toolEntityId);
 
   if (validVerbs.length === 0) {
-    setGameState(addMessage(state, 'Nothing interesting to interact with there.', MessageLogCategory.System));
+    const dist = computeInteractionTargetDistanceTiles(state, playerEntityId, target);
+    const hasOutOfReachSubject = target.type === 'entity' || target.type === 'item';
+    const message =
+      dist !== null && dist > 1 && hasOutOfReachSubject
+        ? 'That is out of reach.'
+        : 'Nothing interesting to interact with there.';
+    setGameState(addMessage(state, message, MessageLogCategory.System));
     return;
   }
 
+  const nextBaseState: GameState = state.inspectMode?.active ? { ...state, inspectMode: undefined } : state;
   const soleVerb = validVerbs[0];
   if (validVerbs.length === 1 && soleVerb !== undefined) {
+    if (state.inspectMode?.active) {
+      setGameState(nextBaseState);
+    }
     queuePlayerIntent(createApplyAction(playerEntityId, soleVerb, target, toolEntityId));
     return;
   }
 
-  const verbOptions = getVerbOptionsForTarget(state, playerEntityId, target, toolEntityId);
+  const verbOptions = getVerbOptionsForTarget(nextBaseState, playerEntityId, target, toolEntityId);
   setGameState({
-    ...state,
+    ...nextBaseState,
     uiMode: UIMode.VerbMenu,
     verbMenu:
       toolEntityId !== undefined
@@ -67,7 +81,12 @@ function interactWithTile(state: GameState, playerEntityId: EntityId, tileX: num
   const interactableEntity = entitiesOnTile.find((id) => id !== playerEntityId);
 
   if (interactableEntity !== undefined) {
-    handleSmartInteraction(state, playerEntityId, { type: 'entity', entityId: interactableEntity });
+    const isItem = getComponent(state, interactableEntity, ComponentType.Item) !== undefined;
+    handleSmartInteraction(
+      state,
+      playerEntityId,
+      isItem ? { type: 'item', itemEntityId: interactableEntity } : { type: 'entity', entityId: interactableEntity }
+    );
     return;
   }
 
@@ -138,6 +157,8 @@ export function handleGameplayOrTargetingKey(
 
   const isTargeting = currentState.targetingMode?.active === true;
   const targeting = currentState.targetingMode;
+  const isInspecting = currentState.inspectMode?.active === true;
+  const inspectMode = currentState.inspectMode;
 
   if (isTargeting && isCommandMatched(event, 'combat.target_prev')) {
     event.preventDefault();
@@ -177,9 +198,21 @@ export function handleGameplayOrTargetingKey(
     return true;
   }
 
+  if (isInspecting && inspectMode !== undefined && isCommandMatched(event, 'combat.target_confirm')) {
+    event.preventDefault();
+    interactWithTile(currentState, playerEntityId, inspectMode.x, inspectMode.y);
+    return true;
+  }
+
   if (isTargeting && targeting !== undefined && isCommandMatched(event, 'action.verb_menu')) {
     event.preventDefault();
     handleSmartInteraction(currentState, playerEntityId, { type: 'tile', x: targeting.x, y: targeting.y });
+    return true;
+  }
+
+  if (isInspecting && inspectMode !== undefined && isCommandMatched(event, 'action.verb_menu')) {
+    event.preventDefault();
+    interactWithTile(currentState, playerEntityId, inspectMode.x, inspectMode.y);
     return true;
   }
 
@@ -244,6 +277,10 @@ export function handleGameplayOrTargetingKey(
 
   if (isCommandMatched(event, 'action.verb_menu')) {
     event.preventDefault();
+    if (inspectMode?.active === true) {
+      interactWithTile(currentState, playerEntityId, inspectMode.x, inspectMode.y);
+      return true;
+    }
     const position = getComponent(currentState, playerEntityId, ComponentType.Position);
     if (position === undefined) return false;
     interactWithTile(currentState, playerEntityId, position.x, position.y);

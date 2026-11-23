@@ -17,6 +17,7 @@ export interface ModalShellProps {
   readonly subtitle?: string | undefined;
   readonly isOpen?: boolean | undefined;
   readonly size?: ModalSize | undefined;
+  readonly fullHeight?: boolean | undefined;
   readonly layer?: ModalLayer | undefined;
   readonly showCloseButton?: boolean | undefined;
   readonly showHelpHint?: boolean | undefined;
@@ -38,6 +39,7 @@ export function ModalShell({
   subtitle,
   isOpen = true,
   size = 'md',
+  fullHeight = false,
   layer = 'modal',
   showCloseButton = true,
   showHelpHint = true,
@@ -61,7 +63,12 @@ export function ModalShell({
     .filter(Boolean)
     .join(' ');
 
-  const modalClasses = ['ui-modal', size !== 'md' ? `ui-modal--${size}` : '', className ?? '']
+  const modalClasses = [
+    'ui-modal',
+    size !== 'md' ? `ui-modal--${size}` : '',
+    fullHeight ? 'ui-modal--full-height' : '',
+    className ?? ''
+  ]
     .filter(Boolean)
     .join(' ');
 

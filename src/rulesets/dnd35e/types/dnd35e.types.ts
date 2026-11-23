@@ -136,11 +136,18 @@ export type VitalityStatus = 'healthy' | 'staggered' | 'disabled' | 'dying' | 's
 
 /** Canonical D&D 3.5e condition identifiers. */
 export type DnD35ConditionId =
+  | 'asleep'
   | 'blinded'
   | 'bound'
+  | 'calmed'
   | 'charging'
+  | 'charmed'
+  | 'confused'
+  | 'dazed'
   | 'dazzled'
   | 'deafened'
+  | 'diseased'
+  | 'dominated'
   | 'entangled'
   | 'exhausted'
   | 'fatigued'
@@ -151,9 +158,12 @@ export type DnD35ConditionId =
   | 'nauseated'
   | 'panicked'
   | 'paralyzed'
+  | 'petrified'
+  | 'pinned'
   | 'prone'
   | 'shaken'
   | 'sickened'
+  | 'slowed'
   | 'staggered'
   | 'stunned'
   | 'unconscious';

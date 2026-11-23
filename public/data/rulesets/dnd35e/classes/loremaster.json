@@ -85,6 +85,36 @@
         "name": "True Lore",
         "category": "ex",
         "description": "1/day use knowledge to gain the effect of a legend lore or analyze dweomer spell."
+      },
+      "loremaster_spellcasting_1": {
+        "id": "loremaster_spellcasting_1",
+        "name": "+1 Spellcasting Level",
+        "category": "caster_advancement",
+        "description": "Gain spells per day and caster level as if you had also gained a level in a previous spellcasting class."
+      },
+      "loremaster_secret_2": {
+        "id": "loremaster_secret_2",
+        "name": "Loremaster Secret",
+        "category": "ex",
+        "description": "Choose an arcane or scholarly secret from the Loremaster Secrets table."
+      },
+      "loremaster_secret_3": {
+        "id": "loremaster_secret_3",
+        "name": "Loremaster Secret",
+        "category": "ex",
+        "description": "Choose an arcane or scholarly secret from the Loremaster Secrets table."
+      },
+      "loremaster_secret_4": {
+        "id": "loremaster_secret_4",
+        "name": "Loremaster Secret",
+        "category": "ex",
+        "description": "Choose an arcane or scholarly secret from the Loremaster Secrets table."
+      },
+      "loremaster_secret_5": {
+        "id": "loremaster_secret_5",
+        "name": "Loremaster Secret",
+        "category": "ex",
+        "description": "Choose an arcane or scholarly secret from the Loremaster Secrets table."
       }
     },
     "acfSwaps": [],

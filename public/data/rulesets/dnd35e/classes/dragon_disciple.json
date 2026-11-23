@@ -88,6 +88,66 @@
         "name": "Dragon Apotheosis",
         "category": "ex",
         "description": "Takes on the Half-Dragon template: +4 STR, +2 CHA, +4 natural armor, 6d8 breath weapon, darkvision 60 ft, low-light vision, immunity to sleep, paralysis, and draconic energy type."
+      },
+      "dd_breath_weapon_2d8": {
+        "id": "dd_breath_weapon_2d8",
+        "name": "Breath Weapon (2d8)",
+        "category": "su",
+        "description": "Exhale a cone or line of energy dealing 2d8 damage (Reflex half)."
+      },
+      "dd_ability_boost_str_4": {
+        "id": "dd_ability_boost_str_4",
+        "name": "Ability Boost (STR +2)",
+        "category": "ex",
+        "description": "Gain a permanent +2 inherent Strength increase (cumulative +4)."
+      },
+      "dd_natural_armor_2": {
+        "id": "dd_natural_armor_2",
+        "name": "Natural Armor (+2)",
+        "category": "ex",
+        "description": "Dragon scales thicken, increasing natural armor bonus to +2."
+      },
+      "dd_blindsense_30": {
+        "id": "dd_blindsense_30",
+        "name": "Blindsense 30 ft.",
+        "category": "ex",
+        "description": "Sense unseen creatures within 30 feet by nonvisual means."
+      },
+      "dd_ability_boost_con_2": {
+        "id": "dd_ability_boost_con_2",
+        "name": "Ability Boost (CON +2)",
+        "category": "ex",
+        "description": "Gain a permanent +2 Constitution increase."
+      },
+      "dd_breath_weapon_4d8": {
+        "id": "dd_breath_weapon_4d8",
+        "name": "Breath Weapon (4d8)",
+        "category": "su",
+        "description": "Exhale a cone or line of energy dealing 4d8 damage (Reflex half)."
+      },
+      "dd_natural_armor_3": {
+        "id": "dd_natural_armor_3",
+        "name": "Natural Armor (+3)",
+        "category": "ex",
+        "description": "Dragon scales thicken further, increasing natural armor bonus to +3."
+      },
+      "dd_ability_boost_int_2": {
+        "id": "dd_ability_boost_int_2",
+        "name": "Ability Boost (INT +2)",
+        "category": "ex",
+        "description": "Gain a permanent +2 Intelligence increase."
+      },
+      "dd_wings": {
+        "id": "dd_wings",
+        "name": "Dragon Wings",
+        "category": "ex",
+        "description": "Grow draconic wings granting a fly speed equal to your land speed (average maneuverability)."
+      },
+      "dd_blindsense_60": {
+        "id": "dd_blindsense_60",
+        "name": "Blindsense 60 ft.",
+        "category": "ex",
+        "description": "Sense unseen creatures within 60 feet by nonvisual means."
       }
     },
     "acfSwaps": [],

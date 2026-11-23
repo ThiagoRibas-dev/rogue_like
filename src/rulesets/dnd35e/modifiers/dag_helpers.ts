@@ -62,12 +62,17 @@ export function partitionDAGModifiers(allModifiers: ReadonlyArray<StatModifier>)
     save_fort: 'fort',
     'save:fort': 'fort',
     save_ref: 'ref',
+    save_reflex: 'ref',
     'save:ref': 'ref',
     save_will: 'will',
     'save:will': 'will',
     save_all: 'saves',
+    saves_all: 'saves',
+    save_fear: 'saves',
     'save:all': 'saves',
-    saving_throw: 'saves'
+    saving_throw: 'saves',
+    ac_deflection: 'ac',
+    ac_insight: 'ac'
   };
 
   for (const m of allModifiers) {
@@ -105,7 +110,7 @@ export function partitionDAGModifiers(allModifiers: ReadonlyArray<StatModifier>)
       wornShieldExtraMods.push(m);
     }
 
-    if (m.targetStat === 'ac') {
+    if (canonicalStat === 'ac') {
       const isCompoundEnhancement =
         m.bonusType === 'armor_enhancement' ||
         m.bonusType === 'shield_enhancement' ||
@@ -115,7 +120,7 @@ export function partitionDAGModifiers(allModifiers: ReadonlyArray<StatModifier>)
       const isNaturalArmor = m.bonusType === 'natural_armor';
 
       if (!isCompoundEnhancement && !isMundaneArmor && !isMundaneShield && !isNaturalArmor) {
-        rawStandaloneAcMods.push(m);
+        rawStandaloneAcMods.push(canonicalStat !== m.targetStat ? { ...m, targetStat: 'ac' } : m);
       }
     }
   }

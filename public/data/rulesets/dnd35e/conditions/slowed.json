@@ -1,0 +1,16 @@
+{
+  "slowed": {
+    "id": "slowed",
+    "name": "Slowed",
+    "description": "Can take only a single move action or standard action each turn, moves at half speed, and takes a -1 penalty on attack rolls, AC, and Reflex saves.",
+    "grantedTags": ["condition:slowed", "condition:staggered"],
+    "modifiers": [
+      { "id": "slowed_atk", "target": "attack", "value": -1, "type": "untyped" },
+      { "id": "slowed_ac", "target": "ac", "value": -1, "type": "untyped" },
+      { "id": "slowed_ref", "target": "ref", "value": -1, "type": "untyped" }
+    ],
+    "ruleOverrides": [
+      { "id": "slowed_staggered", "ruleKey": "staggered_to_single_action", "value": true, "priority": 10 }
+    ]
+  }
+}

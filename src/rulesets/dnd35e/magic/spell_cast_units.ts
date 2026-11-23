@@ -19,6 +19,7 @@ import type { StatModifier } from '../types/stats.types.ts';
 import type { DnD35SpellDefinition, DnD35SpellEffectUnit } from '../types/system/spell_system.types.ts';
 import { resolveDispelCheck, type MetamagicSpellModifiers } from './metamagic_dispel.ts';
 import { evaluateSpellScalingRule } from './spell_effects.ts';
+import { materializeSummonedCreatureModifiers } from './spell_modifiers.ts';
 import { resolveIterativeSpellStrike } from './spell_strike_resolver.ts';
 
 const DEFAULT_FIELD_DURATION_ROUNDS = 10;
@@ -158,6 +159,19 @@ export function applySpecialSpellUnit(params: {
         stance: 'aggressive',
         expirationTurn: spawnedState.globalTurn + durationRounds * (metamagic.extend ? 2 : 1)
       });
+      const casterDag = evaluateDnD35eEntityDAG(runningState, casterId);
+      const casterMods = casterDag?.statModifiers ?? getDnD35EntityData(runningState, casterId).statModifiers ?? [];
+      const summonMods = materializeSummonedCreatureModifiers(spell, unit, casterMods, castId, {
+        casterSelfTags: casterDag?.selfTags ?? [],
+        metamagic
+      });
+      if (summonMods.length > 0) {
+        const minionDnd = getDnD35EntityData(nextState, minionId);
+        nextState = setDnD35EntityData(nextState, minionId, {
+          ...minionDnd,
+          statModifiers: [...(minionDnd.statModifiers ?? []), ...summonMods]
+        });
+      }
       nextState = addMessage(
         nextState,
         `${spell.name} summons ${chosen.raceId.replace(/_/g, ' ')}!`,

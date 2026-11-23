@@ -9,7 +9,7 @@ export interface TacticalScannerCardProps {
 }
 
 /**
- * Right-stack Tactical Scanner HUD Card displaying live hovered/inspected tile, entity,
+ * Right-stack Inspect HUD Card displaying live hovered/inspected tile, entity,
  * and hazard metadata projected by `buildViewportSnapshot`.
  */
 export function TacticalScannerCard({ isHudFocused }: TacticalScannerCardProps): JSX.Element {
@@ -23,16 +23,16 @@ export function TacticalScannerCard({ isHudFocused }: TacticalScannerCardProps):
       className="ui-hud-card ui-hud-zone"
       data-hud-zone="3"
       data-hud-focused={isHudFocused ? 'true' : undefined}
-      aria-label="Tactical Scanner"
+      aria-label="Inspect"
     >
       <div className="ui-hud-card__header">
-        <h3 className="ui-hud-card__title">Tactical Scanner</h3>
+        <h3 className="ui-hud-card__title">Inspect</h3>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <Badge tone={inspectTooltip?.active ? 'accent' : 'neutral'}>
             {firstHeader ? firstHeader.value.slice(0, 12) : 'IDLE'}
           </Badge>
           <IconButton
-            ariaLabel={folded ? 'Expand Tactical Scanner' : 'Fold Tactical Scanner'}
+            ariaLabel={folded ? 'Expand Inspect' : 'Fold Inspect'}
             onClick={(): void => uiStore.toggleHudFolded('scanner')}
           >
             {folded ? '▸' : '▾'}

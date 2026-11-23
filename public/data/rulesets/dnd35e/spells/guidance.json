@@ -56,7 +56,7 @@
         },
         {
           "id": "guidance_skill",
-          "target": "skill_check",
+          "target": "skills",
           "value": 1,
           "type": "competence"
         }

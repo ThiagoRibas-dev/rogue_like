@@ -36,7 +36,7 @@ const SETTINGS_TABS: ReadonlyArray<TabItem> = [
 const THEME_OPTIONS: ReadonlyArray<SelectOption> = [
   { value: 'auto', label: 'Auto (Default / Match Game System)' },
   { value: 'obsidian-brass', label: 'Obsidian & Brass (Classic Dark)' },
-  { value: 'parchment', label: 'Warm Tactical Parchment' },
+  { value: 'parchment', label: 'Parchment' },
   { value: 'retro-crt', label: 'Retro Phosphor CRT' }
 ];
 

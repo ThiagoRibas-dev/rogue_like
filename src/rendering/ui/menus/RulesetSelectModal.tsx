@@ -43,7 +43,8 @@ export function RulesetSelectModal(): JSX.Element | null {
     <ModalShell
       title="Choose Game System"
       subtitle="Select the ruleset and combat system for your adventure"
-      size="lg"
+      size="xl"
+      fullHeight
       onClose={(): void => returnToMainMenu()}
       footer={
         <>
@@ -57,7 +58,7 @@ export function RulesetSelectModal(): JSX.Element | null {
       }
     >
       <SplitPane
-        leftWidth="280px"
+        leftWidth="minmax(320px, max-content)"
         left={
           <Panel title="Game Systems">
             <ListBox

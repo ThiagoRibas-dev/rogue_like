@@ -49,7 +49,8 @@ export function CampaignSelectModal(): JSX.Element | null {
     <ModalShell
       title="Select Campaign"
       subtitle={`System: ${activeRuleset.metadata.badgeIcon} ${activeRuleset.metadata.name}`}
-      size="lg"
+      size="xl"
+      fullHeight
       onClose={(): void => openRulesetSelectMenu()}
       headerActions={
         <>
@@ -100,7 +101,7 @@ export function CampaignSelectModal(): JSX.Element | null {
       }
     >
       <SplitPane
-        leftWidth="280px"
+        leftWidth="minmax(320px, max-content)"
         left={
           <Panel title="Available Campaigns">
             <ListBox

@@ -1,0 +1,18 @@
+{
+  "pinned": {
+    "id": "pinned",
+    "name": "Pinned",
+    "description": "Held immobile (but not helpless) in a grapple; loses Dexterity bonus to AC and takes an additional -4 penalty to AC against attackers other than the grappler.",
+    "escalationGroup": "grapple_control",
+    "escalationOrder": 2,
+    "grantedTags": ["condition:pinned", "condition:grappled"],
+    "modifiers": [
+      { "id": "pinned_ac", "target": "ac", "value": -4, "type": "untyped" },
+      { "id": "pinned_atk", "target": "attack", "value": -4, "type": "untyped" }
+    ],
+    "ruleOverrides": [
+      { "id": "pinned_loses_dex", "ruleKey": "loses_dex_to_ac", "value": true, "priority": 10 },
+      { "id": "pinned_no_move", "ruleKey": "can_move", "value": false, "priority": 10 }
+    ]
+  }
+}

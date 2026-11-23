@@ -42,13 +42,13 @@
       "modifiers": [
         {
           "id": "ha_ac",
-          "target": "ac_deflection",
+          "target": "ac",
           "value": 4,
           "type": "deflection"
         },
         {
           "id": "ha_saves",
-          "target": "saves_all",
+          "target": "saves",
           "value": 4,
           "type": "resistance"
         },

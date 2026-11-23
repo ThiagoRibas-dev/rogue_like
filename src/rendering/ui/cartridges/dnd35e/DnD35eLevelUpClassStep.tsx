@@ -189,7 +189,13 @@ export function DnD35eLevelUpClassStep({
             {`BAB: +${rowDef?.bab ?? 0} | Fort: +${rowDef?.fortSave ?? 0} | Ref: +${rowDef?.refSave ?? 0} | Will: +${rowDef?.willSave ?? 0}`}
           </div>
           <div className="ui-dnd-card__sub">
-            {`Features: ${rowDef?.features && rowDef.features.length > 0 ? rowDef.features.join(', ') : 'None'}`}
+            {`Features: ${
+              rowDef?.features && rowDef.features.length > 0
+                ? rowDef.features
+                    .map((fId) => activeCls.featureDetails[fId]?.name ?? sys.feats[fId]?.name ?? fId)
+                    .join(', ')
+                : 'None'
+            }`}
           </div>
         </div>
 
@@ -246,6 +252,14 @@ export function DnD35eLevelUpClassStep({
             <div className="ui-dnd-card-list">
               {eligibleAcfs.map((acf) => {
                 const isChecked = (draft.selectedAcfs ?? []).includes(acf.acfId);
+                const replacesLabel =
+                  activeCls.featureDetails[acf.replacesFeature]?.name ??
+                  sys.feats[acf.replacesFeature]?.name ??
+                  acf.replacesFeature;
+                const grantedLabel =
+                  activeCls.featureDetails[acf.grantedFeature]?.name ??
+                  sys.feats[acf.grantedFeature]?.name ??
+                  acf.grantedFeature;
                 return (
                   <button
                     key={acf.acfId}
@@ -258,7 +272,7 @@ export function DnD35eLevelUpClassStep({
                     }}
                   >
                     <span>
-                      {`${isChecked ? '☑' : '☐'} [ACF] ${acf.name} (Replaces ${acf.replacesFeature} → ${acf.grantedFeature})`}
+                      {`${isChecked ? '☑' : '☐'} [ACF] ${acf.name} (Replaces ${replacesLabel} → ${grantedLabel})`}
                     </span>
                   </button>
                 );

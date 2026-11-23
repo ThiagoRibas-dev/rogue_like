@@ -8,13 +8,15 @@ import {
   type TacticalDoctrineComponent
 } from '../../../types/components.types.ts';
 import type { EntityId, GameState } from '../../../types/game-state.types.ts';
+import { matchesEntityTagCondition } from '../../../systems/reaction.system.ts';
 import { evaluateActiveSpellAuraContributions } from '../magic/spell_aura_resolver.ts';
-import { evaluateSpellScalingRule } from '../magic/spell_effects.ts';
+import { evaluateSpellScalingRule, projectSpellEffectTags } from '../magic/spell_effects.ts';
 import { evaluateDiceExpression } from '../math/dice.ts';
 import { measureFootprintToFootprintDistanceFt } from '../spatial/footprint_resolver.ts';
 import { FEET_PER_GRID_SQUARE } from '../spatial/grid_geometry.ts';
+import { getDnD35EntityData } from '../srd_registry.ts';
 import type { DamageReductionRule, DnD35EntityData } from '../types/dnd35e.types.ts';
-import type { DnD35DamageType } from '../types/dnd35e_system.types.ts';
+import { getDnD35SystemContent, type DnD35DamageType } from '../types/dnd35e_system.types.ts';
 import type { DnD35SpellEffectUnit } from '../types/system/spell_system.types.ts';
 import { mitigateIncomingDamage } from './damage_vitality.ts';
 
@@ -113,9 +115,56 @@ export function resolveRetaliationRiders(params: {
   };
 }
 
+function collectDirectSpellRetaliationRiders(
+  state: GameState,
+  defenderId: EntityId,
+  defenderSelfTags: ReadonlyArray<string>
+): ReadonlyArray<ActiveRetaliationRiderEntry> {
+  const sys = getDnD35SystemContent(state.campaign);
+  if (!sys) return [];
+  const defenderData = getDnD35EntityData(state, defenderId);
+  const directMods = (defenderData.statModifiers ?? []).filter((m) => m.targetStat === 'retaliation_rider_active');
+  if (directMods.length === 0) return [];
+
+  const directRiders: ActiveRetaliationRiderEntry[] = [];
+  for (const mod of directMods) {
+    const path = mod.sourcePath ?? '';
+    const segments = path.split('/');
+    const spellSeg = segments.find((s) => s.startsWith('spell:'));
+    const unitSeg = segments.find((s) => s.startsWith('unit:'));
+    if (!spellSeg || !unitSeg) continue;
+    const spellParts = spellSeg.split(':');
+    const spellId = spellParts[1];
+    const castId = spellParts.slice(2).join(':') || `direct_${spellId}`;
+    const unitId = unitSeg.slice(5);
+    if (!spellId) continue;
+    const spell = sys.spells[spellId];
+    if (!spell) continue;
+    const unit = spell.effectUnits.find(
+      (u): u is Extract<DnD35SpellEffectUnit, { readonly type: 'retaliation_rider' }> =>
+        u.type === 'retaliation_rider' && u.unitId === unitId
+    );
+    if (!unit) continue;
+    const effectTags = projectSpellEffectTags(spell);
+    if (
+      unit.condition &&
+      !matchesEntityTagCondition(unit.condition, defenderSelfTags, effectTags, defenderSelfTags)
+    ) {
+      continue;
+    }
+    directRiders.push({
+      spellId: spell.id,
+      castId,
+      casterLevel: Math.max(1, mod.value),
+      unit
+    });
+  }
+  return directRiders;
+}
+
 /**
  * Executes Phase 4 (`PostStrikeReactionPhase`) of the melee combat exchange pipeline,
- * evaluating defender aura retaliation riders and queueing retaliation damage onto the attacker.
+ * evaluating defender aura and direct retaliation riders and queueing retaliation damage onto the attacker.
  */
 export function applyPostStrikeRetaliationPhase(
   state: GameState,
@@ -125,7 +174,17 @@ export function applyPostStrikeRetaliationPhase(
   defenderSelfTags: ReadonlyArray<string>
 ): GameState {
   const defenderAuraContrib = evaluateActiveSpellAuraContributions(state, defenderId, defenderSelfTags);
-  if (defenderAuraContrib.retaliationRiders.length === 0) return state;
+  const directRiders = collectDirectSpellRetaliationRiders(state, defenderId, defenderSelfTags);
+  const seenKeys = new Set<string>();
+  const combinedRiders: ActiveRetaliationRiderEntry[] = [];
+  for (const entry of [...defenderAuraContrib.retaliationRiders, ...directRiders]) {
+    const k = `${entry.spellId}:${entry.castId}:${entry.unit.unitId}`;
+    if (!seenKeys.has(k)) {
+      seenKeys.add(k);
+      combinedRiders.push(entry);
+    }
+  }
+  if (combinedRiders.length === 0) return state;
 
   let runningState = state;
   const attackerPos = getComponent(runningState, attackerId, ComponentType.Position) as PositionComponent | undefined;
@@ -151,7 +210,7 @@ export function applyPostStrikeRetaliationPhase(
   const defenderName = resolveEntityDisplayName(runningState, defenderId, 'Defender');
 
   const retResult = resolveRetaliationRiders({
-    activeRiders: defenderAuraContrib.retaliationRiders,
+    activeRiders: combinedRiders,
     defenderDoctrine,
     triggerType: 'melee',
     chebyshevDistanceTiles: distTiles,

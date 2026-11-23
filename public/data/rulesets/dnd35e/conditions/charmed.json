@@ -1,0 +1,10 @@
+{
+  "charmed": {
+    "id": "charmed",
+    "name": "Charmed",
+    "description": "The creature views the charmer as a trusted friend and ally, refraining from hostile action against the charmer and granting a +5 bonus on Charisma-based influence checks.",
+    "grantedTags": ["condition:charmed"],
+    "modifiers": [],
+    "ruleOverrides": []
+  }
+}

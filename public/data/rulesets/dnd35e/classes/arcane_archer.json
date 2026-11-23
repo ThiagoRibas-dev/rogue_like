@@ -121,6 +121,30 @@
         "name": "Arrow of Death",
         "category": "sp",
         "description": "Create an arrow of death that forces the target, if damaged by the arrow, to make a DC 20 Fortitude save or be slain immediately."
+      },
+      "enhance_arrow_2": {
+        "id": "enhance_arrow_2",
+        "name": "Enhance Arrow (+2)",
+        "category": "su",
+        "description": "Nonmagical arrows fired by the arcane archer become +2 magic arrows."
+      },
+      "enhance_arrow_3": {
+        "id": "enhance_arrow_3",
+        "name": "Enhance Arrow (+3)",
+        "category": "su",
+        "description": "Nonmagical arrows fired by the arcane archer become +3 magic arrows."
+      },
+      "enhance_arrow_4": {
+        "id": "enhance_arrow_4",
+        "name": "Enhance Arrow (+4)",
+        "category": "su",
+        "description": "Nonmagical arrows fired by the arcane archer become +4 magic arrows."
+      },
+      "enhance_arrow_5": {
+        "id": "enhance_arrow_5",
+        "name": "Enhance Arrow (+5)",
+        "category": "su",
+        "description": "Nonmagical arrows fired by the arcane archer become +5 magic arrows."
       }
     },
     "acfSwaps": [],

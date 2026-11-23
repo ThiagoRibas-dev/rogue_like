@@ -48,6 +48,60 @@
         "name": "+1 Arcane & +1 Divine Spellcasting Class",
         "category": "caster_advancement",
         "description": "When a new Mystic Theurge level is gained, gain new spells per day and caster level in both an existing arcane spellcasting class and an existing divine spellcasting class."
+      },
+      "mt_dual_spellcasting_2": {
+        "id": "mt_dual_spellcasting_2",
+        "name": "Dual Spellcasting Advancement (2)",
+        "category": "caster_advancement",
+        "description": "Advance spells per day and caster level in both an arcane and a divine spellcasting class."
+      },
+      "mt_dual_spellcasting_3": {
+        "id": "mt_dual_spellcasting_3",
+        "name": "Dual Spellcasting Advancement (3)",
+        "category": "caster_advancement",
+        "description": "Advance spells per day and caster level in both an arcane and a divine spellcasting class."
+      },
+      "mt_dual_spellcasting_4": {
+        "id": "mt_dual_spellcasting_4",
+        "name": "Dual Spellcasting Advancement (4)",
+        "category": "caster_advancement",
+        "description": "Advance spells per day and caster level in both an arcane and a divine spellcasting class."
+      },
+      "mt_dual_spellcasting_5": {
+        "id": "mt_dual_spellcasting_5",
+        "name": "Dual Spellcasting Advancement (5)",
+        "category": "caster_advancement",
+        "description": "Advance spells per day and caster level in both an arcane and a divine spellcasting class."
+      },
+      "mt_dual_spellcasting_6": {
+        "id": "mt_dual_spellcasting_6",
+        "name": "Dual Spellcasting Advancement (6)",
+        "category": "caster_advancement",
+        "description": "Advance spells per day and caster level in both an arcane and a divine spellcasting class."
+      },
+      "mt_dual_spellcasting_7": {
+        "id": "mt_dual_spellcasting_7",
+        "name": "Dual Spellcasting Advancement (7)",
+        "category": "caster_advancement",
+        "description": "Advance spells per day and caster level in both an arcane and a divine spellcasting class."
+      },
+      "mt_dual_spellcasting_8": {
+        "id": "mt_dual_spellcasting_8",
+        "name": "Dual Spellcasting Advancement (8)",
+        "category": "caster_advancement",
+        "description": "Advance spells per day and caster level in both an arcane and a divine spellcasting class."
+      },
+      "mt_dual_spellcasting_9": {
+        "id": "mt_dual_spellcasting_9",
+        "name": "Dual Spellcasting Advancement (9)",
+        "category": "caster_advancement",
+        "description": "Advance spells per day and caster level in both an arcane and a divine spellcasting class."
+      },
+      "mt_dual_spellcasting_10": {
+        "id": "mt_dual_spellcasting_10",
+        "name": "Dual Spellcasting Advancement (10)",
+        "category": "caster_advancement",
+        "description": "Advance spells per day and caster level in both an arcane and a divine spellcasting class."
       }
     },
     "acfSwaps": [],

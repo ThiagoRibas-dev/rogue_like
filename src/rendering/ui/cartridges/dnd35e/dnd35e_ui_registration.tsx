@@ -61,26 +61,6 @@ export const dnd35eUIDefinition: CartridgeUIDefinition = {
 
   commands: [
     {
-      id: 'dnd35e:sheet',
-      label: 'Character Sheet',
-      description: 'Open or close the D&D 3.5e character sheet.',
-      category: 'cartridge',
-      scopes: ['world_gameplay', 'active_modal'],
-      defaultBindings: [{ key: 'c' }],
-      preventDefault: true,
-      source: 'cartridge:dnd35e'
-    },
-    {
-      id: 'dnd35e:inventory',
-      label: 'Pack & Gear',
-      description: 'Open or close inventory and anatomical paperdoll.',
-      category: 'cartridge',
-      scopes: ['world_gameplay', 'active_modal'],
-      defaultBindings: [{ key: 'i' }],
-      preventDefault: true,
-      source: 'cartridge:dnd35e'
-    },
-    {
       id: 'dnd35e:quickcast',
       label: 'Quickcast Spells',
       description: 'Open or close the spell quickcast bar.',
@@ -165,22 +145,6 @@ export const dnd35eUIDefinition: CartridgeUIDefinition = {
   },
 
   dockCommands: [
-    {
-      id: 'dnd35e_sheet',
-      commandId: 'dnd35e:sheet',
-      label: 'Sheet',
-      icon: '📜',
-      modalId: 'character_sheet',
-      defaultKey: 'c'
-    },
-    {
-      id: 'dnd35e_inventory',
-      commandId: 'dnd35e:inventory',
-      label: 'Pack',
-      icon: '🎒',
-      modalId: 'character_sheet',
-      defaultKey: 'i'
-    },
     {
       id: 'dnd35e_quickcast',
       commandId: 'dnd35e:quickcast',

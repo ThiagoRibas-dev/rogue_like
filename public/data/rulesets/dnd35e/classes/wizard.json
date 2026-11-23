@@ -84,6 +84,24 @@
           "feature:abrupt_jaunt",
           "ability:abrupt_jaunt"
         ]
+      },
+      "wizard_bonus_feat_10": {
+        "id": "wizard_bonus_feat_10",
+        "name": "Wizard Bonus Feat",
+        "category": "bonus_feat",
+        "description": "Gain a bonus Metamagic, Item Creation, or Spell Mastery feat."
+      },
+      "wizard_bonus_feat_15": {
+        "id": "wizard_bonus_feat_15",
+        "name": "Wizard Bonus Feat",
+        "category": "bonus_feat",
+        "description": "Gain a bonus Metamagic, Item Creation, or Spell Mastery feat."
+      },
+      "wizard_bonus_feat_20": {
+        "id": "wizard_bonus_feat_20",
+        "name": "Wizard Bonus Feat",
+        "category": "bonus_feat",
+        "description": "Gain a bonus Metamagic, Item Creation, or Spell Mastery feat."
       }
     },
     "acfSwaps": [

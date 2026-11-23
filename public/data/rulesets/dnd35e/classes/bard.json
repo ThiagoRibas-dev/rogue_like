@@ -136,6 +136,72 @@
             "usageLimitPoolId": "bardic_music"
           }
         ]
+      },
+      "countersong": {
+        "id": "countersong",
+        "name": "Countersong",
+        "category": "su",
+        "description": "Use Perform check as the saving throw against sonic or language-dependent magical effects for allies."
+      },
+      "fascinate": {
+        "id": "fascinate",
+        "name": "Fascinate",
+        "category": "su",
+        "description": "Use music or poetics to cause creatures to sit quietly and listen (-4 Spot/Listen)."
+      },
+      "inspire_competence": {
+        "id": "inspire_competence",
+        "name": "Inspire Competence",
+        "category": "su",
+        "description": "Grant an ally a +2 competence bonus on skill checks with a particular skill."
+      },
+      "suggestion": {
+        "id": "suggestion",
+        "name": "Suggestion",
+        "category": "sp",
+        "description": "Make a Suggestion (as the spell) to a creature already fascinated by your bardic music."
+      },
+      "inspire_courage_2": {
+        "id": "inspire_courage_2",
+        "name": "Inspire Courage +2",
+        "category": "su",
+        "description": "Allies gain +2 morale bonus on saves vs. charm/fear and +2 morale bonus on attack and weapon damage rolls."
+      },
+      "inspire_greatness": {
+        "id": "inspire_greatness",
+        "name": "Inspire Greatness",
+        "category": "su",
+        "description": "Grant allies +2 bonus Hit Dice (d10s), +2 competence bonus on attacks, and +1 competence bonus on Fortitude saves."
+      },
+      "song_of_freedom": {
+        "id": "song_of_freedom",
+        "name": "Song of Freedom",
+        "category": "sp",
+        "description": "Use music to produce an effect equivalent to Break Enchantment on a target."
+      },
+      "inspire_courage_3": {
+        "id": "inspire_courage_3",
+        "name": "Inspire Courage +3",
+        "category": "su",
+        "description": "Allies gain +3 morale bonus on saves vs. charm/fear and +3 morale bonus on attack and weapon damage rolls."
+      },
+      "inspire_heroics": {
+        "id": "inspire_heroics",
+        "name": "Inspire Heroics",
+        "category": "su",
+        "description": "Grant a creature +4 morale bonus on saving throws and +4 dodge bonus to AC."
+      },
+      "mass_suggestion": {
+        "id": "mass_suggestion",
+        "name": "Mass Suggestion",
+        "category": "sp",
+        "description": "Make a Suggestion simultaneously to any number of fascinated creatures."
+      },
+      "inspire_courage_4": {
+        "id": "inspire_courage_4",
+        "name": "Inspire Courage +4",
+        "category": "su",
+        "description": "Allies gain +4 morale bonus on saves vs. charm/fear and +4 morale bonus on attack and weapon damage rolls."
       }
     },
     "acfSwaps": [

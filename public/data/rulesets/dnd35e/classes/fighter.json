@@ -110,6 +110,66 @@
             "type": "untyped"
           }
         ]
+      },
+      "fighter_bonus_feat_2": {
+        "id": "fighter_bonus_feat_2",
+        "name": "Fighter Bonus Feat",
+        "category": "bonus_feat",
+        "description": "Gain a bonus combat feat selected from the Fighter Bonus Feat list."
+      },
+      "fighter_bonus_feat_4": {
+        "id": "fighter_bonus_feat_4",
+        "name": "Fighter Bonus Feat",
+        "category": "bonus_feat",
+        "description": "Gain a bonus combat feat selected from the Fighter Bonus Feat list."
+      },
+      "fighter_bonus_feat_6": {
+        "id": "fighter_bonus_feat_6",
+        "name": "Fighter Bonus Feat",
+        "category": "bonus_feat",
+        "description": "Gain a bonus combat feat selected from the Fighter Bonus Feat list."
+      },
+      "fighter_bonus_feat_8": {
+        "id": "fighter_bonus_feat_8",
+        "name": "Fighter Bonus Feat",
+        "category": "bonus_feat",
+        "description": "Gain a bonus combat feat selected from the Fighter Bonus Feat list."
+      },
+      "fighter_bonus_feat_10": {
+        "id": "fighter_bonus_feat_10",
+        "name": "Fighter Bonus Feat",
+        "category": "bonus_feat",
+        "description": "Gain a bonus combat feat selected from the Fighter Bonus Feat list."
+      },
+      "fighter_bonus_feat_12": {
+        "id": "fighter_bonus_feat_12",
+        "name": "Fighter Bonus Feat",
+        "category": "bonus_feat",
+        "description": "Gain a bonus combat feat selected from the Fighter Bonus Feat list."
+      },
+      "fighter_bonus_feat_14": {
+        "id": "fighter_bonus_feat_14",
+        "name": "Fighter Bonus Feat",
+        "category": "bonus_feat",
+        "description": "Gain a bonus combat feat selected from the Fighter Bonus Feat list."
+      },
+      "fighter_bonus_feat_16": {
+        "id": "fighter_bonus_feat_16",
+        "name": "Fighter Bonus Feat",
+        "category": "bonus_feat",
+        "description": "Gain a bonus combat feat selected from the Fighter Bonus Feat list."
+      },
+      "fighter_bonus_feat_18": {
+        "id": "fighter_bonus_feat_18",
+        "name": "Fighter Bonus Feat",
+        "category": "bonus_feat",
+        "description": "Gain a bonus combat feat selected from the Fighter Bonus Feat list."
+      },
+      "fighter_bonus_feat_20": {
+        "id": "fighter_bonus_feat_20",
+        "name": "Fighter Bonus Feat",
+        "category": "bonus_feat",
+        "description": "Gain a bonus combat feat selected from the Fighter Bonus Feat list."
       }
     },
     "acfSwaps": [

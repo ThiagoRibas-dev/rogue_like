@@ -250,7 +250,7 @@ export function expendCasterSpellSlot(
   const lvlKey = String(effectiveLevel);
   const used = book.spontaneousSlotsUsedByLevel?.[lvlKey] ?? 0;
   const maxDaily = book.spellsPerDay[lvlKey] ?? 0;
-  if (maxDaily > 0 && used >= maxDaily) {
+  if (maxDaily <= 0 || used >= maxDaily) {
     return { ok: false, updatedBook: book, reason: `No Level ${effectiveLevel} spell slots remaining.` };
   }
   const prevStamps = book.spontaneousCastTimestampsByLevel?.[lvlKey] ?? [];

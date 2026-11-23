@@ -43,7 +43,7 @@
       "modifiers": [
         {
           "id": "pfs_saves",
-          "target": "saves_all",
+          "target": "saves",
           "value": 8,
           "type": "resistance"
         }

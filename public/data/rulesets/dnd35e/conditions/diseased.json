@@ -1,0 +1,13 @@
+{
+  "diseased": {
+    "id": "diseased",
+    "name": "Diseased",
+    "description": "Afflicted with an ongoing disease that saps vitality and leaves the creature weakened (-2 penalty to Fortitude saves and Strength/Dexterity checks until cured).",
+    "grantedTags": ["condition:diseased"],
+    "modifiers": [
+      { "id": "diseased_fort", "target": "fort", "value": -2, "type": "untyped" }
+    ],
+    "ruleOverrides": [],
+    "abilityPenalties": { "str": 2, "dex": 0 }
+  }
+}

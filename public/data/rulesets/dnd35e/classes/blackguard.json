@@ -165,6 +165,48 @@
           "abilityModStat": "cha",
           "refreshCycle": "rest_8h"
         }
+      },
+      "detect_good": {
+        "id": "detect_good",
+        "name": "Detect Good",
+        "category": "sp",
+        "description": "Detect the presence and strength of good auras at will."
+      },
+      "poison_use": {
+        "id": "poison_use",
+        "name": "Poison Use",
+        "category": "ex",
+        "description": "Trained in the use of poison and never risk accidentally poisoning yourself when applying it to a blade."
+      },
+      "fiendish_servant": {
+        "id": "fiendish_servant",
+        "name": "Fiendish Servant",
+        "category": "sp",
+        "description": "Summon a fiendish companion bound to serve you."
+      },
+      "smite_good_2": {
+        "id": "smite_good_2",
+        "name": "Smite Good (2/day)",
+        "category": "su",
+        "description": "Add Charisma bonus to attack roll and class level to damage against a good foe (2/day)."
+      },
+      "sneak_attack_2d6": {
+        "id": "sneak_attack_2d6",
+        "name": "Sneak Attack +2d6",
+        "category": "ex",
+        "description": "Deal an extra 2d6 damage when flanking or when the target is denied its Dexterity bonus to AC."
+      },
+      "smite_good_3": {
+        "id": "smite_good_3",
+        "name": "Smite Good (3/day)",
+        "category": "su",
+        "description": "Add Charisma bonus to attack roll and class level to damage against a good foe (3/day)."
+      },
+      "sneak_attack_3d6": {
+        "id": "sneak_attack_3d6",
+        "name": "Sneak Attack +3d6",
+        "category": "ex",
+        "description": "Deal an extra 3d6 damage when flanking or when the target is denied its Dexterity bonus to AC."
       }
     },
     "acfSwaps": [],

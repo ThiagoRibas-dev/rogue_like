@@ -399,6 +399,66 @@
             }
           }
         ]
+      },
+      "wild_empathy": {
+        "id": "wild_empathy",
+        "name": "Wild Empathy",
+        "category": "ex",
+        "description": "Use body language and vocalizations to improve the attitude of an animal."
+      },
+      "wild_shape_large": {
+        "id": "wild_shape_large",
+        "name": "Wild Shape (Large)",
+        "category": "su",
+        "description": "Use Wild Shape to take the form of a Large animal."
+      },
+      "wild_shape_tiny": {
+        "id": "wild_shape_tiny",
+        "name": "Wild Shape (Tiny)",
+        "category": "su",
+        "description": "Use Wild Shape to take the form of a Tiny animal."
+      },
+      "wild_shape_plant": {
+        "id": "wild_shape_plant",
+        "name": "Wild Shape (Plant)",
+        "category": "su",
+        "description": "Use Wild Shape to take the form of a plant creature."
+      },
+      "a_thousand_faces": {
+        "id": "a_thousand_faces",
+        "name": "A Thousand Faces",
+        "category": "su",
+        "description": "Change appearance at will, as if using Alter Self."
+      },
+      "timeless_body": {
+        "id": "timeless_body",
+        "name": "Timeless Body",
+        "category": "ex",
+        "description": "No longer take ability score penalties for aging and cannot be magically aged."
+      },
+      "wild_shape_huge": {
+        "id": "wild_shape_huge",
+        "name": "Wild Shape (Huge)",
+        "category": "su",
+        "description": "Use Wild Shape to take the form of a Huge animal."
+      },
+      "wild_shape_elemental_1": {
+        "id": "wild_shape_elemental_1",
+        "name": "Wild Shape (Elemental 1/day)",
+        "category": "su",
+        "description": "Use Wild Shape to take the form of a Small, Medium, or Large elemental once per day."
+      },
+      "wild_shape_elemental_2": {
+        "id": "wild_shape_elemental_2",
+        "name": "Wild Shape (Elemental 2/day)",
+        "category": "su",
+        "description": "Use Wild Shape to assume elemental form twice per day."
+      },
+      "wild_shape_elemental_3_huge": {
+        "id": "wild_shape_elemental_3_huge",
+        "name": "Wild Shape (Huge Elemental 3/day)",
+        "category": "su",
+        "description": "Assume up to Huge elemental form three times per day."
       }
     },
     "acfSwaps": [

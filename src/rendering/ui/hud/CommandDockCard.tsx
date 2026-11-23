@@ -31,6 +31,12 @@ export function CommandDockCard({ state, playerId, isHudFocused }: CommandDockCa
   const cartridgeCommands = (cartridgeUI?.dockCommands ?? []).filter(
     (cmd) => !cmd.isAvailable || cmd.isAvailable(state, playerId)
   );
+  const cartridgeOverridesInventory = cartridgeCommands.some(
+    (cmd) => cmd.defaultKey.toLowerCase() === 'i' || cmd.label === 'Pack'
+  );
+  const consoleDockCommands = cartridgeOverridesInventory
+    ? DOCK_COMMANDS.filter((spec) => spec.commandId !== 'panel.inventory')
+    : DOCK_COMMANDS;
 
   return (
     <section
@@ -66,7 +72,7 @@ export function CommandDockCard({ state, playerId, isHudFocused }: CommandDockCa
               <Keycap fallbackLabel="MODE" />
             </button>
 
-            {DOCK_COMMANDS.map((spec) => {
+            {consoleDockCommands.map((spec) => {
               const isActive =
                 (spec.activeMode !== undefined && state.uiMode === spec.activeMode) ||
                 (spec.commandId === 'action.target_toggle' && Boolean(state.targetingMode?.active)) ||

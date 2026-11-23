@@ -194,6 +194,102 @@
           "feature:penetrating_strike",
           "trait:penetrating_strike"
         ]
+      },
+      "sneak_attack_2d6": {
+        "id": "sneak_attack_2d6",
+        "name": "Sneak Attack +2d6",
+        "category": "ex",
+        "description": "Deal an extra 2d6 damage when flanking or when the target is denied its Dexterity bonus to AC."
+      },
+      "trap_sense_1": {
+        "id": "trap_sense_1",
+        "name": "Trap Sense +1",
+        "category": "ex",
+        "description": "Gain +1 bonus on Reflex saves and +1 dodge bonus to AC against traps."
+      },
+      "sneak_attack_3d6": {
+        "id": "sneak_attack_3d6",
+        "name": "Sneak Attack +3d6",
+        "category": "ex",
+        "description": "Deal an extra 3d6 damage when flanking or when the target is denied its Dexterity bonus to AC."
+      },
+      "trap_sense_2": {
+        "id": "trap_sense_2",
+        "name": "Trap Sense +2",
+        "category": "ex",
+        "description": "Gain +2 bonus on Reflex saves and +2 dodge bonus to AC against traps."
+      },
+      "sneak_attack_4d6": {
+        "id": "sneak_attack_4d6",
+        "name": "Sneak Attack +4d6",
+        "category": "ex",
+        "description": "Deal an extra 4d6 damage when flanking or when the target is denied its Dexterity bonus to AC."
+      },
+      "improved_uncanny_dodge": {
+        "id": "improved_uncanny_dodge",
+        "name": "Improved Uncanny Dodge",
+        "category": "ex",
+        "description": "Can no longer be flanked; rogues must be at least 4 levels higher to sneak attack via flanking."
+      },
+      "sneak_attack_5d6": {
+        "id": "sneak_attack_5d6",
+        "name": "Sneak Attack +5d6",
+        "category": "ex",
+        "description": "Deal an extra 5d6 damage when flanking or when the target is denied its Dexterity bonus to AC."
+      },
+      "trap_sense_3": {
+        "id": "trap_sense_3",
+        "name": "Trap Sense +3",
+        "category": "ex",
+        "description": "Gain +3 bonus on Reflex saves and +3 dodge bonus to AC against traps."
+      },
+      "sneak_attack_6d6": {
+        "id": "sneak_attack_6d6",
+        "name": "Sneak Attack +6d6",
+        "category": "ex",
+        "description": "Deal an extra 6d6 damage when flanking or when the target is denied its Dexterity bonus to AC."
+      },
+      "trap_sense_4": {
+        "id": "trap_sense_4",
+        "name": "Trap Sense +4",
+        "category": "ex",
+        "description": "Gain +4 bonus on Reflex saves and +4 dodge bonus to AC against traps."
+      },
+      "sneak_attack_7d6": {
+        "id": "sneak_attack_7d6",
+        "name": "Sneak Attack +7d6",
+        "category": "ex",
+        "description": "Deal an extra 7d6 damage when flanking or when the target is denied its Dexterity bonus to AC."
+      },
+      "sneak_attack_8d6": {
+        "id": "sneak_attack_8d6",
+        "name": "Sneak Attack +8d6",
+        "category": "ex",
+        "description": "Deal an extra 8d6 damage when flanking or when the target is denied its Dexterity bonus to AC."
+      },
+      "trap_sense_5": {
+        "id": "trap_sense_5",
+        "name": "Trap Sense +5",
+        "category": "ex",
+        "description": "Gain +5 bonus on Reflex saves and +5 dodge bonus to AC against traps."
+      },
+      "sneak_attack_9d6": {
+        "id": "sneak_attack_9d6",
+        "name": "Sneak Attack +9d6",
+        "category": "ex",
+        "description": "Deal an extra 9d6 damage when flanking or when the target is denied its Dexterity bonus to AC."
+      },
+      "trap_sense_6": {
+        "id": "trap_sense_6",
+        "name": "Trap Sense +6",
+        "category": "ex",
+        "description": "Gain +6 bonus on Reflex saves and +6 dodge bonus to AC against traps."
+      },
+      "sneak_attack_10d6": {
+        "id": "sneak_attack_10d6",
+        "name": "Sneak Attack +10d6",
+        "category": "ex",
+        "description": "Deal an extra 10d6 damage when flanking or when the target is denied its Dexterity bonus to AC."
       }
     },
     "acfSwaps": [

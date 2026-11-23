@@ -1,303 +1,263 @@
-# Research Notes — Full UI Componentization, Unified Theming & Keyboard-First Input Architecture Rewrite
+# Research Notes — Milestones 166 & 167: Gameplay UI, Parchment Contrast, Adaptive Layouts, Reach-Gated Fuzzy Verb Menu & D&D 3.5e Mechanics/Content Audit
 
-*Prepared per `AGENTS.md` Phase 1 (Steps 1–3). Read-only codebase audit completed against trunk commit `b76cca8` (post-Milestone 156).*
-
----
-
-## 0. Architectural Constraints Reiteration (`AGENTS.md` & `ARCHITECTURE.md`)
-
-Any UI and input rewrite must strictly preserve the project's existing engineering invariants:
-1. **Strict TypeScript (`tsconfig.json`):** Zero `any`, `exactOptionalPropertyTypes: true`, explicit return types on all functions, exhaustive `switch` (`assertNever`), zero magic gameplay/UI constants, no barrel files (`index.ts`).
-2. **ECS & Headless Simulation Purity (`.dependency-cruiser.cjs`):** `src/systems/`, `src/rulesets/`, `src/map/`, `src/types/`, `src/constants/`, and `src/utils/` must NEVER import from `src/rendering/` or `src/editor/`. Transient UI state (focus, modal stack, hover tile, active tabs, filter chips) lives outside `GameState` so saves and replays stay deterministic.
-3. **Pure Dumb Canvas Renderer & Dirty Domains:** Preserve `ViewportSnapshot` (`src/rendering/viewport_snapshot.ts`), zero-ECS `src/rendering/renderer.ts`, `#game-canvas-wrapper` mount contract (`tests/canvas_mount.test.ts`), and `PresentationDomain` dirty gating (`src/core/presentation_queue.ts`).
-4. **Tier 1 Console vs. Tier 2 Cartridge Inversion of Control (Rules 16 & 21):** Console UI primitives and hosts must remain 100% ruleset-agnostic (zero content-ID or ruleset-ID branches). Ruleset cartridges (`classic`, `dnd35e`, future rulesets) plug in declaratively via `CartridgeUIAdapter` and `CartridgeUIDefinition`.
-5. **DOM Safety & Environment Hygiene:** Zero `.innerHTML` for rich/interpolated HTML (`AGENTS.md` §7), zero native `window.alert()` / `window.confirm()` / `window.prompt()` (blocked/broken in iframe and itch.io embeds), and `<250 LOC` focused view modules.
-6. **8-Stage Verification & 3-Way SSOT Parity:** Every milestone must pass `./verify.sh` (`tsc`, `format`, `lint`, `lint:arch`, `lint:deadcode`, `bun test`, `build`, `run-validator.ts`) and keep `docs/ssot/ssot_{console,classic,dnd35e}.json` synchronized.
+**Date:** 2026-11-23  
+**Scope:** Milestone 166 (Post-Phase-43 Gameplay UI, Parchment Contrast, Adaptive Layouts & Reach-Gated Fuzzy Verb Menu Polish) & Milestone 167 (D&D 3.5e Mechanics, Modifier Targets, Spell Effect Units & SRD Content Parity)  
+**Workflow Stage:** `AGENTS.md` Phase 1 Kickoff Flow — Step 3 (`./docs/research_notes.md` Compilation & Research Review Gate)
 
 ---
 
-## 1. Executive Summary & Measured Codebase Footprint
+## 0. Core Architectural Rules & Standards Reiteration (`AGENTS.md` & `docs/ARCHITECTURE.md`)
 
-The current UI and input layers evolved organically across 156 milestones without a unified component system, token contract, or scoped input architecture. While the underlying **simulation, ECS, `ViewportSnapshot`, and `CartridgeUIAdapter` boundaries are strong**, the view and input layers suffer from severe structural fragmentation:
-
-| Area | Measured Metric | Architectural Symptom |
-| :--- | :--- | :--- |
-| **Rendering / UI TS Files** | `114` files in `src/rendering/` (`92` in `src/rendering/ui/`, `7` in `src/rendering/editor/`, `15` core canvas/audio/vfx) | Ad-hoc imperative DOM builders; zero shared UI primitives (`Button`, `Modal`, `Tabs`, `ListBox`, `Dialog`) |
-| **Static HTML Shell** | `591` lines in `index.html` (`17` hardcoded overlays/modals, `35+` inline `style="..."` blocks) | Inline hex colors (`#c0392b`, `#f1c40f`, `#00ff00`), Classic ruleset borrowing `#dnd35e-sheet-overlay` |
-| **Stylesheets** | `6` CSS files totaling `4,941` lines (`console_prototype.css`: 2,022; `modals.css`: 1,331; `hud.css`: 868; `editor.css`: 484; `layout.css`: 151; `core.css`: 85) | **4 disconnected color/token systems**; only 1 responds to theme switching |
-| **Inline Styling** | `76 / 114` files in `src/rendering/` mutate `.style.*` directly | Top offenders: `trade.ui.ts` (78), `dossier_hierarchies.ui.ts` (65), `zod_form_containers.ts` (57), `modal.ui.ts` (54), `menus.ui.ts` |
-| **Unsafe `.innerHTML` Usage** | `37 / 114` files in `src/rendering/` use `.innerHTML` | Violates `AGENTS.md` §7; includes Tier 1 `console_dossier.ui.ts` (lines 65, 95, 132, 135, 152, 203, 207, 260) |
-| **Native Browser Dialogs** | `35` calls to `alert()` / `confirm()` / `prompt()` across `src/core/`, `src/editor/`, `src/rendering/` | Breaks itch.io / iframe constraints; completely unthemed |
-| **Keydown Listeners** | `4` uncoordinated listeners (`session_controller.ts:238`, `editor_ui.ts:180`, `a11y.ts:32`, `modal.ui.ts:154`) | **Zero text-input focus guard** — typing in Character Creation, Shop Search, Settings, or Prompts triggers game/modal hotkeys |
-| **Focus & Keyboard Coverage** | `trapFocus()` wired on only `6 / 16` modal modes; caches stale nodes once after `50ms` | Re-renders via `replaceChildren()` wipe DOM focus & scroll position; 10+ screens are partially or completely mouse-only |
-
----
-
-## 2. Deep Audit A — UI Componentization, CSS & Theme Fragmentation
-
-### 2.1 The Four Disconnected Theme / Token Systems
-
-The reason switching between **Parchment Tabletop** and **Retro CRT** only restyles a fraction of the interface is that four separate styling systems coexist with zero shared contract:
-
-1. **System 1 — `--crpg-*` Tokens (`src/styles/console_prototype.css`, 2,022 lines):**
-   - The **only** stylesheet containing `[data-console-theme='parchment']` and `[data-console-theme='retro-crt']` selectors.
-   - Consumed by only `31` files (Console Dossier, Hotbar, Inventory, Inspect Card, and D&D 3.5e Sheet, Builder, Level-Up, Spellbook, Quickcast, Inspector).
-2. **System 2 — `--bg-*` / `--border-*` / `--text-*` Tokens (`core.css`, `layout.css`, `hud.css`, `modals.css`, 2,435 lines):**
-   - Hardcoded Dark Slate & Brass palette (`#191c24`, `#484f5e`, `#9e782f`, `#e4e6ed`) in `:root` with **zero `[data-console-theme]` overrides**.
-   - Governs the static `index.html` HUD plates (Vitals, Command Dock, Tactical Scanner, Chronicle Log), Main Menu, Ruleset Select, Campaign Select, Settings, Rebinding, Game Over, Factions, Dialogue, Quests, Investigation Board, Nemesis Dossier, Historical Ledger, Verb Menu, and Debug Ledger — all of which stay frozen in Dark Slate & Brass regardless of the active theme.
-3. **System 3 — Dead `--console-*` Runtime Tokens (`src/rendering/ui/console_theme.ts`, 150 lines):**
-   - `setConsoleThemeMode()` writes 12 `--console-*` CSS variables onto `document.documentElement` (`--console-bg-canvas`, `--console-accent-primary`, etc.).
-   - **Consumed by ZERO CSS files or TS components anywhere in `src/`.** (Only tested by `tests/console_ui_architecture.test.ts`!)
-   - Worse: `src/rendering/ui/classic_ui_registration.ts:41` calls `setConsoleThemeMode('retro-crt')` unconditionally every time the Classic sheet opens, **silently overwriting the player's Settings override (`parchment`)**.
-4. **System 4 — Editor & Ad-Hoc Inline Palettes (`editor.css`, `modal.ui.ts`, `trade.ui.ts`, `index.html`):**
-   - `editor.css` (484 lines) defines its own dark IDE colors.
-   - `src/rendering/ui/modal.ui.ts` (`showPromptModal`) hardcodes Catppuccin inline colors (`#1e1e2e`, `#cdd6f4`, `#89b4fa`, `#45475a`).
-   - `src/rendering/ui/trade.ui.ts` dynamically appends `<div id="trade-overlay">` directly to `document.body` with `78` inline `.style.*` assignments.
-   - `index.html` embeds hardcoded hex colors (`#c0392b`, `#16a085`, `#2980b9`, `#f1c40f`, `#e74c3c`, `#9b59b6`, `#00ff00`, `#f39c12`) directly on modal headers and buttons.
-
-### 2.2 Documentation & Asset Drift (`docs/UI_UX_STANDARDS.md`)
-- `docs/UI_UX_STANDARDS.md` specifies fonts (`Plus Jakarta Sans`, `IBM Plex Mono`, `Space Mono`, `Playfair Display`), but `index.html` only loads `Cinzel` and `JetBrains Mono`.
-- `docs/UI_UX_STANDARDS.md` references filenames that do not exist in the codebase (`console_paperdoll.ui.ts`, `console_modal_host.ts`, `console_ui_adapter.ts`, `default_ui_adapter.ts`).
-
-### 2.3 Structural DOM & State Anti-Patterns
-- **Destructive Full-Subtree Rebuilds:** Nearly every view (`console_dossier.ui.ts`, `console_hotbar.ui.ts`, `console_inventory.ui.ts`, `hud_dock.ui.ts`, `hud.ui.ts`, `trade.ui.ts`, `dnd35e_quickcast.ui.ts`, `menus.ui.ts`) calls `container.replaceChildren()` on every dirty update. This destroys active DOM focus, resets scroll positions (forcing manual hacks like `trade.ui.ts:330–359`), and breaks `trapFocus()` references.
-- **Static DOM ID Coupling Across Cartridges:** `classic_ui_registration.ts:26,43,117,124` renders the Classic/Sci-Fi Character Sheet into `#dnd35e-sheet-overlay` and `#dnd35e-sheet-body` because there is no generic Console Modal Host.
-- **Split-Brain UI Module State:**
-  - `hud_bottom_dock.ui.ts:29` tracks `let activeBank = 1` while `console_hotbar.ui.ts:52` separately tracks `let activeBankIndex = 1`.
-  - `hud.ui.ts:237–251` (`updateHUD`) performs a duplicate raw `FighterComponent` HP bar write after `renderPlayerStats()` already projected ruleset vitals.
-  - `editor_ui.ts:282–298` attaches `document.addEventListener('mousemove' | 'mouseup')` on every Editor mount without cleaning them up in `activeEditorCleanup` (listener leak).
-
-### 2.4 Strong Architectural Seams Worth Preserving
-A rewrite should **keep and strengthen** (NOT discard) four existing boundaries that work well:
-1. **`ViewportSnapshot` + Pure Dumb `renderer.ts`** (`src/rendering/viewport_snapshot.ts`, `src/rendering/renderer.ts`, `src/rendering/tactical_snapshot.ts`).
-2. **`PresentationDomain` Dirty Queue** (`src/core/presentation_queue.ts`) — prevents redundant UI work on off-screen NPC turns.
-3. **Cartridge UI Inversion of Control** (`src/types/ui_adapter.types.ts`, `src/rulesets/*/ui/*_ui_adapter.ts`, `src/rendering/ui/cartridge_ui_registry.ts`).
-4. **Transient Modal LIFO Stack + RTwP Pause Baseline** (`src/core/modal_manager.ts`).
+1. **Three-Tier Placement Heuristic (`AGENTS.md` Rule 16)**:
+   - **Tier 1 (Core Console Engine — `src/core/`, `src/systems/`, `src/types/`, `src/rendering/ui/`)**: Generic UI primitives (`ModalShell`, `SplitPane`, `Keycap`), theme token definitions (`tokens.css`, `parchment.css`, `primitives.css`), `InputScopeManager`, `VerbMenuPopover`, `TacticalScannerCard` (renamed `"Inspect"`), and baseline physical/touch interaction reach verification (`resolveActorInteractionReachTiles`).
+   - **Tier 2 (Ruleset Cartridge — `src/rulesets/dnd35e/`, `src/rendering/ui/cartridges/dnd35e/`)**: `RulesetContract.projectInspectStats` (projecting D&D 3.5e `HP`, `AC (Touch / Flat-Footed)`, `BAB`, and `Saves`), `RulesetContract.resolveInteractionReachTiles` (evaluating `naturalReachTiles` + `interaction_reach_tiles` StatModifiers from spells/effects like *Mage Hand*), D&D 3.5e Character Creation / Level-Up UI steps, and D&D 3.5e DAG / spellcasting / turning resolvers.
+   - **Tier 3 (System Content — `public/data/rulesets/dnd35e/*.json`)**: Declarative `featureDetails` labels in `classes/*.json`, canonical `StatModifier` target IDs in `feats/*.json` and `races/*.json`, magic item `effectId`s in `items/*.json`, and mechanical `effectUnits` / `effectBundle` entries in `spells/*.json`.
+2. **Baseline Rules + Declarative Overrides & Modifiers (`AGENTS.md` Rule 17 & Rule 19)**:
+   - Touch/interaction reach extensions (such as a 10-ft pole or *Mage Hand* / telekinetic reach) must be evaluated via declarative item tags (`REACH_PROBE_ITEM_TAG`) or `StatModifier`s (`target: 'interaction_reach_tiles'`) rather than hardcoded spell/feat branches.
+3. **Zero Content-ID or Bespoke-Property Branching (`AGENTS.md` Rule 21 — The "New Content Mod" Litmus Test)**:
+   - Class progression feature names (`aura`, `cleric_domains`, `deity_domains`, `spontaneous_casting`, `turn_or_rebuke_undead`) must be resolved from `classDef.featureDetails[featureId]?.name ?? systemContent.feats[featureId]?.name` rather than hardcoded display dictionaries in `.tsx`.
+   - Every feature ID referenced in `classDef.progression[].features` must be validated by `src/rulesets/dnd35e/validation/class_race_validator.ts` to guarantee zero raw snake_case leaks if a campaign author adds a new class or feature.
+4. **TypeScript Strictness & ECS Purity (`AGENTS.md` Sections 3 & 4)**:
+   - Zero `any`, zero magic numbers, `exactOptionalPropertyTypes: true`, explicit return types on all functions, and exhaustive switches.
 
 ---
 
-## 3. Deep Audit B — Keyboard Mapping, Input Scoping & Accessibility Failures
+## 1. Detailed Research & Root-Cause Analysis: Milestone 166 (UI, HUD, Theme & Interaction Polish)
 
-### 3.1 Root Cause 1: Typing in Text Inputs Triggers Global/Modal Keybinds
+### 1.1 Parchment Theme Naming, Dark Leather Keycap Contrast & D&D 3.5e Hover/Table Surfaces
+- **Theme Label (`src/rendering/ui/menus/SettingsModal.tsx:39`)**:
+  - Currently defines `{ value: 'parchment', label: 'Warm Tactical Parchment' }`.
+  - **User Decision**: Rename to simply **`'Parchment'`**.
+- **Keycap (`<kbd class="ui-kbd">`) Contrast in Parchment (`src/styles/tokens.css`, `src/styles/themes/parchment.css`, `src/styles/primitives.css`)**:
+  - In `src/styles/primitives.css:116-131`, `.ui-kbd` sets:
+    ```css
+    background: var(--ui-bg-socket);
+    border: 1px solid var(--ui-border-default);
+    color: var(--ui-ink-heading);
+    ```
+  - In `src/styles/themes/parchment.css:6-17`:
+    - `--ui-bg-socket` is `#2a241e` (dark leather, deliberately dark so the map canvas socket remains dark).
+    - `--ui-ink-heading` is `#3b2615` (dark espresso brown ink for parchment headings).
+  - Putting `#3b2615` text on a `#2a241e` background produces a **1.2:1 contrast ratio** (nearly invisible dark brown text on dark brown background), affecting the `[F1] Help` chip (`HelpReminderChip.tsx`) and every `<Keycap>` in the Command Dock.
+  - **User Decision**: Use **Dark Leather with Cream Text** for `.ui-kbd` in Parchment.
+  - **Clean Semantic Solution**: Introduce `--ui-kbd-bg`, `--ui-kbd-ink`, and `--ui-kbd-border` in `src/styles/tokens.css` (defaulting to `var(--ui-bg-socket)`, `var(--ui-ink-heading)`, `var(--ui-border-default)` for dark themes) and override `--ui-kbd-ink: var(--ui-ink-inverse)` (`#f5ebd9`) and `--ui-kbd-border: var(--ui-border-strong)` (`#9e845c`) in `src/styles/themes/parchment.css`.
+- **D&D 3.5e Hover & Table Container Dark Canvas Leaks (`src/styles/views/dnd35e.css`)**:
+  - Line 553: `.ui-dnd-list-row:hover:not(:disabled) { background: var(--ui-bg-canvas); }` — In Parchment, `--ui-bg-canvas` is `#1c1814` (dark map void) while `.ui-dnd-list-row` text is `var(--ui-ink-primary)` (`#2b1e12`), turning hovered list rows black-on-black. Replacing `--ui-bg-canvas` with `var(--ui-bg-hover)` (`#dfd1b4` in Parchment) restores crisp hover contrast across all 3 themes.
+  - Line 182: `.ui-dnd-table-scroll { background: var(--ui-bg-canvas); }` — Replacing with `var(--ui-bg-panel-alt)` avoids dark holes inside Parchment tables.
+  - Line 435: `.ui-dnd-quickcast-count { background: var(--ui-bg-canvas); }` — Replacing with `var(--ui-bg-panel-alt)` keeps quickcast count badges legible in Parchment.
 
-**Exact Causal Chain:**
-1. `src/core/session_controller.ts:238` attaches a single `window.addEventListener('keydown', ...)` invoking `handleKeyDown()` in `src/core/input_handler.ts`.
-2. **Neither `session_controller.ts`, `input_handler.ts`, `modal_input.ts`, nor `shortcut_input.ts` checks whether `event.target` / `document.activeElement` is an editable control (`<input>`, `<textarea>`, `<select>`, `[contenteditable="true"]`).**
-3. When any `UIMode.CartridgeModal` is active, `handleModalKey()` (`src/core/input/modal_input.ts:115–172`) executes on **every keystroke**:
-   - Lines `139–152`: Checks every `cartridgeUI.dockCommands` (`c`, `i`, `z`, `b`, `t`, `u` in D&D 3.5e) — calls `event.preventDefault()` and fires the command! **Typing `'t'` in Character Creation Name or Title literally triggers `Rest (8h)`! Typing `'c'`, `'i'`, `'b'`, `'z'`, `'u'` swallows the letter and toggles/fires cartridge actions!**
-   - Lines `154–166`: Checks `MODAL_BINDINGS` (`y`, `q`, `v`, `n`, `l`) — calls `event.preventDefault()` and opens Factions, Quests, Investigation, Nemesis Dossier, or Historical Ledger **directly on top of Character Creation!**
-   - Lines `130–136`: When `handlesInventoryHotkeys: true` (Character Sheet / Inventory), intercepts all `a–z` keys unconditionally — even when focused on `<select class="crpg-sort-select">` (`console_inventory.ui.ts:209`).
-4. In `UIMode.Settings`, `modal_input.ts:185–191` runs `MODAL_BINDINGS` without an editable-element guard, so typing letters near `<input type="number" id="autopause-threshold-input">` or `<select>` controls opens modals over Settings.
-5. `showPromptModal()` (`src/rendering/ui/modal.ui.ts:154`) appends directly to `document.body` **without changing `UIMode` and without calling `e.stopPropagation()`** — so every keystroke typed in a prompt modal leaks directly to `window` `keydown`!
-6. In `UIMode.Editor`, `src/rendering/editor_ui.ts:162–180` intercepts `Ctrl+Z` / `Ctrl+Y` on `window` even when typing inside text inputs/textareas, hijacking native text undo/redo.
+### 1.2 Full-Height Selection Modals & Content-Adaptive Left Columns
+- **Modal Height (`src/rendering/ui/primitives/ModalShell.tsx`, `src/styles/primitives.css`, `RulesetSelectModal.tsx`, `CampaignSelectModal.tsx`)**:
+  - `ModalShell` (`src/styles/primitives.css:195-217`) currently styles `.ui-modal` with `max-height: 90vh;` (shrink-wrapping short content) and `.ui-modal--lg { max-width: 960px; }`, `.ui-modal--xl { max-width: 1240px; }`.
+  - **User Decision**: Both `RulesetSelectModal` and `CampaignSelectModal` should be **full height (`90vh`)** and wide (`size="xl"`).
+  - Adding an opt-in `fullHeight?: boolean | undefined` prop to `ModalShellProps` (rendering `.ui-modal--full-height { height: 90vh; }`) lets `RulesetSelectModal` and `CampaignSelectModal` expand to full `90vh` height without stretching small confirmation dialogs or `GameOverModal`.
+- **Adaptive Left Column in `SplitPane` (`RulesetSelectModal.tsx`, `CampaignSelectModal.tsx`) & `.ui-dnd-wizard-stage` (`src/styles/views/dnd35e.css`)**:
+  - In `RulesetSelectModal.tsx:58`, `<SplitPane leftWidth="280px" ...>` squeezes `"Dungeons & Dragons 3.5e (SRD)"` + `"D&D 3.5E"` badge onto two wrapped lines.
+  - In `src/styles/views/dnd35e.css:483-489`, `.ui-dnd-wizard-stage` uses:
+    ```css
+    grid-template-columns: minmax(320px, 1.15fr) minmax(260px, 0.85fr);
+    ```
+    giving **57.5%** of the modal width to the left column (e.g., the 12-class list in `CharBuilderClassStep`) and only **42.5%** to the right detail column (which holds the class description, HD/BAB/Saves/Skill points, 20-level progression table, Cleric Deity & Domain selectors, and ACFs).
+  - **Cross-Step Audit of `.ui-dnd-wizard-stage`**:
+    1. `CharBuilderRaceAbilitiesStep.tsx`: Left = Race list (`max-content` ~300px); Right = Point-Buy ability table & racial traits (`1fr`).
+    2. `CharBuilderClassStep.tsx`: Left = Class list (`max-content` ~300px); Right = Class overview, 20-level progression table, Domains, ACFs (`1fr`).
+    3. `DnD35eSharedSkillsStep.tsx`: Left = Skill allocation list with filter buttons + stepper controls (~400–440px comfortable width); Right = Selected skill detail & synergies (`1fr`).
+    4. `DnD35eSharedFeatsStep.tsx`: Left = Feat browser with search input + category chips + feat rows (~380–420px comfortable width); Right = Selected feat prerequisites & benefit (`1fr`).
+    5. `CharBuilderSummaryStep.tsx`: Left = Identity form + Portrait sprite picker grid; Right = Final build summary (`1fr`).
+  - **User Decision**: Make the left column adapt to its content + margin/padding (`minmax(280px, max-content)` / bounded so long text inside left panes wraps gracefully) while the right column takes the remaining space (`minmax(0, 1fr)`).
+  - Specifically:
+    - In `RulesetSelectModal.tsx` and `CampaignSelectModal.tsx`, pass `leftWidth="minmax(320px, max-content)"` to `<SplitPane>` and prevent accidental title wrapping on `.ui-list-row__label` (`white-space: nowrap` where appropriate or sufficient padding).
+    - In `.ui-dnd-wizard-stage` (`src/styles/views/dnd35e.css:485`), change `grid-template-columns` from `minmax(320px, 1.15fr) minmax(260px, 0.85fr)` to `minmax(280px, max-content) minmax(0, 1fr)` and constrain `.ui-dnd-wizard-pane:first-child` with `max-width: 440px` so pure selection lists (`Race`, `Class`) hug their content tightly (~300–320px, giving ~880px+ to the right detail column!) while wider interactive tables (`Skills`, `Feats`, `Summary` sprite grid) expand smoothly up to 440px without blowing out the right pane.
 
-**Confirmed Affected Editable Inputs in Gameplay UI:**
-- `dnd35e_char_builder_summary.ui.ts`: `nameInput` (line 340), `titleInput` (line 362), `customColorInput` (line 414), `customTraitInput` (line 453)
-- `dnd35e_char_builder_shop.ui.ts`: `searchInput` (line 227), `outfitSelect` (line 350), `slotSel` (line 386)
-- `dnd35e_char_builder_sprite_picker.ui.ts`: `searchInput` (line 127)
-- `dnd35e_char_builder_feat_row.ui.ts`: `targetSelect` (line 188)
-- `console_inventory.ui.ts`: `sortSelect` (line 209)
-- `settings.ui.ts` & `index.html`: `autopause-threshold-input`, `setting-ui-scale`, `setting-console-theme`, `setting-sprite-pack`
-- `modal.ui.ts`: `showPromptModal` `<input>` (line 56)
+### 1.3 Untranslated Class Feature Keys in Character Creation & Level-Up (`CharBuilderClassStep.tsx`, `DnD35eLevelUpClassStep.tsx`, `class_race_validator.ts`)
+- **Root Cause**:
+  - `public/data/rulesets/dnd35e/classes/divine.json` (and `martial.json`, `arcane.json`, `skill.json`) already stores human-readable names and descriptions for every class feature inside `classDef.featureDetails[featureId]`:
+    - `"aura"`: `{ "name": "Aura", ... }`
+    - `"cleric_domains"`: `{ "name": "Cleric Domains", ... }`
+    - `"deity_domains"`: `{ "name": "Deity's Favored Weapon & Domains", ... }`
+    - `"spontaneous_casting"`: `{ "name": "Spontaneous Casting", ... }`
+    - `"turn_or_rebuke_undead"`: `{ "name": "Turn or Rebuke Undead", ... }`
+  - However, `src/rendering/ui/cartridges/dnd35e/CharBuilderClassStep.tsx:103` renders `row.features.join(', ')` directly (raw IDs!), line 170 renders `Replaces ${acf.replacesFeature} -> Grants ${acf.grantedFeature}` with raw IDs, and `src/rendering/ui/cartridges/dnd35e/DnD35eLevelUpClassStep.tsx:192` renders `rowDef.features.join(', ')` with raw IDs.
+- **Fix & Validator Guard**:
+  - Extract a shared pure helper `formatDnD35eClassFeatureName(featureId: string, classDef: DnD35ClassDefinition, sys: DnD35SystemContent): string` returning `classDef.featureDetails[featureId]?.name ?? sys.feats[featureId]?.name ?? featureId`.
+  - Use this helper in `CharBuilderClassStep.tsx` (lines 103 and 170) and `DnD35eLevelUpClassStep.tsx` (line 192).
+  - Add a validation check in `src/rulesets/dnd35e/validation/class_race_validator.ts` verifying that every feature ID in `classDef.progression[].features` and `classDef.alternateClassFeatures[].replacesFeature` resolves to an entry in `classDef.featureDetails` or `systemContent.feats`.
 
-### 3.2 Root Cause 2: Fragmented, Colliding & Broken Keybinding System
+### 1.4 HUD Polish: Single-Row `End Turn`, Chronicle Log Tab Fit & Unified `Pack [I]` Dock Command
+- **Single-Row `End Turn` Button (`src/rendering/ui/hud/BottomActionDock.tsx`, `src/styles/views/hud.css`)**:
+  - In `src/styles/views/hud.css:293, 333-345`:
+    - `.ui-bottom-dock` has `max-width: min(860px, 95vw);`
+    - `.ui-hotbar-row` has `display: flex; align-items: center; gap: var(--ui-space-2); flex-wrap: wrap;`
+    - `.ui-hotbar-grid` has `grid-template-columns: repeat(12, minmax(48px, 1fr));` (`12 * 48 + 11 * 4 = 620px`, plus bank switcher `~95px` + `End Turn` button `~95px` + padding = `~850px`), causing `End Turn` to wrap onto a second row at standard viewport widths.
+  - **Fix**: Increase `.ui-bottom-dock` `max-width: min(940px, 96vw)`, set `.ui-hotbar-row { flex-wrap: nowrap; }`, set `.ui-hotbar-grid { grid-template-columns: repeat(12, minmax(44px, 1fr)); min-width: 0; }`, and add `flex-shrink: 0; white-space: nowrap;` on the `End Turn` button.
+- **Chronicle Log Filter Tabs Overflow (`src/rendering/ui/hud/ChronicleLogCard.tsx`, `src/styles/views/hud.css`)**:
+  - `.ui-hud-col--right` is `width: 280px`. Inside `ChronicleLogCard`, `.ui-tabs__list` renders `All | Combat | Speech | World` with `.ui-tabs__tab { padding: var(--ui-space-2) var(--ui-space-3); font-size: var(--ui-font-sm); }`, exceeding `256px` and creating a horizontal scrollbar.
+  - **Fix**: Scope compact tab rules for `.ui-hud-card .ui-tabs__list` and `.ui-hud-card .ui-tabs__tab` in `src/styles/views/hud.css` (`padding: 4px 6px; font-size: var(--ui-font-xs); flex: 1 1 0; text-align: center; justify-content: center; overflow-x: hidden;`).
+- **Unified `Pack [I]` Dock Command in D&D 3.5e (`src/rendering/ui/hud/CommandDockCard.tsx`, `src/rendering/ui/cartridges/dnd35e/dnd35e_ui_registration.tsx`)**:
+  - Currently, `CommandDockCard.tsx:16-31` hardcodes `DOCK_COMMANDS` including `{ id: 'dock-btn-inventory', label: 'Pack', icon: '🎒', commandId: 'panel.inventory', uiMode: UIMode.Inventory }`.
+  - Meanwhile, `dnd35e_ui_registration.tsx:86-99` registers both `dnd35e_sheet` (`Sheet`, commandId `'dnd35e:sheet'`, key `'c'`) and `dnd35e_inventory` (`Pack`, commandId `'dnd35e:inventory'`, key `'i'`) — and both open the exact same modal (`openCartridgeModal(state, 'character_sheet')`). Because `dnd35e:inventory` claims key `'i'`, Console's `panel.inventory` loses its `'i'` binding, leaving two `Pack` buttons and a redundant `Sheet` button in the Command Dock.
+  - **User Decision**: Keep just `Pack (i)` as both inventory and sheet for D&D 3.5e (no separate `Sheet (c)` and `Pack (i)` dock buttons).
+  - **Fix**:
+    1. In `dnd35e_ui_registration.tsx`, remove `dnd35e_sheet` from `dockCommands` so D&D 3.5e only contributes `Pack` (`dnd35e_inventory`, key `'i'`, opening `character_sheet`), plus `Quickcast [Z]`, `Spells [B]`, `Rest (8h) [R]` (and `Level Up [L]` when `canLevelUp`). (We can still keep `'c'` as a secondary key chord on `dnd35e:inventory` or `dnd35e:sheet` in `commands` so pressing `C` or `I` on the keyboard still opens the sheet/inventory without cluttering the Command Dock with duplicate buttons!)
+    2. In `CommandDockCard.tsx`, filter `DOCK_COMMANDS` so if the active cartridge provides a dock command that replaces `panel.inventory` (e.g., `cmd.id === 'dnd35e_inventory'` or `cmd.label === 'Pack'`), the Console `dock-btn-inventory` button is omitted in favor of the cartridge's `Pack [I]` button.
 
-1. **Built-In Key Collisions (`src/core/settings.ts`):**
-   - `'l'` is bound to BOTH `move_east` (`['arrowright', 'd', 'l', '6']`) AND `ledger` (`['l']`).
-   - `'enter'` is bound to BOTH `target_confirm` AND `verb_menu`.
-   - `public/data/campaigns/*/keybinds.json` (4 campaigns) only lists 14 legacy actions, missing all 9 modal/cartridge actions added later.
-2. **Broken Cartridge Command Binding (Settings Rebinding Ignored):**
-   - `settings.ts` defines `ActionType` keys `'character_sheet'`, `'inventory'`, `'spellbook'`, `'level_up'`.
-   - `dnd35e_ui_registration.ts` registers dock command IDs `'dnd35e_sheet'`, `'dnd35e_inventory'`, `'dnd35e_quickcast'`, `'dnd35e_spellbook'`, `'dnd35e_rest_8h'`, `'dnd35e_level_up'`.
-   - `classic_ui_registration.ts` registers `'classic_sheet'`, `'classic_inventory'`.
-   - Because `modal_input.ts`, `shortcut_input.ts`, and `hud_dock.ui.ts:309` cast `cmd.id as ActionType`, `isAction()` **always returns `false`** and falls back to hardcoded `cmd.defaultKey`. **Rebinding Character Sheet, Spellbook, or Level Up in Settings currently does nothing!** And `quickcast` (`z`) / `rest_8h` (`t`) are completely absent from Settings.
-3. **Hardcoded Keys Outside Settings & Unimplemented Advertised Hotkeys:**
-   - `shortcut_input.ts` hardcodes `` ` `` (Debug), `Tab` (Fold HUD — breaking standard browser keyboard Tab focus traversal!), and `Digit1..0/-/=` (Hotbar slots 1–12) outside `PlayerSettings.keybinds`.
-   - `console_hotbar.ui.ts:189,204` displays tooltips `'Previous Hotbar Bank (Shift+Up)'` / `'Next Hotbar Bank (Shift+Down)'` — **completely unimplemented**.
-   - `hud_dock.ui.ts:135` displays badge `'ESC'` on the Settings button — **`Escape` in `UIMode.Game` does NOT open Settings** (`input_handler.ts` only cancels targeting/inspect).
-   - `index.html:451` tells the player `"Press C or Esc to close."` on Factions — Factions is actually bound to **`Y`**.
-4. **Structural Capability Gaps:**
-   - No **modifier chords** (`Ctrl+S`, `Shift+Tab`, `Alt+1`, `Shift+ArrowUp`).
-   - No **input contexts/scopes** (cannot distinguish World vs. Targeting vs. Modal vs. TextInput vs. Editor for binding or conflict detection).
-   - **`rebindAction()` destroys multi-key bindings** (`settings.ts:242–252` replaces `['arrowup', 'w', 'k', '8']` with a single-key array `[newKey]`, wiping arrow/WASD fallbacks!).
-   - No **physical `event.code` vs. layout `event.key`** normalization (Shift-modified symbols or non-QWERTY layouts behave inconsistently).
-   - No **8-way diagonal movement** actions (`move_nw`, `move_ne`, `move_sw`, `move_se` / numpad `1,3,7,9`).
+### 1.5 Rename `"Tactical Scanner"` to `"Inspect"` & Add Cartridge-Projected Inspect Stats
+- **Card Title (`src/rendering/ui/hud/TacticalScannerCard.tsx:31, 46`)**:
+  - Change `"Tactical Scanner"` to **`"Inspect"`** in both collapsed and expanded headers (and `aria-label="Inspect"`).
+- **Ruleset-Projected Inspect Stats (`src/types/ruleset.types.ts`, `src/rendering/inspect_tooltip.ts`, `src/rulesets/dnd35e/dnd35e_ruleset.ts`)**:
+  - Currently, `src/rendering/inspect_tooltip.ts:43-50` calls `getEffectiveStats(state, entityAtTile)` and unconditionally emits:
+    - `HP: cur/max`
+    - `ATK: stats.attack` (which is `0` on D&D 3.5e entities!)
+    - `DEF: stats.defense` (which `getEffectiveStats` synthesizes as `fullAC - 10` in D&D 3.5e!)
+  - **User Decision**: Rename to `"Inspect"`, add a hook so the Cartridge can project its own stats, and keep `Patience`.
+  - **Fix**:
+    1. Add an optional method to `RulesetContract` in `src/types/ruleset.types.ts`:
+       ```ts
+       readonly projectInspectStats?: (
+         state: GameState,
+         entityId: EntityId
+       ) => ReadonlyArray<{
+         readonly label: string;
+         readonly value: string;
+         readonly color?: string;
+       }>;
+       ```
+    2. In `src/rendering/inspect_tooltip.ts:43-50`, check `const activeRuleset = getActiveRuleset(state);`. If `activeRuleset.projectInspectStats` is defined, push its sections; otherwise fall back to Classic `HP`, `ATK`, `DEF`. Keep `Patience` (lines 117–120) unchanged.
+    3. Implement `projectInspectStats` on `dnd35eRulesetContract` (`src/rulesets/dnd35e/dnd35e_ruleset.ts`) using `evaluateDnD35eEntityDAG(state, entityId)` to project:
+       - `HP`: `${health.current}/${health.max}`
+       - `AC`: `${acBreakdown.fullAC} (Touch ${acBreakdown.touchAC}, Flat ${acBreakdown.flatFootedAC})`
+       - `BAB / Saves`: `BAB ${formatSigned(dag.bab)} | Fort ${formatSigned(dag.saves.fortitude)} Ref ${formatSigned(dag.saves.reflex)} Will ${formatSigned(dag.saves.will)}`
 
-### 3.3 Root Cause 3: Mouse-Only UI Elements & Broken Focus Management
+### 1.6 `Look` (`[X]`) + `Enter` Reticle Targeting & Extensible Interaction Reach
+- **Bug 1: `Enter` (`action.verb_menu`) Ignores Active `Look` (`inspectMode`) Reticle (`src/core/input/gameplay_input.ts:245-251`)**:
+  - In `src/core/input/gameplay_input.ts`:
+    - `case 'action.interact':` (lines 234–243) checks `if (currentState.inspectMode?.active === true)` and calls `interactWithTile(currentState, playerEntityId, currentState.inspectMode.x, currentState.inspectMode.y)`.
+    - `case 'action.verb_menu':` (lines 245–251, bound to `Enter` and `m`) ignores `currentState.inspectMode` and always calls `openTileVerbMenu(currentState, playerPos.x, playerPos.y)`.
+    - Furthermore, inside `InputScopeManager`, when `state.inspectMode?.active === true`, `TargetingInspectScope` is active (`src/core/input/input_scope_manager.ts:75`). In `src/core/input/command_registry.ts`, `action.verb_menu` has `scope: 'world_gameplay'`, whereas `TargetingInspectScope` only matches commands with `scope: 'targeting_inspect'` unless `TargetingInspectScope` also routes `action.interact` / `action.verb_menu` (or `handleTargetingInspectKey` in `gameplay_input.ts` handles `Enter` / `action.verb_menu` while in `inspectMode`!).
+  - Let's verify how `inspectMode` handles keys right now:
+    - When `inspectMode.active === true`, `InputScopeManager.getActiveScopes` pushes `TargetingInspectScope` (priority 30) above `WorldGameplayScope` (priority 20).
+    - Wait: in `command_registry.ts`, `target.confirm` is bound to `Enter` in `scope: 'targeting_inspect'`!
+    - When the player is in `inspectMode` (`Look` `[X]`, where `state.targetingMode` is NOT active, only `state.inspectMode.active === true`), pressing `Enter` matches `target.confirm` in `targeting_inspect` scope!
+    - And what does `case 'target.confirm':` do in `src/core/input/gameplay_input.ts`? Let's check! When `state.inspectMode?.active === true` and `state.targetingMode` is null, `target.confirm` either does nothing or exits inspect mode without opening the verb menu at `(inspectMode.x, inspectMode.y)`!
+  - Let's verify this in `gameplay_input.ts`! That explains why pressing `Enter` during `Look` didn't interact with the reticle tile!
+  - Specifically:
+    - When `state.inspectMode?.active === true`, pressing `Enter` (`target.confirm` or `action.verb_menu`) or `e` (`action.interact`) should interact with / open the verb menu for `(state.inspectMode.x, state.inspectMode.y)` (and close `inspectMode` or transition cleanly to `UIMode.VerbMenu` targeting `(inspectMode.x, inspectMode.y)`).
+- **Bug 2 & Feature: Physical/Touch Interaction Reach with Extensible Hooks (`src/systems/apply.system.ts`, `src/systems/reaction.system.ts`, `src/types/ruleset.types.ts`, `src/rulesets/dnd35e/dnd35e_ruleset.ts`)**:
+  - Currently, `processApplyIntent` (`src/systems/apply.system.ts`) allows executing physical/touch verbs (`open`, `close`, `lock`, `unlock`, `kick`, `search`, `disarm`, `harvest`, `pray`, `apply`, `dip`, `ignite`) at **any** `(tx, ty)` on the map if triggered via right-click or reticle `VerbMenu`, without checking whether `(tx, ty)` is within the actor's reach!
+  - **User Decision**: Enforce interaction reach for `Look` + `VerbMenu` / `ApplyIntent`, with hooks for abilities that increase interaction reach (such as `pole_10ft` or a *Mage Hand* spell).
+  - **Architecture (`Tier 1 Console` + `Tier 2 RulesetContract`)**:
+    1. Define `TOUCH_INTERACTION_VERBS: ReadonlySet<InteractionVerb>` in `src/systems/apply.system.ts` containing physical world-tile verbs: `'open'`, `'close'`, `'lock'`, `'unlock'`, `'kick'`, `'search'`, `'disarm'`, `'harvest'`, `'pray'`, `'apply'`, `'dip'`, `'ignite'`, `'eat'`, `'drink'`. (Verbs that are inherently ranged or non-physical, like `'look'`, `'talk'`, `'shoot'`, `'throw'`, `'zap'`, `'Signal: ...'`, remain exempt from touch reach.)
+    2. Compute actor-to-target tile distance using the existing Tier 1 footprint helper `computeRectDistanceTiles(actorPos.x, actorPos.y, actorProfile.footprintWidth, actorProfile.footprintHeight, tx, ty, targetWidth, targetHeight)` from `src/systems/movement_footprint.ts` (`0` = same tile, `1` = adjacent tile).
+    3. Compute effective interaction reach via `resolveActorInteractionReachTiles(state, actorId, verb, toolEntityId)`:
+       - Base reach = `getEntitySpatialProfile(state, actorId).naturalReachTiles` (default `1` tile for Small/Medium creatures, `2`+ for Large/reach creatures).
+       - Tool reach override: If `toolEntityId` (or an inventory tool used by `'search'`/`'disarm'`, e.g. `hasReachProbeTool` with `REACH_PROBE_ITEM_TAG` `'pole_10ft'`) extends reach for `'search'` / `'disarm'`, base reach is at least `2` tiles (`10 ft`).
+       - Cartridge hook: Optional `RulesetContract.resolveInteractionReachTiles?(state, actorId, verb, baseReachTiles, toolEntityId): number` on `RulesetContract`.
+       - In `dnd35eRulesetContract.resolveInteractionReachTiles`, query the actor's active `StatModifier`s (from `DnD35eEffectsComponent` / status effects / active spells) for `target: 'interaction_reach_tiles'` (using `resolveTypedModifiersWithBreakdown`), returning `baseReachTiles + bonusReachTiles`. Thus, any spell, feat, or item granting a `StatModifier` with `target: 'interaction_reach_tiles'` (such as *Mage Hand* or *Telekinesis*) automatically extends interaction reach without any spell-ID branching!
+    4. Enforce `distanceTiles <= effectiveReachTiles` in:
+       - `getValidVerbsForTile` (`src/systems/reaction.system.ts`) / `openTileVerbMenu` (`src/core/input/mouse_input.ts`): only include touch verbs in `availableVerbs` when `(tx, ty)` is within the actor's effective interaction reach for that verb (and if no actionable verbs are within reach on a distant tile, show a clear message or only ranged/inspect verbs).
+       - `processApplyIntent` (`src/systems/apply.system.ts`): guard physical tile verbs so out-of-reach targets return `{ state: addMessage(state, 'That is out of reach.', 'info'), success: false }`.
 
-1. **Stale & Incomplete Focus Trapping (`src/utils/a11y.ts` & `src/core/session_controller.ts:119–152`):**
-   - `trapFocus()` is only invoked for `6` of `16` modal modes (`Settings`, `Dialogue`, `RulesetSelect`, `CampaignSelect`, `CartridgeModal`, `GameOver`) — omitted for `Inventory`, `Trade`, `Services`, `Factions`, `Quests`, `Investigation`, `Dossier`, `Ledger`, `Debug`, `VerbMenu`, and `showPromptModal`.
-   - `trapFocus()` queries focusables **once** after a `50ms` timeout and caches `firstFocusableEl` / `lastFocusableEl`. The instant any modal re-renders (`replaceChildren()`), those references become detached DOM nodes, silently breaking Tab wrapping and dropping focus to `document.body`.
-   - `trapFocus()` selector omits `<input type="number|search|range|color">` and never restores focus to the trigger element on close.
-2. **Screen-by-Screen Mouse-Only Inventory:**
-
-| Screen / Region | Current Keyboard Support | Mouse-Only / Broken Interactions |
-| :--- | :--- | :--- |
-| **Main Menu / Ruleset / Campaign / Game Over** | None (`input_handler.ts:127–135` returns early) | No `Escape`-to-back, no Arrow list navigation, no `Enter` quick-advance |
-| **HUD Left Plate (Vitals, RTwP, Camera)** | None (`Space` waits/pauses only) | Engine mode toggle, RTwP `1x/2x/4x`, `45°`, `3D`, `Zoom ±`, Settings `⚙`, Card fold/unfold |
-| **HUD Right Stack (Command Dock, Scanner, Log)** | `Tab` folds all cards (stealing focus Tab) | Individual card fold, 2D/ASCII toggle, Log filter tabs (`All`/`Combat`/`Speech`/`System`), scrolling Log/Scanner |
-| **HUD Bottom Dock (Stances, Hotbar)** | `1–0/-/=` triggers hotbar slots | Combat stance toggles, Power Attack / Combat Expertise `[-][+]` steppers, Bank `▲/▼` switching (`Shift+Up/Down` unimplemented), End Turn button |
-| **Console Master Dossier / Inventory** | `a–z` / `Shift+a–z` for first 26 items, `Esc` | Paperdoll slots & Stash cells are `<div>` (not `<button>`): unfocusable, cannot unequip via keyboard, items `#27–30` unreachable, hover-only item inspect card, Weapon Sets `I–IV`, category filters, skills `Use` buttons |
-| **D&D 3.5e Character Creation / Level Up** | `Esc` (blocked by text-input bug!) | Step navigation, race/class/alignment/domain/ACF/feat/skill/spell selection, point-buy `[-][+]`, custom shop, sprite picker — all mouse-only |
-| **D&D 3.5e Character Sheet / Spellbook / Quickcast** | `Esc`, `c`/`b`/`z` toggle | Tab switching, spell memorization/unpreparation, metamagic & spontaneous modifier toggles, class accordions, spell tiles, companion/attack inspection |
-| **Trade & Services (`trade.ui.ts`)** | `Esc` only | Switching Merchant/Player panes, selecting items, Buy/Sell, Social haggle buttons (Appraise/Diplomacy/Bluff/Intimidate) — 100% mouse-only |
-| **Quests / Factions / Investigation / Dossier / Ledger / Debug** | `Esc` + cross-modal toggles | List scrolling/selection, filter chips, expandable hierarchies, Debug fast-forward schemes |
-| **Verb Menu & Dialogue** | `1–9` + `Esc` | No `ArrowUp`/`ArrowDown` selection highlight + `Enter` confirm (`verb_menu.ui.ts` uses `<li>`, not `<button>`) |
+### 1.7 `VerbMenuPopover` Valid-Only Filtering, Auto-Focused Fuzzy Search & Keyboard Navigation
+- **Root Cause (`src/rendering/ui/hud/VerbMenuPopover.tsx`, `src/core/input/modal_input.ts`, `src/core/input/input_scope_manager.ts`, `src/styles/views/hud.css`)**:
+  - `openTileVerbMenu` (`src/core/input/mouse_input.ts:96-99`) constructs `options` by iterating over **all 42 verbs** in `ALL_VERBS` (`src/constants/verbs.constants.ts`) and marking 38+ of them `isValid: false`.
+  - `VerbMenuPopover.tsx:66` renders every option in `menu.options` (all 42 buttons!) inside `.ui-verb-popover__list` (`src/styles/views/hud.css:418`), which has no `max-height` or `overflow-y: auto`, overflowing the viewport.
+- **User Decision**:
+  - Filter to valid verbs only.
+  - Auto-focus a fuzzy finder input at the top of `VerbMenuPopover` with the filtered list of options already open below it, allowing the player to type to fuzzy-filter and use `ArrowUp` / `ArrowDown` (or mouse) to navigate and `Enter` to execute.
+- **Design & Input Scope Interaction**:
+  1. **Filter to Valid Verbs at Menu Construction (`src/core/input/mouse_input.ts:96-99`)**:
+     - Build `options` strictly from `availableVerbs` (where `isValid: true`), so a closed door shows its ~3–4 valid verbs (`open`, `kick`, `lock`, `search`) instead of 42 verbs.
+  2. **Fuzzy Matcher & Search State in `VerbMenuPopover.tsx`**:
+     - Add a pure fuzzy-match scorer `scoreFuzzyVerbMatch(query: string, label: string): number | null` (matching contiguous substrings with highest weight and ordered subsequence characters as fallback, case-insensitive).
+     - Maintain local Preact state `searchQuery` (initialized to `""`, reset when `menu` target changes) and derive `filteredOptions` from `menu.options.filter(opt => opt.isValid)`.
+     - Auto-focus the search `<input type="text" class="ui-input ui-verb-popover__search" placeholder="Filter actions..." />` on mount via `useEffect` + `inputRef.current?.focus()`.
+     - Keep the list of matching options open below the search input inside `.ui-verb-popover__list` (`max-height: 240px; overflow-y: auto;`).
+  3. **Keyboard Navigation Inside the Auto-Focused Search Input**:
+     - Because the search `<input>` is focused, `InputScopeManager.dispatchKeyEvent` (`src/core/input/input_scope_manager.ts:183-197`) sees `editableTarget === true` (`TextInputGuard`).
+     - In `VerbMenuPopover.tsx`, attach `onKeyDown` directly to the search `<input>`:
+       - `ArrowDown`: `e.preventDefault(); e.stopPropagation();` -> advance highlighted index within `filteredOptions` (wrapping around) and sync `selectedIndex` to `GameState.verbMenuState`.
+       - `ArrowUp`: `e.preventDefault(); e.stopPropagation();` -> decrement highlighted index within `filteredOptions` (wrapping around) and sync `selectedIndex`.
+       - `Enter`: `e.preventDefault(); e.stopPropagation();` -> execute the currently highlighted option in `filteredOptions` via `executeVerbMenuOption(state, actualOptionIndex)`.
+       - `Escape`: `e.preventDefault(); e.stopPropagation();` -> close `VerbMenu` (`uiMode: UIMode.None, verbMenuState: undefined`).
+     - Also in `InputScopeManager.dispatchKeyEvent` (`src/core/input/input_scope_manager.ts:185-191`), when `editableTarget && event.key === 'Escape'`, if `state.uiMode === UIMode.VerbMenu`, allow `Escape` to close the verb menu immediately rather than requiring two presses of `Escape` (one to blur the input, one to close the popover).
+     - Meanwhile, keep `handleVerbMenuModalKey` in `src/core/input/modal_input.ts` working for headless unit tests (`tests/companion_ai_commands.test.ts:384`) and non-focused `ArrowUp`/`ArrowDown`/`1-9`/`Enter`/`Escape` events.
 
 ---
 
-## 4. Architectural Options & Honest Engineering Pushback (`AGENTS.md` Rules 6, 7, 9)
+## 2. Detailed Research & Root-Cause Analysis: Milestone 167 (D&D 3.5e Mechanics & Content Data Audit)
 
-### 4.1 Decision 1 — UI View Layer Technology (Keep ROT.js Canvas Pure & Untouched)
+### 2.1 Unconnected / Mismatched `StatModifier` Target Strings
+Cross-referencing all `"target": "..."` strings in `public/data/rulesets/dnd35e/**/*.json` against `src/rulesets/dnd35e/AttributeDAG.ts`, `dag_helpers.ts`, `ac_breakdown.ts`, `skill_synergies.ts`, `spell_cast_helpers.ts`, and `turning_resolver.ts` revealed 9 targets emitted by JSON content that are not wired in the TypeScript resolvers:
+1. **`saves_all`** (used in `races.json` Halfling racial bonus & `spells/divine.json` *Resistance*, *Prayer*, *Holy Aura*):
+   - `dag_helpers.ts` only checks `target === saveId` (`'fortitude'`, `'reflex'`, `'will'`).
+   - **Fix**: In `dag_helpers.ts` (`resolveSavingThrows`), include modifiers where `mod.target === saveId || mod.target === 'saves_all'`, and support conditional `save_fear` modifiers when evaluating fear saves.
+2. **`save_reflex`** (used in `classes/arcane.json` Wizard `familiar_weasel`):
+   - **Fix**: Normalize `"save_reflex"` to `"reflex"` in `classes/arcane.json` (and accept `'save_fortitude' | 'save_reflex' | 'save_will'` aliases in `dag_helpers.ts`).
+3. **`ac_deflection`** & **`ac_insight`** (used in `spells/divine.json` *Protection from Evil*, *Shield of Faith*, *Holy Aura* and `feats/psionic.json` *Speed of Thought*):
+   - `ac_breakdown.ts` filters for `mod.target === 'ac'` and reads `mod.type` (`'deflection'`, `'insight'`, etc.).
+   - **Fix**: Normalize `"target": "ac_deflection"` -> `"target": "ac", "type": "deflection"` and `"target": "ac_insight"` -> `"target": "ac", "type": "insight"` in JSON, and accept `ac_deflection` / `ac_insight` in `ac_breakdown.ts`.
+4. **`skill_hide`** & **`skill_swim`** (used in `races.json` Halfling `+4` Hide and Aquatic Elf `+8` Swim):
+   - `skill_synergies.ts` queries `mod.target === 'skill:${skillId}'` (`skill:hide`, `skill:swim`).
+   - **Fix**: Normalize `"skill_hide"` -> `"skill:hide"` and `"skill_swim"` -> `"skill:swim"` in `races.json` / `races/*.json`.
+5. **`caster_level_check_vs_sr`** (used in `feats/metamagic_item_magic.json` *Spell Penetration* `+2` & *Greater Spell Penetration* `+4`):
+   - `spell_cast_helpers.ts:278` (`resolveSpellResistanceCheck`) rolls `1d20 + casterLevel` without querying `caster_level_check_vs_sr` modifiers.
+   - **Fix**: Query `resolveTypedModifiersWithBreakdown` for `target === 'caster_level_check_vs_sr'` on the caster and add the resolved total to the SR penetration check.
+6. **`effective_turning_level`** (used in `classes/divine.json` Sun Domain `sun_greater_turning` and `items/magic_gear.json` *Phylactery of Undead Turning* `+4`):
+   - `turning_resolver.ts` calculates `clericLevel` from `scalingPools['turn_undead_level']` without adding `effective_turning_level` modifiers.
+   - **Fix**: Query `resolveTypedModifiersWithBreakdown` for `target === 'effective_turning_level'` in `turning_resolver.ts` and add it to the effective turning level.
 
-The ROT.js map canvas (`renderer.ts`, `tactical_overlay.ui.ts`, `vfx_overlay.ui.ts`) MUST remain pure Canvas2D driven by `ViewportSnapshot`. The technology decision applies **strictly to the DOM UI chrome** (Menus, HUD, Modals, Dossier, Builder, Spellbook, Trade, Dialogs, Tooltips).
+### 2.2 Spontaneous Spell Slot `maxDaily === 0` Bypass (`src/rulesets/dnd35e/magic/spell_cast_helpers.ts:253`)
+- In `hasAvailableDnD35eSpellCapacity`, line 253 checks:
+  ```ts
+  if (maxDaily > 0 && used >= maxDaily) {
+    return { ok: false, reason: `No level ${spellLevel} spell slots remaining today.` };
+  }
+  ```
+- When `maxDaily === 0` (e.g. a Level 1 Ranger/Paladin or a caster without sufficient ability score for bonus slots at that level), `maxDaily > 0` is `false`, allowing infinite spontaneous casts at that spell level!
+- **Fix**: Change the condition to `if (maxDaily <= 0 || used >= maxDaily)`.
 
-| Criterion | Option A: Zero-Framework Vanilla TS Component Kit | **Option B (Recommended): Preact (`preact` ~4KB gzip) + Semantic CSS Tokens** | Option C: React 19 + Tailwind CSS |
+### 2.3 Dummy Condition IDs on Cure Spells (`src/rulesets/dnd35e/magic/spell_cast_effects.ts:249-256`)
+- In `spell_cast_effects.ts:249-256`, `case 'condition':` strips `unit.cureConditionIds` first, then unconditionally pushes `unit.conditionId` onto `StatusEffectsComponent` whenever `unit.conditionId.length > 0`.
+- However, restorative spells in `public/data/rulesets/dnd35e/spells/divine.json` (*Lesser Restoration*, *Remove Fear*, *Remove Paralysis*, *Remove Blindness/Deafness*, *Remove Curse*, *Remove Disease*, *Neutralize Poison*, *Heal*) set `"conditionId": "none"` or `"conditionId": "heal_restoration"` alongside `cureConditionIds`. Casting them infects the target with a literal `"none"` or `"heal_restoration"` status effect!
+- **Fix**: Guard `case 'condition':` so `unit.conditionId` is only applied when `unit.conditionId !== 'none'` and `sysContent?.conditions[unit.conditionId] !== undefined` (and author missing condition definitions in `public/data/rulesets/dnd35e/conditions/`).
+
+### 2.4 Direct Spell Effect Unit Handlers & `spell_modifiers.ts` Integration
+- In `src/rulesets/dnd35e/magic/spell_cast_effects.ts:301-304`, `case 'quicken_cast_grant':`, `case 'retaliation_rider':`, and `case 'form_overlay':` are currently no-op `break;` statements.
+- In `src/rulesets/dnd35e/magic/spell_modifiers.ts`, `resolveEffectiveCasterLevel`, `resolveEffectiveSpellSaveDC` (which implements *Spell Focus*, *Greater Spell Focus*, and *Heighten Spell* DC increases), and `buildSummonedCreatureModifiers` (which implements *Augment Summoning* `+4 STR / +4 CON`) are tested in isolation but not called by `spell_cast_resolver.ts` or `spell_cast_units.ts`.
+- **Fix**: Wire `resolveEffectiveCasterLevel` and `resolveEffectiveSpellSaveDC` into `spell_cast_resolver.ts`, wire `buildSummonedCreatureModifiers` into `executeSummonUnit` in `spell_cast_units.ts`, and implement direct active-effect handlers for `quicken_cast_grant`, `retaliation_rider`, and `form_overlay` in `spell_cast_effects.ts`.
+
+### 2.5 SRD Magic Item `effectId`s, 39 Empty Spells & Legacy Root Monoliths
+- **Magic Items (`public/data/rulesets/dnd35e/items/consumables.json`, `magic_gear.json`)**:
+  - `potion_of_cure_light_wounds`, `potion_of_bulls_strength`, `scroll_of_mage_armor`, `wand_of_magic_missile`, and `staff_of_fire` currently reference Classic placeholder effect IDs (`"heal_5"`, `"damage_5_cold"`).
+  - **Fix**: Point their `consumable.effectId` / `zappable.spellId` to the real D&D 3.5e spell pipeline (`spell:cure_light_wounds`, `spell:bulls_strength`, `spell:mage_armor`, `spell:magic_missile`, `spell:fireball`) and ensure `effects.system.ts` / `zap.system.ts` routes `spell:<id>` consumables through `resolveDnD35eSpellCast`.
+- **39 Empty SRD Spells (`public/data/rulesets/dnd35e/spells/arcane.json`, `divine.json`)**:
+  - Populate declarative `effectUnits` and/or `effectBundle` for all 39 spells that currently lack both.
+- **Modular `races/*.json` & Root Monolith Cleanup**:
+  - Split `public/data/rulesets/dnd35e/races.json` into `public/data/rulesets/dnd35e/races/*.json` (updating `manifest.json` and `src/core/loader.ts`) and retire unused root monolith files (`classes.json`, `feats.json`, `items.json`, `skills.json`, `spells.json`).
+
+---
+
+## 3. Cascading Effects Matrix (`AGENTS.md` Rule 15)
+
+| Change | Upstream (Callers / Emitters / Data Authors / Tests) | Downstream (Consumers / Renderers / Validators / Save Schemas) | Lateral (Sibling JSONs / Docs / Parallel Registries) |
 | :--- | :--- | :--- | :--- |
-| **Runtime Bundle Size (itch.io)** | `0 KB` added | `~4 KB` gzipped (`preact` + `preact/hooks`) | `~45–50 KB` gzipped (`react` + `react-dom`) + Tailwind build pipeline |
-| **Focus & Scroll Preservation** | Must hand-write keyed DOM reconciliation/patching for every list/tab/modal (high bug risk across ~60+ gameplay views) | **Automatic** via keyed VDOM diffing — focus, selection, caret position, and scroll offsets survive state updates cleanly | Automatic, but heavier reconciler & synthetic event overhead |
-| **`.innerHTML` Elimination & XSS Safety** | Manual discipline (`createElement` boilerplate everywhere; verbose) | **Structural** — JSX renders safe text nodes by default; `.innerHTML` disappears completely | Structural |
-| **Componentization & Reuse** | Verbose factory functions + manual cleanup/unsubscribe tracking | First-class typed components (`<ModalShell>`, `<Tabs>`, `<ListBox>`, `<Button>`, `<StatChip>`, `<Keycap>`, `<Tooltip>`) with deterministic unmount cleanup | First-class, but heavier ecosystem footprint |
-| **Integration with `GameState` + `PresentationDomain`** | Direct imperative calls from `presenter.ts` | Single thin UI bridge store (`ui_store.ts`) fed by `presenter.ts` per dirty `PresentationDomain` — zero ECS coupling in primitives, 100% headless simulation purity preserved | Same bridge, heavier runtime |
-| **Tooling / Config Impact** | Zero config changes | Minor: add `preact` dep, set `"jsx": "react-jsx"`, `"jsxImportSource": "preact"` in `tsconfig.json` & `vite.config.ts`, update `knip`/SSOT scripts for `.tsx` | Larger toolchain shift (Tailwind v4 plugin, PostCSS/Vite config, React types) |
-
-> **Honest Pushback on Option C (React + Tailwind):** React adds ~10× the bundle weight of Preact for zero functional advantage in a client-only roguelike UI that already has an immutable `GameState` and explicit `PresentationDomain` dirty gates. Similarly, Tailwind utility classes tend to scatter raw styling decisions across TSX files unless wrapped in semantic classes anyway — whereas a **layered Semantic CSS Token architecture (`tokens.css` + `themes/*.css` + `primitives.css` + `views/*.css`)** guarantees 100% theme consistency across Parchment, Retro CRT, and Dark Slate/Brass with zero utility-class sprawl and tiny CSS output.
->
-> **Honest Pushback on Option A (Pure Vanilla TS):** Writing a full keyed DOM reconciler + reactive subscription model from scratch for ~60+ rich CRPG views (Character Builder, Spellbook, Master Dossier, Trade, Investigation Board, Settings Keybind Matrix) is classic wheel-reinvention — you end up maintaining a buggy, bespoke mini-framework. Preact gives us real declarative componentization and rock-solid focus preservation for 4KB gzipped.
-
-### 4.2 Decision 2 — Scope Pushback: Separate Gameplay UI Rewrite from Campaign Editor Rewrite
-
-**Strong Recommendation (Pushback against a "Big-Bang Everything" Rewrite):**
-- Of the `99` files in `src/rendering/ui/` + `src/rendering/editor/`, roughly **`~26` files** belong exclusively to the **Campaign Editor** (Zod recursive form generator, static tile painter, world graph canvas, dialogue tree editor, faction matrix, knowledge simulator, narrative fuzzer, balance lab, director sandbox).
-- Rewriting all Gameplay UI **and** all Campaign Editor tooling in one monolithic pass would double the surface area and delay playable improvements by months.
-- **Proposed Two-Track Strategy:**
-  1. **Track 1 — Core Architecture + Complete Gameplay UI Rewrite (Milestones 157–164):**
-     - Unified Design Token & Theme System (`--ui-*`)
-     - Scoped Input & Full Keyboard Mapping Engine (`InputScopeManager` + `CommandRegistry`)
-     - Shared UI Primitive Library + Live Focus/Keyboard Navigation Kit + In-App `DialogService` (zero `alert`/`confirm`/`prompt`)
-     - Complete rewrite of `index.html` static shell + Gameplay HUD + Menus + All Core Modals + Console Master Dossier/Inventory/Hotbar + D&D 3.5e & Classic Cartridge Modals
-  2. **Track 2 — Campaign Editor Alignment (Milestone 165):**
-     - Wire Campaign Editor onto the shared `InputScopeManager` (`EditorScope` + `TextInputGuard` fixing `Ctrl+Z` hijacking and `editor_ui.ts` listener leaks), shared `DialogService` (replacing the 24 editor `alert`/`confirm`/`prompt` calls), and `--ui-*` semantic tokens — without needlessly rewriting working Canvas/Zod editor engines unless you explicitly want a Track 3 Editor rewrite afterward.
-
-### 4.3 Decision 3 — Unified Single-Contract Theme Architecture
-
-Eliminate all 4 disconnected palettes (`--crpg-*`, `--bg-*`, dead `--console-*`, inline hex/Catppuccin) in favor of **one semantic CSS token contract (`--ui-*`)**:
-
-- **Token Layers (`src/styles/`):**
-  1. `tokens.css`: Semantic contract (`--ui-bg-canvas`, `--ui-bg-panel`, `--ui-bg-elevated`, `--ui-bg-input`, `--ui-ink-primary`, `--ui-ink-muted`, `--ui-border-subtle`, `--ui-border-strong`, `--ui-accent-primary`, `--ui-accent-secondary`, `--ui-focus-ring`, `--ui-status-danger/warning/success/info`, `--ui-font-display/body/mono`, `--ui-radius-*`, `--ui-space-*`, `--ui-z-*`).
-  2. `themes/parchment.css`, `themes/retro-crt.css`, `themes/obsidian-brass.css` (optional 3rd skin preserving the existing Dark Slate & Brass aesthetic!): pure `[data-ui-theme="<id>"]` overrides + `[data-high-contrast="true"]` + `[data-ui-scale="small|normal|large"]` + `[data-reduced-motion="true"]`.
-  3. `primitives.css`: Styles for the shared component primitives (`ModalShell`, `Panel`, `Button`, `Tabs`, `ListBox`, `DataGrid`, `Badge`, `Chip`, `Stepper`, `Input`, `Select`, `Tooltip`, `Keycap`, `Dialog`, `Toast`).
-  4. `views/*.css`: Minimal layout rules for HUD, Dossier, Builder, Spellbook, Trade, Menus.
-- **Single Theme Authority:** `console_theme.ts` resolves `effectiveTheme = settings.consoleTheme === 'auto' ? cartridgeUI.defaultThemeMode : settings.consoleTheme` and sets `document.documentElement.dataset.uiTheme = effectiveTheme`. Individual views (`classic_ui_registration.ts`, etc.) are **forbidden** from overriding the theme directly.
-
-### 4.4 Decision 4 — Full Keyboard Mapping, Input Scoping & Focus Architecture
-
-```
-window keydown
-  └─► InputScopeManager (priority-ordered active scope stack)
-        1. RebindCaptureScope     — captures full KeyChord (incl. modifiers) during Settings rebind
-        2. SystemDialogScope      — in-app Alert / Confirm / Prompt dialogs (Esc / Enter / Tab)
-        3. TextInputGuard         — if activeElement is <input|textarea|select|[contenteditable]>:
-                                    ONLY allows bindings marked `allowInTextInput: true` (e.g. Esc to blur/close,
-                                    Ctrl+Enter to submit); ALL printable keys & single-key shortcuts pass natively!
-        4. ActiveModalScope       — modal-local bindings + Roving Focus (Arrows/Home/End/Enter/Space)
-                                    + Tab/Section cycling (`[`/`]` or `Ctrl+Tab`) + `Esc` pops modal stack
-        5. HudFocusScope          — optional keyboard-focused HUD mode (e.g. `F6` cycles HUD zones:
-                                    Bottom Hotbar/Stances → Vitals/Chronos → Command Dock → Scanner → Log; `Esc` returns to map)
-        6. TargetingInspectScope  — cursor movement (4-way/8-way), `Tab`/`Shift+Tab` cycle visible targets,
-                                    `Enter` confirm, `v`/context verb menu, `Esc` cancel
-        7. WorldGameplayScope     — movement, wait, interact, pickup, hotbar `1-0/-/=`, bank `Shift+Up/Down`,
-                                    cartridge & console modal toggles, `Esc` opens Settings/Pause Menu
-        8. EditorScope            — `Ctrl+Z` / `Ctrl+Shift+Z` / `Ctrl+Y` / `Ctrl+S` (guarded by TextInputGuard!)
-```
-
-**Core Guarantees of the New Keymap System:**
-- **Canonical `CommandRegistry`:** Every core action AND every cartridge-contributed command (`CartridgeUIDefinition.commands`) registers with `{ id, label, category, scope, defaultBindings: KeyChord[], allowInTextInput?, repeatable? }`.
-- **Multi-Slot `KeyChord` Bindings:** Each command holds an array of `KeyChord`s (e.g., Primary + Secondary + Numpad) with `{ code?, key?, ctrl?, shift?, alt?, meta? }`. Settings lets the user **add, edit, or clear individual slots** without wiping arrow/WASD fallbacks.
-- **Scope-Aware Conflict Detection:** Settings flags collisions only when two commands share a chord in **overlapping scopes** (e.g., `l` for `move_east` vs `ledger` in `WorldGameplayScope` is caught and resolved immediately; `Enter` in `ActiveModalScope` vs `TargetingInspectScope` is cleanly allowed).
-- **100% Honest Live Keycap Badges:** Every `<Keycap commandId="..." />` component reads live from `CommandRegistry` + user overrides — eliminating stale/fake tooltips (`Shift+Up`, `Press C`, `ESC` lies become structurally impossible).
-- **Live Focus Management & Keyboard Navigation Primitives:**
-  - `useFocusTrap(containerRef)` re-queries live focusable nodes on every `Tab`/`Shift+Tab` (never stale after re-render!) and restores focus to `previousActiveElement` on close.
-  - `useRovingFocus` (`ArrowUp/Down/Left/Right`, `Home/End`, `Enter/Space`) wired into Menus, Ruleset/Campaign Lists, Paperdoll & Stash Grids, Trade Panes, Character Builder steps/lists, Spellbook, Quickcast, Verb Menu, Dialogue, Quests, Factions, Investigation, and Dossier.
-  - Keyboard-triggered Inspect Card (`?` or `Alt+I` or focus-inspect mode) so players can inspect inventory/equipment/spell items without a mouse hover.
-  - Reclaim `Tab`: Move "Fold/Unfold All HUD Panels" off bare `Tab` (e.g. to `Shift+Tab` or `F1` or `\`, or keep `Tab` only in `WorldGameplayScope` when focus is on the canvas, never inside modals or `HudFocusScope`).
+| **1. Parchment Theme Naming & `--ui-kbd-*` / Hover Tokens** (`SettingsModal.tsx`, `tokens.css`, `parchment.css`, `primitives.css`, `dnd35e.css`) | `SettingsModal.tsx` theme selector options; `tokens.css` & `parchment.css` token definitions | `<Keycap>` (`Keycap.tsx`), `HelpReminderChip.tsx`, `CommandDockCard.tsx`, `.ui-dnd-list-row:hover`, `.ui-dnd-table-scroll`, `.ui-dnd-quickcast-count` | `obsidian-brass.css`, `retro-crt.css`, `docs/UI_UX_STANDARDS.md`, `tests/console_ui_architecture.test.ts` |
+| **2. `ModalShell` `fullHeight` & Content-Adaptive `SplitPane` / `.ui-dnd-wizard-stage`** (`ModalShell.tsx`, `primitives.css`, `RulesetSelectModal.tsx`, `CampaignSelectModal.tsx`, `dnd35e.css`) | `RulesetSelectModal` & `CampaignSelectModal` passing `fullHeight` + `size="xl"` + `leftWidth="minmax(320px, max-content)"`; `DnD35eCharBuilderModal` & `DnD35eLevelUpModal` stages | All 5 D&D 3.5e Character Builder steps (`Race/Abilities`, `Class`, `Skills`, `Feats`, `Summary`) and Level-Up steps | Other `ModalShell` consumers (`GameOverModal`, `HelpModal`, `SettingsModal`) remain unaffected because `fullHeight` is opt-in |
+| **3. Class `featureDetails` Label Resolution & Validator Check** (`CharBuilderClassStep.tsx`, `DnD35eLevelUpClassStep.tsx`, `class_race_validator.ts`) | `public/data/rulesets/dnd35e/classes/*.json` (`progression[].features`, `featureDetails`, `alternateClassFeatures`) | `CharBuilderClassStep` 20-level table & ACF cards; `DnD35eLevelUpClassStep` class preview table; `bun run scripts/run-validator.ts` | `systemContent.feats` fallback lookup for bonus feat progression entries (`fighter_bonus_feat`) |
+| **4. HUD Single-Row `End Turn`, Compact Chronicle Log Tabs & Unified `Pack [I]` Dock Command** (`BottomActionDock.tsx`, `hud.css`, `CommandDockCard.tsx`, `dnd35e_ui_registration.tsx`) | `dnd35eUIDefinition.dockCommands` (removing duplicate `dnd35e_sheet` dock entry); `CommandDockCard` deduplicating cartridge inventory command | `CommandDockCard` DOM buttons; `BottomActionDock` hotbar row layout; `ChronicleLogCard` tab strip | `classic_ui_registration.tsx` (retains Classic Dossier `[C]` + Console Pack `[I]`), `tests/input_scope_and_keymap.test.ts` |
+| **5. `"Inspect"` Card Rename & `RulesetContract.projectInspectStats`** (`TacticalScannerCard.tsx`, `inspect_tooltip.ts`, `ruleset.types.ts`, `dnd35e_ruleset.ts`) | Mouse hover / `Look` (`[X]`) reticle updates calling `buildTileInspectTooltip(state, x, y)` | `TacticalScannerCard` HUD panel rendering `InspectTooltipDTO.sections`; `evaluateDnD35eEntityDAG` | `classicRulesetContract` (falls back cleanly to `HP`, `ATK`, `DEF` + `Patience`) |
+| **6. `Look` (`[X]`) + `Enter` Reticle Targeting & Extensible Interaction Reach** (`gameplay_input.ts`, `apply.system.ts`, `reaction.system.ts`, `mouse_input.ts`, `ruleset.types.ts`, `dnd35e_ruleset.ts`) | Keyboard `action.verb_menu` (`Enter`/`m`), `target.confirm` (`Enter` in `inspectMode`), `action.interact` (`e`), mouse right-click `openTileVerbMenu` | `getValidVerbsForTile`, `processApplyIntent` reach check, `resolveActorInteractionReachTiles`, `dnd35eRulesetContract.resolveInteractionReachTiles` (`interaction_reach_tiles` StatModifier) | Existing reach probe tests (`tests/m156_durability_doors_spells_ecology.test.ts` for `pole_10ft`), door/trap interaction tests |
+| **7. `VerbMenuPopover` Valid-Only Filtering & Auto-Focused Fuzzy Search** (`VerbMenuPopover.tsx`, `mouse_input.ts`, `modal_input.ts`, `input_scope_manager.ts`, `hud.css`) | `openTileVerbMenu` filtering to valid verbs; user typing & pressing `ArrowUp`/`ArrowDown`/`Enter`/`Escape` in `VerbMenuPopover` search input | `executeVerbMenuOption` in `modal_input.ts`, `InputScopeManager` `Escape` handling in `UIMode.VerbMenu` | `tests/companion_ai_commands.test.ts` (headless `handleModalKey` calls with `'ArrowDown'`, `'Enter'`, `'1'`–`'9'`) |
+| **8. Milestone 167 D&D 3.5e Mechanics & Content Parity** (`dag_helpers.ts`, `ac_breakdown.ts`, `spell_cast_*.ts`, `turning_resolver.ts`, `public/data/rulesets/dnd35e/**/*.json`) | `feats/*.json`, `races/*.json`, `classes/*.json`, `spells/*.json`, `items/*.json` | `evaluateDnD35eEntityDAG`, `resolveDnD35eSpellCast`, `resolveTurnOrRebukeUndead`, `scripts/run-validator.ts` | Default campaign showcase entities & items (`public/data/campaigns/default/*.json`) |
 
 ---
 
-## 5. Cascading Effects Matrix (`AGENTS.md` Rule 15)
+## 4. Declarative Purity & Anti-Hardcoding Audit Table (`AGENTS.md` Rule 21)
 
-| Change | Upstream (Callers, Producers, Authors, Tests) | Downstream (Consumers, Renderers, Serializers, Schemas) | Lateral (Mirrors, Sibling Data, Docs, SSOT) |
+| Behavior | Rejected Imperative Shortcut | Chosen Declarative Schema / JSON Mechanism | Passes "New Content Mod" Litmus Test? |
 | :--- | :--- | :--- | :--- |
-| **1. Add Preact (`preact`) + JSX/TSX build config** *(if Option B approved)* | `package.json`, `tsconfig.json`, `vite.config.ts`, `eslint.config.*`, `knip.json` | All new `.tsx` view components under `src/rendering/ui/`; `presenter.ts` mount/render bridge | `.dependency-cruiser.cjs` (verify `.tsx` & zero cartridge leaks), `scripts/map-codebase.ts` & `scripts/ssot_parity.ts` (scan `.tsx` alongside `.ts`), `docs/ARCHITECTURE.md` |
-| **2. Unified Semantic CSS Tokens (`--ui-*`) & Theme Authority** | `src/core/settings.ts` (`consoleTheme`), `src/rendering/ui/console_theme.ts`, `index.html` (fonts & root `<div id="app">`) | All HUD, Menu, Modal, Cartridge UI, and (Track 2) Editor styles; `[data-ui-theme]` / `[data-high-contrast]` / `[data-ui-scale]` | `tests/console_ui_architecture.test.ts` (update/preserve `console_theme.ts` API expectations), `docs/UI_UX_STANDARDS.md` (sync fonts, theme list, filenames), delete dead `--console-*` & `--crpg-*` / `--bg-*` split |
-| **3. Scoped `InputScopeManager` + `CommandRegistry` + `KeyChord` Settings** | `src/core/session_controller.ts`, `src/core/input_handler.ts`, `src/core/input/{modal,shortcut,inventory,mouse}_input.ts`, `src/core/settings.ts`, `src/rendering/ui/{classic,dnd35e}_ui_registration.ts`, `src/rendering/editor_ui.ts` | Settings Keybind UI (`settings.ui`), HUD `<Keycap>` badges (`hud_dock.ui`, `console_hotbar.ui`), Rebind modal, `localStorage` settings migration | `public/data/campaigns/*/keybinds.json` (all 4 campaigns: `default`, `shroudgarde`, `dnd35e-crypt`, `realms-of-shroudgarde`), `src/types/campaign/` keybinds schema if any, `tests/` input/keybind unit tests |
-| **4. Generic Console Modal Host + Primitive Kit + `DialogService`** | `src/core/modal_manager.ts`, `src/rendering/presenter.ts`, `src/rendering/ui/cartridge_ui_registry.ts`, `src/core/session/{session_dom,session_settings}.ts` | Eliminates static overlays from `index.html`; removes `#dnd35e-sheet-overlay` coupling in `classic_ui_registration.ts`; replaces 35 `alert`/`confirm`/`prompt` calls | `tests/canvas_mount.test.ts` (MUST preserve `#game-canvas-wrapper` DOM contract!), `tests/dirty_domains.test.ts`, `docs/SSOT_CONSOLE.md` |
-| **5. Gameplay Views & Cartridge Modals Rewrite (Menus, HUD, Dossier, Trade, D&D 3.5e)** | `src/rendering/presenter.ts`, `src/rulesets/{classic,dnd35e}/ui/*_ui_adapter.ts`, `src/rulesets/dnd35e/ui/dnd35e_quickcast_model.ts` (models stay pure!) | Every gameplay screen (`MainMenu`, `HUD`, `Dossier`, `Hotbar`, `Trade`, `Dialogue`, `Quests`, `Factions`, `Investigation`, `Nemesis`, `Ledger`, `Debug`, `VerbMenu`, `CharBuilder`, `LevelUp`, `Sheet`, `Spellbook`, `Quickcast`) | `tests/hud_rest_and_display_name.test.ts`, `tests/dnd35e_phase26_ui_and_showcase.test.ts`, `docs/ssot/ssot_{console,classic,dnd35e}.json` |
-| **6. Track 2 Campaign Editor Alignment** | `src/rendering/editor_ui.ts`, `src/rendering/editor/*.ts`, `src/editor/campaign_editor.ts` | Editor undo/redo input guard, listener leak cleanup, `DialogService` migration, `--ui-*` token adoption | `src/styles/editor.css`, `docs/SSOT_CONSOLE.md` |
-
----
-
-## 6. Preliminary Milestone Breakdown Sketch (Phase 43: Milestones 157–165)
-
-*(Draft for discussion — will be refined into `./docs/implementation_plan.md` and `docs/MILESTONES.md` only after you confirm the research and architectural choices.)*
-
-- **Milestone 157 — UI Architecture Foundation, Semantic Token Engine & Theme Unification:**
-  - Set up chosen view runtime (Preact TSX or Vanilla Primitive Kit) + SSOT/linter/depcruise support.
-  - Build `--ui-*` semantic token layer + unified themes (`parchment`, `retro-crt`, and optional `obsidian-brass`) + fix `console_theme.ts` single authority & `docs/UI_UX_STANDARDS.md` font/doc sync.
-- **Milestone 158 — Scoped Input Engine, Declarative `CommandRegistry` & Full Keymap Architecture:**
-  - Implement `InputScopeManager`, `TextInputGuard` (permanently fixing text-input hotkey hijacking), `CommandRegistry`, `KeyChord` multi-slot bindings, scoped conflict detection, cartridge command registration, `localStorage` + `keybinds.json` migration, 8-way diagonal bindings, hotbar bank keys, and `Escape` pause/menu flow.
-  - Add headless unit tests for every input scope, text-input guard, conflict check, and cartridge command override.
-- **Milestone 159 — Shared UI Primitive Kit, Live Focus Management, `ModalHost` & `DialogService`:**
-  - Build reusable keyboard-first primitives (`ModalShell`, `Panel`, `Button`, `Tabs`, `ListBox`, `GridNav`, `Stepper`, `Input`, `Select`, `Chip`, `Badge`, `Tooltip`, `Keycap`, `Toast`), live `FocusTrap` + `RovingFocus`, generic `ConsoleModalHost`, and in-app `DialogService` (replacing all gameplay `alert`/`confirm`/`prompt` + `modal.ui.ts`).
-- **Milestone 160 — Menus, Settings Keybind Matrix & Selection Flows Rewrite:**
-  - Rewrite `MainMenu`, `RulesetSelect`, `CampaignSelect`, `GameOver`, `LoadingOverlay`, and `Settings` (with searchable multi-slot chord rebinding, conflict warnings, scope tags, and live theme/scale/tileset previews) with 100% keyboard navigation and full theme compliance.
-- **Milestone 161 — Tactical HUD, Keyboard HUD-Focus Mode & Context Verb Popover Rewrite:**
-  - Rewrite Left Vitals/Chronos/Camera Plate, Right Command Dock / Tactical Scanner / Chronicle Log, Alerts, Bottom Stances/Hotbar Dock (fixing split-brain `activeBank`), and `VerbMenu` (Arrow + `1-9` + `Enter`) onto shared primitives with `HudFocusScope` (`F6`) and zero mouse-only controls.
-- **Milestone 162 — Console Master Dossier, Inventory/Paperdoll, Trade & World Modals Rewrite:**
-  - Rewrite Tier 1 `ConsoleMasterDossier`, `ReactivePaperDoll`, `CompactStash` (real `<button>` slots + 2D grid arrow nav + keyboard inspect card + >26-item accessibility), `Trade` (dual-pane keyboard nav + social haggle shortcuts), `Dialogue`, `Quests`, `Factions`, `Investigation`, `Nemesis Dossier`, `Ledger`, and `Debug` with zero `.innerHTML` and zero inline color overrides.
-- **Milestone 163 — D&D 3.5e & Classic Cartridge Modals Rewrite (Sheet, Spellbook, Quickcast):**
-  - Rewrite `dnd35e_sheet`, `dnd35e_spellbook`, `dnd35e_quickcast`, `dnd35e_inspector`, and `classic_ui_registration` using the generic `ConsoleModalHost` (eliminating `#dnd35e-sheet-overlay` coupling) with full keyboard navigation, tab hotkeys, and 100% theme adherence.
-- **Milestone 164 — D&D 3.5e Character Creation Wizard & Level-Up Advancement Rewrite:**
-  - Rewrite `dnd35e_char_builder` (all steps including Equipment Shop, Review & Identity, and Sprite Picker) and `dnd35e_level_up` using shared primitives, clean text inputs (zero hotkey hijacking), keyboard-navigable lists/steppers/pickers, and strip all obsolete static overlays from `index.html` and legacy CSS files.
-- **Milestone 165 — Campaign Editor Input Guard, `DialogService` & Theme Alignment (Track 2):**
-  - Integrate Campaign Editor with `InputScopeManager` (`EditorScope` + `TextInputGuard` fixing `Ctrl+Z` hijacking and `editor_ui.ts` listener leaks), replace the 24 remaining editor `alert`/`confirm`/`prompt` calls with `DialogService`, and map `editor.css` onto `--ui-*` semantic tokens.
-
----
-
-## 7. Open Questions & Assumptions to Confirm Before Step 4 (`implementation_plan.md`)
-
-Per `AGENTS.md` Rules 6 & 7, please confirm or adjust the following decisions before we draft `./docs/implementation_plan.md` and update `docs/MILESTONES.md`:
-
-1. **View Layer Framework Choice:**
-   - **Recommendation:** **Option B — Preact (`preact` ~4KB gzipped) + Layered Semantic CSS Tokens (`--ui-*`)** for DOM UI, keeping the ROT.js Canvas renderer 100% pure Vanilla TS.
-   - *Alternative:* Option A (Zero-dependency Vanilla TS primitive kit) or Option C (React + Tailwind). Which do you prefer?
-2. **Campaign Editor Scope:**
-   - **Recommendation:** **Two-Track Phasing** — full component rewrite for all Gameplay UI first (M157–M164), followed by Editor alignment (M165: `InputScopeManager`, `DialogService`, `--ui-*` tokens) without rewriting the working Zod/Canvas editor internals yet.
-   - Do you want to keep Editor as an alignment milestone (M165), or include a full Editor UI rewrite as well?
-3. **Theme Lineup:**
-   - Currently Settings offers `Auto (Cartridge Default)`, `Parchment Tabletop`, and `Retro CRT` — while the unthemed HUD/Menus have a Dark Slate & Brass aesthetic.
-   - Should we ship **3 unified themes** (`Parchment Tabletop`, `Retro CRT`, and `Obsidian & Brass` — preserving the dark slate-brass look as a first-class theme), or **strictly 2 themes** (`Parchment Tabletop` and `Retro CRT`) applied uniformly everywhere?
-4. **Keybinding Policy Decisions:**
-   - **Reclaiming `Tab`:** Currently `Tab` folds all HUD cards during gameplay, which conflicts with standard keyboard focus navigation. Recommendation: use `Tab` for standard focus traversal inside modals/`HudFocusScope` and target cycling in Targeting Mode, and move "Fold/Unfold HUD" to `\` (or `Shift+Tab` / `F1`) — rebindable in Settings. Sound good?
-   - **Collision Fixes:** Resolve `l` (`move_east` vs `ledger`) by moving `ledger` default to `Shift+L` (or `J` / `F9`), and bind `Escape` in `UIMode.Game` to open Settings/Pause Menu (matching the existing `ESC` badge). Acceptable?
-   - **8-Way Diagonal Movement & Vi-Keys:** Should we add explicit `move_nw`/`move_ne`/`move_sw`/`move_se` actions bound to Numpad `7/9/1/3` by default (leaving `y/u/b/n` free for Factions/LevelUp/Spellbook/Dossier, or offering a selectable "Classic Vi-Keys" preset in Settings)?
-   - **Keyboard HUD Access:** Does a dedicated HUD focus toggle (e.g. `F6` to focus & navigate HUD panels/stances/steppers/log with Arrows/`Tab`, `Esc` to return immediately to map control) fit how you want keyboard-only play to feel?
-
----
-
-## 8. Confirmed Decisions & Browser `F*`-Key Engineering Notes
-
-All four open questions were reviewed and confirmed by the User:
-
-1. **View Runtime:** **Option B — Preact (`preact` ~4KB gzipped) + Layered Semantic CSS Tokens (`--ui-*`)** for all DOM UI, keeping the ROT.js Canvas renderer pure Vanilla TS. Enables lightweight, deterministic component testing in `bun test` (`preact-render-to-string` / `happy-dom`).
-2. **Two-Phase Roadmap (Built Together from Day 1):**
-   - **Phase 43 (Gameplay UI, Unified Theming & Full Keyboard Mapping):** Rewrites all Gameplay UI, HUD, Menus, Core Modals, and Cartridge Modals.
-   - **Phase 44 (Campaign Editor Rewrite):** Rewrites the Campaign Editor onto the exact same Phase 43 Primitive Kit, Semantic Token layer, `InputScopeManager`, and `DialogService`.
-   - **Forward-Compatibility Rule:** Phase 43's design tokens and primitives MUST include IDE/workspace patterns (`SplitPane`, `Toolbar`, `Accordion`, `TreeList`, `FormField`, `ContextMenu`, `EditorScope`) from Day 1 so Phase 44 requires zero rework.
-3. **3 Unified Themes:** `Parchment Tabletop` (`parchment`), `Retro CRT` (`retro-crt`), and `Obsidian & Brass` (`obsidian-brass`), plus `auto` (Cartridge Default), uniformly styling every Gameplay screen and Campaign Editor surface.
-4. **Browser `F*`-Key Policy & Contextual `F1` Help Panel:**
-   - **Safe to Intercept via `event.preventDefault()` on `window` `keydown`:** `F1` (Help), `F2`, `F3`, `F4`, `F6` (HUD Focus), `F7`, `F8`, `F9`, `F10` — reliably interceptable in Chrome, Edge, Firefox, and Safari when handled in the `keydown` capture/bubble phase.
-   - **Browser-Reserved / Avoid as Primary Defaults:** `F5` (Page Reload), `F11` (Browser Fullscreen), `F12` (DevTools), `Ctrl+W`, `Ctrl+T`, `Ctrl+N`, `Ctrl+Tab`, `Alt+F4` — left untouched so browser ergonomics remain predictable.
-   - **Canonical `F1` Help Panel:** Opens a global, contextual Help & Live Keybind Reference overlay across Gameplay, Targeting, Modals, and Editor — displaying context-relevant shortcuts for the active scope/screen, searchable full live keymap, and declarative Cartridge-specific rules guides (`CartridgeUIDefinition.helpSections`). A subtle persistent `F1 Help` badge is shown in the HUD and modal footers.
-   - **Confirmed Default Keymap Adjustments:** `\` = Fold/Unfold HUD (reclaiming `Tab` for focus traversal & target cycling); `F6` = Toggle/Cycle HUD Keyboard Focus; `Shift+L` = Historical Ledger; `Escape` in Gameplay = Settings/Pause Menu; `Shift+Up`/`Shift+Down` = Hotbar Bank Prev/Next; Numpad `7/9/1/3` = 8-way diagonals (with selectable Vi-Keys preset in Settings).
-
+| **Class Feature Display Labels** (`aura`, `cleric_domains`, etc.) | Hardcoding a `FEATURE_LABELS: Record<string, string>` dictionary in `CharBuilderClassStep.tsx` | Look up `classDef.featureDetails[featureId]?.name ?? sys.feats[featureId]?.name` from Tier 3 JSON + enforce coverage in `class_race_validator.ts` | **Yes** — Campaign authors add new features in `classes/*.json` `featureDetails` without touching `.ts`/`.tsx`. |
+| **HUD `"Inspect"` Combat Stats per Ruleset** | Branching `if (state.campaign.rulesetId === 'dnd35e')` inside `src/rendering/inspect_tooltip.ts` | Optional `RulesetContract.projectInspectStats?(state, entityId)` method implemented by `dnd35eRulesetContract` | **Yes** — Any ruleset cartridge can project custom inspect stats via `RulesetContract`. |
+| **Extended Interaction Reach** (*Mage Hand*, 10-ft pole, reach creatures) | Branching `if (hasSpell('mage_hand') \|\| itemId === 'pole_10ft')` in `apply.system.ts` | Baseline `getEntitySpatialProfile(state, actorId).naturalReachTiles` + declarative item tag `REACH_PROBE_ITEM_TAG` + `RulesetContract.resolveInteractionReachTiles` reading `StatModifier` target `'interaction_reach_tiles'` | **Yes** — Any new spell, feat, or item in JSON can grant `target: 'interaction_reach_tiles'` without editing `.ts` code. |
+| **Command Dock `Pack [I]` Deduplication** | Checking `if (rulesetId === 'dnd35e')` inside `CommandDockCard.tsx` | Declarative deduplication in `CommandDockCard.tsx` matching cartridge `dockCommands` that bind/replace inventory (`UIMode.Inventory` / `'Pack'`) | **Yes** — Any cartridge can override or supplement Console dock commands declaratively. |
+| **Magic Item Spell Effects** (`potion_of_cure_light_wounds`, etc.) | Hardcoding `if (itemId === 'potion_of_cure_light_wounds')` in `effects.system.ts` | Declarative `effectId: "spell:cure_light_wounds"` routed generically through `resolveDnD35eSpellCast` | **Yes** — Any new potion, scroll, wand, or staff in JSON works automatically by referencing `"spell:<spell_id>"`. |

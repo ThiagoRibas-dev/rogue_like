@@ -278,6 +278,19 @@
   line-height: 1.4;
 }
 
+.ui-hud-card .ui-tabs__list {
+  gap: 2px;
+  overflow-x: hidden;
+}
+
+.ui-hud-card .ui-tabs__tab {
+  flex: 1 1 0;
+  padding: 4px 6px;
+  font-size: var(--ui-text-xs);
+  text-align: center;
+  white-space: nowrap;
+}
+
 /* --- Bottom Action Dock --- */
 .ui-bottom-dock {
   align-self: center;
@@ -290,7 +303,7 @@
   border: 1px solid var(--ui-border-accent);
   border-radius: var(--ui-radius-lg);
   box-shadow: var(--ui-shadow-modal);
-  max-width: min(860px, 94vw);
+  max-width: min(960px, 96vw);
 }
 
 .ui-bottom-dock__top {
@@ -334,14 +347,20 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 
 .ui-hotbar-grid {
   display: grid;
-  grid-template-columns: repeat(12, minmax(52px, 1fr));
+  grid-template-columns: repeat(12, minmax(44px, 1fr));
   gap: 4px;
   flex: 1;
+  min-width: 0;
+}
+
+.ui-hotbar-end-turn {
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .ui-hotbar-slot {
@@ -395,7 +414,7 @@
 .ui-verb-popover {
   position: fixed;
   z-index: var(--ui-z-modal);
-  width: 240px;
+  width: 248px;
   display: flex;
   flex-direction: column;
   background: var(--ui-surface-base);
@@ -415,11 +434,24 @@
   color: var(--ui-accent-primary);
 }
 
+.ui-verb-popover__search-wrap {
+  padding: 6px;
+  border-bottom: 1px solid var(--ui-border-subtle);
+  background: var(--ui-surface-sunken);
+}
+
+.ui-verb-popover__search {
+  width: 100%;
+  font-size: var(--ui-font-xs);
+}
+
 .ui-verb-popover__list {
   display: flex;
   flex-direction: column;
   padding: 4px;
   gap: 2px;
+  max-height: 240px;
+  overflow-y: auto;
 }
 
 .ui-verb-popover__item {
@@ -438,6 +470,7 @@
   text-align: left;
 }
 
+.ui-verb-popover__item[data-highlighted='true'],
 .ui-verb-popover__item:hover:not(:disabled),
 .ui-verb-popover__item:focus-visible {
   background: var(--ui-surface-selected);
@@ -447,4 +480,9 @@
 .ui-verb-popover__item:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+
+.ui-verb-popover__footer {
+  padding: 4px;
+  border-top: 1px solid var(--ui-border-subtle);
 }

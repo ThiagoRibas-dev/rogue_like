@@ -43,6 +43,9 @@
   --ui-btn-primary-border: var(--ui-border-accent);
   --ui-btn-primary-ink: var(--ui-accent-primary-ink);
   --ui-btn-primary-shadow: none;
+  --ui-kbd-bg: #2a241e;
+  --ui-kbd-ink: #f5ebd9;
+  --ui-kbd-border: #6e5536;
   --ui-status-hp: #9c1f1a;
   --ui-status-xp: #236132;
   --ui-status-success: #145a28;

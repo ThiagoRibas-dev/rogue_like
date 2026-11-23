@@ -132,6 +132,66 @@
         "name": "Hide in Plain Sight",
         "category": "su",
         "description": "Use the Hide skill even while being observed, as long as within 10 feet of some sort of shadow."
+      },
+      "save_bonus_against_poison_1": {
+        "id": "save_bonus_against_poison_1",
+        "name": "+1 Save vs. Poison",
+        "category": "ex",
+        "description": "Gain a +1 natural saving throw bonus against poison."
+      },
+      "sneak_attack_2d6": {
+        "id": "sneak_attack_2d6",
+        "name": "Sneak Attack +2d6",
+        "category": "ex",
+        "description": "Deal an extra 2d6 damage when flanking or when the target is denied its Dexterity bonus to AC."
+      },
+      "save_bonus_against_poison_2": {
+        "id": "save_bonus_against_poison_2",
+        "name": "+2 Save vs. Poison",
+        "category": "ex",
+        "description": "Gain a +2 natural saving throw bonus against poison."
+      },
+      "improved_uncanny_dodge": {
+        "id": "improved_uncanny_dodge",
+        "name": "Improved Uncanny Dodge",
+        "category": "ex",
+        "description": "Can no longer be flanked; rogues must be at least 4 levels higher to sneak attack via flanking."
+      },
+      "sneak_attack_3d6": {
+        "id": "sneak_attack_3d6",
+        "name": "Sneak Attack +3d6",
+        "category": "ex",
+        "description": "Deal an extra 3d6 damage when flanking or when the target is denied its Dexterity bonus to AC."
+      },
+      "save_bonus_against_poison_3": {
+        "id": "save_bonus_against_poison_3",
+        "name": "+3 Save vs. Poison",
+        "category": "ex",
+        "description": "Gain a +3 natural saving throw bonus against poison."
+      },
+      "sneak_attack_4d6": {
+        "id": "sneak_attack_4d6",
+        "name": "Sneak Attack +4d6",
+        "category": "ex",
+        "description": "Deal an extra 4d6 damage when flanking or when the target is denied its Dexterity bonus to AC."
+      },
+      "save_bonus_against_poison_4": {
+        "id": "save_bonus_against_poison_4",
+        "name": "+4 Save vs. Poison",
+        "category": "ex",
+        "description": "Gain a +4 natural saving throw bonus against poison."
+      },
+      "sneak_attack_5d6": {
+        "id": "sneak_attack_5d6",
+        "name": "Sneak Attack +5d6",
+        "category": "ex",
+        "description": "Deal an extra 5d6 damage when flanking or when the target is denied its Dexterity bonus to AC."
+      },
+      "save_bonus_against_poison_5": {
+        "id": "save_bonus_against_poison_5",
+        "name": "+5 Save vs. Poison",
+        "category": "ex",
+        "description": "Gain a +5 natural saving throw bonus against poison."
       }
     },
     "acfSwaps": [],

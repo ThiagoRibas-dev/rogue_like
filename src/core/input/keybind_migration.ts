@@ -26,7 +26,7 @@ export const ACTION_TO_COMMAND_ID: Readonly<Record<string, string>> = {
   verb_menu: 'action.verb_menu',
   dossier: 'panel.dossier',
   ledger: 'panel.ledger',
-  character_sheet: 'dnd35e:sheet',
+  character_sheet: 'panel.inventory',
   spellbook: 'dnd35e:spellbook',
   level_up: 'dnd35e:level_up'
 };
