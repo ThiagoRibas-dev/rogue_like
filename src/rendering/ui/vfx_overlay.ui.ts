@@ -4,7 +4,32 @@
 
 import type { Display } from 'rot-js';
 import type { VisualEffectDTO, FogOverlayDTO, GlyphOverlayDTO } from '../viewport_snapshot.types.ts';
-import { getTilePixelMetrics } from './inspect_view.ui.ts';
+
+/**
+ * Calculates the rendered pixel tile dimensions and offsets of the ROT.js canvas element.
+ *
+ * @param canvas The HTMLCanvasElement container of the display.
+ * @param viewportW Viewport width in cells.
+ * @param viewportH Viewport height in cells.
+ * @returns Pixel metrics including tile width/height and offsets.
+ */
+export function getTilePixelMetrics(
+  canvas: HTMLCanvasElement,
+  viewportW: number,
+  viewportH: number
+): {
+  readonly tileWidthPx: number;
+  readonly tileHeightPx: number;
+  readonly offsetX: number;
+  readonly offsetY: number;
+} {
+  return {
+    tileWidthPx: canvas.clientWidth / viewportW,
+    tileHeightPx: canvas.clientHeight / viewportH,
+    offsetX: canvas.offsetLeft,
+    offsetY: canvas.offsetTop
+  };
+}
 
 /**
  * Synchronizes floating visual effect DOM elements with the current presentational list.

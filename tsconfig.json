@@ -20,6 +20,8 @@
     "forceConsistentCasingInFileNames": true,
     "verbatimModuleSyntax": true,
     "skipLibCheck": true,
+    "jsx": "react-jsx",
+    "jsxImportSource": "preact",
     "paths": {
       "@/*": ["./src/*"]
     }

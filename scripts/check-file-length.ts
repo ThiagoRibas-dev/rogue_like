@@ -37,7 +37,11 @@ function collectTsFiles(dir: string): ReadonlyArray<string> {
     const fullPath = path.join(dir, entry.name);
     if (entry.isDirectory()) {
       results.push(...collectTsFiles(fullPath));
-    } else if (entry.isFile() && entry.name.endsWith('.ts') && !entry.name.endsWith('.d.ts')) {
+    } else if (
+      entry.isFile() &&
+      (entry.name.endsWith('.ts') || entry.name.endsWith('.tsx')) &&
+      !entry.name.endsWith('.d.ts')
+    ) {
       results.push(fullPath);
     }
   }

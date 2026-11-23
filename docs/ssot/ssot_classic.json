@@ -1,19 +1,19 @@
 {
-  "src/rendering/ui/classic_ui_registration.ts": {
+  "src/rendering/ui/cartridges/classic/classic_ui_registration.tsx": {
     "domain": "Ruleset Cartridge: Classic Sci-Fi",
     "tier": "tier2_ui",
-    "responsibility": "Registers the Classic / Sci-Fi CartridgeUIDefinition (modals, dock commands, hotbar wiring) into the Console Cartridge UI Registry.",
+    "responsibility": "Registers the Preact Classic / Sci-Fi CartridgeUIDefinition (ConsoleModalHost Master Dossier, commands, helpSections, hotbar wiring) without forced theme overrides.",
     "canonicalEntryPoints": [
-      "renderClassicSheetModal",
-      "registerClassicUIAdapter",
-      "classicUIDefinition"
+      "renderClassicSheetPreact",
+      "classicUIDefinition",
+      "registerClassicUIAdapter"
     ],
     "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/classic_ui_registration.ts.",
+      "includes": "Preact Classic Cartridge UI registration and Master Dossier modal wrapper.",
       "excludes": "Headless Classic UI data projection (owned by src/rulesets/classic/ui/classic_ui_adapter.ts)."
     },
     "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/classic_ui_registration.ts."
+      "Do not couple Classic Cartridge modals to legacy #dnd35e-sheet-overlay DOM elements or force a global theme override."
     ]
   },
   "src/rulesets/classic/classic_combat.ts": {

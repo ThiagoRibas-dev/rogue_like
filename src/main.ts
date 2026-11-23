@@ -6,13 +6,14 @@ import { UIMode } from './types/game-state.types.ts';
 import { loadCampaign } from './core/loader.ts';
 import { initRNG } from './core/rng.ts';
 import { initSettings } from './core/settings.ts';
-import { applySettingsToDOM } from './rendering/ui.ts';
+import { applySettingsToDOM } from './rendering/ui/core/apply_settings.ts';
 import { CampaignEditor } from './editor/campaign_editor.ts';
 import { GAME_ASPECT_RATIO_STRING } from './constants/display.constants.ts';
 import { createDisplay, mountDisplayWithFogOverlay } from './rendering/display.ts';
 import { createInitialMenuState, initSession } from './core/session_controller.ts';
-import { registerDnD35eUIAdapter } from './rendering/ui/dnd35e_ui_registration.ts';
-import { registerClassicUIAdapter } from './rendering/ui/classic_ui_registration.ts';
+import { registerDnD35eUIAdapter } from './rendering/ui/cartridges/dnd35e/dnd35e_ui_registration.tsx';
+import { registerClassicUIAdapter } from './rendering/ui/cartridges/classic/classic_ui_registration.tsx';
+import { mountAppUiRoot } from './rendering/ui/core/AppUiRoot.tsx';
 
 // Global error boundary overlay setup
 window.addEventListener('error', (e) => showCrashModal(e.error));
@@ -21,7 +22,7 @@ window.addEventListener('unhandledrejection', (e) => showCrashModal(e.reason));
 function showCrashModal(err: unknown): void {
   try {
     clearScheduler(); // Stop game loop immediately
-  } catch (e) {
+  } catch {
     // Ignore if scheduler was not running or not initialized
   }
 
@@ -32,30 +33,44 @@ function showCrashModal(err: unknown): void {
     document.body.appendChild(overlay);
   }
 
-  const stackTrace = err instanceof Error ? err.stack : String(err);
+  const stackTrace = err instanceof Error ? (err.stack ?? '') : String(err);
   const errorMessage = err instanceof Error ? err.message : String(err);
 
-  overlay.innerHTML = `
-    <div class="crash-modal">
-      <h2>Fatal Engine Error</h2>
-      <p>The game encountered an unrecoverable error and had to stop.</p>
-      <pre class="crash-stacktrace">${errorMessage}\n\n${stackTrace}</pre>
-      <div class="crash-actions">
-        <button id="btn-crash-menu" class="modal-btn">Return to Main Menu</button>
-        <button id="btn-crash-export" class="modal-btn">Download Crash Report</button>
-      </div>
-    </div>
-  `;
+  const modal = document.createElement('div');
+  modal.className = 'crash-modal';
 
-  document.getElementById('btn-crash-menu')?.addEventListener('click', () => {
+  const heading = document.createElement('h2');
+  heading.textContent = 'Fatal Engine Error';
+  modal.appendChild(heading);
+
+  const desc = document.createElement('p');
+  desc.textContent = 'The game encountered an unrecoverable error and had to stop.';
+  modal.appendChild(desc);
+
+  const pre = document.createElement('pre');
+  pre.className = 'crash-stacktrace';
+  pre.textContent = `${errorMessage}\n\n${stackTrace}`;
+  modal.appendChild(pre);
+
+  const actions = document.createElement('div');
+  actions.className = 'crash-actions';
+
+  const btnMenu = document.createElement('button');
+  btnMenu.type = 'button';
+  btnMenu.className = 'ui-btn ui-btn--secondary';
+  btnMenu.textContent = 'Return to Main Menu';
+  btnMenu.addEventListener('click', () => {
     overlay?.remove();
-    // Return to main menu
     const current = getGameState();
-    const state = { ...current, uiMode: UIMode.MainMenu };
-    setGameState(state);
+    setGameState({ ...current, uiMode: UIMode.MainMenu });
   });
+  actions.appendChild(btnMenu);
 
-  document.getElementById('btn-crash-export')?.addEventListener('click', () => {
+  const btnExport = document.createElement('button');
+  btnExport.type = 'button';
+  btnExport.className = 'ui-btn ui-btn--danger';
+  btnExport.textContent = 'Download Crash Report';
+  btnExport.addEventListener('click', () => {
     const report = {
       timestamp: new Date().toISOString(),
       userAgent: navigator.userAgent,
@@ -71,6 +86,10 @@ function showCrashModal(err: unknown): void {
     a.click();
     URL.revokeObjectURL(url);
   });
+  actions.appendChild(btnExport);
+
+  modal.appendChild(actions);
+  overlay.replaceChildren(modal);
 }
 
 // 0. Initialize RNG and Aspect Ratio
@@ -83,6 +102,11 @@ document.documentElement.style.setProperty('--game-aspect-ratio', GAME_ASPECT_RA
 const defaultCampaign = await loadCampaign('default');
 await initSettings('default');
 applySettingsToDOM();
+
+const uiRootEl = document.getElementById('ui-root');
+if (uiRootEl) {
+  mountAppUiRoot(uiRootEl);
+}
 
 // 2. Initialize global editor instance
 const globalCampaignEditor = new CampaignEditor(defaultCampaign);

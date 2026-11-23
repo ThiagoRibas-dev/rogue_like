@@ -86,7 +86,7 @@ import { processDamageSystem } from '../src/systems/damage.system.ts';
 import { grantXp } from '../src/systems/death.system.ts';
 import { IntentType } from '../src/types/intents/intent.enum.ts';
 import { applyLevelUpToActor } from '../src/rulesets/dnd35e/character_builder.ts';
-import { canPlayerLevelUpDnD35e } from '../src/rendering/ui/dnd35e_level_up.ui.ts';
+import { canPlayerLevelUpDnD35e } from '../src/rendering/ui/cartridges/dnd35e/DnD35eLevelUpModal.tsx';
 
 describe('D&D 3.5e Ruleset Cartridge — 6-Layer Pyramid & 3-Tier Separation Verification (Milestones 85–100)', () => {
   test('Layer 1 (M85): Seeded dice expression evaluator, d20 bounds, and abstract multiplier math', () => {

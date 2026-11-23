@@ -26,12 +26,12 @@ import { projectDnD35ActorSemanticTags } from '../src/rulesets/dnd35e/semantic_t
 import { getDnD35EntityData, setDnD35EntityData } from '../src/rulesets/dnd35e/srd_registry.ts';
 import { applyCreatureTemplate } from '../src/rulesets/dnd35e/templates.ts';
 import { getDnD35SystemContent } from '../src/rulesets/dnd35e/types/dnd35e_system.types.ts';
+import { classifyDnD35eFeatCategory as classifyFeatCategory } from '../src/rendering/ui/cartridges/dnd35e/DnD35eInspector.tsx';
 import {
   CANONICAL_NATURAL_WEAPONS,
   CANONICAL_SPECIAL_ATTACKS,
-  classifyFeatCategory,
   getFeatTargetOptions
-} from '../src/rendering/ui/dnd35e_char_builder_feat_row.ui.ts';
+} from '../src/rendering/ui/cartridges/dnd35e/DnD35eSharedFeatsStep.tsx';
 import { MessageLogCategory } from '../src/systems/message.system.ts';
 import {
   ComponentType,

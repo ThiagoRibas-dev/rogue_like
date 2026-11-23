@@ -31,10 +31,10 @@ module.exports = {
     {
       name: 'no-direct-cartridge-imports-outside-registry',
       severity: 'error',
-      comment: 'Core engine, systems, actions, and console rendering must resolve rulesets via src/rulesets/registry.ts and never import concrete cartridge files directly. Cartridge-specific UI modules in src/rendering/ui/(dnd35e_|classic_ui_) may import their own cartridge.',
+      comment: 'Core engine, systems, actions, and console rendering must resolve rulesets via src/rulesets/registry.ts and never import concrete cartridge files directly. Cartridge-specific UI modules in src/rendering/ui/(dnd35e_|classic_ui_|cartridges/(dnd35e|classic)/) may import their own cartridge.',
       from: {
         path: '^src/(core|systems|actions|rendering|map)/',
-        pathNot: '^src/rendering/ui/(dnd35e_|classic_ui_)'
+        pathNot: '^src/rendering/ui/(dnd35e_|classic_ui_|cartridges/(dnd35e|classic)/)'
       },
       to: {
         path: '^src/rulesets/(classic|dnd35e)/'
@@ -45,7 +45,7 @@ module.exports = {
       severity: 'error',
       comment: 'Cartridge-specific UI modules must only import from their own cartridge.',
       from: {
-        path: '^src/rendering/ui/(dnd35e|classic)_'
+        path: '^src/rendering/ui/(?:cartridges/)?(dnd35e|classic)(?:_|/)'
       },
       to: {
         path: '^src/rulesets/(classic|dnd35e)/',

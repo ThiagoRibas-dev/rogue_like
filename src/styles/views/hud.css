@@ -1,0 +1,450 @@
+/**
+ * @file Tactical Floating HUD, F6 HUD Keyboard Focus Landmarks, Bottom Action Dock,
+ * Alerts Stack, and Context Verb Menu Popover styles.
+ * 100% --ui-* semantic tokens across Parchment, Retro CRT, and Obsidian & Brass themes.
+ */
+
+.ui-hud-layer {
+  position: fixed;
+  inset: 0;
+  z-index: var(--ui-z-hud);
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: var(--ui-space-2);
+}
+
+.ui-hud-interactive {
+  pointer-events: auto;
+}
+
+/* F6 HUD Focus Landmark Ring */
+.ui-hud-zone[data-hud-focused='true'] {
+  outline: 2px solid var(--ui-accent-primary);
+  outline-offset: 2px;
+  box-shadow: var(--ui-shadow-focus);
+}
+
+/* --- Top Chronos Strip --- */
+.ui-chronos-strip {
+  align-self: center;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--ui-space-2);
+  padding: 6px var(--ui-space-3);
+  background: var(--ui-surface-glass);
+  backdrop-filter: blur(var(--ui-glass-blur));
+  border: 1px solid var(--ui-border-default);
+  border-radius: var(--ui-radius-md);
+  box-shadow: var(--ui-shadow-card);
+  color: var(--ui-text-primary);
+  font-size: var(--ui-font-xs);
+}
+
+.ui-chronos-area {
+  font-family: var(--ui-font-display);
+  font-weight: 700;
+  font-size: var(--ui-font-sm);
+  color: var(--ui-accent-primary);
+}
+
+.ui-chronos-divider {
+  width: 1px;
+  height: 16px;
+  background: var(--ui-border-subtle);
+}
+
+/* --- Left & Right Floating Stacks --- */
+.ui-hud-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--ui-space-2);
+  margin: var(--ui-space-2) 0;
+  pointer-events: none;
+}
+
+.ui-hud-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-2);
+  max-height: 100%;
+  pointer-events: none;
+}
+
+.ui-hud-stack--left {
+  width: min(var(--left-sidebar-width, 268px), 32vw);
+}
+
+.ui-hud-stack--right {
+  width: min(var(--right-sidebar-width, 280px), 34vw);
+  align-items: stretch;
+}
+
+.ui-hud-card {
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  background: var(--ui-surface-glass);
+  backdrop-filter: blur(var(--ui-glass-blur));
+  border: 1px solid var(--ui-border-default);
+  border-radius: var(--ui-radius-md);
+  box-shadow: var(--ui-shadow-card);
+  overflow: hidden;
+}
+
+.ui-hud-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-space-2);
+  padding: 6px var(--ui-space-3);
+  background: var(--ui-surface-elevated);
+  border-bottom: 1px solid var(--ui-border-subtle);
+}
+
+.ui-hud-card__title {
+  margin: 0;
+  font-family: var(--ui-font-display);
+  font-size: var(--ui-font-xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ui-accent-primary);
+}
+
+.ui-hud-card__body {
+  padding: var(--ui-space-2) var(--ui-space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-2);
+}
+
+/* --- Vitals Bars & Status List --- */
+.ui-meter-track {
+  position: relative;
+  width: 100%;
+  height: 18px;
+  background: var(--ui-surface-sunken);
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-sm);
+  overflow: hidden;
+}
+
+.ui-meter-fill--hp {
+  height: 100%;
+  background: var(--ui-status-danger);
+  transition: width var(--ui-motion-fast);
+}
+
+.ui-meter-fill--xp {
+  height: 100%;
+  background: var(--ui-accent-primary);
+  transition: width var(--ui-motion-fast);
+}
+
+.ui-meter-label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 6px;
+  font-family: var(--ui-font-mono);
+  font-size: var(--ui-font-xs);
+  font-weight: 700;
+  color: var(--ui-text-primary);
+  text-shadow: 0 1px 2px var(--ui-surface-backdrop);
+}
+
+.ui-vitals-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--ui-space-1);
+}
+
+.ui-status-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+/* --- Command Dock Grid --- */
+.ui-command-dock-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.ui-dock-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  padding: 5px 8px;
+  background: var(--ui-surface-sunken);
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-sm);
+  color: var(--ui-text-primary);
+  font-family: var(--ui-font-body);
+  font-size: var(--ui-font-xs);
+  cursor: pointer;
+  text-align: left;
+}
+
+.ui-dock-btn:hover,
+.ui-dock-btn:focus-visible {
+  border-color: var(--ui-border-accent);
+  background: var(--ui-surface-hover);
+}
+
+.ui-dock-btn[aria-pressed='true'] {
+  border-color: var(--ui-accent-primary);
+  background: var(--ui-surface-selected);
+  color: var(--ui-accent-primary);
+}
+
+/* --- Alerts Stack --- */
+.ui-alerts-stack {
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ui-alert-ribbon {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-space-2);
+  padding: 6px 10px;
+  background: var(--ui-surface-glass);
+  backdrop-filter: blur(var(--ui-glass-blur));
+  border: 1px solid var(--ui-border-default);
+  border-left-width: 4px;
+  border-radius: var(--ui-radius-sm);
+  color: var(--ui-text-primary);
+  font-size: var(--ui-font-xs);
+  cursor: pointer;
+  text-align: left;
+  box-shadow: var(--ui-shadow-card);
+}
+
+.ui-alert-ribbon[data-severity='critical'] {
+  border-left-color: var(--ui-status-danger);
+}
+
+.ui-alert-ribbon[data-severity='warning'] {
+  border-left-color: var(--ui-status-warning);
+}
+
+.ui-alert-ribbon[data-severity='info'] {
+  border-left-color: var(--ui-status-info);
+}
+
+.ui-alert-ribbon[data-severity='turn-ready'] {
+  border-left-color: var(--ui-status-success);
+}
+
+/* --- Tactical Scanner & Chronicle Log --- */
+.ui-scanner-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: var(--ui-font-xs);
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.ui-scanner-stat {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--ui-space-2);
+  color: var(--ui-text-secondary);
+}
+
+.ui-chronicle-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-height: var(--log-drawer-height, 150px);
+  overflow-y: auto;
+  font-family: var(--ui-font-body);
+  font-size: var(--ui-font-xs);
+  line-height: 1.4;
+}
+
+/* --- Bottom Action Dock --- */
+.ui-bottom-dock {
+  align-self: center;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px var(--ui-space-3);
+  background: var(--ui-surface-glass);
+  backdrop-filter: blur(var(--ui-glass-blur));
+  border: 1px solid var(--ui-border-accent);
+  border-radius: var(--ui-radius-lg);
+  box-shadow: var(--ui-shadow-modal);
+  max-width: min(860px, 94vw);
+}
+
+.ui-bottom-dock__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--ui-space-2);
+}
+
+.ui-stance-strip {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ui-action-pips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ui-action-pip {
+  padding: 2px 7px;
+  border-radius: var(--ui-radius-sm);
+  font-family: var(--ui-font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  border: 1px solid var(--ui-border-default);
+  background: var(--ui-surface-sunken);
+  color: var(--ui-text-muted);
+}
+
+.ui-action-pip[data-available='true'] {
+  border-color: var(--ui-status-success);
+  color: var(--ui-status-success);
+}
+
+.ui-hotbar-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.ui-hotbar-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(52px, 1fr));
+  gap: 4px;
+  flex: 1;
+}
+
+.ui-hotbar-slot {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 4px;
+  background: var(--ui-surface-sunken);
+  border: 1px solid var(--ui-border-default);
+  border-radius: var(--ui-radius-sm);
+  color: var(--ui-text-primary);
+  font-size: 11px;
+  cursor: pointer;
+  text-align: center;
+}
+
+.ui-hotbar-slot:hover,
+.ui-hotbar-slot:focus-visible {
+  border-color: var(--ui-border-accent);
+  background: var(--ui-surface-hover);
+}
+
+.ui-hotbar-slot[data-ready='false'] {
+  opacity: 0.55;
+}
+
+.ui-hotbar-slot__key {
+  position: absolute;
+  top: 2px;
+  left: 4px;
+  font-family: var(--ui-font-mono);
+  font-size: 10px;
+  color: var(--ui-text-muted);
+}
+
+.ui-hotbar-slot__label {
+  margin-top: 8px;
+  font-weight: 600;
+  line-height: 1.15;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* --- Context Verb Menu Popover --- */
+.ui-verb-popover {
+  position: fixed;
+  z-index: var(--ui-z-modal);
+  width: 240px;
+  display: flex;
+  flex-direction: column;
+  background: var(--ui-surface-base);
+  border: 1px solid var(--ui-border-accent);
+  border-radius: var(--ui-radius-md);
+  box-shadow: var(--ui-shadow-modal);
+  overflow: hidden;
+}
+
+.ui-verb-popover__header {
+  padding: 8px var(--ui-space-3);
+  background: var(--ui-surface-elevated);
+  border-bottom: 1px solid var(--ui-border-subtle);
+  font-family: var(--ui-font-display);
+  font-size: var(--ui-font-sm);
+  font-weight: 700;
+  color: var(--ui-accent-primary);
+}
+
+.ui-verb-popover__list {
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+  gap: 2px;
+}
+
+.ui-verb-popover__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-space-2);
+  padding: 6px 10px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--ui-radius-sm);
+  color: var(--ui-text-primary);
+  font-family: var(--ui-font-body);
+  font-size: var(--ui-font-sm);
+  cursor: pointer;
+  text-align: left;
+}
+
+.ui-verb-popover__item:hover:not(:disabled),
+.ui-verb-popover__item:focus-visible {
+  background: var(--ui-surface-selected);
+  border-color: var(--ui-border-accent);
+}
+
+.ui-verb-popover__item:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}

@@ -1,22 +1,13 @@
-import { getSettings, updateSettings, resetSettings, type ActionType } from '../settings.ts';
-import { applySettingsToDOM, renderSettingsMenu, renderMenus } from '../../rendering/ui.ts';
-import { getGameState, setGameState, queuePlayerIntent } from '../game-loop.ts';
-import { getPlayerId } from './session_dom.ts';
-import { getActiveReplay } from '../replay.ts';
-import { getSaveData, setSaveData, hasSaveGame } from '../save.ts';
-import { loadCampaignRegistry } from '../loader.ts';
-import { createToggleSettingsAction } from '../../actions/core.actions.ts';
-import { UIMode } from '../../types/game-state.types.ts';
 import { buildTelemetryExportPayload } from '../performance.ts';
 import { getRenderDebugMetrics } from '../../rendering/render_debug.ts';
-import { applyDisplaySettingsUpdate } from '../../rendering/ui/hud_dock.ui.ts';
+import { dialogService } from '../../rendering/ui/primitives/dialog_service.ts';
+import { getGameState } from '../game-loop.ts';
+import { loadCampaignRegistry } from '../loader.ts';
+import { markAllDomainsDirty } from '../presentation_queue.ts';
+import { getActiveReplay } from '../replay.ts';
+import { getSaveData, setSaveData } from '../save.ts';
 
-export let rebindingAction: ActionType | null = null;
-
-export function setRebindingAction(action: ActionType | null): void {
-  rebindingAction = action;
-}
-
+/** Downloads the current active replay log as a JSON file. */
 export function triggerReplayDownload(): void {
   const replay = getActiveReplay();
   if (replay) {
@@ -28,13 +19,14 @@ export function triggerReplayDownload(): void {
     a.click();
     URL.revokeObjectURL(url);
   } else {
-    alert('No active replay found!');
+    void dialogService.alert({
+      title: 'No Active Replay',
+      message: 'No active replay found!'
+    });
   }
 }
 
-/**
- * Exports the current performance, subsystem timing, and render debug telemetry snapshot as a JSON file.
- */
+/** Exports the current performance, subsystem timing, and render debug telemetry snapshot as a JSON file. */
 export function triggerTelemetryDownload(): void {
   const state = getGameState();
   const payload = buildTelemetryExportPayload(state, getRenderDebugMetrics());
@@ -47,167 +39,48 @@ export function triggerTelemetryDownload(): void {
   URL.revokeObjectURL(url);
 }
 
-/**
- * Binds Settings panel inputs, key rebinding overlay, save import/export, and replay download.
- */
-export function bindSettingsControls(): void {
-  const btnOpenSettings = document.getElementById('btn-open-settings');
-  const btnCloseSettings = document.getElementById('btn-close-settings');
-  const btnMainMenuSettings = document.getElementById('btn-main-menu-settings');
+/** Exports the current local save game as a downloadable JSON file. */
+export function triggerSaveExportDownload(): void {
+  const data = getSaveData();
+  if (data) {
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `roguelike_save_${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+}
 
-  if (btnOpenSettings && btnCloseSettings) {
-    btnOpenSettings.addEventListener('click', () => {
-      const pId = getPlayerId();
-      if (pId) queuePlayerIntent(createToggleSettingsAction(pId));
+/** Imports a save game JSON file after validating its campaign existence. */
+export async function importSaveFromFile(file: File): Promise<void> {
+  try {
+    const content = await file.text();
+    const parsed = JSON.parse(content) as { readonly campaignId?: string };
+
+    if (!parsed.campaignId) {
+      throw new Error('Save file is missing required campaign information.');
+    }
+
+    const registry = await loadCampaignRegistry();
+    const exists = registry.campaigns.some((c) => c.id === parsed.campaignId);
+    if (!exists) {
+      throw new Error(
+        `This save requires campaign "${parsed.campaignId}", which is not installed. Please install it first.`
+      );
+    }
+
+    setSaveData(content);
+    markAllDomainsDirty();
+    await dialogService.alert({
+      title: 'Save Imported',
+      message: 'Save game imported successfully!'
     });
-
-    btnCloseSettings.addEventListener('click', () => {
-      const pId = getPlayerId();
-      if (pId) {
-        queuePlayerIntent(createToggleSettingsAction(pId));
-      } else {
-        setGameState({ ...getGameState(), uiMode: UIMode.MainMenu });
-      }
+  } catch (err) {
+    await dialogService.alert({
+      title: 'Import Failed',
+      message: `Failed to import save: ${(err as Error).message}`
     });
   }
-
-  if (btnMainMenuSettings) {
-    btnMainMenuSettings.addEventListener('click', () => {
-      setGameState({ ...getGameState(), uiMode: UIMode.Settings });
-    });
-  }
-
-  const bindSetting = (
-    id: string,
-    key: string,
-    category: 'visualFeedback' | 'accessibility',
-    isCheckbox = true
-  ): void => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.addEventListener('change', (e) => {
-      const target = e.target as HTMLInputElement | HTMLSelectElement;
-      const value = isCheckbox ? (target as HTMLInputElement).checked : target.value;
-      const current = getSettings();
-      if (category === 'visualFeedback') {
-        updateSettings({
-          visualFeedback: { ...current.visualFeedback, [key]: value } as typeof current.visualFeedback
-        });
-      } else if (category === 'accessibility') {
-        updateSettings({
-          accessibility: { ...current.accessibility, [key]: value } as typeof current.accessibility
-        });
-      }
-      applySettingsToDOM();
-    });
-  };
-
-  bindSetting('setting-dmg-numbers', 'showDamageNumbers', 'visualFeedback');
-  bindSetting('setting-status-text', 'showStatusText', 'visualFeedback');
-  bindSetting('setting-danger-telegraphs', 'showDangerTelegraphs', 'visualFeedback');
-  bindSetting('setting-ui-scale', 'uiScale', 'accessibility', false);
-  bindSetting('setting-console-theme', 'consoleThemePreference', 'accessibility', false);
-  bindSetting('setting-high-contrast', 'highContrast', 'accessibility');
-  bindSetting('setting-disable-animations', 'disableAnimations', 'accessibility');
-
-  document.getElementById('setting-sprite-pack')?.addEventListener('change', (e) => {
-    const select = e.target as HTMLSelectElement;
-    const current = getSettings();
-    updateSettings({
-      visualFeedback: {
-        ...current.visualFeedback,
-        preferredSpritePack: select.value
-      }
-    });
-    try {
-      applyDisplaySettingsUpdate(getGameState());
-    } catch {
-      // No active game state yet (e.g., Settings opened from Main Menu)
-    }
-  });
-
-  const rebindingOverlay = document.getElementById('rebinding-overlay');
-  const rebindingActionName = document.getElementById('rebinding-action-name');
-
-  document.getElementById('keybinds-container')?.addEventListener('click', (e) => {
-    const target = (e.target as HTMLElement).closest('.keybind-btn') as HTMLButtonElement | null;
-    if (!target) return;
-    const action = target.dataset.action as ActionType | undefined;
-    if (action) {
-      rebindingAction = action;
-      if (rebindingActionName) {
-        rebindingActionName.textContent = action.replace(/_/g, ' ').toUpperCase();
-      }
-      rebindingOverlay?.classList.remove('hidden');
-    }
-  });
-
-  document.getElementById('btn-reset-keybinds')?.addEventListener('click', () => {
-    resetSettings();
-    applySettingsToDOM();
-    renderSettingsMenu();
-    try {
-      applyDisplaySettingsUpdate(getGameState());
-    } catch {
-      // No active game state yet (e.g., Settings opened from Main Menu)
-    }
-  });
-
-  document.getElementById('btn-export-save')?.addEventListener('click', () => {
-    const data = getSaveData();
-    if (data) {
-      const blob = new Blob([data], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `roguelike_save_${Date.now()}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-    }
-  });
-
-  document.getElementById('btn-download-telemetry-settings')?.addEventListener('click', triggerTelemetryDownload);
-  document.getElementById('btn-download-replay-settings')?.addEventListener('click', triggerReplayDownload);
-  document.getElementById('btn-download-replay-gameover')?.addEventListener('click', triggerReplayDownload);
-
-  const fileInput = document.getElementById('file-import-save') as HTMLInputElement | null;
-  document.getElementById('btn-import-save')?.addEventListener('click', () => {
-    fileInput?.click();
-  });
-
-  fileInput?.addEventListener('change', (e: Event) => {
-    const target = e.target as HTMLInputElement;
-    const file = target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      try {
-        const content = event.target?.result as string;
-        const parsed = JSON.parse(content);
-
-        if (!parsed.campaignId) {
-          throw new Error('Save file is missing required campaign information.');
-        }
-
-        const registry = await loadCampaignRegistry();
-        const exists = registry.campaigns.some((c) => c.id === parsed.campaignId);
-        if (!exists) {
-          throw new Error(
-            `This save requires campaign "${parsed.campaignId}", which is not installed. Please install it first.`
-          );
-        }
-
-        setSaveData(content);
-        renderMenus(getGameState(), hasSaveGame());
-        alert('Save game imported successfully!');
-        target.value = '';
-      } catch (err) {
-        alert(`Failed to import save: ${(err as Error).message}`);
-        console.error(err);
-        target.value = '';
-      }
-    };
-    reader.readAsText(file);
-  });
 }

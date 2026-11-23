@@ -1,0 +1,61 @@
+/* ============================================================================
+   Accessibility Modifiers: UI Scale, High Contrast, Focus Rings & Reduced Motion
+   ============================================================================ */
+
+:root[data-ui-scale='small'],
+body[data-ui-scale='small'] {
+  font-size: 14.5px;
+}
+
+:root[data-ui-scale='normal'],
+body[data-ui-scale='normal'] {
+  font-size: 16px;
+}
+
+:root[data-ui-scale='large'],
+body[data-ui-scale='large'] {
+  font-size: 17.5px;
+}
+
+:root[data-high-contrast='true'],
+body[data-high-contrast='true'] {
+  --ui-bg-canvas: #000000;
+  --ui-bg-panel: #050505;
+  --ui-bg-panel-alt: #0b0b0b;
+  --ui-bg-elevated: #141414;
+  --ui-bg-input: #000000;
+  --ui-bg-hover: #1f1f1f;
+  --ui-ink-primary: #ffffff;
+  --ui-ink-secondary: #f0f0f0;
+  --ui-ink-muted: #d0d0d0;
+  --ui-ink-heading: #ffea55;
+  --ui-border-subtle: #b8b8b8;
+  --ui-border-strong: #ffffff;
+  --ui-border-accent: #ffea55;
+  --ui-focus-ring: #00ffff;
+}
+
+:root[data-reduced-motion='true'] *,
+body[data-no-animations='true'] * {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+.ui-root :focus-visible {
+  outline: 2px solid var(--ui-focus-ring);
+  outline-offset: var(--ui-focus-ring-offset);
+}
+
+.ui-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

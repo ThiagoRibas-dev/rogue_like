@@ -1,5 +1,5 @@
 /**
- * @file RimWorld-style right-edge floating alert ribbons for hostiles in FOV,
+ * @file RimWorld-style right-edge floating alert ribbon projector for hostiles in FOV,
  * low health, starvation, detrimental status effects, and active quests.
  */
 
@@ -16,8 +16,6 @@ import { setHoveredTile } from '../../core/hover_state.ts';
 import { hasPendingIntents } from '../../core/input_queue.ts';
 import { markDomainDirty, PresentationDomain } from '../../core/presentation_queue.ts';
 import { getActiveTurnActorId, getActorRemainingScheduleTime, isTurnProcessingActive } from '../../core/scheduler.ts';
-import { resolveEntityDisplayName } from '../inspect_tooltip.ts';
-import { getActiveCartridgeUI } from './cartridge_ui_registry.ts';
 import { getHungerState } from '../../systems/hunger.system.ts';
 import {
   ComponentType,
@@ -32,6 +30,8 @@ import { EngineMode, type EntityId, type GameState } from '../../types/game-stat
 import { isHostile } from '../../utils/faction.ts';
 import { coordToIndex } from '../../utils/grid.ts';
 import { getEffectiveStats } from '../../utils/stats.ts';
+import { resolveEntityDisplayName } from '../inspect_tooltip.ts';
+import { getActiveCartridgeUI } from './cartridge_ui_registry.ts';
 
 /** Minimum RTwP speed multiplier divisor preventing division-by-zero when formatting cooldown seconds. */
 const MIN_RTWP_SPEED_MULTIPLIER = 0.1;
@@ -39,15 +39,11 @@ const MIN_RTWP_SPEED_MULTIPLIER = 0.1;
 /** Milliseconds per second (`1000`). */
 const MS_PER_SECOND = 1000;
 
-/**
- * Severity level for RimWorld-style HUD alert ribbons.
- */
-type AlertSeverity = 'critical' | 'warning' | 'info' | 'turn-ready';
+/** Severity level for RimWorld-style HUD alert ribbons. */
+export type AlertSeverity = 'critical' | 'warning' | 'info' | 'turn-ready';
 
-/**
- * Descriptor for a single floating alert ribbon.
- */
-interface HudAlertDescriptor {
+/** Descriptor for a single floating alert ribbon. */
+export interface HudAlertDescriptor {
   readonly label: string;
   readonly detail: string;
   readonly severity: AlertSeverity;
@@ -57,11 +53,6 @@ interface HudAlertDescriptor {
 /**
  * Checks whether `actorId` can currently be perceived by the player (same entity,
  * visible footprint tile in FOV/explored map, and not concealed by invisibility).
- *
- * @param state The current GameState.
- * @param actorId The actor whose turn is active.
- * @param playerId The player EntityId.
- * @returns True when the actor's identity and location are known to the player.
  */
 export function isActorPerceivedByPlayer(state: GameState, actorId: EntityId, playerId: EntityId): boolean {
   if (actorId === playerId) return true;
@@ -101,10 +92,6 @@ export function isActorPerceivedByPlayer(state: GameState, actorId: EntityId, pl
 
 /**
  * Builds the pinned top-right RimWorld-style Turn / RTwP Action Readiness ribbon descriptor.
- *
- * @param state The current GameState.
- * @param playerId The player EntityId.
- * @returns The Turn / Readiness HudAlertDescriptor.
  */
 export function buildTurnStatusRibbon(state: GameState, playerId: EntityId): HudAlertDescriptor {
   const playerName = resolveEntityDisplayName(state, playerId, 'Adventurer');
@@ -186,42 +173,22 @@ export function buildTurnStatusRibbon(state: GameState, playerId: EntityId): Hud
 }
 
 /**
- * Renders RimWorld-style color-coded alert ribbons in `#hud-alerts-container`.
- *
- * @param state The current GameState.
+ * Projects all active HUD alert ribbons for the current player entity.
  */
-export function renderHudAlerts(state: GameState): void {
-  const container = document.getElementById('hud-alerts-container');
-  if (!container) return;
-
-  container.replaceChildren();
-
-  const playerEntityId = state.entities.find((id) => getComponent(state, id, ComponentType.Player) !== undefined);
-  if (playerEntityId === undefined) return;
-
+export function projectHudAlertsList(state: GameState, playerEntityId: EntityId): ReadonlyArray<HudAlertDescriptor> {
   const alerts: HudAlertDescriptor[] = [buildTurnStatusRibbon(state, playerEntityId)];
 
-  // 1. Check Player Health
   const fighter = getComponent(state, playerEntityId, ComponentType.Fighter) as FighterComponent | undefined;
   if (fighter) {
     const stats = getEffectiveStats(state, playerEntityId);
     const hpRatio = fighter.hp / Math.max(1, stats.maxHp);
     if (hpRatio <= ALERT_CRITICAL_HP_RATIO) {
-      alerts.push({
-        label: 'Critical Wounds',
-        detail: `${fighter.hp}/${stats.maxHp} HP`,
-        severity: 'critical'
-      });
+      alerts.push({ label: 'Critical Wounds', detail: `${fighter.hp}/${stats.maxHp} HP`, severity: 'critical' });
     } else if (hpRatio <= ALERT_LOW_HP_RATIO) {
-      alerts.push({
-        label: 'Injured',
-        detail: `${fighter.hp}/${stats.maxHp} HP`,
-        severity: 'warning'
-      });
+      alerts.push({ label: 'Injured', detail: `${fighter.hp}/${stats.maxHp} HP`, severity: 'warning' });
     }
   }
 
-  // 2. Check Visible Hostiles & Nemeses in FOV
   const visibleHostiles: Array<{
     readonly id: EntityId;
     readonly name: string;
@@ -265,26 +232,16 @@ export function renderHudAlerts(state: GameState): void {
     });
   }
 
-  // 3. Check Hunger State
   const hunger = getComponent(state, playerEntityId, ComponentType.Hunger) as HungerComponent | undefined;
   if (hunger) {
     const hungerLabel = getHungerState(state, hunger.satiation);
     if (hungerLabel === 'Starving') {
-      alerts.push({
-        label: 'Starving',
-        detail: 'Find food immediately',
-        severity: 'critical'
-      });
+      alerts.push({ label: 'Starving', detail: 'Find food immediately', severity: 'critical' });
     } else if (hungerLabel === 'Hungry') {
-      alerts.push({
-        label: 'Hungry',
-        detail: 'Satiation low',
-        severity: 'warning'
-      });
+      alerts.push({ label: 'Hungry', detail: 'Satiation low', severity: 'warning' });
     }
   }
 
-  // 4. Active Status Effects
   const statuses = getComponent(state, playerEntityId, ComponentType.StatusEffects) as
     StatusEffectsComponent | undefined;
   if (statuses) {
@@ -298,7 +255,6 @@ export function renderHudAlerts(state: GameState): void {
     }
   }
 
-  // 5. Active Quests Summary Ribbon
   const questLog = getComponent(state, playerEntityId, ComponentType.QuestLog) as QuestLogComponent | undefined;
   const activeQuestCount = questLog ? Object.values(questLog.quests).filter((q) => q.status === 'active').length : 0;
   if (activeQuestCount > 0) {
@@ -312,33 +268,11 @@ export function renderHudAlerts(state: GameState): void {
     });
   }
 
-  // 6. Cartridge-contributed HUD alert ribbons (e.g. Level Up Available)
   const cartridgeUI = getActiveCartridgeUI(state);
   if (cartridgeUI?.projectHudAlerts) {
     const extraAlerts = cartridgeUI.projectHudAlerts(state, playerEntityId);
     alerts.push(...extraAlerts);
   }
 
-  for (const alert of alerts) {
-    const ribbon = document.createElement('button');
-    ribbon.type = 'button';
-    ribbon.className = `hud-alert-ribbon alert-${alert.severity}`;
-
-    const titleSpan = document.createElement('span');
-    titleSpan.className = 'hud-alert-title';
-    titleSpan.textContent = alert.label;
-
-    const detailSpan = document.createElement('span');
-    detailSpan.className = 'hud-alert-detail';
-    detailSpan.textContent = alert.detail;
-
-    ribbon.appendChild(titleSpan);
-    ribbon.appendChild(detailSpan);
-
-    if (alert.onClick) {
-      ribbon.addEventListener('click', alert.onClick);
-    }
-
-    container.appendChild(ribbon);
-  }
+  return alerts;
 }

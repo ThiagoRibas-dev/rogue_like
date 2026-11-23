@@ -1,0 +1,374 @@
+/**
+ * @file View styles for Main Menu, Ruleset/Campaign Selection, Settings, Keybind Matrix,
+ * Loading Overlay, Game Over, and Contextual F1 Help Panel.
+ * 100% --ui-* semantic tokens across Parchment, Retro CRT, and Obsidian & Brass themes.
+ */
+
+/* --- Persistent F1 Help Reminder Chip --- */
+.ui-help-reminder-chip {
+  position: fixed;
+  bottom: var(--ui-space-3);
+  right: var(--ui-space-3);
+  z-index: calc(var(--ui-z-hud) + 15);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-space-2);
+  padding: 5px 10px;
+  background: var(--ui-surface-glass);
+  backdrop-filter: blur(var(--ui-glass-blur));
+  border: 1px solid var(--ui-border-default);
+  border-radius: var(--ui-radius-md);
+  color: var(--ui-text-secondary);
+  font-family: var(--ui-font-body);
+  font-size: var(--ui-font-xs);
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--ui-shadow-card);
+  transition:
+    border-color var(--ui-motion-fast),
+    color var(--ui-motion-fast),
+    background var(--ui-motion-fast);
+}
+
+.ui-help-reminder-chip:hover,
+.ui-help-reminder-chip:focus-visible {
+  border-color: var(--ui-border-accent);
+  color: var(--ui-text-primary);
+  background: var(--ui-surface-elevated);
+}
+
+/* --- Main Menu Hero Screen --- */
+.ui-main-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--ui-z-modal);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--ui-space-5);
+  background: var(--ui-surface-backdrop);
+  backdrop-filter: blur(var(--ui-glass-blur));
+}
+
+.ui-main-menu-card {
+  width: min(460px, 94vw);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-4);
+  padding: var(--ui-space-6) var(--ui-space-5);
+  background: var(--ui-surface-base);
+  border: 1px solid var(--ui-border-accent);
+  border-radius: var(--ui-radius-lg);
+  box-shadow: var(--ui-shadow-modal);
+  text-align: center;
+}
+
+.ui-main-menu-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-1);
+  padding-bottom: var(--ui-space-3);
+  border-bottom: 1px solid var(--ui-border-subtle);
+}
+
+.ui-main-menu-title {
+  margin: 0;
+  font-family: var(--ui-font-display);
+  font-size: var(--ui-font-2xl);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ui-ink-heading);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.45);
+}
+
+.ui-main-menu-subtitle {
+  margin: 0;
+  font-family: var(--ui-font-body);
+  font-size: var(--ui-font-sm);
+  color: var(--ui-text-secondary);
+}
+
+.ui-main-menu-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-2);
+}
+
+.ui-main-menu-card .ui-btn {
+  font-family: var(--ui-font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.ui-main-menu-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--ui-space-2);
+}
+
+.ui-main-menu-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: var(--ui-space-2);
+  border-top: 1px solid var(--ui-border-subtle);
+  font-size: var(--ui-font-xs);
+  color: var(--ui-text-muted);
+}
+
+/* --- Ruleset & Campaign Detail Panes --- */
+.ui-selection-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-3);
+  height: 100%;
+}
+
+.ui-selection-detail-title {
+  margin: 0;
+  font-family: var(--ui-font-display);
+  font-size: var(--ui-font-lg);
+  color: var(--ui-accent-primary);
+}
+
+.ui-selection-detail-desc {
+  margin: 0;
+  font-size: var(--ui-font-sm);
+  line-height: 1.5;
+  color: var(--ui-text-secondary);
+}
+
+.ui-selection-feature-list {
+  margin: 0;
+  padding-left: var(--ui-space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-1);
+  font-size: var(--ui-font-sm);
+  color: var(--ui-text-primary);
+}
+
+.ui-selection-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--ui-space-2);
+}
+
+/* --- Keybind Matrix --- */
+.ui-keybind-matrix {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-3);
+}
+
+.ui-keybind-capture-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-space-3);
+  padding: var(--ui-space-3);
+  background: var(--ui-surface-selected);
+  border: 1px solid var(--ui-border-accent);
+  border-radius: var(--ui-radius-md);
+  color: var(--ui-text-primary);
+  font-size: var(--ui-font-sm);
+}
+
+.ui-keybind-conflict-banner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-1);
+  padding: var(--ui-space-2) var(--ui-space-3);
+  background: var(--ui-surface-sunken);
+  border: 1px solid var(--ui-status-warning);
+  border-radius: var(--ui-radius-md);
+  color: var(--ui-status-warning);
+  font-size: var(--ui-font-xs);
+}
+
+.ui-keybind-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-1);
+  max-height: 360px;
+  overflow-y: auto;
+  padding-right: var(--ui-space-1);
+}
+
+.ui-keybind-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.4fr) minmax(110px, 0.8fr) auto auto;
+  align-items: center;
+  gap: var(--ui-space-2);
+  padding: var(--ui-space-2) var(--ui-space-3);
+  background: var(--ui-surface-sunken);
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-sm);
+}
+
+.ui-keybind-row[data-conflict='true'] {
+  border-color: var(--ui-status-warning);
+}
+
+.ui-keybind-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ui-keybind-label {
+  font-weight: 600;
+  font-size: var(--ui-font-sm);
+  color: var(--ui-text-primary);
+}
+
+.ui-keybind-desc {
+  font-size: var(--ui-font-xs);
+  color: var(--ui-text-muted);
+}
+
+.ui-keybind-slots {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-2);
+}
+
+.ui-keybind-slot-btn {
+  min-width: 96px;
+  justify-content: center;
+}
+
+.ui-keybind-slot-btn[data-capturing='true'] {
+  border-color: var(--ui-accent-primary);
+  background: var(--ui-surface-selected);
+  color: var(--ui-accent-primary);
+}
+
+/* --- Settings Sections & Credits --- */
+.ui-settings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--ui-space-3);
+}
+
+.ui-attribution-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-2);
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.ui-attribution-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-1);
+  padding: var(--ui-space-3);
+  background: var(--ui-surface-sunken);
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-md);
+  font-size: var(--ui-font-xs);
+}
+
+.ui-attribution-title {
+  font-weight: 600;
+  font-size: var(--ui-font-sm);
+  color: var(--ui-accent-primary);
+}
+
+.ui-attribution-links {
+  display: flex;
+  gap: var(--ui-space-3);
+  margin-top: var(--ui-space-1);
+}
+
+.ui-attribution-link {
+  color: var(--ui-status-info);
+  text-decoration: underline;
+}
+
+/* --- Contextual F1 Help Modal --- */
+.ui-help-command-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--ui-space-2);
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: var(--ui-space-1);
+}
+
+.ui-help-command-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-space-2);
+  padding: var(--ui-space-2) var(--ui-space-3);
+  background: var(--ui-surface-sunken);
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-sm);
+}
+
+.ui-help-guide-sections {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-3);
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+/* --- Loading Overlay --- */
+.ui-loading-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--ui-z-system-dialog);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ui-surface-backdrop);
+  backdrop-filter: blur(var(--ui-glass-blur));
+}
+
+.ui-loading-card {
+  width: min(440px, 90vw);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-3);
+  padding: var(--ui-space-5);
+  background: var(--ui-surface-base);
+  border: 1px solid var(--ui-border-accent);
+  border-radius: var(--ui-radius-lg);
+  box-shadow: var(--ui-shadow-modal);
+  text-align: center;
+}
+
+.ui-loading-bar-track {
+  width: 100%;
+  height: 12px;
+  background: var(--ui-surface-sunken);
+  border: 1px solid var(--ui-border-default);
+  border-radius: var(--ui-radius-sm);
+  overflow: hidden;
+}
+
+.ui-loading-bar-fill {
+  height: 100%;
+  background: var(--ui-accent-primary);
+  transition: width var(--ui-motion-fast);
+}
+
+/* --- Game Over Screen --- */
+.ui-gameover-log {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-1);
+  padding: var(--ui-space-3);
+  background: var(--ui-surface-sunken);
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-md);
+  font-family: var(--ui-font-mono);
+  font-size: var(--ui-font-xs);
+  max-height: 180px;
+  overflow-y: auto;
+}

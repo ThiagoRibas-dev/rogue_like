@@ -29,7 +29,7 @@ import {
 } from '../src/rulesets/dnd35e/combat/attack_resolver.ts';
 import { evaluateDnD35eEntityDAG } from '../src/rulesets/dnd35e/dnd35e_ruleset.ts';
 import { getDnD35EntityData } from '../src/rulesets/dnd35e/srd_registry.ts';
-import { canPlayerLevelUpDnD35e } from '../src/rendering/ui/dnd35e_level_up.ui.ts';
+import { canPlayerLevelUpDnD35e } from '../src/rendering/ui/cartridges/dnd35e/DnD35eLevelUpModal.tsx';
 import { canTraverseTile, processMoveIntent } from '../src/systems/movement.system.ts';
 import { grantXp } from '../src/systems/death.system.ts';
 import { processMeleeAttackIntent } from '../src/systems/combat.system.ts';

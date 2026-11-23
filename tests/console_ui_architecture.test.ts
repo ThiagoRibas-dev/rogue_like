@@ -1,11 +1,14 @@
-import { describe, expect, it } from 'bun:test';
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { beforeAll, describe, expect, it } from 'bun:test';
 import { getComponent } from '../src/core/ecs.ts';
 import {
   getConsoleThemeMode,
   getConsoleThemeTokens,
+  resolveEffectiveConsoleTheme,
   setConsoleThemeMode,
   subscribeConsoleThemeChange
-} from '../src/rendering/ui/console_theme.ts';
+} from '../src/rendering/ui/core/console_theme.ts';
 import { DefaultSciFiUIAdapter } from '../src/rulesets/classic/ui/classic_ui_adapter.ts';
 import { createAbilityScoreState } from '../src/rulesets/dnd35e/abilities.ts';
 import { applyCharacterCreationToPlayer } from '../src/rulesets/dnd35e/builder/builder_hydrator_creation.ts';
@@ -16,7 +19,10 @@ import { ComponentType } from '../src/types/components.types.ts';
 import { buildGameState, loadCampaignFromDisk } from './helpers.ts';
 
 describe('Console UI Architecture & Cartridge Adapter Suite', () => {
-  it('toggles ConsoleThemeMode and updates skin tokens dynamically', () => {
+  beforeAll(() => {
+    loadCampaignFromDisk('dnd35e-crypt');
+  });
+  it('toggles ConsoleThemeMode and updates skin tokens dynamically across all 3 unified themes', () => {
     setConsoleThemeMode('parchment');
     expect(getConsoleThemeMode()).toBe('parchment');
     let tokens = getConsoleThemeTokens();
@@ -35,7 +41,49 @@ describe('Console UI Architecture & Cartridge Adapter Suite', () => {
     expect(tokens.mode).toBe('retro-crt');
     expect(tokens.bgCanvas).toBe('#0a0f12');
 
+    setConsoleThemeMode('obsidian-brass');
+    expect(getConsoleThemeMode()).toBe('obsidian-brass');
+    expect(notifiedMode).toBe('obsidian-brass');
+    tokens = getConsoleThemeTokens();
+    expect(tokens.mode).toBe('obsidian-brass');
+    expect(tokens.bgCanvas).toBe('#050507');
+
+    expect(resolveEffectiveConsoleTheme('auto')).toBe('obsidian-brass');
+    expect(resolveEffectiveConsoleTheme('auto', 'retro-crt')).toBe('retro-crt');
+    expect(resolveEffectiveConsoleTheme('obsidian-brass', 'parchment')).toBe('obsidian-brass');
+
     unsubscribe();
+  });
+
+  it('defines every referenced --ui-* CSS token in tokens.css and theme stylesheets', () => {
+    const collectFiles = (dir: string): string[] =>
+      readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+        const full = join(dir, entry.name);
+        return entry.isDirectory() ? collectFiles(full) : [full];
+      });
+
+    const referenced = new Set<string>();
+    for (const file of collectFiles(join(process.cwd(), 'src'))) {
+      const content = readFileSync(file, 'utf-8');
+      for (const match of content.matchAll(/var\((--ui-[a-z0-9-]+)/g)) {
+        if (match[1]) referenced.add(match[1]);
+      }
+    }
+
+    const defined = new Set<string>();
+    const tokenFiles = [
+      join(process.cwd(), 'src/styles/tokens.css'),
+      ...collectFiles(join(process.cwd(), 'src/styles/themes'))
+    ];
+    for (const file of tokenFiles) {
+      const content = readFileSync(file, 'utf-8');
+      for (const match of content.matchAll(/^\s*(--ui-[a-z0-9-]+)\s*:/gm)) {
+        if (match[1]) defined.add(match[1]);
+      }
+    }
+
+    const missing = [...referenced].filter((token) => !defined.has(token)).sort();
+    expect(missing).toEqual([]);
   });
 
   it('evaluates D&D 3.5e Cartridge UI Adapter stats and build-driven stances', () => {

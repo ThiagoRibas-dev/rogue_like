@@ -6,6 +6,7 @@ import type { PatchOperation } from '../utils/json-patch.ts';
 import type { ValidationError } from '../editor/validator/validator.types.ts';
 import type { GeneratedArea } from '../map/generator.ts';
 import { getRuleset } from '../rulesets/registry.ts';
+import { inputScopeManager } from '../core/input/input_scope_manager.ts';
 
 // Import refactored editor modules
 import {
@@ -158,30 +159,23 @@ export function renderEditorUI(state: GameState, controller: EditorController): 
       }
     });
 
-    // 7. Bind Keyboard Shortcuts (Undo/Redo)
-    const handleKeydown = (e: KeyboardEvent): void => {
-      if (!editorState.isInitialized || sessionId !== activeSessionId) {
-        return;
-      }
-      if (e.ctrlKey || e.metaKey) {
-        if (e.key === 'z') {
-          e.preventDefault();
-          if (e.shiftKey) {
-            controller.redo();
-          } else {
-            controller.undo();
-          }
-        } else if (e.key === 'y') {
-          e.preventDefault();
-          controller.redo();
-        }
-      }
+    // 7. Bind Editor Keyboard Shortcuts via InputScopeManager (TextInputGuard protects editor inputs)
+    const applyUndo = (): void => {
+      if (!editorState.isInitialized || sessionId !== activeSessionId) return;
+      controller.undo();
     };
-    window.addEventListener('keydown', handleKeydown);
+    const applyRedo = (): void => {
+      if (!editorState.isInitialized || sessionId !== activeSessionId) return;
+      controller.redo();
+    };
+    inputScopeManager.setEditorHook({
+      onUndo: applyUndo,
+      onRedo: applyRedo
+    });
 
     activeEditorCleanup = (): void => {
       unsubscribeState();
-      window.removeEventListener('keydown', handleKeydown);
+      inputScopeManager.setEditorHook(null);
     };
 
     // 8. Restore active categories from session storage (Reload or playtest recovery)

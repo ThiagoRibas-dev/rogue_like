@@ -54,7 +54,7 @@ export function getAllTypeScriptFiles(dir: string, baseDir: string = dir): strin
     const stat = statSync(fullPath);
     if (stat.isDirectory()) {
       result.push(...getAllTypeScriptFiles(fullPath, baseDir));
-    } else if (entry.endsWith('.ts') && !entry.endsWith('.d.ts')) {
+    } else if ((entry.endsWith('.ts') || entry.endsWith('.tsx')) && !entry.endsWith('.d.ts')) {
       const relPath = fullPath.substring(baseDir.length + 1).replace(/\\/g, '/');
       result.push(`src/${relPath}`);
     } else if (entry === 'vite-env.d.ts') {
@@ -68,14 +68,22 @@ export function getAllTypeScriptFiles(dir: string, baseDir: string = dir): strin
  * Determines whether a given source file belongs to the D&D 3.5e Cartridge partition.
  */
 export function isDnd35eFile(filePath: string): boolean {
-  return filePath.startsWith('src/rulesets/dnd35e/') || filePath.startsWith('src/rendering/ui/dnd35e_');
+  return (
+    filePath.startsWith('src/rulesets/dnd35e/') ||
+    filePath.startsWith('src/rendering/ui/dnd35e_') ||
+    filePath.startsWith('src/rendering/ui/cartridges/dnd35e/')
+  );
 }
 
 /**
  * Determines whether a given source file belongs to the Classic Cartridge partition.
  */
 export function isClassicFile(filePath: string): boolean {
-  return filePath.startsWith('src/rulesets/classic/') || filePath.startsWith('src/rendering/ui/classic_ui_');
+  return (
+    filePath.startsWith('src/rulesets/classic/') ||
+    filePath.startsWith('src/rendering/ui/classic_ui_') ||
+    filePath.startsWith('src/rendering/ui/cartridges/classic/')
+  );
 }
 
 /**

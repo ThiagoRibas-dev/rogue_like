@@ -5,26 +5,20 @@ import { DEFAULT_ZOOM_LEVEL, RESIZE_DEBOUNCE_MS } from '../constants/display.con
 import { DEFAULT_GLOBAL_DRAMA_BUDGET } from '../constants/pacing.constants.ts';
 import type { CampaignEditor } from '../editor/campaign_editor.ts';
 import { setGameState, onStateChange, getGameState } from './game-loop.ts';
-import { handleKeyDown } from './input_handler.ts';
+import { inputScopeManager } from './input/input_scope_manager.ts';
 import { bindCanvasMouseControls } from './input/mouse_input.ts';
-import { trapFocus } from '../utils/a11y.ts';
-import { initUITooltips } from '../rendering/ui.ts';
-import { getActiveCartridgeUI } from '../rendering/ui/cartridge_ui_registry.ts';
+import { uiStore } from '../rendering/ui/core/ui_store.ts';
 import { consumeDirtyDomains, markAllDomainsDirty, markDomainDirty, PresentationDomain } from './presentation_queue.ts';
 import { renderPresenterFrame, invalidateViewportSnapshot } from '../rendering/presenter.ts';
 import { recordEarlyReturn, recordPresenterFrame } from '../rendering/render_debug.ts';
 import { flushPendingSave } from './persistence_service.ts';
 import { syncDisplayLayout, configureDisplayForCampaign, syncFogOverlayCanvas } from '../rendering/display.ts';
 import { bindDOMControls, refreshRulesetList, refreshCampaignList } from './session/session_dom.ts';
-import { bindSettingsControls, rebindingAction, setRebindingAction } from './session/session_settings.ts';
-import { initResizablePanels } from '../rendering/ui/resizable_panels.ui.ts';
 
 // Re-export DOM and settings helpers
 export * from './session/session_dom.ts';
 export * from './session/session_settings.ts';
 
-let activeFocusCleanup: (() => void) | null = null;
-let currentFocusMode: UIMode | null = null;
 let lastKnownState: GameState | null = null;
 
 /**
@@ -93,7 +87,7 @@ export function createInitialMenuState(campaignId: string, campaign: CampaignDat
 }
 
 /**
- * Binds the reactive state subscriber for display synchronization and focus trapping.
+ * Binds the reactive state subscriber for display and viewport zoom synchronization.
  */
 export function bindStateSubscription(display: ROT.Display, _globalCampaignEditor: CampaignEditor): void {
   onStateChange((newState: GameState) => {
@@ -115,41 +109,6 @@ export function bindStateSubscription(display: ROT.Display, _globalCampaignEdito
       markDomainDirty(PresentationDomain.Map);
     }
     lastKnownState = newState;
-
-    if (newState.uiMode !== currentFocusMode) {
-      if (activeFocusCleanup) {
-        activeFocusCleanup();
-        activeFocusCleanup = null;
-      }
-      currentFocusMode = newState.uiMode;
-
-      let targetEl: HTMLElement | null = null;
-      if (newState.uiMode === UIMode.Settings) {
-        targetEl = document.getElementById('settings-overlay');
-      } else if (newState.uiMode === UIMode.Dialogue) {
-        targetEl = document.getElementById('dialogue-overlay');
-      } else if (newState.uiMode === UIMode.RulesetSelect) {
-        targetEl = document.getElementById('ruleset-selection-overlay');
-      } else if (newState.uiMode === UIMode.CampaignSelect) {
-        targetEl = document.getElementById('campaign-selection-overlay');
-      } else if (newState.uiMode === UIMode.CartridgeModal && newState.activeCartridgeModalId) {
-        const cartridgeUI = getActiveCartridgeUI(newState);
-        const modalDesc = cartridgeUI?.modals[newState.activeCartridgeModalId];
-        if (modalDesc?.overlayElementId) {
-          targetEl = document.getElementById(modalDesc.overlayElementId);
-        }
-      } else if (newState.uiMode === UIMode.GameOver) {
-        targetEl = document.getElementById('game-over-screen');
-      }
-
-      if (targetEl) {
-        setTimeout(() => {
-          if (targetEl && currentFocusMode === newState.uiMode) {
-            activeFocusCleanup = trapFocus(targetEl);
-          }
-        }, 50);
-      }
-    }
   });
 }
 
@@ -210,8 +169,6 @@ export function initSession(display: ROT.Display, globalCampaignEditor: Campaign
   refreshCampaignList().catch(console.error);
   bindDOMControls(display);
   bindCanvasMouseControls(display);
-  bindSettingsControls();
-  initResizablePanels();
   bindStateSubscription(display, globalCampaignEditor);
 
   // Hook window beforeunload to flush pending saves
@@ -230,16 +187,12 @@ export function initSession(display: ROT.Display, globalCampaignEditor: Campaign
 
   // Initialize HUD and pass initial state to loop
   setGameState(initialState);
+  uiStore.syncFromPresenter(initialState, false, new Set(Object.values(PresentationDomain)));
   markAllDomainsDirty();
   syncDisplayLayout(display, initialState);
-  initUITooltips(getGameState);
 
-  // Hook keyboard input
-  window.addEventListener('keydown', (event: KeyboardEvent) => {
-    handleKeyDown(event, getGameState(), rebindingAction, (newAction) => {
-      setRebindingAction(newAction);
-    });
-  });
+  // Hook single global scoped keyboard dispatcher
+  inputScopeManager.attachToWindow(getGameState);
 
   // Start unified 60Hz presenter loop
   startGlobalPresenterLoop(display, globalCampaignEditor);

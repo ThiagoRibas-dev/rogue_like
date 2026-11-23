@@ -1,6 +1,13 @@
-@import './styles/core.css';
+@import './styles/tokens.css';
+@import './styles/themes/parchment.css';
+@import './styles/themes/retro-crt.css';
+@import './styles/themes/obsidian-brass.css';
+@import './styles/a11y.css';
 @import './styles/layout.css';
-@import './styles/hud.css';
-@import './styles/modals.css';
+@import './styles/primitives.css';
+@import './styles/views/menus.css';
+@import './styles/views/hud.css';
+@import './styles/views/dossier.css';
+@import './styles/views/modals.css';
+@import './styles/views/dnd35e.css';
 @import './styles/editor.css';
-@import './styles/console_prototype.css';

@@ -21,7 +21,10 @@
     "test": "bun test"
   },
   "dependencies": {
+    "happy-dom": "^21.0.4",
     "jszip": "^3.10.1",
+    "preact": "^11.2.0",
+    "preact-render-to-string": "^6.8.3",
     "rot-js": "^2.2.0",
     "zod": "^3.23.8"
   },

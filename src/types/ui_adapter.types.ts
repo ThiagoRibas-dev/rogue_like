@@ -226,11 +226,21 @@ export interface UIHotbarModel {
 }
 
 /**
+ * Unified visual theme skin IDs supported by the Core Console Engine.
+ */
+export type ConsoleThemeMode = 'parchment' | 'retro-crt' | 'obsidian-brass';
+
+/**
+ * User-configurable theme preference ('auto' delegates to the active cartridge default).
+ */
+export type ConsoleThemePreference = 'auto' | ConsoleThemeMode;
+
+/**
  * Standard interface implemented by all Ruleset Cartridge UI Adapters.
  */
 export interface ICartridgeUIAdapter {
   readonly rulesetId: string;
-  readonly defaultThemeMode: 'parchment' | 'retro-crt';
+  readonly defaultThemeMode: ConsoleThemeMode;
 
   getCharacterSheetData(actor: unknown): UICharacterSheetModel;
   getInventoryData(actor: unknown): UIInventoryModel;

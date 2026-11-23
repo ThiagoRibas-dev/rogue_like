@@ -1,220 +1,386 @@
 {
-  "src/rendering/ui/dnd35e_char_builder_class_options.ui.ts": {
+  "src/rendering/ui/cartridges/dnd35e/DnD35eInspector.tsx": {
     "domain": "D&D 3.5e: Tactical UI & Character Sheet",
     "tier": "tier2_ui",
-    "responsibility": "Renders class-specific multiple choice pickers (domains, deity weapons, schools, familiars, companions, favored enemies) for character creation.",
+    "responsibility": "Declarative Preact right-pane inspectors for D&D 3.5e Races, Skills, Feats, and Spells shared by Character Sheet, Character Creation, and Level-Up.",
     "canonicalEntryPoints": [
-      "renderClericOptions",
-      "renderArcaneSchoolOptions",
-      "renderFamiliarOptions",
-      "renderWizardOptions",
-      "renderDruidOptions",
-      "renderRangerOptions"
+      "classifyDnD35eFeatCategory",
+      "formatPrerequisiteLeafLabel",
+      "DnD35eRaceInspector",
+      "DnD35eSkillInspector",
+      "DnD35eFeatInspector",
+      "DnD35eSpellInspector"
     ],
     "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_char_builder_class_options.ui.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
+      "includes": "Preact inspector views and prerequisite formatting helpers.",
+      "excludes": "Ruleset prerequisite evaluation logic (owned by src/rulesets/dnd35e/prerequisites.ts)."
     },
     "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_char_builder_class_options.ui.ts."
+      "Do not use .innerHTML or hardcoded colors in D&D 3.5e inspectors."
     ]
   },
-  "src/rendering/ui/dnd35e_char_builder_class.ui.ts": {
+  "src/rendering/ui/cartridges/dnd35e/DnD35eQuickcastOverlay.tsx": {
     "domain": "D&D 3.5e: Tactical UI & Character Sheet",
     "tier": "tier2_ui",
-    "responsibility": "Renders the Class, Alignment, Domains, ACF Swaps, and Familiar selection step for the D&D 3.5e Character Builder.",
+    "responsibility": "Preact Quickcast modal overlay with metamagic/spontaneous conversion chips, class accordions, level spine rows, and school-tinted cast tiles.",
     "canonicalEntryPoints": [
-      "renderClassStep"
+      "DnD35eQuickcastOverlay"
     ],
     "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_char_builder_class.ui.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
+      "includes": "Preact Quickcast UI rendering and spell-cast UI dispatch.",
+      "excludes": "Headless quickcast projection (owned by src/rulesets/dnd35e/ui/dnd35e_quickcast_model.ts)."
     },
     "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_char_builder_class.ui.ts."
+      "Do not bypass initiateSpellCastFromUI when triggering casts from Quickcast."
     ]
   },
-  "src/rendering/ui/dnd35e_char_builder_equipment.ui.ts": {
+  "src/rendering/ui/cartridges/dnd35e/DnD35eSheetAttacksCol.tsx": {
     "domain": "D&D 3.5e: Tactical UI & Character Sheet",
     "tier": "tier2_ui",
-    "responsibility": "Renders the Starting Equipment Kit Inspector (11 PHB/SRD Class Packages + 4 Classic Kits) and hosts the Custom Gear Shop mode switcher.",
+    "responsibility": "Column 2 of the Preact D&D 3.5e Character Sheet: Attack routines, combat maneuvers, daily resource pools, immediate reaction policies, and tactical stances.",
     "canonicalEntryPoints": [
-      "resetEquipmentStepUiState",
-      "renderCharBuilderEquipmentStep"
+      "DnD35eSheetAttacksCol"
     ],
     "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_char_builder_equipment.ui.ts.",
-      "excludes": "Custom Gear Shop view (owned by dnd35e_char_builder_shop.ui.ts)."
+      "includes": "Preact rendering of attacks, maneuvers, pools, reactions, and stances.",
+      "excludes": "Doctrine state mutation internals (owned by src/rendering/ui/dnd35e_doctrine_actions.ts)."
     },
     "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_char_builder_equipment.ui.ts."
+      "Do not hardcode feat or class IDs when projecting attack routines or pools."
     ]
   },
-  "src/rendering/ui/dnd35e_char_builder_feat_row.ui.ts": {
+  "src/rendering/ui/cartridges/dnd35e/DnD35eSheetCompanionsTab.tsx": {
     "domain": "D&D 3.5e: Tactical UI & Character Sheet",
     "tier": "tier2_ui",
-    "responsibility": "Renders feat category classification and parameterized target dropdowns for Character Creation and Level-Up.",
+    "responsibility": "Tab 3 of the Preact D&D 3.5e Character Sheet displaying active companions, familiars, cohorts, and summons.",
+    "canonicalEntryPoints": [
+      "DnD35eSheetCompanionsTab"
+    ],
+    "ownershipBoundary": {
+      "includes": "Preact companion roster table.",
+      "excludes": "Companion querying and stance commands (owned by src/systems/companion_commands.system.ts)."
+    },
+    "antiPatterns": [
+      "Do not mutate companion components directly from UI views."
+    ]
+  },
+  "src/rendering/ui/cartridges/dnd35e/DnD35eSheetModal.tsx": {
+    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
+    "tier": "tier2_ui",
+    "responsibility": "Top-level Preact D&D 3.5e Character Sheet modal composing Character & Gear, Progression & Features, and Companions tabs with shared PaperDollWidget and CompactStashWidget.",
+    "canonicalEntryPoints": [
+      "DnD35eSheetModal"
+    ],
+    "ownershipBoundary": {
+      "includes": "Preact modal shell, tab routing, and inventory action wiring.",
+      "excludes": "Headless DAG evaluation and UI model projection (owned by src/rulesets/dnd35e/ui/dnd35e_ui_adapter.ts)."
+    },
+    "antiPatterns": [
+      "Do not duplicate PaperDollWidget or CompactStashWidget internals."
+    ]
+  },
+  "src/rendering/ui/cartridges/dnd35e/DnD35eSheetOverviewCol.tsx": {
+    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
+    "tier": "tier2_ui",
+    "responsibility": "Column 1 of the Preact D&D 3.5e Character Sheet: Identity, vitals, defenses & saves, active conditions, ability scores, and skills table.",
+    "canonicalEntryPoints": [
+      "DnD35eSheetOverviewCol"
+    ],
+    "ownershipBoundary": {
+      "includes": "Preact identity, defense, ability, and skill display.",
+      "excludes": "DAG stat computation (owned by src/rulesets/dnd35e/cartridge/dnd35e_dag_adapter.ts)."
+    },
+    "antiPatterns": [
+      "Do not compute derived combat math inside the view component."
+    ]
+  },
+  "src/rendering/ui/cartridges/dnd35e/DnD35eSheetProgressionTab.tsx": {
+    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
+    "tier": "tier2_ui",
+    "responsibility": "Tab 2 of the Preact D&D 3.5e Character Sheet: Feats, class/domain/racial traits, and Horizon 1 level progression ledger.",
+    "canonicalEntryPoints": [
+      "DnD35eSheetProgressionTab"
+    ],
+    "ownershipBoundary": {
+      "includes": "Preact feats, traits, and level history presentation.",
+      "excludes": "Level history mutation (owned by src/rulesets/dnd35e/progression.ts)."
+    },
+    "antiPatterns": [
+      "Do not use .innerHTML for progression table rows."
+    ]
+  },
+  "src/rendering/ui/cartridges/dnd35e/DnD35eSpellbookModal.tsx": {
+    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
+    "tier": "tier2_ui",
+    "responsibility": "Preact D&D 3.5e Vancian Spellbook & Preparation Grimoire modal with class tabs, 8-hour rest & wait controls, level filter chips, and SplitPane layout.",
+    "canonicalEntryPoints": [
+      "DnD35eSpellbookModal"
+    ],
+    "ownershipBoundary": {
+      "includes": "Preact Spellbook modal shell, class tabs, level filters, and rest toolbar.",
+      "excludes": "Spell slot calculation and preparation mutations (owned by src/rulesets/dnd35e/magic/)."
+    },
+    "antiPatterns": [
+      "Do not duplicate spell slot math outside src/rulesets/dnd35e/magic/spellbook_slots.ts."
+    ]
+  },
+  "src/rendering/ui/cartridges/dnd35e/DnD35eSpellbookPanes.tsx": {
+    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
+    "tier": "tier2_ui",
+    "responsibility": "Left and right SplitPane views for the Preact D&D 3.5e Spellbook (Prepared/Spontaneous slots and Known/Domain/Specialist spells).",
+    "canonicalEntryPoints": [
+      "DnD35eSpellbookSlotsPane",
+      "DnD35eSpellbookKnownPane"
+    ],
+    "ownershipBoundary": {
+      "includes": "Preact rendering of memorized slots, spontaneous pips, and known spell preparation/cast actions.",
+      "excludes": "Spell preparation state transitions (owned by src/rulesets/dnd35e/magic/spellbook_actions.ts)."
+    },
+    "antiPatterns": [
+      "Do not hardcode domain or specialist school rules in the view."
+    ]
+  },
+  "src/rendering/ui/cartridges/dnd35e/dnd35e_ui_registration.tsx": {
+    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
+    "tier": "tier2_ui",
+    "responsibility": "Canonical Preact D&D 3.5e CartridgeUIDefinition registering ConsoleModalHost renderers, commands, helpSections, tactical stances, and hotbar routing.",
+    "canonicalEntryPoints": [
+      "dnd35eUIDefinition",
+      "registerDnD35eUIAdapter"
+    ],
+    "ownershipBoundary": {
+      "includes": "Cartridge UI registration, command declarations, and modal wiring for D&D 3.5e.",
+      "excludes": "Headless D&D 3.5e UI model projection (owned by src/rulesets/dnd35e/ui/dnd35e_ui_adapter.ts)."
+    },
+    "antiPatterns": [
+      "Do not force a global theme override over user theme preferences."
+    ]
+  },
+  "src/rendering/ui/cartridges/dnd35e/CharBuilderClassOptions.tsx": {
+    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
+    "tier": "tier2_ui",
+    "responsibility": "Preact Level 1 class sub-options renderer (Cleric domains & War weapon, Arcane schools & prohibited schools, Familiar, Animal Companion, Favored Enemy).",
+    "canonicalEntryPoints": [
+      "CharBuilderClassOptionsProps",
+      "CharBuilderClassOptions"
+    ],
+    "ownershipBoundary": {
+      "includes": "Declarative Level 1 class option pickers for Character Creation.",
+      "excludes": "Class progression validation rules (owned by src/rulesets/dnd35e/character_builder.ts)."
+    },
+    "antiPatterns": [
+      "Do not duplicate Level 1 class option controls outside CharBuilderClassOptions.tsx."
+    ]
+  },
+  "src/rendering/ui/cartridges/dnd35e/CharBuilderClassStep.tsx": {
+    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
+    "tier": "tier2_ui",
+    "responsibility": "Preact Step 2 (Class, Alignment, Level 1 ACFs & Paths) view for D&D 3.5e Character Creation.",
+    "canonicalEntryPoints": [
+      "CharBuilderClassStepProps",
+      "CharBuilderClassStep"
+    ],
+    "ownershipBoundary": {
+      "includes": "Class selection list, Lv 1-5 preview, alignment chips, Level 1 ACF swaps, and delegation to CharBuilderClassOptions.",
+      "excludes": "Domain/School/Companion pickers (owned by CharBuilderClassOptions.tsx)."
+    },
+    "antiPatterns": [
+      "Do not hardcode class-ID branches; inspect active class feature details declaratively."
+    ]
+  },
+  "src/rendering/ui/cartridges/dnd35e/CharBuilderEquipmentStep.tsx": {
+    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
+    "tier": "tier2_ui",
+    "responsibility": "Preact Equipment step hosting SRD Preset Starting Kits, EncumbranceBanner, and switching into CharBuilderGearShop.",
+    "canonicalEntryPoints": [
+      "SizeCat",
+      "EncumbranceBannerProps",
+      "EncumbranceBanner",
+      "CharBuilderEquipmentStepProps",
+      "CharBuilderEquipmentStep"
+    ],
+    "ownershipBoundary": {
+      "includes": "Preset kit selection, Customize Kit handoff, and encumbrance banner.",
+      "excludes": "Custom Gear Shop catalog & cart (owned by CharBuilderGearShop.tsx)."
+    },
+    "antiPatterns": [
+      "Do not duplicate starting kit pricing math in UI components."
+    ]
+  },
+  "src/rendering/ui/cartridges/dnd35e/CharBuilderGearShop.tsx": {
+    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
+    "tier": "tier2_ui",
+    "responsibility": "Preact Custom Gear Shop 2-pane catalog, proficiency badges, starting wealth roller, free starter outfit selector, and cart controls.",
+    "canonicalEntryPoints": [
+      "CharBuilderGearShopProps",
+      "CharBuilderGearShop"
+    ],
+    "ownershipBoundary": {
+      "includes": "Searchable SRD goods catalog and starting wealth cart UI.",
+      "excludes": "Starting wealth formulas and kit cost calculation (owned by character_builder.ts)."
+    },
+    "antiPatterns": [
+      "Do not use raw innerHTML or bypass currency formatting helpers."
+    ]
+  },
+  "src/rendering/ui/cartridges/dnd35e/CharBuilderRaceAbilitiesStep.tsx": {
+    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
+    "tier": "tier2_ui",
+    "responsibility": "Preact Step 1 (Race Selection) and Step 3 (Ability Scores Point-Buy / Elite Array / 4d6kh3) views for D&D 3.5e Character Creation.",
+    "canonicalEntryPoints": [
+      "CharBuilderRaceStepProps",
+      "CharBuilderRaceStep",
+      "CharBuilderAbilitiesStepProps",
+      "CharBuilderAbilitiesStep"
+    ],
+    "ownershipBoundary": {
+      "includes": "Playable/monstrous race selector and Stepper-driven ability score builder.",
+      "excludes": "Race inspector rendering (owned by DnD35eInspector.tsx)."
+    },
+    "antiPatterns": [
+      "Do not hardcode point-buy bounds; import constants from character_builder.ts."
+    ]
+  },
+  "src/rendering/ui/cartridges/dnd35e/CharBuilderSpritePicker.tsx": {
+    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
+    "tier": "tier2_ui",
+    "responsibility": "Preact searchable multi-tab Sprite Picker using 2D GridNav and D&D 3.5e race/class sprite hint expansion.",
+    "canonicalEntryPoints": [
+      "expandDnD35SpriteHints",
+      "CharBuilderSpritePickerProps",
+      "CharBuilderSpritePicker"
+    ],
+    "ownershipBoundary": {
+      "includes": "D&D 3.5e sprite hint expansion and keyboard-navigable GridNav sprite selector.",
+      "excludes": "Tier 1 Console sprite catalog discovery (owned by src/utils/sprite_pack.ts)."
+    },
+    "antiPatterns": [
+      "Do not bypass GridNav for 2D sprite gallery navigation."
+    ]
+  },
+  "src/rendering/ui/cartridges/dnd35e/CharBuilderSummaryStep.tsx": {
+    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
+    "tier": "tier2_ui",
+    "responsibility": "Preact Review & Identity step with TextInputGuard-safe Name/Title/Mannerisms/Color controls, Sprite Picker, and memoized authoritative Character Sheet summary.",
+    "canonicalEntryPoints": [
+      "CharBuilderSummaryStepProps",
+      "CharBuilderSummaryStep"
+    ],
+    "ownershipBoundary": {
+      "includes": "Identity customization controls and memoized sheet summary preview.",
+      "excludes": "Sprite gallery rendering (owned by CharBuilderSpritePicker.tsx)."
+    },
+    "antiPatterns": [
+      "Do not compute ad-hoc character stats; project via applyCharacterCreationToPlayer + projectCharacterSheetData."
+    ]
+  },
+  "src/rendering/ui/cartridges/dnd35e/DnD35eCharBuilderModal.tsx": {
+    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
+    "tier": "tier2_ui",
+    "responsibility": "Preact D&D 3.5e Character Creation Wizard Modal orchestrating all builder steps, step validation gating, Quick Start Hero, and Embark finalization.",
+    "canonicalEntryPoints": [
+      "resetDnD35eCharBuilderDraft",
+      "DnD35eCharBuilderModalProps",
+      "DnD35eCharBuilderModal"
+    ],
+    "ownershipBoundary": {
+      "includes": "Character Creation wizard draft lifecycle, step navigation, and applyCharacterCreationToPlayer dispatch.",
+      "excludes": "Individual step UI implementations (delegated to CharBuilder* and DnD35eShared* modules)."
+    },
+    "antiPatterns": [
+      "Do not bypass validateCharacterCreationStep when advancing steps."
+    ]
+  },
+  "src/rendering/ui/cartridges/dnd35e/DnD35eLevelUpClassStep.tsx": {
+    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
+    "tier": "tier2_ui",
+    "responsibility": "Preact Stage 1 (Class, Prestige, Ability Boost, Multiclass XP Warning & Mid-Level Class Choices) for D&D 3.5e Level-Up.",
+    "canonicalEntryPoints": [
+      "ABILITY_INCREASE_HD_STEP",
+      "DnD35eLevelUpClassStepProps",
+      "DnD35eLevelUpClassStep"
+    ],
+    "ownershipBoundary": {
+      "includes": "Level-up advancing class list, +1 ability boost, prestige caster targets, and mid-level ACFs/styles/favored enemy/companion/rogue options.",
+      "excludes": "Level-up modal shell and commit orchestration (owned by DnD35eLevelUpModal.tsx)."
+    },
+    "antiPatterns": [
+      "Do not duplicate progression math; call progression.ts helpers."
+    ]
+  },
+  "src/rendering/ui/cartridges/dnd35e/DnD35eLevelUpModal.tsx": {
+    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
+    "tier": "tier2_ui",
+    "responsibility": "Preact D&D 3.5e Level-Up Advancement Modal orchestrating Class, Skills, Feats, and dynamic per-class Spells tabs plus canPlayerLevelUpDnD35e check.",
+    "canonicalEntryPoints": [
+      "canPlayerLevelUpDnD35e",
+      "DnD35eLevelUpModalProps",
+      "DnD35eLevelUpModal"
+    ],
+    "ownershipBoundary": {
+      "includes": "Level-Up XP eligibility check, modal shell, dynamic tabs, and applyLevelUpToActor commit.",
+      "excludes": "Shared Skills, Feats, and Spells step views (delegated to DnD35eShared* modules)."
+    },
+    "antiPatterns": [
+      "Never duplicate inline Skills, Feats, or Spell views inside DnD35eLevelUpModal.tsx."
+    ]
+  },
+  "src/rendering/ui/cartridges/dnd35e/DnD35eSharedFeatsStep.tsx": {
+    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
+    "tier": "tier2_ui",
+    "responsibility": "Shared Preact 2-pane Feats selection step and declarative repeatable feat target resolvers reused by Character Creation and Level-Up.",
     "canonicalEntryPoints": [
       "CANONICAL_NATURAL_WEAPONS",
       "CANONICAL_SPECIAL_ATTACKS",
       "getTargetedWeaponOptions",
-      "classifyFeatCategory",
       "getFeatTargetOptions",
-      "buildFeatTargetSelect"
+      "DnD35eSharedFeatsStepProps",
+      "DnD35eSharedFeatsStep",
+      "CharBuilderFeatsStepProps",
+      "CharBuilderFeatsStep"
     ],
     "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_char_builder_feat_row.ui.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
+      "includes": "Shared Feats selection view and declarative target option resolution.",
+      "excludes": "Feat prerequisite evaluation and inspector rendering (owned by prerequisites.ts and DnD35eInspector.tsx)."
     },
     "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_char_builder_feat_row.ui.ts."
+      "Do not branch on specific feat IDs to determine selectable targets; read feat.repeatable metadata."
     ]
   },
-  "src/rendering/ui/dnd35e_char_builder_feats.ui.ts": {
+  "src/rendering/ui/cartridges/dnd35e/DnD35eSharedSkillsStep.tsx": {
     "domain": "D&D 3.5e: Tactical UI & Character Sheet",
     "tier": "tier2_ui",
-    "responsibility": "Renders the reusable 2-pane Feats selection step shared by Character Creation and Level-Up modals.",
+    "responsibility": "Shared Preact 2-pane Skill rank allocation step reused by Character Creation and Level-Up.",
     "canonicalEntryPoints": [
-      "renderSharedFeatsStep",
-      "renderCharBuilderFeatsStep"
+      "DnD35eSharedSkillsStepProps",
+      "DnD35eSharedSkillsStep",
+      "CharBuilderSkillsStepProps",
+      "CharBuilderSkillsStep"
     ],
     "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_char_builder_feats.ui.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
+      "includes": "Shared skill filter bar, rank increment/decrement rows, and CharBuilderSkillsStep wrapper.",
+      "excludes": "Skill detail inspector (owned by DnD35eInspector.tsx)."
     },
     "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_char_builder_feats.ui.ts."
+      "Never conflate active-level class skills (cost) with ever-class skills (max rank cap)."
     ]
   },
-  "src/rendering/ui/dnd35e_char_builder_race_abilities.ui.ts": {
+  "src/rendering/ui/cartridges/dnd35e/DnD35eSharedSpellsStep.tsx": {
     "domain": "D&D 3.5e: Tactical UI & Character Sheet",
     "tier": "tier2_ui",
-    "responsibility": "Renders the Race & Identity and Ability Score Point-Buy steps for the D&D 3.5e Character Builder.",
+    "responsibility": "Shared Preact 2-pane per-class Spell learning/scribing step reused by Character Creation and Level-Up.",
     "canonicalEntryPoints": [
-      "renderRaceStep"
+      "DnD35eSharedSpellsStepProps",
+      "DnD35eSharedSpellsStep",
+      "CharBuilderSpellsStepProps",
+      "CharBuilderSpellsStep"
     ],
     "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_char_builder_race_abilities.ui.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
+      "includes": "Per-class spell selection budget display, level filter chips, and CharBuilderSpellsStep wrapper.",
+      "excludes": "Spell detail inspector (owned by DnD35eInspector.tsx)."
     },
     "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_char_builder_race_abilities.ui.ts."
-    ]
-  },
-  "src/rendering/ui/dnd35e_char_builder_shop.ui.ts": {
-    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
-    "tier": "tier2_ui",
-    "responsibility": "Renders the Custom Gear Shop sub-view with SRD Goods & Services catalog browsing, proficiency badges, starting gold rolling, free outfit selection, and equip-slot controls.",
-    "canonicalEntryPoints": [
-      "SizeCat",
-      "buildEncumbranceBanner",
-      "makeCharBuilderMiniBtn",
-      "resetCustomGearShopUiState",
-      "renderCustomGearShopView"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_char_builder_shop.ui.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_char_builder_shop.ui.ts."
-    ]
-  },
-  "src/rendering/ui/dnd35e_char_builder_skills.ui.ts": {
-    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
-    "tier": "tier2_ui",
-    "responsibility": "Renders the reusable 2-pane Skills rank allocation step shared by Character Creation and Level-Up modals.",
-    "canonicalEntryPoints": [
-      "renderSharedSkillsStep",
-      "renderCharBuilderSkillsStep"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_char_builder_skills.ui.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_char_builder_skills.ui.ts."
-    ]
-  },
-  "src/rendering/ui/dnd35e_char_builder_spells.ui.ts": {
-    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
-    "tier": "tier2_ui",
-    "responsibility": "Renders the reusable 2-pane per-class Spellbook selection step shared by Character Creation and Level-Up modals.",
-    "canonicalEntryPoints": [
-      "renderSharedClassSpellStep",
-      "renderCharBuilderSpellsStep"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_char_builder_spells.ui.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_char_builder_spells.ui.ts."
-    ]
-  },
-  "src/rendering/ui/dnd35e_char_builder_sprite_picker.ui.ts": {
-    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
-    "tier": "tier2_ui",
-    "responsibility": "Renders the searchable multi-tab Sprite Picker and expands D&D 3.5e race/class sprite hints for Character Creation.",
-    "canonicalEntryPoints": [
-      "resetSpritePickerUiState",
-      "expandDnD35SpriteHints",
-      "renderSpritePickerSection"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_char_builder_sprite_picker.ui.ts.",
-      "excludes": "Tier 1 Console sprite catalog discovery (owned by src/utils/sprite_pack.ts)."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_char_builder_sprite_picker.ui.ts."
-    ]
-  },
-  "src/rendering/ui/dnd35e_char_builder_steps.ui.ts": {
-    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
-    "tier": "tier2_ui",
-    "responsibility": "Single Source of Truth barrel for reusable, parameterized 2-pane step views (Skills, Feats, Class Spells, Equipment, Summary) shared across Character Creation and Level-Up modals.",
-    "canonicalEntryPoints": [],
-    "ownershipBoundary": {
-      "includes": "Coordinating facade and primary orchestration exports declared directly in src/rendering/ui/dnd35e_char_builder_steps.ui.ts.",
-      "excludes": "Underlying primitive symbols re-exported from leaf modules (e.g. src/rendering/ui/dnd35e_char_builder_equipment.ui.ts)."
-    },
-    "antiPatterns": [
-      "Never duplicate inline Skills, Feats, or Spell step DOM rendering inside dnd35e_level_up.ui.ts or dnd35e_char_builder.ui.ts.",
       "Never mix multiple classes' spellbooks into a single spell selection step."
-    ]
-  },
-  "src/rendering/ui/dnd35e_char_builder_summary.ui.ts": {
-    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
-    "tier": "tier2_ui",
-    "responsibility": "Renders the final Review & Identity step of D&D 3.5e Character Creation (Name, Title, Glyph Color, Traits, Sprite Picker, and memoized authoritative live Character Sheet Summary).",
-    "canonicalEntryPoints": [
-      "resetSummaryStepUiState",
-      "renderCharBuilderSummaryStep"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_char_builder_summary.ui.ts.",
-      "excludes": "Sprite Picker sub-view (owned by dnd35e_char_builder_sprite_picker.ui.ts)."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_char_builder_summary.ui.ts."
-    ]
-  },
-  "src/rendering/ui/dnd35e_char_builder.ui.ts": {
-    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
-    "tier": "tier2_ui",
-    "responsibility": "Full-screen 2-pane layout with scroll preservation, playable race filtering,",
-    "canonicalEntryPoints": [
-      "captureScrollPositions",
-      "restoreScrollPositions",
-      "resetDnD35eCharBuilderDraft",
-      "renderDnD35eCharBuilderModal"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_char_builder.ui.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_char_builder.ui.ts."
     ]
   },
   "src/rendering/ui/dnd35e_doctrine_actions.ts": {
@@ -233,85 +399,6 @@
       "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_doctrine_actions.ts."
     ]
   },
-  "src/rendering/ui/dnd35e_feat_spell_inspector.ui.ts": {
-    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
-    "tier": "tier2_ui",
-    "responsibility": "Renders right-pane detail inspector cards for D&D 3.5e Feats (with AST prerequisite status) and Spells.",
-    "canonicalEntryPoints": [
-      "renderFeatInspector",
-      "renderSpellInspector"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_feat_spell_inspector.ui.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_feat_spell_inspector.ui.ts."
-    ]
-  },
-  "src/rendering/ui/dnd35e_inspector.ui.ts": {
-    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
-    "tier": "tier2_ui",
-    "responsibility": "Single Source of Truth for right-pane detail inspectors (Race, Skill, Feat, Spell) reusable across Character Creation, Level-Up, and Character Sheet modals.",
-    "canonicalEntryPoints": [
-      "renderRaceInspector",
-      "renderSkillInspector"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure DOM detail cards for inspecting D&D 3.5e races, skills (with synergies), feats (with AST prerequisites), and spells.",
-      "excludes": "Left-pane selection lists or draft state mutations."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_inspector.ui.ts."
-    ]
-  },
-  "src/rendering/ui/dnd35e_level_up_class_options.ui.ts": {
-    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
-    "tier": "tier2_ui",
-    "responsibility": "Renders mid-level class choices (ACFs, Ranger combat styles & favored enemies, Rogue special abilities, companions) for the Level-Up modal.",
-    "canonicalEntryPoints": [
-      "renderLevelUpClassOptions"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_level_up_class_options.ui.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_level_up_class_options.ui.ts."
-    ]
-  },
-  "src/rendering/ui/dnd35e_level_up_class.ui.ts": {
-    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
-    "tier": "tier2_ui",
-    "responsibility": "Renders the Class, Prestige Class, Ability Score Increase, and ACF Swap selection step for the D&D 3.5e Level-Up modal.",
-    "canonicalEntryPoints": [
-      "ABILITY_INCREASE_HD_STEP",
-      "GENERAL_FEAT_HD_STEP",
-      "renderLevelUpClassStage"
-    ],
-    "ownershipBoundary": {
-      "includes": "Coordinating facade and primary orchestration exports declared directly in src/rendering/ui/dnd35e_level_up_class.ui.ts.",
-      "excludes": "Underlying primitive symbols re-exported from leaf modules (e.g. src/rendering/ui/dnd35e_level_up_tabs.ts)."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_level_up_class.ui.ts."
-    ]
-  },
-  "src/rendering/ui/dnd35e_level_up_footer.ui.ts": {
-    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
-    "tier": "tier2_ui",
-    "responsibility": "Renders the validation gate banner and Previous / Next / Confirm footer bar for the Level-Up modal.",
-    "canonicalEntryPoints": [
-      "renderLevelUpFooter"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_level_up_footer.ui.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_level_up_footer.ui.ts."
-    ]
-  },
   "src/rendering/ui/dnd35e_level_up_tabs.ts": {
     "domain": "D&D 3.5e: Tactical UI & Character Sheet",
     "tier": "tier2_ui",
@@ -326,37 +413,6 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_level_up_tabs.ts."
-    ]
-  },
-  "src/rendering/ui/dnd35e_level_up.ui.ts": {
-    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
-    "tier": "tier2_ui",
-    "responsibility": "Orchestrates the interactive Level-Up modal shell, dynamic per-class step tabs, and level advancement commit.",
-    "canonicalEntryPoints": [
-      "canPlayerLevelUpDnD35e",
-      "renderDnD35eLevelUpModal"
-    ],
-    "ownershipBoundary": {
-      "includes": "Level-Up modal framing, dynamic tab bar generation (including per-class spellbook tabs for multiclass/prestige advancement), and applyLevelUpToActor dispatch.",
-      "excludes": "Reusable Skills, Feats, and Spell selection step views (must delegate to dnd35e_char_builder_steps.ui.ts)."
-    },
-    "antiPatterns": [
-      "Never maintain separate inline Skills or Feats step implementations in dnd35e_level_up.ui.ts; always reuse the parameterized step components from dnd35e_char_builder_steps.ui.ts."
-    ]
-  },
-  "src/rendering/ui/dnd35e_quickcast.ui.ts": {
-    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
-    "tier": "tier2_ui",
-    "responsibility": "Renders the NWN2-style Quickcast HUD Overlay with metamagic/rod/spontaneous conversion toggles, collapsible class headers, and Level 0..9 compact spell tiles.",
-    "canonicalEntryPoints": [
-      "renderDnD35eQuickcastModal"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_quickcast.ui.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_quickcast.ui.ts."
     ]
   },
   "src/rendering/ui/dnd35e_rest_actions.ts": {
@@ -375,97 +431,6 @@
       "Do not place pure GameState rest recovery logic inside src/rendering/ui/dnd35e_rest_actions.ts."
     ]
   },
-  "src/rendering/ui/dnd35e_sheet_attacks_tab.ui.ts": {
-    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
-    "tier": "tier2_ui",
-    "responsibility": "Renders Attacks & Weapons routine, Combat Maneuvers, Abilities & Pools, and Tactical Stances for Tab 1 Column 2 of the Character Sheet.",
-    "canonicalEntryPoints": [
-      "renderSheetAttacksTab"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_sheet_attacks_tab.ui.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_sheet_attacks_tab.ui.ts."
-    ]
-  },
-  "src/rendering/ui/dnd35e_sheet_companions_tab.ui.ts": {
-    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
-    "tier": "tier2_ui",
-    "responsibility": "Renders Companions, Familiars, Cohorts & Summons roster table for Tab 3 of the Character Sheet.",
-    "canonicalEntryPoints": [
-      "renderSheetCompanionsTab"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_sheet_companions_tab.ui.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_sheet_companions_tab.ui.ts."
-    ]
-  },
-  "src/rendering/ui/dnd35e_sheet_equipment_tab.ui.ts": {
-    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
-    "tier": "tier2_ui",
-    "responsibility": "Renders Reactive Paper Doll and uniform 5-column Backpack Stash grid for Tab 1 Column 3 of the Character Sheet.",
-    "canonicalEntryPoints": [
-      "renderSheetEquipmentTab"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_sheet_equipment_tab.ui.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_sheet_equipment_tab.ui.ts."
-    ]
-  },
-  "src/rendering/ui/dnd35e_sheet_overview_tab.ui.ts": {
-    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
-    "tier": "tier2_ui",
-    "responsibility": "Renders Identity, Vitals, Defenses & Saves, Active Conditions, Ability Scores, and Skills for Tab 1 Column 1 of the Character Sheet.",
-    "canonicalEntryPoints": [
-      "renderSheetOverviewTab"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_sheet_overview_tab.ui.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_sheet_overview_tab.ui.ts."
-    ]
-  },
-  "src/rendering/ui/dnd35e_sheet_progression_tab.ui.ts": {
-    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
-    "tier": "tier2_ui",
-    "responsibility": "Renders Feats & Traits on the left and Level Progression ledger table on the right for Tab 2 of the Character Sheet.",
-    "canonicalEntryPoints": [
-      "renderSheetProgressionTab"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_sheet_progression_tab.ui.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_sheet_progression_tab.ui.ts."
-    ]
-  },
-  "src/rendering/ui/dnd35e_sheet.ui.ts": {
-    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
-    "tier": "tier2_ui",
-    "responsibility": "Standardized 3-tab Heroic Character Sheet modal orchestrating Character (3 equal columns), Progression & Features, and Companions & Summons.",
-    "canonicalEntryPoints": [
-      "renderDnD35eSheetModal",
-      "SheetTabId"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_sheet.ui.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_sheet.ui.ts."
-    ]
-  },
   "src/rendering/ui/dnd35e_spell_cast_ui.ts": {
     "domain": "D&D 3.5e: Tactical UI & Character Sheet",
     "tier": "tier2_ui",
@@ -481,68 +446,6 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_spell_cast_ui.ts."
-    ]
-  },
-  "src/rendering/ui/dnd35e_spellbook_known.ui.ts": {
-    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
-    "tier": "tier2_ui",
-    "responsibility": "Renders known spells list and action buttons for the Spellbook modal.",
-    "canonicalEntryPoints": [
-      "renderKnownSpellsPane"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_spellbook_known.ui.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_spellbook_known.ui.ts."
-    ]
-  },
-  "src/rendering/ui/dnd35e_spellbook_panes.ui.ts": {
-    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
-    "tier": "tier2_ui",
-    "responsibility": "Renders prepared slots and spontaneous daily casts matrix panes for the Spellbook modal.",
-    "canonicalEntryPoints": [
-      "renderPreparedSlotsPane",
-      "renderSpontaneousSlotsPane"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_spellbook_panes.ui.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_spellbook_panes.ui.ts."
-    ]
-  },
-  "src/rendering/ui/dnd35e_spellbook.ui.ts": {
-    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
-    "tier": "tier2_ui",
-    "responsibility": "Class-tabbed Vancian Spellbook & Grimoire modal displaying prepared spell slots, known spells, and 8-hour rest actions.",
-    "canonicalEntryPoints": [
-      "renderDnD35eSpellbookModal"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_spellbook.ui.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_spellbook.ui.ts."
-    ]
-  },
-  "src/rendering/ui/dnd35e_ui_registration.ts": {
-    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
-    "tier": "tier2_ui",
-    "responsibility": "Registers the D&D 3.5e CartridgeUIDefinition (modals, dock commands, stance toggles, hotbar execution) into the Console Cartridge UI Registry.",
-    "canonicalEntryPoints": [
-      "dnd35eUIDefinition",
-      "registerDnD35eUIAdapter"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_ui_registration.ts.",
-      "excludes": "Headless D&D 3.5e UI data projection (owned by src/rulesets/dnd35e/ui/dnd35e_ui_adapter.ts)."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_ui_registration.ts."
     ]
   },
   "src/rulesets/dnd35e/abilities.ts": {

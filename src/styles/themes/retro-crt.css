@@ -1,0 +1,60 @@
+/* ============================================================================
+   Theme 2: Retro CRT (Deep Phosphor Terminal, Cyan Hairlines & Amber/Emerald)
+   ============================================================================ */
+
+:root[data-ui-theme='retro-crt'],
+[data-ui-theme='retro-crt'],
+:root[data-console-theme='retro-crt'],
+.crpg-prototype-shell[data-console-theme='retro-crt'] {
+  /* Semantic --ui-* Tokens */
+  --ui-bg-canvas: #060d12;
+  --ui-bg-backdrop: rgba(3, 8, 12, 0.86);
+  --ui-bg-panel: #0a171f;
+  --ui-bg-panel-alt: #0c1f29;
+  --ui-bg-elevated: #112a38;
+  --ui-bg-input: #040d13;
+  --ui-bg-hover: #153647;
+  --ui-bg-selected: #134454;
+  --ui-bg-toolbar: #071219;
+  --ui-bg-socket: #071923;
+  --ui-bg-socket-empty: rgba(7, 18, 24, 0.9);
+
+  --ui-ink-primary: #93e8ff;
+  --ui-ink-secondary: #68cbe6;
+  --ui-ink-muted: #4b94ad;
+  --ui-ink-inverse: #041016;
+  --ui-ink-heading: #4ce8a0;
+
+  --ui-border-subtle: rgba(23, 107, 90, 0.6);
+  --ui-border-strong: #26b899;
+  --ui-border-accent: #00f0ff;
+  --ui-focus-ring: #00f0ff;
+
+  --ui-accent-primary: #00d4e6;
+  --ui-accent-secondary: #26b899;
+  --ui-accent-primary-ink: #031218;
+  --ui-btn-bg: var(--ui-bg-elevated);
+  --ui-btn-bg-hover: var(--ui-bg-hover);
+  --ui-btn-border: var(--ui-border-strong);
+  --ui-btn-ink: var(--ui-ink-primary);
+  --ui-btn-shadow: none;
+  --ui-btn-primary-bg: var(--ui-accent-primary);
+  --ui-btn-primary-bg-hover: #1ce8fa;
+  --ui-btn-primary-border: var(--ui-border-accent);
+  --ui-btn-primary-ink: var(--ui-accent-primary-ink);
+  --ui-btn-primary-shadow: 0 0 12px rgba(0, 240, 255, 0.25);
+  --ui-status-hp: #e64553;
+  --ui-status-xp: #2ecc71;
+  --ui-status-success: #2ecc71;
+  --ui-status-warning: #ffb000;
+  --ui-status-danger: #ff5566;
+  --ui-status-info: #00e5ff;
+
+  --ui-font-display: 'JetBrains Mono', monospace;
+  --ui-font-body: 'JetBrains Mono', monospace;
+  --ui-font-mono: 'JetBrains Mono', monospace;
+
+  --ui-shadow-panel: 0 0 14px rgba(0, 240, 255, 0.14);
+  --ui-shadow-popover: 0 0 22px rgba(0, 240, 255, 0.24);
+  --ui-shadow-modal: 0 0 34px rgba(0, 240, 255, 0.28);
+}

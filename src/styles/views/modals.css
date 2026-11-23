@@ -1,0 +1,297 @@
+/* ==========================================================================
+   Milestone 162: World, Trade, Dialogue, Quest, Factions, Investigation,
+   Nemesis Dossier, World Ledger & Debug Overlay Styles (`--ui-*` tokens)
+   ========================================================================== */
+
+.ui-wiki-link {
+  color: var(--ui-accent-secondary);
+  cursor: help;
+  text-decoration: underline dashed var(--ui-accent-secondary);
+  text-underline-offset: 2px;
+}
+
+/* ---- Trade & Barter ---- */
+.ui-trade-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-space-3);
+  padding: 8px 12px;
+  background: var(--ui-bg-inset);
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-sm);
+  margin-bottom: var(--ui-space-3);
+  flex-wrap: wrap;
+}
+
+.ui-trade-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--ui-space-3);
+  min-height: 320px;
+  max-height: 55vh;
+}
+
+@media (max-width: 820px) {
+  .ui-trade-columns {
+    grid-template-columns: 1fr;
+    max-height: none;
+  }
+}
+
+.ui-trade-pane {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-2);
+  min-height: 0;
+  padding: var(--ui-space-2);
+  background: var(--ui-bg-surface);
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-md);
+}
+
+.ui-trade-pane-title {
+  margin: 0;
+  font-family: var(--ui-font-display);
+  font-size: var(--ui-font-sm);
+  color: var(--ui-accent-primary);
+}
+
+.ui-trade-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.ui-trade-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-space-2);
+  padding: 6px 8px;
+  border-radius: var(--ui-radius-sm);
+  border: 1px solid var(--ui-border-subtle);
+  background: var(--ui-bg-inset);
+  font-size: var(--ui-font-sm);
+}
+
+.ui-trade-row__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ui-trade-row__price {
+  font-family: var(--ui-font-mono);
+  font-size: var(--ui-font-xs);
+  color: var(--ui-text-secondary);
+  min-width: 84px;
+  text-align: right;
+}
+
+.ui-trade-row__price[data-affordable='false'] {
+  color: var(--ui-status-danger);
+}
+
+/* ---- Dialogue ---- */
+.ui-dialogue-speech {
+  margin: 0 0 var(--ui-space-3) 0;
+  padding: var(--ui-space-3);
+  background: var(--ui-bg-inset);
+  border: 1px solid var(--ui-border-subtle);
+  border-left: 3px solid var(--ui-accent-primary);
+  border-radius: var(--ui-radius-sm);
+  font-size: var(--ui-font-md);
+  line-height: 1.55;
+  white-space: pre-wrap;
+  color: var(--ui-text-primary);
+}
+
+.ui-dialogue-options {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ui-dialogue-option {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ui-space-2);
+  width: 100%;
+  padding: 9px 12px;
+  text-align: left;
+  background: var(--ui-bg-surface);
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-sm);
+  color: var(--ui-text-primary);
+  font-size: var(--ui-font-sm);
+  cursor: pointer;
+}
+
+.ui-dialogue-option:hover,
+.ui-dialogue-option:focus-visible {
+  border-color: var(--ui-accent-primary);
+  background: var(--ui-bg-elevated);
+}
+
+.ui-dialogue-option__index {
+  font-family: var(--ui-font-mono);
+  font-size: var(--ui-font-xs);
+  color: var(--ui-accent-primary);
+  font-weight: 700;
+  min-width: 22px;
+}
+
+/* ---- Quests & Factions ---- */
+.ui-card-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-2);
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.ui-quest-card {
+  padding: var(--ui-space-3);
+  background: var(--ui-bg-inset);
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ui-quest-card__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--ui-space-2);
+}
+
+.ui-quest-card__title {
+  margin: 0;
+  font-family: var(--ui-font-display);
+  font-size: var(--ui-font-md);
+  color: var(--ui-accent-primary);
+}
+
+.ui-quest-objective {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--ui-space-2);
+  font-size: var(--ui-font-sm);
+  color: var(--ui-text-primary);
+}
+
+.ui-quest-objective[data-complete='true'] {
+  color: var(--ui-status-success);
+  text-decoration: line-through;
+}
+
+.ui-faction-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-space-2);
+  padding: 10px 12px;
+  background: var(--ui-bg-inset);
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-sm);
+}
+
+/* ---- Investigation & Nemesis Dossier ---- */
+.ui-two-col {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--ui-space-3);
+  min-height: 260px;
+  max-height: 55vh;
+}
+
+@media (max-width: 780px) {
+  .ui-two-col {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ui-nemesis-rank {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px;
+  background: var(--ui-bg-inset);
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-sm);
+}
+
+.ui-nemesis-slots {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+}
+
+.ui-nemesis-slot {
+  padding: 8px;
+  border-radius: var(--ui-radius-sm);
+  border: 1px solid var(--ui-border-subtle);
+  background: var(--ui-bg-surface);
+  font-size: var(--ui-font-xs);
+}
+
+.ui-nemesis-slot[data-vacant='true'] {
+  border-style: dashed;
+  color: var(--ui-text-muted);
+}
+
+/* ---- Ledger & Debug Telemetry ---- */
+.ui-ledger-entry {
+  padding: 8px 12px;
+  border-left: 3px solid var(--ui-accent-primary);
+  background: var(--ui-bg-inset);
+  border-radius: 0 var(--ui-radius-sm) var(--ui-radius-sm) 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.ui-debug-perf {
+  padding: 10px 12px;
+  background: var(--ui-bg-inset);
+  border: 1px solid var(--ui-border-strong);
+  border-radius: var(--ui-radius-sm);
+  font-family: var(--ui-font-mono);
+  font-size: var(--ui-font-xs);
+  line-height: 1.5;
+  color: var(--ui-status-success);
+}
+
+.ui-debug-events {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 46vh;
+  overflow-y: auto;
+  font-family: var(--ui-font-mono);
+  font-size: var(--ui-font-xs);
+}
+
+.ui-debug-event {
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--ui-border-subtle);
+  background: var(--ui-bg-surface);
+  word-break: break-word;
+}
+
+.ui-debug-event[data-kind='trigger'] {
+  border-left: 3px solid var(--ui-status-warning);
+  color: var(--ui-status-warning);
+}
+
+.ui-debug-event[data-kind='reaction'] {
+  border-left: 3px solid var(--ui-accent-secondary);
+  color: var(--ui-accent-secondary);
+}

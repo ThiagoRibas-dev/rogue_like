@@ -308,14 +308,14 @@ describe('Display Name Resolution, Top-Right Turn Ribbon, Rest Rules & Contrast 
     expect(getDnD35EntityData(castRes.state, playerId).nonlethalDamage).toBeLessThan(6);
   });
 
-  it('defines complete Parchment contrast CSS tokens and dark close button overrides', () => {
-    const consoleCss = readFileSync(join(process.cwd(), 'src/styles/console_prototype.css'), 'utf-8');
-    const modalsCss = readFileSync(join(process.cwd(), 'src/styles/modals.css'), 'utf-8');
-    expect(consoleCss).toContain('--crpg-text: #261d14');
-    expect(consoleCss).toContain('--crpg-border-subtle:');
-    expect(consoleCss).toContain('--crpg-chip-normal-bg:');
-    expect(consoleCss).not.toContain('color: #a6e3a1');
-    expect(modalsCss).toContain('.dnd35-fullscreen-modal .modal-close-btn');
-    expect(modalsCss).toContain('color: var(--crpg-gold, #7a4f0d)');
+  it('defines complete Parchment contrast CSS tokens and semantic icon button styling', () => {
+    const parchmentCss = readFileSync(join(process.cwd(), 'src/styles/themes/parchment.css'), 'utf-8');
+    const primitivesCss = readFileSync(join(process.cwd(), 'src/styles/primitives.css'), 'utf-8');
+    expect(parchmentCss).toContain('--ui-ink-primary: #261d14');
+    expect(parchmentCss).toContain('--ui-border-subtle:');
+    expect(parchmentCss).toContain('--ui-bg-panel: #e8dfd1');
+    expect(parchmentCss).not.toContain('color: #a6e3a1');
+    expect(primitivesCss).toContain('.ui-icon-btn');
+    expect(primitivesCss).toContain('color: var(--ui-ink-primary)');
   });
 });

@@ -974,10 +974,23 @@ Per `AGENTS.md` Rule 21 (Zero Content-ID or Bespoke-Property Branching) and [`do
    - Every indirect or multi-step gameplay effect carries an optional JSON-serializable `InteractionChain` (`originatorEntityId: EntityId`, `frames: ReadonlyArray<InteractionFrame>` covering `'intent' | 'action' | 'strike' | 'item' | 'effect' | 'field' | 'trigger'`) threaded across `BaseIntent`, `BaseGameEvent`, `ActiveStatusEffect`, `CoatingComponent`, `DamageInstance`, `DeathComponent`, `FieldComponent`, `CrossingComponent`, and `DisplacementContext`.
    - `createInteractionChain`, `appendInteractionFrame`, `findLastInteractionFrame`, `resolveInteractionOriginator`, and `evaluateInteractionFrameWithHook` (`RulesetContract.beforeInteractionFrame`) enable any multi-hop chain (e.g., *Actor dips dagger in oil -> attacks target -> coats target -> fire field ignites oil -> target dies*) to credit XP, grudges, and event telemetry to `originatorEntityId` while recording every intermediate causal frame.
 
+### 9.30 Preact Gameplay UI Architecture, 3-Theme Semantic Token Engine & Scoped Keyboard Mapping (Phase 43, Milestones 157–165)
+
+1. **Dual-Root Separation (`index.html`, `src/rendering/presenter.ts`, `src/rendering/ui/core/AppUiRoot.tsx`, `ui_store.ts`)**:
+   - The pure Vanilla TS ROT.js Canvas2D stage (`renderer.ts`, `viewport_snapshot.ts`, `tactical_overlay.ui.ts`, `vfx_overlay.ui.ts`) renders exclusively inside `#game-canvas-wrapper`, while the entire gameplay UI mounts via Preact into sibling `#ui-root` (`<AppUiRoot />`).
+   - `uiStore` (`UIStore`) bridges `renderPresenterFrame` into Preact strictly via per-`PresentationDomain` monotonic version counters (`useUiSelector`), eliminating all 49 superseded imperative DOM `.ui.ts` renderers, all 17 static `<div class="modal-overlay">` blocks in `index.html`, and all gameplay `.innerHTML` / native browser `alert()`/`confirm()`/`prompt()` dialogs.
+2. **Unified 3-Theme Semantic Token Engine (`src/styles/tokens.css`, `src/styles/themes/{parchment,retro-crt,obsidian-brass}.css`, `a11y.css`, `apply_settings.ts`, `console_theme.ts`)**:
+   - All gameplay views and shared primitives (`src/rendering/ui/primitives/*`) consume exclusively `--ui-*` semantic CSS custom properties with `[data-ui-density="compact"]` pre-engineered for the Phase 44 Campaign Editor rewrite (`#editor-layout` preserved).
+   - `applySettingsToDOM` resolves user theme preference (`'auto' | 'parchment' | 'retro-crt' | 'obsidian-brass'`), UI scale, high contrast, and reduced motion onto `document.documentElement`.
+3. **Scoped Input Dispatch, `CommandRegistry`, `F1` Contextual Help & `F6` HUD Focus (`src/core/input/{key_chord,command_registry,input_scope_manager}.ts`, `src/rendering/ui/modals/HelpModal.tsx`, `src/rendering/ui/hud/HudRoot.tsx`)**:
+   - One `window` `keydown` listener (`inputScopeManager`) routes chords by strict priority (`rebind_capture > dialog_overlay > help_overlay > text_input > active_modal > hud_focus > world_gameplay`), protecting text inputs via `TextInputGuard` and safely intercepting browser function keys (`F1` Help, `F6` HUD Focus).
+   - Cartridge UI adapters (`dnd35e_ui_registration.tsx`, `classic_ui_registration.tsx`) register declarative `commands`, `helpSections`, and `renderPreact` modals (including `DnD35eCharBuilderModal`, `DnD35eLevelUpModal`, `DnD35eSheetModal`, `DnD35eSpellbookModal`, `DnD35eQuickcastOverlay`, `ConsoleDossierView`) into `cartridge_ui_registry.ts` and `ConsoleModalHost.tsx`.
+
 ---
 
 ## 10. Key Design Decisions
 
 > **📋 Key design decisions and their detailed rationale are documented in [DECISIONS.md](./DECISIONS.md).**
+
 
 

@@ -1,13 +1,17 @@
+import type { ComponentChildren } from 'preact';
+import { commandRegistry, parseLegacyKeyString } from '../../core/input/command_registry.ts';
 import { closeTopModal, openModal, toggleModal as toggleModalBase } from '../../core/modal_manager.ts';
 import { type EntityId, type GameState, UIMode } from '../../types/game-state.types.ts';
+import type { CommandDefinition, UIHelpSection } from '../../types/input.types.ts';
 import type { RulesetId } from '../../types/ruleset.types.ts';
-import type { UIHotbarModel } from '../../types/ui_adapter.types.ts';
+import type { ConsoleThemeMode, UIHotbarModel } from '../../types/ui_adapter.types.ts';
 
 /**
  * Command button contributed by a ruleset cartridge for the HUD Command Dock.
  */
 export interface CartridgeDockCommandDescriptor {
   readonly id: string;
+  readonly commandId?: string | undefined;
   readonly label: string;
   readonly icon?: string | undefined;
   readonly modalId?: string | undefined;
@@ -34,7 +38,8 @@ export interface CartridgeModalDescriptor {
   readonly overlayElementId?: string | undefined;
   readonly allowEscapeClose: boolean;
   readonly handlesInventoryHotkeys?: boolean | undefined;
-  readonly render: (state: GameState) => void;
+  readonly render?: ((state: GameState) => void) | undefined;
+  readonly renderPreact?: ((state: GameState) => ComponentChildren) | undefined;
 }
 
 /**
@@ -42,7 +47,9 @@ export interface CartridgeModalDescriptor {
  */
 export interface CartridgeUIDefinition {
   readonly rulesetId: RulesetId;
-  readonly defaultThemeMode?: 'parchment' | 'retro-crt' | undefined;
+  readonly defaultThemeMode?: ConsoleThemeMode | undefined;
+  readonly commands?: ReadonlyArray<CommandDefinition> | undefined;
+  readonly helpSections?: ReadonlyArray<UIHelpSection> | undefined;
   readonly onStartNewGame?: ((state: GameState) => GameState) | undefined;
   readonly dockCommands?: ReadonlyArray<CartridgeDockCommandDescriptor> | undefined;
   readonly projectHudAlerts?:
@@ -62,12 +69,28 @@ export interface CartridgeUIDefinition {
 const cartridgeUIRegistry: Record<string, CartridgeUIDefinition> = {};
 
 /**
- * Registers a ruleset cartridge UI adapter.
+ * Registers a ruleset cartridge UI adapter and syncs its declarative commands into `commandRegistry`.
  *
  * @param uiDef The CartridgeUIDefinition to register.
  */
 export function registerCartridgeUI(uiDef: CartridgeUIDefinition): void {
   cartridgeUIRegistry[uiDef.rulesetId] = uiDef;
+
+  if (uiDef.commands && uiDef.commands.length > 0) {
+    commandRegistry.syncCartridgeCommands(uiDef.rulesetId, uiDef.commands);
+  } else if (uiDef.dockCommands && uiDef.dockCommands.length > 0) {
+    const synthesized: CommandDefinition[] = uiDef.dockCommands.map((cmd) => ({
+      id: cmd.commandId ?? cmd.id,
+      label: cmd.label,
+      description: `Toggle or trigger ${cmd.label}.`,
+      category: 'cartridge',
+      scopes: ['world_gameplay', 'active_modal'],
+      defaultBindings: cmd.defaultKey ? [parseLegacyKeyString(cmd.defaultKey)] : [],
+      preventDefault: true,
+      source: `cartridge:${uiDef.rulesetId}`
+    }));
+    commandRegistry.syncCartridgeCommands(uiDef.rulesetId, synthesized);
+  }
 }
 
 /**
@@ -176,7 +199,7 @@ export function renderActiveCartridgeModal(state: GameState): void {
     if (descriptor.overlayElementId) {
       const el = document.getElementById(descriptor.overlayElementId);
       if (el) {
-        if (descriptor.modalId === activeId) {
+        if (descriptor.modalId === activeId && !descriptor.renderPreact) {
           el.classList.remove('hidden');
         } else {
           el.classList.add('hidden');
@@ -185,8 +208,8 @@ export function renderActiveCartridgeModal(state: GameState): void {
     }
   }
 
-  if (activeId && uiDef.modals[activeId]) {
-    uiDef.modals[activeId].render(state);
+  if (activeId && uiDef.modals[activeId] && !uiDef.modals[activeId].renderPreact) {
+    uiDef.modals[activeId].render?.(state);
   }
 }
 

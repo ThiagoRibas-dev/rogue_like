@@ -7,7 +7,11 @@ export const enum Direction {
   North = 'North',
   South = 'South',
   East = 'East',
-  West = 'West'
+  West = 'West',
+  NorthWest = 'NorthWest',
+  NorthEast = 'NorthEast',
+  SouthWest = 'SouthWest',
+  SouthEast = 'SouthEast'
 }
 
 /**
@@ -33,6 +37,14 @@ export function getDirectionDelta(dir: Direction): DirectionDelta {
       return { dx: 1, dy: 0 };
     case Direction.West:
       return { dx: -1, dy: 0 };
+    case Direction.NorthWest:
+      return { dx: -1, dy: -1 };
+    case Direction.NorthEast:
+      return { dx: 1, dy: -1 };
+    case Direction.SouthWest:
+      return { dx: -1, dy: 1 };
+    case Direction.SouthEast:
+      return { dx: 1, dy: 1 };
     default:
       return assertNever(dir);
   }

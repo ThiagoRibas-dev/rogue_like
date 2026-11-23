@@ -14,7 +14,7 @@ import {
 import { updateActorTacticalDoctrine } from '../src/systems/stance.system.ts';
 import { executeEightHourRest } from '../src/rulesets/dnd35e/magic/rest_recovery.ts';
 import { prepareSpellIntoSlot, unprepareSpellSlot } from '../src/rulesets/dnd35e/magic/spellbook_actions.ts';
-import { registerDnD35eUIAdapter } from '../src/rendering/ui/dnd35e_ui_registration.ts';
+import { registerDnD35eUIAdapter } from '../src/rendering/ui/cartridges/dnd35e/dnd35e_ui_registration.tsx';
 import { evaluateDnD35eEntityDAG } from '../src/rulesets/dnd35e/cartridge/dnd35e_dag_adapter.ts';
 import {
   applyCharacterCreationToPlayer,

@@ -1,0 +1,60 @@
+/* ============================================================================
+   Theme 1: Parchment Tabletop (Warm Vellum, Leather & Burnished Gold)
+   ============================================================================ */
+
+:root[data-ui-theme='parchment'],
+[data-ui-theme='parchment'],
+:root[data-console-theme='parchment'],
+.crpg-prototype-shell[data-console-theme='parchment'] {
+  /* Semantic --ui-* Tokens */
+  --ui-bg-canvas: #1a1410;
+  --ui-bg-backdrop: rgba(18, 12, 8, 0.78);
+  --ui-bg-panel: #e8dfd1;
+  --ui-bg-panel-alt: #d9cfbc;
+  --ui-bg-elevated: #f2ebe0;
+  --ui-bg-input: #f7f2e8;
+  --ui-bg-hover: #efe6d6;
+  --ui-bg-selected: #d6c3a3;
+  --ui-bg-toolbar: #271e16;
+  --ui-bg-socket: #2a241e;
+  --ui-bg-socket-empty: rgba(190, 179, 158, 0.58);
+
+  --ui-ink-primary: #261d14;
+  --ui-ink-secondary: #4a3b2c;
+  --ui-ink-muted: #665341;
+  --ui-ink-inverse: #f5ebd9;
+  --ui-ink-heading: #3b2615;
+
+  --ui-border-subtle: rgba(110, 85, 54, 0.42);
+  --ui-border-strong: #5c4730;
+  --ui-border-accent: #9a6c1e;
+  --ui-focus-ring: #8c241c;
+
+  --ui-accent-primary: #8c241c;
+  --ui-accent-secondary: #9a6c1e;
+  --ui-accent-primary-ink: #faf3e8;
+  --ui-btn-bg: var(--ui-bg-elevated);
+  --ui-btn-bg-hover: var(--ui-bg-hover);
+  --ui-btn-border: var(--ui-border-strong);
+  --ui-btn-ink: var(--ui-ink-primary);
+  --ui-btn-shadow: none;
+  --ui-btn-primary-bg: var(--ui-accent-primary);
+  --ui-btn-primary-bg-hover: #a62b22;
+  --ui-btn-primary-border: var(--ui-border-accent);
+  --ui-btn-primary-ink: var(--ui-accent-primary-ink);
+  --ui-btn-primary-shadow: none;
+  --ui-status-hp: #9c1f1a;
+  --ui-status-xp: #236132;
+  --ui-status-success: #145a28;
+  --ui-status-warning: #8f4609;
+  --ui-status-danger: #8c1d1d;
+  --ui-status-info: #154360;
+
+  --ui-font-display: 'Cinzel', Georgia, serif;
+  --ui-font-body: 'Plus Jakarta Sans', Georgia, serif;
+  --ui-font-mono: 'JetBrains Mono', monospace;
+
+  --ui-shadow-panel: 0 4px 14px rgba(18, 12, 8, 0.36);
+  --ui-shadow-popover: 0 10px 26px rgba(18, 12, 8, 0.5);
+  --ui-shadow-modal: 0 18px 44px rgba(12, 8, 5, 0.65);
+}

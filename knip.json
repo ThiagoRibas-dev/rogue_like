@@ -2,19 +2,20 @@
   "$schema": "https://unpkg.com/knip@5/schema.json",
   "entry": [
     "tests/**/*.test.ts",
+    "tests/**/*.test.tsx",
     "scripts/**/*.ts"
   ],
   "project": [
     "src/**/*.ts",
+    "src/**/*.tsx",
     "tests/**/*.ts",
+    "tests/**/*.tsx",
     "scripts/**/*.ts"
   ],
   "ignore": [
     "src/editor/reference_index.ts",
     "src/rendering/ui/editor_object_renderer.ts",
-    "src/rendering/ui/trade.ui.ts",
-    "src/rendering/ui/where_used.ui.ts",
-    "src/utils/trade.ts"
+    "src/rendering/ui/where_used.ui.ts"
   ],
   "ignoreDependencies": [
     "@types/jszip"

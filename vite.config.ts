@@ -6,6 +6,10 @@ const base = process.env['GITHUB_PAGES'] === 'true' ? '/rogue_like/' : '/';
 
 export default defineConfig({
   base,
+  esbuild: {
+    jsx: 'automatic',
+    jsxImportSource: 'preact'
+  },
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))

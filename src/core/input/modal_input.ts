@@ -1,6 +1,7 @@
 import { type EntityId, type GameState, UIMode } from '../../types/game-state.types.ts';
-import { isAction, type ActionType } from '../settings.ts';
+import { isAction, getCommandBindings, type ActionType } from '../settings.ts';
 import { queuePlayerIntent, setGameState } from '../game-loop.ts';
+import { commandRegistry, matchesChord } from './command_registry.ts';
 import { createApplyAction } from '../../actions/interaction.actions.ts';
 import {
   createToggleCartridgeModalAction,
@@ -137,9 +138,15 @@ export function handleModalKey(event: KeyboardEvent, state: GameState, playerEnt
 
     const hasModifierKey = event.shiftKey || event.altKey || event.ctrlKey || event.metaKey;
     if (!hasModifierKey && cartridgeUI?.dockCommands) {
-      const match = cartridgeUI.dockCommands.find(
-        (cmd) => isAction(event, cmd.id as ActionType) || event.key.toLowerCase() === cmd.defaultKey.toLowerCase()
-      );
+      const overrides = getCommandBindings();
+      const match = cartridgeUI.dockCommands.find((cmd) => {
+        const cmdId = cmd.commandId ?? cmd.id;
+        const registeredChords = commandRegistry.getEffectiveBindings(cmdId, overrides);
+        if (registeredChords.length > 0) {
+          return registeredChords.some((chord) => matchesChord(event, chord));
+        }
+        return event.key.toLowerCase() === cmd.defaultKey.toLowerCase();
+      });
       if (match) {
         if (match.modalId !== activeModalId && match.isAvailable && !match.isAvailable(state, playerEntityId)) {
           return;

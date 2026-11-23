@@ -24,7 +24,7 @@ import {
 } from '../src/rulesets/dnd35e/semantic_tags.ts';
 import { getDnD35EntityData, setDnD35EntityData } from '../src/rulesets/dnd35e/srd_registry.ts';
 import { getDnD35SystemContent } from '../src/rulesets/dnd35e/types/dnd35e_system.types.ts';
-import { registerDnD35eUIAdapter } from '../src/rendering/ui/dnd35e_ui_registration.ts';
+import { registerDnD35eUIAdapter } from '../src/rendering/ui/cartridges/dnd35e/dnd35e_ui_registration.tsx';
 import { DnD35UIAdapter } from '../src/rulesets/dnd35e/ui/dnd35e_ui_adapter.ts';
 import {
   buildAnatomyEquipmentSlots,

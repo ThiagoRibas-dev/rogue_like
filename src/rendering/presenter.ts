@@ -1,37 +1,18 @@
 import type * as ROT from 'rot-js';
 import type { GameState } from '../types/game-state.types.ts';
 import { UIMode } from '../types/game-state.types.ts';
-import { ComponentType } from '../types/components.types.ts';
-import { getComponent } from '../core/ecs.ts';
 import { PresentationDomain } from '../core/presentation_queue.ts';
 import { render } from './renderer.ts';
 import { buildViewportSnapshot } from './viewport_snapshot.ts';
 import type { ViewportSnapshot } from './viewport_snapshot.types.ts';
-import { renderInspectView } from './ui/inspect_view.ui.ts';
 import { renderVFXAndFogOverlay } from './ui/vfx_overlay.ui.ts';
 import { renderTacticalOverlay } from './ui/tactical_overlay.ui.ts';
-import { renderMessageLog, renderPlayerStats, updateHUD } from './ui/hud.ui.ts';
-import { renderHudBottomDock } from './ui/hud_bottom_dock.ui.ts';
-import { renderHudAlerts } from './ui/hud_alerts.ui.ts';
-import { renderHudDock } from './ui/hud_dock.ui.ts';
-import { renderMenus } from './ui/menus.ui.ts';
-import { renderRTwPControls, renderViewControls } from './ui/controls.ui.ts';
-import { renderSettingsMenu } from './ui/settings.ui.ts';
-import { renderFactionsPanel } from './ui/factions.ui.ts';
-import { renderDialoguePanel } from './ui/dialogue.ui.ts';
-import { renderTradeOverlay } from './ui/trade.ui.ts';
-import { renderQuestJournal } from './ui/quest.ui.ts';
-import { renderInvestigationBoard } from './ui/investigation.ui.ts';
-import { renderDebugOverlay } from './ui/debug.ui.ts';
-import { renderVerbMenu } from './ui/verb_menu.ui.ts';
-import { renderDossierUI } from './ui/dossier.ui.ts';
-import { renderDebugLedgerUI } from './ui/debug_ledger.ui.ts';
-import { renderActiveCartridgeModal, renderCartridgeHudPanel } from './ui/cartridge_ui_registry.ts';
 import { renderEditorUI } from './editor_ui.ts';
 import type { CampaignEditor } from '../editor/campaign_editor.ts';
 import { hasSaveGame } from '../core/save.ts';
 import { recordRenderSample } from '../core/performance.ts';
 import { recordEarlyReturn, recordDisplayCanvas, recordMapRender } from './render_debug.ts';
+import { uiStore } from './ui/core/ui_store.ts';
 
 /**
  * Module-level cache of the last rendered ViewportSnapshot to drive dirty-cell diffing.
@@ -48,7 +29,9 @@ export function invalidateViewportSnapshot(): void {
 }
 
 /**
- * Selectively renders only the visual and DOM domains that have been marked dirty.
+ * Selectively renders dirty Canvas2D viewport layers, pushes reactive UI snapshots into `uiStore`
+ * for the Preact shell (`#ui-root`), and coordinates Phase 44 Campaign Editor visibility.
+ *
  * @param display The ROT.Display instance for canvas rendering.
  * @param state The current GameState snapshot.
  * @param globalCampaignEditor The CampaignEditor instance for editor mode.
@@ -68,6 +51,9 @@ export function renderPresenterFrame(
   const frameStartMs = performance.now();
   const gameLayout = document.getElementById('game-layout');
   const editorLayout = document.getElementById('editor-layout');
+
+  const hasSave = hasSaveGame();
+  uiStore.syncFromPresenter(state, hasSave, dirtyDomains);
 
   if (state.uiMode === UIMode.Editor) {
     if (gameLayout) gameLayout.classList.add('hidden');
@@ -93,11 +79,6 @@ export function renderPresenterFrame(
   let snapshotBuildMs = 0;
   let canvasDrawMs = 0;
   let overlaysMs = 0;
-  let hudDomainMs = 0;
-  let logDomainMs = 0;
-  let inventoryDomainMs = 0;
-  let modalsDomainMs = 0;
-  let debugDomainMs = 0;
   let drawCalls = 0;
   let wasFullRedraw = false;
 
@@ -147,7 +128,7 @@ export function renderPresenterFrame(
     });
 
     const tOverlays0 = performance.now();
-    renderInspectView(snapshot.inspectTooltip, display, viewportW, viewportH, snapshot.is3D);
+    uiStore.setInspectTooltip(snapshot.inspectTooltip);
     renderVFXAndFogOverlay(
       snapshot.visualEffects,
       snapshot.fogOverlay,
@@ -160,80 +141,17 @@ export function renderPresenterFrame(
     overlaysMs = performance.now() - tOverlays0;
   }
 
-  // HUD & Stats Panels
-  if (dirtyDomains.has(PresentationDomain.HUD)) {
-    const tHud0 = performance.now();
-    renderPlayerStats(state);
-    updateHUD(state);
-    renderHudBottomDock(state);
-    renderHudAlerts(state);
-    renderHudDock(state);
-    const cartridgeSlot = document.getElementById('hud-cartridge-panel-slot');
-    if (cartridgeSlot) {
-      const playerEntityId = state.entities.find((id) => getComponent(state, id, ComponentType.Player) !== undefined);
-      if (playerEntityId !== undefined) {
-        renderCartridgeHudPanel(cartridgeSlot, state, playerEntityId);
-      } else {
-        cartridgeSlot.replaceChildren();
-      }
-    }
-    renderRTwPControls(state);
-    renderViewControls(state);
-    if (state.uiMode !== UIMode.Game) {
-      renderMenus(state, hasSaveGame());
-    }
-    hudDomainMs = performance.now() - tHud0;
-  }
-
-  // Message Log
-  if (dirtyDomains.has(PresentationDomain.Log)) {
-    const tLog0 = performance.now();
-    renderMessageLog(state);
-    logDomainMs = performance.now() - tLog0;
-  }
-
-  // Inventory & Equipment
-  if (dirtyDomains.has(PresentationDomain.Inventory) && !dirtyDomains.has(PresentationDomain.Modals)) {
-    const tInv0 = performance.now();
-    renderActiveCartridgeModal(state);
-    inventoryDomainMs = performance.now() - tInv0;
-  }
-
-  // Modals & Overlays
-  if (dirtyDomains.has(PresentationDomain.Modals)) {
-    const tMod0 = performance.now();
-    renderDialoguePanel(state);
-    renderTradeOverlay(state);
-    renderVerbMenu(state);
-    renderSettingsMenu(state);
-    renderFactionsPanel(state);
-    renderQuestJournal(state);
-    renderInvestigationBoard(state);
-    renderDossierUI(state);
-    renderHudDock(state);
-    renderActiveCartridgeModal(state);
-    modalsDomainMs = performance.now() - tMod0;
-  }
-
-  // Debug Overlays
-  if (dirtyDomains.has(PresentationDomain.Debug)) {
-    const tDbg0 = performance.now();
-    renderDebugOverlay(state);
-    renderDebugLedgerUI(state);
-    debugDomainMs = performance.now() - tDbg0;
-  }
-
   const totalRenderMs = performance.now() - frameStartMs;
   recordRenderSample({
     dirtyDomains: Array.from(dirtyDomains),
     snapshotBuildMs,
     canvasDrawMs,
     overlaysMs,
-    hudDomainMs,
-    logDomainMs,
-    inventoryDomainMs,
-    modalsDomainMs,
-    debugDomainMs,
+    hudDomainMs: 0,
+    logDomainMs: 0,
+    inventoryDomainMs: 0,
+    modalsDomainMs: 0,
+    debugDomainMs: 0,
     totalRenderMs,
     drawCalls,
     fullRedraw: wasFullRedraw

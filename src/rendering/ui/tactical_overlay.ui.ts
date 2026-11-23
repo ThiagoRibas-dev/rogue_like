@@ -7,7 +7,7 @@
 import type { Display } from 'rot-js';
 import { TACTICAL_COLORS } from '../../constants/ui.constants.ts';
 import type { TacticalAttitude, TacticalViewportDTO } from '../viewport_snapshot.types.ts';
-import { getTilePixelMetrics } from './inspect_view.ui.ts';
+import { getTilePixelMetrics } from './vfx_overlay.ui.ts';
 
 /** Ratio of health bar height to cell height. */
 const BAR_HEIGHT_RATIO = 0.14;

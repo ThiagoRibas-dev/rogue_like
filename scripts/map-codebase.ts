@@ -12,7 +12,7 @@ async function getTypeScriptFiles(dir: string, fileList: string[] = []): Promise
     const fullPath = join(dir, entry.name);
     if (entry.isDirectory()) {
       await getTypeScriptFiles(fullPath, fileList);
-    } else if (extname(entry.name) === '.ts') {
+    } else if ((extname(entry.name) === '.ts' || extname(entry.name) === '.tsx') && !entry.name.endsWith('.d.ts')) {
       fileList.push(fullPath);
     }
   }

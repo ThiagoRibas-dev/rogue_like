@@ -14,6 +14,7 @@ import {
   createToggleTargetingAction
 } from '../../actions/targeting.actions.ts';
 import { getCameraOffset } from '../../rendering/camera.ts';
+import { uiStore } from '../../rendering/ui/core/ui_store.ts';
 import { setHudDockDisplayRef } from '../../rendering/ui/hud_dock.ui.ts';
 import { getValidVerbsForTarget, getVerbOptionsForTarget } from '../../systems/apply.system.ts';
 import { computeRectNearestDelta } from '../../systems/movement_footprint.ts';
@@ -319,6 +320,7 @@ function syncMasterEdgeToggleIcon(): void {
  * Toggles all floating side HUD cards between 44x44px edge icons and expanded panels (`[Tab]`).
  */
 export function toggleAllHudPanelsFolded(): void {
+  uiStore.toggleHudFolded();
   const cards = Array.from(document.querySelectorAll<HTMLElement>('.hud-card'));
   if (cards.length === 0) return;
 
