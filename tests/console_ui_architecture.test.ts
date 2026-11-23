@@ -9,6 +9,7 @@ import {
   setConsoleThemeMode,
   subscribeConsoleThemeChange
 } from '../src/rendering/ui/core/console_theme.ts';
+import { getAttributionCardItems } from '../src/rendering/ui/settings_attributions.ts';
 import { DefaultSciFiUIAdapter } from '../src/rulesets/classic/ui/classic_ui_adapter.ts';
 import { createAbilityScoreState } from '../src/rulesets/dnd35e/abilities.ts';
 import { applyCharacterCreationToPlayer } from '../src/rulesets/dnd35e/builder/builder_hydrator_creation.ts';
@@ -362,5 +363,25 @@ describe('Console UI Architecture & Cartridge Adapter Suite', () => {
     expect(dndHotbar.slots[0]?.actionPayload?.kind).toBe('spell');
     expect(dndHotbar.slots[0]?.actionPayload?.id).toBe('fireball');
     expect((dndHotbar.actionPips ?? []).length).toBe(4);
+  });
+
+  it('includes Wizards of the Coast System Reference Document v3.5 OGL v1.0a attribution in Settings Credits', () => {
+    const items = getAttributionCardItems(null);
+    const srdEntry = items.find((item) => item.id === 'srd35-ogl');
+    expect(srdEntry).toBeDefined();
+    expect(srdEntry?.attribution.author).toBe('Wizards of the Coast, Inc.');
+    expect(srdEntry?.attribution.license).toBe('Open Game License v1.0a (OGL)');
+    expect(srdEntry?.attribution.sourceUrl).toBe('https://www.d20srd.org/index.htm');
+    expect(srdEntry?.attribution.licenseUrl).toBe('https://www.d20srd.org/ogl.htm');
+    expect(
+      srdEntry?.attribution.restrictions?.some((line) =>
+        line.includes('Open Game License v 1.0a Copyright 2000, Wizards of the Coast, Inc.')
+      )
+    ).toBe(true);
+    expect(
+      srdEntry?.attribution.restrictions?.some((line) =>
+        line.includes('System Reference Document Copyright 2000-2003, Wizards of the Coast, Inc.')
+      )
+    ).toBe(true);
   });
 });

@@ -391,4 +391,33 @@ describe('Milestone 158: Scoped InputScopeManager, TextInputGuard & Keymap Engin
     const captured = chordFromKeyboardEvent(makeKeyEvent('L', { code: 'KeyL', shiftKey: true }));
     expect(captured).toEqual({ key: 'l', shift: true });
   });
+
+  test('Turn-based move throttle never drops the first move at startup (< 200ms) while throttling rapid repeats', () => {
+    const manager = new InputScopeManager();
+    const gameState = buildTestState(UIMode.Game);
+    setGameState(gameState);
+
+    const originalNow = performance.now.bind(performance);
+    let fakeNowMs = 10;
+    (performance as { now: () => number }).now = (): number => fakeNowMs;
+
+    try {
+      resetMoveThrottle();
+      expect(manager.dispatchKeyEvent(makeKeyEvent('w', { code: 'KeyW' }), gameState)).toBe(true);
+      expect(getInputQueueSize()).toBe(1);
+
+      // Subsequent move within 200ms is throttled
+      fakeNowMs = 60;
+      expect(manager.dispatchKeyEvent(makeKeyEvent('d', { code: 'KeyD' }), gameState)).toBe(true);
+      expect(getInputQueueSize()).toBe(1);
+
+      // Once >= 200ms has elapsed, movement resumes
+      fakeNowMs = 215;
+      expect(manager.dispatchKeyEvent(makeKeyEvent('d', { code: 'KeyD' }), gameState)).toBe(true);
+      expect(getInputQueueSize()).toBe(2);
+    } finally {
+      (performance as { now: () => number }).now = originalNow;
+      resetMoveThrottle();
+    }
+  });
 });

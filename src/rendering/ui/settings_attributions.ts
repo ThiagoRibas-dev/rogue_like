@@ -27,6 +27,22 @@ const ENGINE_THIRD_PARTY_ATTRIBUTIONS: ReadonlyArray<AttributionCardItem> = [
       license: 'BSD-3-Clause',
       sourceUrl: 'https://ondras.github.io/rot.js/'
     }
+  },
+  {
+    id: 'srd35-ogl',
+    title: 'System Reference Document v3.5 (Open Game Content)',
+    attribution: {
+      author: 'Wizards of the Coast, Inc.',
+      license: 'Open Game License v1.0a (OGL)',
+      sourceUrl: 'https://www.d20srd.org/index.htm',
+      licenseUrl: 'https://www.d20srd.org/ogl.htm',
+      notes:
+        'Core 3.5e ruleset mechanics, classes, feats, spells, and creatures are derived from Open Game Content distributed under the Open Game License v1.0a.',
+      restrictions: [
+        'Open Game License v 1.0a Copyright 2000, Wizards of the Coast, Inc.',
+        'System Reference Document Copyright 2000-2003, Wizards of the Coast, Inc.; Authors Jonathan Tweet, Monte Cook, Skip Williams, Rich Baker, Andy Collins, David Noonan, Rich Redman, Bruce R. Cordell, John D. Rateliff, Thomas Reid, James Wyatt, based on original material by E. Gary Gygax and Dave Arneson.'
+      ]
+    }
   }
 ];
 

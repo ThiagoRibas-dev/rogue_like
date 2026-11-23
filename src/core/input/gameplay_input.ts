@@ -22,11 +22,11 @@ import { handleGameShortcutKey } from './shortcut_input.ts';
 /** Minimum milliseconds between accepted movement/wait inputs in turn-based mode. */
 const MOVE_THROTTLE_MS = 200;
 
-let lastMoveTime = 0;
+let lastMoveTime = -MOVE_THROTTLE_MS;
 
 /** Resets the turn-based movement throttle timer (used by unit tests). */
 export function resetMoveThrottle(): void {
-  lastMoveTime = 0;
+  lastMoveTime = -MOVE_THROTTLE_MS;
 }
 
 /**
