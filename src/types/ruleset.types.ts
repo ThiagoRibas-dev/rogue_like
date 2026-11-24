@@ -164,6 +164,19 @@ export interface RulesetMetadata {
 }
 
 /**
+ * Supported campaign registry keys populated by root-level ruleset cartridge base content files.
+ */
+export type RulesetBaseContentKey = 'items' | 'entities' | 'status' | 'effects';
+
+/**
+ * Descriptor declaring a root-level base JSON file loaded from `public/data/rulesets/<rulesetId>/`.
+ */
+export interface RulesetBaseFileDescriptor {
+  readonly key: RulesetBaseContentKey;
+  readonly filename: string;
+}
+
+/**
  * Descriptor declaring a System Content JSON file loaded from `public/data/rulesets/<rulesetId>/`.
  */
 export interface RulesetSystemFileDescriptor {
@@ -224,6 +237,13 @@ export interface RulesetContract {
    * @returns The ruleset-scoped ViewGroups array.
    */
   getEditorViewGroups(baseGroups: ReadonlyArray<ViewGroup>): ReadonlyArray<ViewGroup>;
+
+  /**
+   * Returns the list of declarative base registry files loaded from `public/data/rulesets/<rulesetId>/`.
+   * Rulesets omitting this hook (or returning `[]`) issue zero base-content fetches.
+   * @returns Array of base content file descriptors.
+   */
+  getBaseContentFiles?(): ReadonlyArray<RulesetBaseFileDescriptor>;
 
   /**
    * Returns the list of declarative System Content files loaded from `public/data/rulesets/<rulesetId>/`.

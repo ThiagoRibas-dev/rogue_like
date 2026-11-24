@@ -13,8 +13,9 @@ import { getTelemetryStore, setTelemetryStore } from './telemetry.ts';
 import type { SerializedPersistentEntityRecord, PersistentEntityRecord } from '../types/game-state.types.ts';
 import {
   ComponentType,
-  type InventoryComponent,
   type EquipmentComponent,
+  type InventoryComponent,
+  type ItemComponent,
   type ShopComponent
 } from '../types/components.types.ts';
 import { DEFAULT_ZOOM_LEVEL } from '../constants/display.constants.ts';
@@ -182,6 +183,67 @@ export function serializeGameState(state: GameState): SerializedGameState {
 }
 
 /**
+ * Computes the strict high-water-mark `nextEntityId` across every entity ID present in active,
+ * persistent, dormant area, faction, and area-tracking registries so stale saved counters never collide.
+ */
+function computeSafeNextEntityId(
+  sState: SerializedGameState,
+  rehydratedAreas: ReadonlyMap<string, AreaData>,
+  rehydratedPersistentEntities: ReadonlyMap<EntityId, PersistentEntityRecord>
+): number {
+  let maxId = 0;
+  const recordId = (id: number): void => {
+    if (Number.isFinite(id) && id > maxId) maxId = id;
+  };
+
+  for (const id of sState.entities) recordId(id);
+  for (const [id] of sState.components) recordId(id);
+  for (const [id] of rehydratedPersistentEntities) recordId(id);
+  for (const area of rehydratedAreas.values()) {
+    for (const id of area.entities) recordId(id);
+    for (const [id] of area.components) recordId(id);
+  }
+  for (const id of Object.values(sState.factionEntityIds ?? {})) recordId(id);
+  for (const id of Object.values(sState.areaEntityIds ?? {})) recordId(id);
+
+  return Math.max(sState.nextEntityId, maxId + 1);
+}
+
+function extractTrailingSequenceNumber(rawInstanceId: string | undefined): number {
+  if (!rawInstanceId) return 0;
+  const match = /_(\d+)$/.exec(rawInstanceId);
+  if (!match?.[1]) return 0;
+  const parsed = Number.parseInt(match[1], 10);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+/**
+ * Computes the strict high-water-mark `nextItemInstanceId` across all item components present
+ * in active, persistent, and dormant area inventories so stale saved counters never duplicate `instanceId`s.
+ */
+function computeSafeNextItemInstanceId(
+  sState: SerializedGameState,
+  rehydratedAreas: ReadonlyMap<string, AreaData>,
+  rehydratedPersistentEntities: ReadonlyMap<EntityId, PersistentEntityRecord>
+): number {
+  let maxSeq = 0;
+  const inspectCompMap = (comps: Readonly<Record<string, unknown>>): void => {
+    const item = comps[ComponentType.Item] as ItemComponent | undefined;
+    if (!item) return;
+    const seq = extractTrailingSequenceNumber(item.instanceId);
+    if (seq > maxSeq) maxSeq = seq;
+  };
+
+  for (const [, comps] of sState.components) inspectCompMap(comps);
+  for (const record of rehydratedPersistentEntities.values()) inspectCompMap(record.components);
+  for (const area of rehydratedAreas.values()) {
+    for (const comps of area.components.values()) inspectCompMap(comps);
+  }
+
+  return Math.max(sState.nextItemInstanceId, maxSeq + 1);
+}
+
+/**
  * Purely deserializes a SerializedGameState DTO and its loaded CampaignData back into a live GameState.
  *
  * @param sState The parsed SerializedGameState DTO.
@@ -227,8 +289,8 @@ export function deserializeGameState(
     map: sState.map,
     fovNeedsUpdate: true,
     cachedFov: new Set(),
-    nextEntityId: sState.nextEntityId,
-    nextItemInstanceId: sState.nextItemInstanceId,
+    nextEntityId: computeSafeNextEntityId(sState, rehydratedAreas, rehydratedPersistentEntities),
+    nextItemInstanceId: computeSafeNextItemInstanceId(sState, rehydratedAreas, rehydratedPersistentEntities),
     nextQuestId: sState.nextQuestId ?? 1,
     dynamicQuests: sState.dynamicQuests ?? {},
     messages: sState.messages,

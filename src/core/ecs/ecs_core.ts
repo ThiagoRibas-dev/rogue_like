@@ -2,12 +2,32 @@ import { type Component, ComponentType, type MemoryComponent } from '../../types
 import { type EntityId, type GameState, toEntityId } from '../../types/game-state.types.ts';
 
 /**
+ * Checks whether `id` is already allocated in active components, persistent entities,
+ * or any saved dormant area floor so stale `nextEntityId` values never clobber existing entities.
+ */
+function isEntityIdInUse(state: Readonly<GameState>, id: EntityId): boolean {
+  if (state.components.has(id)) return true;
+  if (state.persistentEntities?.has(id)) return true;
+  if (state.areas) {
+    for (const area of state.areas.values()) {
+      if (area.components.has(id)) return true;
+    }
+  }
+  return false;
+}
+
+/**
  * Creates a new entity in the game state, returning the updated state and the new entity's ID.
  * @param state The current game state.
  * @returns A tuple of the updated game state and the newly created EntityId.
  */
 export function createEntity(state: GameState): [GameState, EntityId] {
-  const newId: EntityId = toEntityId(state.nextEntityId);
+  let candidateId = state.nextEntityId;
+  let newId: EntityId = toEntityId(candidateId);
+  while (isEntityIdInUse(state, newId)) {
+    candidateId++;
+    newId = toEntityId(candidateId);
+  }
 
   const nextEntities: ReadonlyArray<EntityId> = [...state.entities, newId];
 
@@ -18,7 +38,7 @@ export function createEntity(state: GameState): [GameState, EntityId] {
     ...state,
     entities: nextEntities,
     components: nextComponents,
-    nextEntityId: state.nextEntityId + 1
+    nextEntityId: candidateId + 1
   };
 
   return [nextState, newId];

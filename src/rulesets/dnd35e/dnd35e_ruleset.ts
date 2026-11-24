@@ -4,6 +4,7 @@ import { ComponentType, type FighterComponent } from '../../types/components.typ
 import type { EntityId, GameState } from '../../types/game-state.types.ts';
 import type {
   HudVitalsDTO,
+  RulesetBaseFileDescriptor,
   RulesetContract,
   RulesetSystemFileDescriptor,
   ViewGroup
@@ -206,6 +207,11 @@ function resolveDnD35eInteractionReachTiles(
   return Math.max(baseReachTiles, baseReachTiles + bonusReach);
 }
 
+const DND35E_BASE_CONTENT_FILES: ReadonlyArray<RulesetBaseFileDescriptor> = [
+  { key: 'status', filename: 'status.json' },
+  { key: 'effects', filename: 'effects.json' }
+];
+
 /**
  * The `dnd35e` (Dungeons & Dragons 3.5e SRD) ruleset cartridge entry point.
  */
@@ -236,6 +242,9 @@ export const dnd35eRulesetContract: RulesetContract = {
   resolveItemEffect: resolveDnD35eSpellItemEffect,
   getEditorViewGroups(baseGroups: ReadonlyArray<ViewGroup>): ReadonlyArray<ViewGroup> {
     return baseGroups;
+  },
+  getBaseContentFiles(): ReadonlyArray<RulesetBaseFileDescriptor> {
+    return DND35E_BASE_CONTENT_FILES;
   },
   getSystemContentFiles(): ReadonlyArray<RulesetSystemFileDescriptor> {
     return DND35E_SYSTEM_CONTENT_FILES;

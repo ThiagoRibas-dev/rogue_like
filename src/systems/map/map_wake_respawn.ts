@@ -16,6 +16,7 @@ import {
   type TemplateComponent
 } from '../../types/components.types.ts';
 import {
+  type AreaData,
   type EntityId,
   type GameMap,
   type GameState,
@@ -109,7 +110,8 @@ export function wakeSavedAreaFloor(
   initialEntities: ReadonlyArray<EntityId>,
   initialComponents: Map<EntityId, Readonly<Record<string, Component>>>,
   nextPersistentEntities: Map<EntityId, PersistentEntityRecord>,
-  initialLastSpawnTurn: number
+  initialLastSpawnTurn: number,
+  nextAreas?: ReadonlyMap<string, AreaData>
 ): {
   state: GameState;
   nextEntities: ReadonlyArray<EntityId>;
@@ -204,7 +206,9 @@ export function wakeSavedAreaFloor(
         ...nextState,
         entities: nextEntities,
         components: nextComponents,
-        map: targetMap
+        map: targetMap,
+        areas: nextAreas ?? nextState.areas,
+        persistentEntities: nextPersistentEntities
       };
 
       for (const ent of directorResult.newEntities) {
@@ -222,6 +226,8 @@ export function wakeSavedAreaFloor(
 
       nextState = {
         ...nextState,
+        nextEntityId: tempState.nextEntityId,
+        nextItemInstanceId: tempState.nextItemInstanceId,
         events: [
           ...nextState.events,
           {

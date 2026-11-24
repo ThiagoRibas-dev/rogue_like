@@ -69,12 +69,13 @@ export function loadCampaignFromDisk(id: string): CampaignData {
     return existsSync(p) ? (JSON.parse(readFileSync(p, 'utf-8')) as Record<string, unknown>) : {};
   };
 
-  for (const sharedKey of ['items', 'entities', 'status', 'effects'] as const) {
-    const baseRecord = readRulesetJson(`${sharedKey}.json`);
+  const baseDescriptors = ruleset.getBaseContentFiles?.() ?? [];
+  for (const desc of baseDescriptors) {
+    const baseRecord = readRulesetJson(desc.filename);
     if (Object.keys(baseRecord).length > 0) {
-      assembled[sharedKey] = {
+      assembled[desc.key] = {
         ...baseRecord,
-        ...((assembled[sharedKey] as Record<string, unknown> | undefined) ?? {})
+        ...((assembled[desc.key] as Record<string, unknown> | undefined) ?? {})
       };
     }
   }

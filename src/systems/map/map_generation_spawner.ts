@@ -12,6 +12,7 @@ import {
   type AgreementComponent
 } from '../../types/components.types.ts';
 import {
+  type AreaData,
   type EntityId,
   type GameMap,
   type GameState,
@@ -83,7 +84,8 @@ export function generateAndPopulateAreaFloor(
   targetAreaId: string,
   initialSpawnX: number,
   initialSpawnY: number,
-  nextPersistentEntities: Map<EntityId, PersistentEntityRecord>
+  nextPersistentEntities: Map<EntityId, PersistentEntityRecord>,
+  nextAreas?: ReadonlyMap<string, AreaData>
 ): {
   targetMap: GameMap;
   targetRooms: ReadonlyArray<RoomBounds>;
@@ -92,6 +94,8 @@ export function generateAndPopulateAreaFloor(
   spawnY: number;
   nextEntities: ReadonlyArray<EntityId>;
   nextComponents: Map<EntityId, Readonly<Record<string, Component>>>;
+  nextEntityId: number;
+  nextItemInstanceId: number;
 } {
   const directorContext = buildAreaDirectorContext(state, targetAreaId, true);
   const generated = generateArea(state.campaign, targetAreaId, directorContext);
@@ -117,7 +121,14 @@ export function generateAndPopulateAreaFloor(
     spawnY = generated.startPos.y;
   }
 
-  let tempState: GameState = { ...state, entities: [], components: new Map(), map: targetMap };
+  let tempState: GameState = {
+    ...state,
+    entities: [],
+    components: new Map(),
+    map: targetMap,
+    areas: nextAreas ?? state.areas,
+    persistentEntities: nextPersistentEntities
+  };
 
   for (const portal of generated.portals) {
     let stairId: EntityId;
@@ -226,6 +237,8 @@ export function generateAndPopulateAreaFloor(
     spawnX,
     spawnY,
     nextEntities: tempState.entities,
-    nextComponents: tempState.components as Map<EntityId, Readonly<Record<string, Component>>>
+    nextComponents: tempState.components as Map<EntityId, Readonly<Record<string, Component>>>,
+    nextEntityId: tempState.nextEntityId,
+    nextItemInstanceId: tempState.nextItemInstanceId
   };
 }

@@ -1,4 +1,4 @@
-import type { RulesetContract, ViewGroup } from '../../types/ruleset.types.ts';
+import type { RulesetBaseFileDescriptor, RulesetContract, ViewGroup } from '../../types/ruleset.types.ts';
 import { computeClassicEffectiveStats, projectClassicHudVitals } from './classic_stats.ts';
 import { grantClassicXp, processClassicDamage, resolveClassicMeleeAttack } from './classic_combat.ts';
 import { checkClassicRuleset } from './classic_validator.ts';
@@ -30,6 +30,9 @@ export const classicRulesetContract: RulesetContract = {
   projectHudVitals: projectClassicHudVitals,
   getEditorViewGroups(baseGroups: ReadonlyArray<ViewGroup>): ReadonlyArray<ViewGroup> {
     return baseGroups;
+  },
+  getBaseContentFiles(): ReadonlyArray<RulesetBaseFileDescriptor> {
+    return [];
   },
   getSystemContentFiles() {
     return [];

@@ -40,7 +40,7 @@ import {
   normalizeSpritePackRef,
   resolveThemeSpriteSheets
 } from '../src/utils/sprite_pack.ts';
-import { getRuleset } from '../src/rulesets/registry.ts';
+import { getAllRulesets, getRuleset } from '../src/rulesets/registry.ts';
 import type { RulesetId } from '../src/types/ruleset.types.ts';
 import { validateSsotRegistries } from './ssot_parity.ts';
 
@@ -340,12 +340,13 @@ function loadAndValidateZod(dir: string): { data?: CampaignData; errors: number;
     return existsSync(p) ? (JSON.parse(readFileSync(p, 'utf-8')) as Record<string, unknown>) : {};
   };
 
-  for (const sharedKey of ['items', 'entities', 'status', 'effects'] as const) {
-    const baseRecord = readRulesetJson(`${sharedKey}.json`);
+  const baseDescriptors = ruleset.getBaseContentFiles?.() ?? [];
+  for (const desc of baseDescriptors) {
+    const baseRecord = readRulesetJson(desc.filename);
     if (Object.keys(baseRecord).length > 0) {
-      campaignData[sharedKey] = {
+      campaignData[desc.key] = {
         ...baseRecord,
-        ...((campaignData[sharedKey] as Record<string, unknown> | undefined) ?? {})
+        ...((campaignData[desc.key] as Record<string, unknown> | undefined) ?? {})
       };
     }
   }
@@ -560,29 +561,62 @@ async function validateSingleCampaign(dir: string): Promise<CampaignResult> {
   };
 }
 
+const ROOT_BASE_CONTENT_FILENAMES: ReadonlySet<string> = new Set([
+  'items.json',
+  'entities.json',
+  'status.json',
+  'effects.json'
+]);
+
 /**
- * Validates on-disk file hygiene for all modular ruleset registries in `public/data/rulesets/<rulesetId>/`.
- * Ensures every file declared in `getSystemContentFiles()` exists on disk, no unreferenced orphan files
- * exist in modular subdirectories, and each modular file has exact key/id/filename parity.
+ * Validates on-disk file hygiene for all modular and base ruleset registries in `public/data/rulesets/<rulesetId>/`.
+ * Ensures every file declared in `getBaseContentFiles()` and `getSystemContentFiles()` exists on disk,
+ * no unreferenced orphan files exist, and each modular file has exact key/id/filename parity.
  */
 function validateRulesetDiskParity(): { readonly errors: ReadonlyArray<string>; readonly checkedFiles: number } {
   const errors: string[] = [];
   let checkedFiles = 0;
   const rulesetsDir = join(PROJECT_ROOT, 'public', 'data', 'rulesets');
-  if (!existsSync(rulesetsDir)) return { errors, checkedFiles };
+  const onDiskDirs = existsSync(rulesetsDir)
+    ? readdirSync(rulesetsDir).filter((e) => statSync(join(rulesetsDir, e)).isDirectory())
+    : [];
+  const rulesetEntries = Array.from(new Set([...getAllRulesets().map((r) => r.id), ...onDiskDirs]));
 
-  const rulesetEntries = readdirSync(rulesetsDir).filter((e) => statSync(join(rulesetsDir, e)).isDirectory());
   for (const rulesetId of rulesetEntries) {
     const ruleset = getRuleset(rulesetId as RulesetId);
+    const baseDescriptors = ruleset.getBaseContentFiles?.() ?? [];
+    const declaredBaseFiles = new Set(baseDescriptors.map((d) => d.filename));
     const descriptors = ruleset.getSystemContentFiles?.() ?? [];
     const declaredFiles = new Set(descriptors.map((d) => d.filename));
 
-    // 1. Verify every declared descriptor file exists on disk
+    // 1. Verify every declared base and system descriptor file exists on disk
     const rulesetPath = join(rulesetsDir, rulesetId);
+    for (const baseDesc of baseDescriptors) {
+      const fullPath = join(rulesetPath, baseDesc.filename);
+      if (!existsSync(fullPath)) {
+        errors.push(
+          `Ruleset "${rulesetId}" declares base content file "${baseDesc.filename}", but file is missing on disk.`
+        );
+      } else {
+        checkedFiles++;
+      }
+    }
     for (const desc of descriptors) {
       const fullPath = join(rulesetPath, desc.filename);
       if (!existsSync(fullPath)) {
         errors.push(`Ruleset "${rulesetId}" declares descriptor "${desc.filename}", but file is missing on disk.`);
+      }
+    }
+
+    if (!existsSync(rulesetPath)) {
+      continue;
+    }
+
+    for (const rootEntry of readdirSync(rulesetPath)) {
+      if (ROOT_BASE_CONTENT_FILENAMES.has(rootEntry) && !declaredBaseFiles.has(rootEntry)) {
+        errors.push(
+          `Ruleset "${rulesetId}" has base content file "${rootEntry}" on disk not declared in getBaseContentFiles().`
+        );
       }
     }
 
@@ -797,7 +831,7 @@ async function main() {
       for (const err of rulesetParity.errors) console.error(`  ❌ ${err}`);
     } else {
       console.log(
-        `  ✅ Validated ${rulesetParity.checkedFiles} modular ruleset file(s) on disk (zero orphans, 100% key parity)`
+        `  ✅ Validated ${rulesetParity.checkedFiles} ruleset file(s) on disk (zero orphans, 100% key parity)`
       );
     }
 

@@ -1,7 +1,7 @@
 import { type CampaignRegistry, CampaignRegistrySchema } from '../../types/campaign.types.ts';
 import { listInstalledCampaigns } from '../campaign_store.ts';
 import { getRuleset } from '../../rulesets/registry.ts';
-import type { RulesetId } from '../../types/ruleset.types.ts';
+import type { RulesetBaseContentKey, RulesetId } from '../../types/ruleset.types.ts';
 
 /**
  * Loads the campaign registry containing all available campaigns.
@@ -111,12 +111,27 @@ export async function loadRulesetBaseContent(rulesetId: RulesetId): Promise<{
   readonly effects: Record<string, unknown>;
 }> {
   const ruleset = getRuleset(rulesetId);
+  const baseDescriptors = ruleset.getBaseContentFiles?.() ?? [];
+  if (baseDescriptors.length === 0) {
+    return { items: {}, entities: {}, status: {}, effects: {} };
+  }
+
   const rulesetBasePath = `${import.meta.env.BASE_URL}data/rulesets/${ruleset.id}`;
-  const [items, entities, status, effects] = await Promise.all([
-    fetchOptionalJson(`${rulesetBasePath}/items.json`),
-    fetchOptionalJson(`${rulesetBasePath}/entities.json`),
-    fetchOptionalJson(`${rulesetBasePath}/status.json`),
-    fetchOptionalJson(`${rulesetBasePath}/effects.json`)
-  ]);
-  return { items, entities, status, effects };
+  const loaded = await Promise.all(
+    baseDescriptors.map(async (desc) => ({
+      key: desc.key,
+      data: await fetchOptionalJson(`${rulesetBasePath}/${desc.filename}`)
+    }))
+  );
+
+  const buckets: Record<RulesetBaseContentKey, Record<string, unknown>> = {
+    items: {},
+    entities: {},
+    status: {},
+    effects: {}
+  };
+  for (const entry of loaded) {
+    buckets[entry.key] = { ...buckets[entry.key], ...entry.data };
+  }
+  return buckets;
 }

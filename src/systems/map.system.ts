@@ -139,6 +139,8 @@ export function processChangeAreaIntent(
   let spawnY: number = targetY ?? -1;
   let targetRooms: ReadonlyArray<RoomBounds> = [];
   let targetLastSpawnTurn: number = 0;
+  let nextEntityId: number = state.nextEntityId;
+  let nextItemInstanceId: number = state.nextItemInstanceId;
 
   const savedTargetArea = nextAreas.get(targetAreaId);
 
@@ -157,12 +159,15 @@ export function processChangeAreaIntent(
       nextEntities,
       nextComponents,
       nextPersistentEntities,
-      targetLastSpawnTurn
+      targetLastSpawnTurn,
+      nextAreas
     );
     state = wakeResult.state;
     nextEntities = wakeResult.nextEntities;
     nextComponents = wakeResult.nextComponents;
     targetLastSpawnTurn = wakeResult.targetLastSpawnTurn;
+    nextEntityId = state.nextEntityId;
+    nextItemInstanceId = state.nextItemInstanceId;
 
     // Find the corresponding stairs
     let foundStairs = false;
@@ -184,7 +189,14 @@ export function processChangeAreaIntent(
       spawnY = Math.floor(targetMap.height / 2);
     }
   } else {
-    const genResult = generateAndPopulateAreaFloor(state, targetAreaId, spawnX, spawnY, nextPersistentEntities);
+    const genResult = generateAndPopulateAreaFloor(
+      state,
+      targetAreaId,
+      spawnX,
+      spawnY,
+      nextPersistentEntities,
+      nextAreas
+    );
     targetMap = genResult.targetMap;
     targetRooms = genResult.targetRooms;
     targetLastSpawnTurn = genResult.targetLastSpawnTurn;
@@ -192,6 +204,8 @@ export function processChangeAreaIntent(
     spawnY = genResult.spawnY;
     nextEntities = genResult.nextEntities;
     nextComponents = genResult.nextComponents;
+    nextEntityId = genResult.nextEntityId;
+    nextItemInstanceId = genResult.nextItemInstanceId;
   }
 
   // Wake up persistent entities that belong to the target area
@@ -267,6 +281,8 @@ export function processChangeAreaIntent(
     entities: nextEntities,
     components: nextComponents,
     map: targetMap,
+    nextEntityId,
+    nextItemInstanceId,
     currentAreaId: targetAreaId,
     activeRooms: targetRooms,
     lastSpawnTurn: targetLastSpawnTurn,

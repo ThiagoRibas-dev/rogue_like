@@ -1,426 +1,306 @@
-# Implementation Plan — Milestone 168: Active Buffs, Debuffs & Spell Duration Lifecycle, Expiration, Dispel Sync & UI Observability
+# Implementation Plan — Ruleset Base-Content 404 Elimination & Floor-Transition Entity ID Collision Fix
 
-**Date:** 2026-11-23  
-**Research Basis:** [docs/research_notes.md](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/docs/research_notes.md)  
-**Workflow Stage:** `AGENTS.md` Phase 1 Kickoff Flow — Steps 4 & 5 (Enhanced Implementation Plan — **Awaiting Explicit User Approval**)
-
----
-
-## 0. Confirmed User Decisions & Scope Summary
-
-All five design questions from research were confirmed by the user:
-1. **Include Related Correctness Fixes:** Propagate `weapon:magic` -> `'magic'` DR bypass tag on strikes, enforce `'enhancement'` stacking competition between equipped weapon damage bonuses and *Magic Weapon*, preserve intra-cast modifiers in `appendTargetModifiers`, and synchronize *Dispel Magic* CL checks plus status/condition removal.
-2. **Unified Aura & Overlay UI Projection:** Surface active spatial emanation auras (`FieldComponent`) and form overlays (`PropertyOverlayComponent`) alongside timed spells and conditions through `RulesetContract.projectActiveEffects`.
-3. **Dynamic Monotonic Duration Badges + Tooltip Details:** Render compact human-readable durations that transition cleanly as turns tick down (`Xd` -> `Xh` -> `Xm` -> `Xr`, plus `Perm`), with exact round counts and modifier summaries on hover (`"Divine Favor: +2 luck Attack, +2 luck Damage • 1m (10 rounds)"`).
-4. **Declarative Condition Duration Override:** Add optional `duration?: string` to the `condition` effect unit Zod schema (`DnD35SpellEffectUnitSchema`), with a named fallback constant when omitted on an `instantaneous` spell (zero spell-ID hardcoding per Rule 21).
-5. **Polarity-Gated Alerts & Auto-Pause:** Keep friendly buffs (`'buff'`) out of top-right warning `AlertsStack` ribbons and detrimental RTwP auto-pause while keeping debuffs (`'debuff'`) in both.
+**Date:** 2026-11-24  
+**Research Reference:** [research_notes.md](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/docs/research_notes.md)  
+**Tiers Affected:** Tier 1 Core Console (`src/types/`, `src/core/loader/`, `src/core/ecs/`, `src/core/save.ts`, `src/systems/map/`, `src/systems/map.system.ts`) & Tier 2 Ruleset Cartridges (`src/rulesets/classic/`, `src/rulesets/dnd35e/`)  
+**Explicit Exclusions (Out of Scope per User Request):** Fog-of-War entity rendering (`src/rendering/viewport_snapshot.ts`) and `megacampaign`'s optional `relationship_thresholds.json`.
 
 ---
 
 ## 1. SSOT Ownership & Old-Brain Eviction Table
 
-| Responsibility | Canonical SSOT Owner | Evicted / Fixed Split-Brain |
-| :--- | :--- | :--- |
-| Turn time unit constants (`ROUNDS_PER_MINUTE`, `ROUNDS_PER_HOUR`, `ROUNDS_PER_DAY`) | [world_clock.constants.ts](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/constants/world_clock.constants.ts) | Eliminates ad-hoc `60 / 6`, `10`, `14400` literals across spell/UI code |
-| Compact & verbose turn duration formatting (`formatTurnDurationCompact`, `formatTurnDurationVerbose`) | [duration.ts](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/utils/duration.ts) *(New Tier 1 util)* | Replaces raw `(${eff.duration}t)` string interpolation in `VitalsCard`, `DnD35eSheetOverviewCol`, `dnd35e_ui_projection`, `hud_alerts.ui` |
-| Timed status storage, metadata, expiration callbacks & $O(1)$ bulk advance | [actor_components.types.ts](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/types/components/actor_components.types.ts) & [status-effect.system.ts](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/systems/status-effect.system.ts) | Replaces un-tracked `statModifiers` & slow 1-turn-per-step bulk ticking |
-| Bulk-time local hazard predicate (`hasActivePerTurnLocalHazard`) | [world_time_skip.ts](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/systems/world_time_skip.ts) | Delegates to `hasPerTurnStatusActivity` instead of forcing 1-turn steps for passive buffs |
-| Cartridge lifecycle & unified display contracts | [ruleset.types.ts](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/types/ruleset.types.ts) (`ActiveEffectDisplayDTO`, `onStatusEffectExpired`, `projectActiveEffects`) | Eliminates direct `dndData` casting inside Tier 1 HUD/Inspect views |
-| Spell duration parsing, polarity inference & modifier summary formatting | [spell_duration.ts](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/rulesets/dnd35e/magic/spell_duration.ts) *(New Tier 2 module)* | Purely data-driven over `spell.duration` & emitted `StatModifier[]` |
-| Spell cast effect application & timed status registration | [spell_cast_effects.ts](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/rulesets/dnd35e/magic/spell_cast_effects.ts) | Fixes `appendTargetModifiers` overwriting earlier units of the same `castId` |
-| *Dispel Magic* CL resolution & synchronized revocation | [spell_cast_units.ts](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/rulesets/dnd35e/magic/spell_cast_units.ts) | Fixes dispeller-CL self-check & cleans up `StatusEffectsComponent` + linked conditions alongside `statModifiers` |
-| Active spell emanation aura projection | [spell_aura_resolver.ts](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/rulesets/dnd35e/magic/spell_aura_resolver.ts) (`activeAuras`) | Single pass reused by `projectDnD35eActiveEffects`; no duplicate field scanning |
-| Weapon enhancement stacking, `weapon:magic` DR bypass & DAG status cache invariance | [srd_registry.ts](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/rulesets/dnd35e/srd_registry.ts), [dnd35e_dag_adapter.ts](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/rulesets/dnd35e/cartridge/dnd35e_dag_adapter.ts), [attack_routine.ts](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/rulesets/dnd35e/combat/attack_routine.ts), [semantic_tags_context.ts](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/rulesets/dnd35e/semantic_tags_context.ts), [semantic_tags.ts](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/rulesets/dnd35e/semantic_tags.ts) | Fixes `+1` sword + *Magic Weapon* double damage & per-turn DAG cache misses |
-| HUD, Inspect, Canvas Pips, Auto-Pause & Sheet rendering | `DataDisplay.tsx`, `VitalsCard.tsx`, `hud_alerts.ui.ts`, `auto_pause_signals.ts`, `tactical_snapshot.ts`, `inspect_tooltip.ts`, `DnD35eSheetOverviewCol.tsx`, `dnd35e_ui_projection.ts` | Replaces warning-only/un-tooltipped badges with polarity tones & breakdown tooltips |
+| Responsibility | Canonical Owner | Evicted / Legacy Path |
+|---|---|---|
+| Declaration of base ruleset content files (`items`/`entities`/`status`/`effects`) | `RulesetContract.getBaseContentFiles?()` (`classic_ruleset.ts`, `dnd35e_ruleset.ts`) | Speculative 4-file probe in `loadRulesetBaseContent`, `run-validator.ts`, & `tests/helpers.ts` |
+| Fetching declared ruleset base content without 404s | [`src/core/loader/system_content_loader.ts`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/core/loader/system_content_loader.ts) | Unconditional `fetchOptionalJson` for non-existent `{classic,dnd35e}/{items,entities,status,effects}.json` |
+| Monotonic `nextEntityId` / `nextItemInstanceId` across floor generation | [`src/systems/map/map_generation_spawner.ts`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/systems/map/map_generation_spawner.ts) | Returning `nextEntities` & `nextComponents` while discarding `tempState.nextEntityId` / `tempState.nextItemInstanceId` |
+| Monotonic `nextEntityId` / `nextItemInstanceId` across wake respawns | [`src/systems/map/map_wake_respawn.ts`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/systems/map/map_wake_respawn.ts) | Copying respawned entities out of `tempState` without updating `nextState` ID counters |
+| Floor transition counter commit | [`src/systems/map.system.ts`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/systems/map.system.ts) | Inheriting stale pre-transition `state.nextEntityId` / `state.nextItemInstanceId` on `nextState` |
+| Collision-free Entity ID allocation & save healing | [`src/core/ecs/ecs_core.ts`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/core/ecs/ecs_core.ts) & [`src/core/save.ts`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/core/save.ts) | Unchecked `nextComponents.set(newId, {})` overwrite & trusting poisoned save `sState.nextEntityId` |
 
 ---
 
-## 2. Step-by-Step Implementation Plan
+## 2. Declarative Purity & Anti-Hardcoding Audit Table (Rule 21)
 
-### Phase 1: Tier 1 Console Constants, Duration Utilities & Component/Contract Types
-
-#### 1.1 Add `ROUNDS_PER_MINUTE` & `ROUNDS_PER_DAY` — `src/constants/world_clock.constants.ts`
-Add canonical round conversion constants immediately alongside `ROUNDS_PER_HOUR`:
-
-```ts
-/** Number of 6-second global turns in 1 game minute (`60 / 6 = 10` rounds). */
-export const ROUNDS_PER_MINUTE = SECONDS_PER_MINUTE / DEFAULT_SECONDS_PER_TURN;
-
-/** Number of 6-second global turns in 1 full 24-hour game day (`600 * 24 = 14400` rounds). */
-export const ROUNDS_PER_DAY = ROUNDS_PER_HOUR * DEFAULT_HOURS_PER_DAY;
-```
-
-#### 1.2 Create Shared Duration Formatter — `src/utils/duration.ts`
-Pure, ruleset-agnostic formatter driving monotonic transitions (`Xd` -> `Xh` -> `Xm` -> `Xr` / `Perm`):
-
-```ts
-import {
-  DEFAULT_SECONDS_PER_TURN,
-  MINUTES_PER_HOUR,
-  ROUNDS_PER_DAY,
-  ROUNDS_PER_HOUR,
-  ROUNDS_PER_MINUTE
-} from '../constants/world_clock.constants.ts';
-
-/**
- * Formats a turn/round count into a compact, monotonically transitioning UI pill string
- * (`Perm`, `Xd`, `Xh`, `Xm`, or `Xr`).
- */
-export function formatTurnDurationCompact(turns: number, isPermanent?: boolean): string {
-  if (isPermanent === true) return 'Perm';
-  const clamped = Math.max(0, Math.floor(turns));
-  if (clamped >= ROUNDS_PER_DAY) return `${Math.floor(clamped / ROUNDS_PER_DAY)}d`;
-  if (clamped >= ROUNDS_PER_HOUR) return `${Math.floor(clamped / ROUNDS_PER_HOUR)}h`;
-  if (clamped >= ROUNDS_PER_MINUTE) return `${Math.floor(clamped / ROUNDS_PER_MINUTE)}m`;
-  return `${clamped}r`;
-}
-
-/**
- * Formats a turn/round count into a verbose tooltip string showing units and exact rounds
- * (e.g., `"1m (10 rounds)"`, `"1h 30m (900 rounds)"`, `"6 rounds"`, `"Permanent"`).
- */
-export function formatTurnDurationVerbose(turns: number, isPermanent?: boolean): string {
-  if (isPermanent === true) return 'Permanent';
-  const clamped = Math.max(0, Math.floor(turns));
-  const roundLabel = `${clamped} ${clamped === 1 ? 'round' : 'rounds'}`;
-  if (clamped < ROUNDS_PER_MINUTE) return roundLabel;
-
-  if (clamped >= ROUNDS_PER_DAY) {
-    const days = Math.floor(clamped / ROUNDS_PER_DAY);
-    const remHours = Math.floor((clamped % ROUNDS_PER_DAY) / ROUNDS_PER_HOUR);
-    const prefix = remHours > 0 ? `${days}d ${remHours}h` : `${days}d`;
-    return `${prefix} (${roundLabel})`;
-  }
-  if (clamped >= ROUNDS_PER_HOUR) {
-    const hours = Math.floor(clamped / ROUNDS_PER_HOUR);
-    const remMins = Math.floor((clamped % ROUNDS_PER_HOUR) / ROUNDS_PER_MINUTE);
-    const prefix = remMins > 0 ? `${hours}h ${remMins}m` : `${hours}h`;
-    return `${prefix} (${roundLabel})`;
-  }
-  const mins = Math.floor(clamped / ROUNDS_PER_MINUTE);
-  const remSecs = (clamped % ROUNDS_PER_MINUTE) * DEFAULT_SECONDS_PER_TURN;
-  const totalMins = mins % MINUTES_PER_HOUR;
-  const prefix = remSecs > 0 ? `${totalMins}m ${remSecs}s` : `${totalMins}m`;
-  return `${prefix} (${roundLabel})`;
-}
-```
-
-#### 1.3 Extend `ActiveStatusEffect` — `src/types/components/actor_components.types.ts` & `src/types/components.types.ts`
-Add `StatusEffectPolarity` and optional JSON-serializable metadata fields to `ActiveStatusEffect` (backward-compatible with all existing saves and mocks):
-
-```ts
-/** Polarity classification for active status effects and ruleset buffs/debuffs. */
-export type StatusEffectPolarity = 'buff' | 'debuff' | 'mixed' | 'neutral';
-
-export interface ActiveStatusEffect {
-  readonly effectId: string;
-  readonly duration: number;
-  readonly sourceEntityId?: EntityId;
-  readonly elapsedTurns?: number | undefined;
-  readonly secondaryResolved?: boolean | undefined;
-  readonly interaction?: InteractionChain | undefined;
-  readonly displayName?: string | undefined;
-  readonly summary?: string | undefined;
-  readonly polarity?: StatusEffectPolarity | undefined;
-  readonly color?: string | undefined;
-  readonly sourcePath?: string | undefined;
-  readonly casterLevel?: number | undefined;
-  readonly linkedConditionId?: string | undefined;
-  readonly grantedTags?: ReadonlyArray<string> | undefined;
-  readonly isPermanent?: boolean | undefined;
-}
-```
-Re-export `StatusEffectPolarity` alongside `ActiveStatusEffect` in `src/types/components.types.ts`.
-
-#### 1.4 Extend `RulesetContract` — `src/types/ruleset.types.ts`
-Add `ActiveEffectDisplayDTO` and optional lifecycle/projection hooks:
-
-```ts
-/** Polarity-aware display DTO projected by a ruleset for HUD Vitals, Inspect, and Character Sheet badges. */
-export interface ActiveEffectDisplayDTO {
-  readonly id: string;
-  readonly label: string;
-  readonly polarity: StatusEffectPolarity;
-  readonly durationTurns?: number | undefined;
-  readonly isPermanent?: boolean | undefined;
-  readonly isAura?: boolean | undefined;
-  readonly summary?: string | undefined;
-  readonly sourceLabel?: string | undefined;
-  readonly color?: string | undefined;
-}
-```
-On `RulesetContract`:
-```ts
-  /** Optional hook invoked immediately after an `ActiveStatusEffect` expires and is removed from `StatusEffectsComponent`. */
-  onStatusEffectExpired?(state: GameState, entityId: EntityId, expiredEffect: ActiveStatusEffect): GameState;
-
-  /** Optional hook projecting all active buffs, debuffs, conditions, overlays, and auras for HUD/Inspect rendering. */
-  projectActiveEffects?(state: Readonly<GameState>, entityId: EntityId): ReadonlyArray<ActiveEffectDisplayDTO>;
-```
+| Behavior | Rejected Imperative Shortcut | Chosen Declarative Schema / Mechanism | Passes "New Content Mod" Litmus Test? |
+|---|---|---|---|
+| Determining which base JSON files a ruleset cartridge loads | `if (rulesetId === 'dnd35e') fetch('status.json')` in `system_content_loader.ts`, or adding empty `{}` stub JSON files | Optional `RulesetContract.getBaseContentFiles?(): ReadonlyArray<RulesetBaseFileDescriptor>` mirrored by `validateRulesetDiskParity()` | Yes — any new cartridge or disk addition declares its base files cleanly in cartridge metadata with zero Tier 1 branching |
+| Preventing new entities/doors/stairs from colliding across floor transitions | Special-casing `stairs_up` or `iron_gate` IDs into negative/reserved ranges | Returning & committing monotonic `nextEntityId` / `nextItemInstanceId` from all `tempState` spawners + universal `isEntityIdInUse` guard in `createEntity` + high-water-mark clamp on load | Yes — applies uniformly to every entity type (portals, doors, monsters, chests, corpses, fields, items) |
 
 ---
 
-### Phase 2: Tier 1 Console Status Tick, $O(1)$ Bulk Advance, Auto-Pause & Alerts
+## 3. Step-by-Step Implementation & Code Snippets
 
-#### 2.1 `src/systems/status-effect.system.ts`
-1. Add `ActiveStatusEffectMetadata` and optional 7th parameter `metadata?: ActiveStatusEffectMetadata` on `applyStatusEffect`:
+### Task 1: Eliminate Ruleset Base-Content 404 Errors (`getBaseContentFiles`)
+
+#### 1.1 Add `RulesetBaseContentKey`, `RulesetBaseFileDescriptor`, and `getBaseContentFiles?()` — `src/types/ruleset.types.ts`
+Add beside `RulesetSystemFileDescriptor` and `getSystemContentFiles?()`:
+
 ```ts
-export interface ActiveStatusEffectMetadata {
-  readonly displayName?: string | undefined;
-  readonly summary?: string | undefined;
-  readonly polarity?: StatusEffectPolarity | undefined;
-  readonly color?: string | undefined;
-  readonly sourcePath?: string | undefined;
-  readonly casterLevel?: number | undefined;
-  readonly linkedConditionId?: string | undefined;
-  readonly grantedTags?: ReadonlyArray<string> | undefined;
-  readonly isPermanent?: boolean | undefined;
-  readonly replaceExisting?: boolean | undefined;
+/**
+ * Supported campaign registry keys populated by cartridge base content files.
+ */
+export type RulesetBaseContentKey = 'items' | 'entities' | 'status' | 'effects';
+
+/**
+ * Descriptor declaring a root-level base JSON file loaded from `public/data/rulesets/<rulesetId>/`.
+ */
+export interface RulesetBaseFileDescriptor {
+  readonly key: RulesetBaseContentKey;
+  readonly filename: string;
 }
 ```
-2. Export `hasPerTurnStatusActivity(state: Readonly<GameState>, entityId: EntityId): boolean`:
-```ts
-export function hasPerTurnStatusActivity(state: Readonly<GameState>, entityId: EntityId): boolean {
-  const statuses = getComponent(state, entityId, ComponentType.StatusEffects) as StatusEffectsComponent | undefined;
-  if (!statuses || statuses.activeEffects.length === 0) return false;
-  return statuses.activeEffects.some((eff) => {
-    const def = state.campaign.status[eff.effectId];
-    if (!def) return false;
-    const hasDot = (def.perTurnDamage ?? 0) > 0 || (def.perTurnHeal ?? 0) > 0;
-    const hasPendingSecondary = def.secondaryTriggerAfterTurns !== undefined && eff.secondaryResolved !== true;
-    return hasDot || hasPendingSecondary;
-  });
-}
-```
-3. In `tickActorStatusEffectsSingleTurn`:
-   - Collect `const expiredEffects: ActiveStatusEffect[] = [];`.
-   - If `active.isPermanent === true`, keep unchanged in `nextActiveEffects`.
-   - Otherwise, if `active.duration > 1`, decrement `duration - 1`; else push to `expiredEffects` and log for player:
-     ```ts
-     const expiryMsg = active.displayName
-       ? `${active.displayName} has worn off.`
-       : `You are no longer ${def?.name ?? active.effectId}.`;
-     ```
-   - Commit updated/removed `StatusEffectsComponent`, then if `expiredEffects.length > 0` and `getComponent(nextState, entityId, ComponentType.Fighter) !== undefined`:
-     ```ts
-     const ruleset = getRuleset(nextState.campaign?.manifest?.rulesetId);
-     if (ruleset.onStatusEffectExpired) {
-       for (const expired of expiredEffects) {
-         nextState = ruleset.onStatusEffectExpired(nextState, entityId, expired);
-       }
-     }
-     ```
-4. In `advanceActorStatusEffectsByTurns`:
-   - When `turnsElapsed <= 0`, return `state`.
-   - When `hasPerTurnStatusActivity(nextState, entityId)` is **true**, step turn-by-turn up to `remainingTurns`, breaking early to the $O(1)$ fast path as soon as `!hasPerTurnStatusActivity(nextState, entityId)`.
-   - When `!hasPerTurnStatusActivity(nextState, entityId)`, compute remaining durations in a single $O(k)$ pass (`active.isPermanent === true ? active : { ...active, duration: active.duration - remainingTurns }`), expire anything `<= 0`, log player expirations, update/remove `StatusEffectsComponent`, and invoke `ruleset.onStatusEffectExpired` per expired entry.
 
-#### 2.2 `src/systems/world_time_skip.ts`
-Update `hasActivePerTurnLocalHazard(state)` line 58:
+Inside `RulesetContract`:
 ```ts
-if (hasPerTurnStatusActivity(state, entityId)) return true;
+  /**
+   * Returns the list of declarative base registry files loaded from `public/data/rulesets/<rulesetId>/`.
+   * Rulesets omitting this hook (or returning `[]`) issue zero base-content fetches.
+   * @returns Array of base content file descriptors.
+   */
+  getBaseContentFiles?(): ReadonlyArray<RulesetBaseFileDescriptor>;
 ```
 
-#### 2.3 `src/core/auto_pause_signals.ts`
-Update `detectDetrimentalStatus` to inspect `StatusEffectsComponent.activeEffects` directly so dynamic enemy spell debuffs trigger pause while buffs and mixed self-buffs do not:
+#### 1.2 Declare Exact Base Content Files Per Cartridge
+- **`src/rulesets/classic/classic_ruleset.ts`** (right below `getSystemContentFiles()`):
 ```ts
-const afterStatuses = getComponent(after, playerEntityId, ComponentType.StatusEffects) as StatusEffectsComponent | undefined;
-for (const eff of afterStatuses?.activeEffects ?? []) {
-  if (previousEffectIds.has(eff.effectId)) continue;
-  if (eff.polarity === 'debuff') return 'detrimental_status';
-  if (eff.polarity === undefined && after.campaign.status[eff.effectId]?.detrimental === true) {
-    return 'detrimental_status';
+  getBaseContentFiles() {
+    return [];
+  },
+```
+- **`src/rulesets/dnd35e/dnd35e_ruleset.ts`**:
+```ts
+const DND35E_BASE_CONTENT_FILES: ReadonlyArray<RulesetBaseFileDescriptor> = [
+  { key: 'status', filename: 'status.json' },
+  { key: 'effects', filename: 'effects.json' }
+];
+```
+And inside `dnd35eRulesetContract`:
+```ts
+  getBaseContentFiles(): ReadonlyArray<RulesetBaseFileDescriptor> {
+    return DND35E_BASE_CONTENT_FILES;
+  },
+```
+
+#### 1.3 Update `loadRulesetBaseContent` — `src/core/loader/system_content_loader.ts`
+Replace the unconditional 4-file `fetchOptionalJson` calls with descriptor-driven fetching (emitting **0 network requests** when `getBaseContentFiles()` is empty):
+
+```ts
+export async function loadRulesetBaseContent(rulesetId: RulesetId): Promise<{
+  readonly items: Record<string, unknown>;
+  readonly entities: Record<string, unknown>;
+  readonly status: Record<string, unknown>;
+  readonly effects: Record<string, unknown>;
+}> {
+  const ruleset = getRuleset(rulesetId);
+  const baseDescriptors = ruleset.getBaseContentFiles?.() ?? [];
+  if (baseDescriptors.length === 0) {
+    return { items: {}, entities: {}, status: {}, effects: {} };
   }
+
+  const rulesetBasePath = `${import.meta.env.BASE_URL}data/rulesets/${ruleset.id}`;
+  const loaded = await Promise.all(
+    baseDescriptors.map(async (desc) => ({
+      key: desc.key,
+      data: await fetchOptionalJson(`${rulesetBasePath}/${desc.filename}`)
+    }))
+  );
+
+  const buckets: Record<'items' | 'entities' | 'status' | 'effects', Record<string, unknown>> = {
+    items: {},
+    entities: {},
+    status: {},
+    effects: {}
+  };
+  for (const entry of loaded) {
+    buckets[entry.key] = { ...buckets[entry.key], ...entry.data };
+  }
+  return buckets;
 }
 ```
 
-#### 2.4 `src/rendering/ui/hud_alerts.ui.ts`
-Filter `statuses.activeEffects` in `projectHudAlertsList` so friendly buffs do not produce warning alert ribbons:
+#### 1.4 Sync Disk Loaders & Parity Validator — `scripts/run-validator.ts` & `tests/helpers.ts`
+- In both [`scripts/run-validator.ts`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/scripts/run-validator.ts#L343-L351) and [`tests/helpers.ts`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/tests/helpers.ts#L72-L80), iterate `ruleset.getBaseContentFiles?.() ?? []` instead of `['items', 'entities', 'status', 'effects']`:
 ```ts
-  if (statuses) {
-    for (const active of statuses.activeEffects) {
-      const def = state.campaign.status[active.effectId];
-      const isFriendlyOrNeutral =
-        active.polarity === 'buff' ||
-        active.polarity === 'neutral' ||
-        (active.polarity === undefined && def !== undefined && !def.detrimental);
-      if (isFriendlyOrNeutral) continue;
-      alerts.push({
-        label: active.displayName ?? def?.name ?? active.effectId,
-        detail: `${formatTurnDurationCompact(active.duration, active.isPermanent)} remaining`,
-        severity: 'warning'
-      });
+  const baseDescriptors = ruleset.getBaseContentFiles?.() ?? [];
+  for (const desc of baseDescriptors) {
+    const baseRecord = readRulesetJson(desc.filename);
+    if (Object.keys(baseRecord).length > 0) {
+      campaignData[desc.key] = {
+        ...baseRecord,
+        ...((campaignData[desc.key] as Record<string, unknown> | undefined) ?? {})
+      };
     }
   }
 ```
-*(Wait: check `tests/hud_rest_and_display_name.test.ts` — confirmed it only asserts `isActorPerceivedByPlayer`, `buildTurnStatusRibbon`, and `evaluateActorRestSafety`, not alert detail string formatting.)*
+- In `validateRulesetDiskParity()` (`scripts/run-validator.ts`), enforce symmetric parity for `getBaseContentFiles()`:
+  1. Every descriptor in `ruleset.getBaseContentFiles?.() ?? []` exists on disk.
+  2. Every root-level `items.json`, `entities.json`, `status.json`, or `effects.json` present on disk in `public/data/rulesets/<rulesetId>/` is declared in `getBaseContentFiles()`.
 
 ---
 
-### Phase 3: Tier 2 D&D 3.5e Duration Parser, Cast Registration, Expiration, Dispel Sync & Stacking Fixes
+### Task 2: Fix Floor-Transition & Respawn Entity ID Counter Drops + Defensive Guards
 
-#### 3.1 Declarative Condition Duration Field — `src/rulesets/dnd35e/types/system/spell_system.types.ts`
-Extend the `'condition'` unit schema with optional `duration: z.string().optional()`:
+#### 2.1 Return Updated ID Counters from `generateAndPopulateAreaFloor` — `src/systems/map/map_generation_spawner.ts`
+Update the return type signature and returned object at [`map_generation_spawner.ts:87-95,222-230`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/systems/map/map_generation_spawner.ts#L222-L230):
+
 ```ts
-  SpellEffectUnitBaseSchema.extend({
-    type: z.literal('condition'),
-    conditionId: z.string(),
-    duration: z.string().optional(),
-    durationRoundsScaling: DnD35SpellScalingRuleSchema.optional(),
-    ...
-```
-
-#### 3.2 Pure Spell Duration Parser, Polarity & Summary Helpers — `src/rulesets/dnd35e/magic/spell_duration.ts`
-Create `src/rulesets/dnd35e/magic/spell_duration.ts` (zero content-ID checks):
-- Export named constants:
-  - `DEFAULT_CONCENTRATION_FALLBACK_ROUNDS = ROUNDS_PER_MINUTE` (`10`)
-  - `DEFAULT_INSTANTANEOUS_CONDITION_DURATION_ROUNDS = 2`
-  - `EXTEND_METAMAGIC_DURATION_MULTIPLIER = 2`
-  - `MIN_ACTIVE_SPELL_DURATION_ROUNDS = 1`
-  - `POLARITY_COLORS`: `{ buff: '#2ed573', debuff: '#ff4757', mixed: '#a855f7', neutral: '#f1c40f' }`
-- Implement `parseSpellDurationTurns(rawDuration, casterLevel, options)`:
-  - Normalize whitespace/underscores (`1_round_per_level` -> `1 round/level`, strip `or until discharged`, extract `"concentration, up to ..."` cap, handle `instantaneous / 1 hour` by taking the post-`/` ongoing component when modifiers/conditions exist).
-  - Recognize `"permanent"` -> `{ durationTurns: 0, isPermanent: true, isConcentration: false }`.
-  - Recognize `"instantaneous"` -> returns `DEFAULT_INSTANTANEOUS_CONDITION_DURATION_ROUNDS` only if `options?.fallbackRoundsForCondition === true`, otherwise `{ durationTurns: 0, isPermanent: false, isConcentration: false }`.
-  - Recognize `"concentration"` -> `{ durationTurns: DEFAULT_CONCENTRATION_FALLBACK_ROUNDS, isPermanent: false, isConcentration: true }`.
-  - Evaluate compound/scaled durations (`"1 round + 1 round/3 levels"` -> `1 + Math.floor(cl / 3)`, `"N round/level"`, `"N min/level"`, `"N hour/level"`, `"N day/level"`, fixed `"30 minutes"`, `"24 hours"`, `"7 rounds"`, and dice durations `"1d6+2 rounds"`, `"4d12 hours"`, `"1d4 rounds or 1 round"` via `evaluateDiceExpression`).
-  - Double non-permanent `durationTurns` when `options?.extend === true`.
-- Implement `classifyEffectPolarity(modifiers, options)` strictly from numeric signs, target roles, and condition/ability-harm presence (`'buff' | 'debuff' | 'mixed' | 'neutral'`).
-- Implement `formatSpellModifiersSummary(modifiers, options)` turning modifiers (`+2 luck Attack, -2 size DEX, +1 size step`, `Quicken <= Lvl 3`, `Retaliation 1d8 force`), `grantedTags` (filtering out internal `*_active` flags or formatting clean labels like `Magic Weapon`, `Enlarged`), and condition names into concise single-line tooltip strings.
-
-#### 3.3 Cast Registration & Multi-Unit Safe `appendTargetModifiers` — `src/rulesets/dnd35e/magic/spell_cast_effects.ts`
-1. Update `appendTargetModifiers(state, targetId, spellId, castId, newModifiers)` so revoking older casts of the same spell never strips earlier units of the **current** `castId`:
-```ts
-function appendTargetModifiers(
-  state: GameState,
-  targetId: EntityId,
-  spellId: string,
-  castId: string,
-  newModifiers: ReadonlyArray<StatModifier>
-): GameState {
-  if (newModifiers.length === 0) return state;
-  const targetDnd = getDnD35EntityData(state, targetId);
-  const existing = targetDnd.statModifiers ?? [];
-  const bareSpellRoot = `spell:${spellId}`;
-  const currentCastPrefix = `spell:${spellId}:${castId}`;
-  const cleaned = existing.filter((m) => {
-    const path = m.sourcePath ?? m.sourceId;
-    const isThisSpell =
-      path === bareSpellRoot || path.startsWith(`${bareSpellRoot}:`) || path.startsWith(`${bareSpellRoot}/`);
-    if (!isThisSpell) return true;
-    return path === currentCastPrefix || path.startsWith(`${currentCastPrefix}/`);
-  });
-  return setDnD35EntityData(state, targetId, {
-    ...targetDnd,
-    statModifiers: [...cleaned, ...newModifiers]
-  });
+): {
+  targetMap: GameMap;
+  targetRooms: ReadonlyArray<RoomBounds>;
+  targetLastSpawnTurn: number;
+  spawnX: number;
+  spawnY: number;
+  nextEntities: ReadonlyArray<EntityId>;
+  nextComponents: Map<EntityId, Readonly<Record<string, Component>>>;
+  nextEntityId: number;
+  nextItemInstanceId: number;
+} {
+  ...
+  return {
+    targetMap,
+    targetRooms,
+    targetLastSpawnTurn,
+    spawnX,
+    spawnY,
+    nextEntities: tempState.entities,
+    nextComponents: tempState.components as Map<EntityId, Readonly<Record<string, Component>>>,
+    nextEntityId: tempState.nextEntityId,
+    nextItemInstanceId: tempState.nextItemInstanceId
+  };
 }
 ```
-2. During `applyResolvedSpellEffectsToTarget(ctx)`:
-   - Track applied modifiers, `grantedTags`, `hasAbilityHarm`, and active condition registrations on the target.
-   - Compute `parsedDuration` for main modifier/bundle effects (`spell.duration`) and per-unit duration for `condition` units (`unit.duration ?? (unit.durationRoundsScaling ? evaluateSpellScalingRule(...) : spell.duration)`, with `fallbackRoundsForCondition: true`).
-   - Also pass `grantedTags` from `ctx.spell.effectBundle?.grantedTags` and `stat_bundle.effectBundle.grantedTags`.
-   - Call `applyStatusEffect` with `replaceExisting: true`, `sourcePath: spell:${spell.id}:${castId}`, `casterLevel`, `displayName`, `summary`, `polarity`, `color: POLARITY_COLORS[polarity]`, `grantedTags`, `linkedConditionId` (for conditions), and `isPermanent`.
-   - In `case 'stat_bundle'` when `clearsDrain === true` (*Restoration*), also prune any active `StatusEffectsComponent` entry whose `polarity === 'debuff'` and `effectId.startsWith('spell:')` and `summary` indicates ability harm / negative modifiers, or remove corresponding modifiers & stale status entries when `statModifiers` no longer exist for that `sourcePath`.
 
-#### 3.4 *Dispel Magic* Synchronization — `src/rulesets/dnd35e/magic/spell_cast_units.ts`
-Update `case 'dispel'` (L111–145):
-- Gather candidate root paths (`spell:<spellId>:<castId>`) from both `targetDnd.statModifiers` and `StatusEffectsComponent.activeEffects` matching `unit.revokesPathPrefix`.
-- Look up each root path's stored `casterLevel` from matching `ActiveStatusEffect` entries (falling back to `DEFAULT_DISPEL_FALLBACK_CL = 1`, never blindly reusing the dispeller's `casterLevel` when target CL exists).
-- When `resolveDispelCheck(casterLevel, targetSpellCl, unit.maxCasterLevelBonus > 10).dispelled` is `true`:
-  - Revoke modifiers (`revokeModifiersByPathPrefix(cleanedMods, rootPath)`), collect dispelled `linkedConditionId`s, and filter out status entries whose `sourcePath` starts with `rootPath`.
-- After the loop, if `dispelledCount > 0`, commit updated `StatusEffectsComponent` (removing component if empty via `removeComponent`), clear any dispelled `linkedConditionId` not still kept alive by remaining `StatusEffectsComponent` entries, update `statModifiers`, call `syncDnD35eActorSpatialFootprint`, and log the dispel count.
+#### 2.2 Propagate ID Counters in `wakeSavedAreaFloor` — `src/systems/map/map_wake_respawn.ts`
+At [`map_wake_respawn.ts:202-234`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/systems/map/map_wake_respawn.ts#L202-L234), apply `tempState.nextEntityId` and `tempState.nextItemInstanceId` onto `nextState`:
 
-#### 3.5 Active Aura Summaries — `src/rulesets/dnd35e/magic/spell_aura_resolver.ts`
-Expose `ActiveSpellAuraSummary` inside `ActiveSpellAuraContributions` (`activeAuras: ReadonlyArray<ActiveSpellAuraSummary>`) using the `FieldComponent`'s `duration` and `classifyEffectPolarity` / `formatSpellModifiersSummary` on each matching aura unit (single loop, zero extra spatial scans).
+```ts
+      nextEntities = [...tempState.entities];
+      nextComponents = tempState.components as Map<EntityId, Readonly<Record<string, Component>>>;
 
-#### 3.6 Weapon Damage Enhancement Competition, `weapon:magic` DR Bypass & DAG Cache Coherence
-1. **`src/rulesets/dnd35e/srd_registry.ts` (`getEquippedItemBonuses`):**
-   Compute `equipDamageBonus` alongside `equipAttackBonus` from `itemDef.magicalProperties?.enhancementBonus ?? 0` on the primary/active weapon (masterwork grants +1 attack only, +0 damage) and return `{ equipAttackBonus, equipArmorBonus, equipDamageBonus }`.
-2. **`src/rulesets/dnd35e/cartridge/dnd35e_dag_adapter.ts`:**
-   - Destructure `equipDamageBonus` from `getEquippedItemBonuses` and emit:
-     `pushMod('damage', equipDamageBonus, 'enhancement', 'equipment_damage', 'item:weapon/damage_enhancement', 'mundane');`
-   - Update line 589:
-     `const nonStrNonDoctrineFlatDamage = dagResult.damageBonus - strMod - equipDamageBonus - doctrineMod.damageBonus;`
-     *(Preserves exact same net weapon damage formula while making `+1` weapon damage and `+1 enhancement` *Magic Weapon* properly compete in `resolveTypedModifiers`!)*
-   - Add `areStatusEffectsStructurallyEqual(a?: StatusEffectsComponent, b?: StatusEffectsComponent): boolean` in `evaluateDnD35eEntityDAG` (L297) comparing length, `effectId`, `sourcePath`, `polarity`, `isPermanent`, `duration > 0`, and `grantedTags`—so routine countdown decrements (`10 -> 9`) remain DAG cache hits!
-3. **`src/rulesets/dnd35e/semantic_tags_context.ts` & `src/rulesets/dnd35e/semantic_tags.ts`:**
-   Collect `grantedTags` from active `StatusEffectsComponent` entries (`e.duration > 0 || e.isPermanent`) into `SituationalTagContext.activeStatusGrantedTags` and merge them into `selfTags` in `projectDnD35ActorSemanticTags`.
-4. **`src/rulesets/dnd35e/combat/attack_routine.ts`:**
-   When `params.selfTags?.includes('weapon:magic')` is true for manufactured weapons (or `'natural_weapon:magic'` / `'weapon:magic'` for natural attacks), append `'magic'` to `strike.bypassTags` (deduplicated) so *Magic Weapon* penetrates `DR/magic`.
+      nextState = {
+        ...nextState,
+        nextEntityId: tempState.nextEntityId,
+        nextItemInstanceId: tempState.nextItemInstanceId,
+        events: [
+          ...nextState.events,
+          {
+            type: GameEventType.AreaRespawned,
+            areaId: targetAreaId,
+            newEntitiesSpawned: directorResult.newEntities.length
+          }
+        ]
+      };
+```
 
-#### 3.7 Ruleset Expiration & Unified Active Effect Projection — `src/rulesets/dnd35e/dnd35e_ruleset.ts`
-Implement two cleanly typed functions and wire them onto `dnd35eRulesetContract`:
-- `onDnD35eStatusEffectExpired(state, entityId, expiredEffect)`:
-  - Revokes `statModifiers` matching `expiredEffect.sourcePath` (if present).
-  - If `expiredEffect.linkedConditionId` is set, checks remaining `StatusEffectsComponent.activeEffects` on `entityId` for any other active effect with the same `linkedConditionId`; if none remains, removes `linkedConditionId` from `dndData.conditions`.
-  - Runs `syncDnD35eActorSpatialFootprint(nextState, entityId)`.
-- `projectDnD35eActiveEffects(state, entityId): ReadonlyArray<ActiveEffectDisplayDTO>`:
-  - Emits entries from `StatusEffectsComponent.activeEffects`, remaining unlinked `dndData.conditions`, active `PropertyOverlayComponent` form, and `evaluateActiveSpellAuraContributions(...).activeAuras` (`isAura: true`), deduplicated cleanly.
+#### 2.3 Commit Updated ID Counters in `processChangeAreaIntent` — `src/systems/map.system.ts`
+At [`map.system.ts:135-277`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/systems/map.system.ts#L135-L277), preserve `nextEntityId` and `nextItemInstanceId` across both saved-area wake and fresh area generation:
+
+```ts
+  let nextEntityId = state.nextEntityId;
+  let nextItemInstanceId = state.nextItemInstanceId;
+  ...
+  if (savedTargetArea !== undefined) {
+    ...
+    state = wakeResult.state;
+    nextEntityId = state.nextEntityId;
+    nextItemInstanceId = state.nextItemInstanceId;
+    ...
+  } else {
+    const genResult = generateAndPopulateAreaFloor(state, targetAreaId, spawnX, spawnY, nextPersistentEntities);
+    targetMap = genResult.targetMap;
+    targetRooms = genResult.targetRooms;
+    targetLastSpawnTurn = genResult.targetLastSpawnTurn;
+    spawnX = genResult.spawnX;
+    spawnY = genResult.spawnY;
+    nextEntities = genResult.nextEntities;
+    nextComponents = genResult.nextComponents;
+    nextEntityId = genResult.nextEntityId;
+    nextItemInstanceId = genResult.nextItemInstanceId;
+  }
+  ...
+  let nextState: GameState = {
+    ...state,
+    entities: nextEntities,
+    components: nextComponents,
+    map: targetMap,
+    nextEntityId,
+    nextItemInstanceId,
+    currentAreaId: targetAreaId,
+    activeRooms: targetRooms,
+    lastSpawnTurn: targetLastSpawnTurn,
+    areas: nextAreas,
+    persistentEntities: nextPersistentEntities,
+    fovNeedsUpdate: true,
+    cachedFov: new Set()
+  };
+```
+
+#### 2.4 Collision Guard in `createEntity` — `src/core/ecs/ecs_core.ts`
+Protect live entities (and dormant/persistent areas) even if an earlier save or test fixture had a stale `nextEntityId`:
+
+```ts
+function isEntityIdInUse(state: GameState, id: EntityId): boolean {
+  if (state.components.has(id)) return true;
+  if (state.persistentEntities?.has(id)) return true;
+  if (state.areas) {
+    for (const area of state.areas.values()) {
+      if (area.components.has(id)) return true;
+    }
+  }
+  return false;
+}
+
+export function createEntity(state: GameState): [GameState, EntityId] {
+  let candidateId = state.nextEntityId;
+  let newId: EntityId = toEntityId(candidateId);
+  while (isEntityIdInUse(state, newId)) {
+    candidateId++;
+    newId = toEntityId(candidateId);
+  }
+
+  const nextEntities: ReadonlyArray<EntityId> = [...state.entities, newId];
+  const nextComponents: Map<EntityId, Readonly<Record<string, Component>>> = new Map(state.components);
+  nextComponents.set(newId, {});
+
+  const nextState: GameState = {
+    ...state,
+    entities: nextEntities,
+    components: nextComponents,
+    nextEntityId: candidateId + 1
+  };
+
+  return [nextState, newId];
+}
+```
+
+#### 2.5 High-Water-Mark Clamp in `deserializeGameState` — `src/core/save.ts`
+Compute `Math.max(sState.nextEntityId, maxExistingId + 1)` across `entities`, `components`, `persistentEntities`, `areas`, `factionEntityIds`, and `areaEntityIds` on save load so previously poisoned saves immediately self-heal.
 
 ---
 
-### Phase 4: UI Observability Across All 5 Presentation Surfaces
+### Task 3: Regression Tests & SSOT Sync
 
-1. **`BadgeProps.title` (`src/rendering/ui/primitives/DataDisplay.tsx`):**
-   Add `readonly title?: string | undefined;` to `BadgeProps` and forward `title={title}` to the `<span className={classes} title={title}>` element.
-2. **HUD Vitals (`src/rendering/ui/hud/VitalsCard.tsx`):**
-   - Query `getActiveRuleset(state).projectActiveEffects?.(state, playerId)` (falling back to `StatusEffectsComponent` for cartridges without the hook).
-   - Map `polarity` -> `BadgeTone` (`buff -> 'success'`, `debuff -> 'danger'`, `mixed -> 'info'`, `neutral -> 'warning'`).
-   - Display `${eff.label} (${formatTurnDurationCompact(eff.durationTurns, eff.isPermanent)})` (when timed/permanent) with verbose tooltip `title` combining `eff.label`, `formatTurnDurationVerbose`, and `eff.summary`.
-3. **Inspect / TacticalScanner (`src/rendering/inspect_tooltip.ts`):**
-   - For `Fighter` or `Actor` entities, query `activeRuleset.projectActiveEffects?.(state, entityId)` (or `StatusEffectsComponent` fallback).
-   - Append concise `type: 'desc'` lines colored by polarity (`#2ed573` buff, `#ff4757` debuff, `#a855f7` mixed, `#f1c40f` neutral) showing `Label (duration): summary` or `Label (duration)` so hovering or pressing `[X]` on enemies, allies, or self displays all active buffs/debuffs and durations.
-4. **Canvas Status Pips (`src/rendering/tactical_snapshot.ts`):**
-   Update L158–159 to `effect.color ?? def?.color ?? polarityDefaultColor(effect.polarity)`.
-5. **Character Sheet & Feature Projection (`src/rendering/ui/cartridges/dnd35e/DnD35eSheetOverviewCol.tsx`, `src/rulesets/dnd35e/ui/dnd35e_ui_projection.ts`):**
-   - Update `"Active Conditions"` banner to `"Active Effects & Conditions"` and render `projectDnD35eActiveEffects(state, playerId)` with polarity tones, compact ticking durations, and verbose tooltips.
-   - Add pure `formatResolutionBreakdownTooltip` helpers on Defenses (`AC`, `Touch`, `Flat`, `Fort`, `Ref`, `Will`) and Ability Score cells reading `evalResult?.dagResult.acResolution`, `saveBreakdowns`, and `abilityBreakdowns` (including active and shadowed modifiers).
-   - Update `buildActorFeatureEntries` in `dnd35e_ui_projection.ts` to format status names with `eff.displayName ?? def?.name ?? eff.effectId` + `formatTurnDurationCompact` + `description: eff.summary ?? def?.description`.
+1. Create `tests/floor_transition_entity_id_and_loader.test.ts`:
+   - Transition from `shroudgarde_courtyard` to `shroudgarde_inn_cellar` (`realms-of-shroudgarde`) via `processChangeAreaIntent`: assert `state.nextEntityId` exceeds the maximum ID on Floor 2, record all `Portal` (`stairs_up`, `stairs_down`) and door (`iron_gate`) entities, spawn 20+ new entities/items/fields (including `createEntity` + `removeEntity`), and assert zero portals or doors were overwritten or removed.
+   - Revisit a floor whose `respawnTimerTurns` triggers director reinforcement in `wakeSavedAreaFloor`: assert `state.nextEntityId` advances past newly spawned entities.
+   - Verify `createEntity` and `deserializeGameState` heal/skip stale `nextEntityId` without overwriting existing components.
+   - Verify `classicRulesetContract.getBaseContentFiles?.() ?? []` is empty (`loadRulesetBaseContent('classic')` makes 0 `fetch` calls) and `dnd35eRulesetContract.getBaseContentFiles?.()` matches `status.json` + `effects.json` only.
+2. Update `docs/ssot/ssot_console.json` (reflecting new `RulesetBaseContentKey`, `RulesetBaseFileDescriptor`, and updated `createEntity`/`deserializeGameState` behavior if applicable), run `bun scripts/map-codebase.ts`, and execute `./verify.sh`.
 
 ---
 
-### Phase 5: Tests, SSOT Registry Sync & Full 8-Stage Verification
-
-1. Create `tests/m168_active_buffs_debuffs_duration_ui.test.ts` testing:
-   - `parseSpellDurationTurns` across SRD formats + Extend Spell `2x` doubling + monotonic `formatTurnDurationCompact`/`Verbose` transitions (`2d -> 1d -> 23h -> 1h -> 59m -> 1m -> 9r -> 1r`, `Perm`).
-   - *Divine Favor* (scaling luck, personal) vs *Magic Weapon* (enhancement + `weapon:magic` `'magic'` DR bypass + `+1` weapon damage competition + stacking with *Divine Favor*).
-   - Mixed self-buff/penalty (*Enlarge Person* footprint + STR/DEX) and dual-role AoE (*Prayer* ally `'buff'` / enemy `'debuff'`).
-   - Turn expiration (`processStatusEffectsTick`) and 8-hour bulk rest (`advanceWorldTimeBulk` O(1) fast path without 4800-step stall), cleanly revoking `statModifiers`, `grantedTags`, and non-overlapping `dndData.conditions`.
-   - Multi-unit same-cast safety in `appendTargetModifiers` & *Dispel Magic* CL + synchronized status/condition removal.
-   - Console invariants: friendly buffs skipped by `detectDetrimentalStatus` & `projectHudAlertsList`, enemy debuffs included in both, and DAG cache hits preserved across duration decrements.
-   - UI projections (`projectDnD35eActiveEffects` including auras & `PropertyOverlay`, `buildInspectTooltip`, `buildActorFeatureEntries`).
-2. Add `src/utils/duration.ts` to `docs/ssot/ssot_console.json` and `src/rulesets/dnd35e/magic/spell_duration.ts` to `docs/ssot/ssot_dnd35e.json`, run `bun scripts/map-codebase.ts`, update `docs/ARCHITECTURE.md` & `docs/MILESTONES.md`, and run `./verify.sh`.
-
----
-
-## 3. Cascading Effects Matrix
+## 4. Cascading Effects Matrix (Rule 15)
 
 | Change | Upstream | Downstream | Lateral |
-| :--- | :--- | :--- | :--- |
-| Add `ROUNDS_PER_MINUTE`, `ROUNDS_PER_DAY` & `src/utils/duration.ts` | `world_clock.constants.ts` | `spell_duration.ts`, `VitalsCard.tsx`, `hud_alerts.ui.ts`, `inspect_tooltip.ts`, `DnD35eSheetOverviewCol.tsx`, `dnd35e_ui_projection.ts` | `docs/ssot/ssot_console.json`, `docs/SSOT_CONSOLE.md` |
-| Extend `ActiveStatusEffect` & `RulesetContract` (`ActiveEffectDisplayDTO`, `onStatusEffectExpired`, `projectActiveEffects`) | `dnd35e_ruleset.ts`, `applyStatusEffect`, `spell_cast_effects.ts` | `status-effect.system.ts`, `VitalsCard.tsx`, `hud_alerts.ui.ts`, `auto_pause_signals.ts`, `inspect_tooltip.ts`, `tactical_snapshot.ts`, `save.ts` | `classic` cartridge (`classic_stats.ts`, `classic_ui_adapter.ts` keep fallback path intact) |
-| $O(1)$ bulk advance & `hasPerTurnStatusActivity` (`status-effect.system.ts`, `world_time_skip.ts`) | `advanceWorldTimeBulk`, `advanceWorldTimeBulkAsync`, `executeEightHourRest` | `rest_recovery.ts`, `onStatusEffectExpired` triggers | `m153_rest_pressure_logistics.test.ts`, `unified_round_clock.test.ts` |
-| Polarity filtering (`hud_alerts.ui.ts`, `auto_pause_signals.ts`) | `applyStatusEffect`, `spell_cast_effects.ts` | `AlertsStack.tsx`, RTwP auto-pause checks | `tests/hud_rest_and_display_name.test.ts` |
-| Add optional `condition.duration` schema field + `spell_duration.ts` + cast registration & `appendTargetModifiers` fix | `spell_system.types.ts`, `executeDnD35eSpellCast`, `resolveDnD35eSpellItemEffect` | `StatusEffectsComponent`, `dndData.statModifiers`, `dndData.conditions`, `dnd35e_dag_adapter.ts` | `spell_duration.ts` registered in `docs/ssot/ssot_dnd35e.json` |
-| `getEquippedItemBonuses` (`equipDamageBonus`) + `weapon:magic` `'magic'` bypass + DAG status equivalence | `collectEquippedItemDAGContributions`, `dnd35e_dag_adapter.ts`, `semantic_tags_context.ts`, `semantic_tags.ts` | `resolveActorAttackRoutine`, `executeCombatStrikeExchange`, `DnD35eSheetOverviewCol` damage displays | Existing weapon/DR tests |
-| *Dispel Magic* CL check & synchronized cleanup (`spell_cast_units.ts`) | `dispel_magic` / `greater_dispel_magic` casts | `StatusEffectsComponent`, `dndData.statModifiers`, `dndData.conditions`, `syncDnD35eActorSpatialFootprint` | `dnd35e_m136_acf_mechanics.test.ts`, `dnd35e_phase21_primitives.test.ts` |
-| `activeAuras` on `ActiveSpellAuraContributions` + UI rendering (`BadgeProps.title`, `VitalsCard`, `inspect_tooltip`, `DnD35eSheetOverviewCol`, `dnd35e_ui_projection`) | `evaluateActiveSpellAuraContributions`, `projectDnD35eActiveEffects`, `dagResult` breakdowns | `TacticalScannerCard`, `DnD35eSheetModal`, HUD Zone 1 & Zone 3, Canvas pips | `console_ui_architecture.test.ts`, `docs/ARCHITECTURE.md`, `docs/MILESTONES.md` |
+|---|---|---|---|
+| `RulesetContract.getBaseContentFiles?()` & `loadRulesetBaseContent` | `classicRulesetContract` returns `[]`; `dnd35eRulesetContract` returns `status.json` & `effects.json`; mocks omitting hook default to `[]` | Zero speculative Chrome 404 network errors when loading `default`, `dnd35e-crypt`, `realms-of-shroudgarde`, or `shroudgarde` | Synced identically in `scripts/run-validator.ts` (`validateRulesetDiskParity`) and `tests/helpers.ts` |
+| Return `nextEntityId` / `nextItemInstanceId` in `generateAndPopulateAreaFloor` & `wakeSavedAreaFloor` + commit in `processChangeAreaIntent` | Checked all callers of both functions (`src/systems/map.system.ts` is the sole caller) | Subsequent corpses, fields, projectiles, loot, and summons receive strictly fresh IDs; Floor 2 `stairs_up`, `stairs_down`, and `iron_gate` doors remain intact | Eliminates cross-floor ID collision across all campaigns (`realms-of-shroudgarde`, `default`, `megacampaign`, `dnd35e-crypt`, `shroudgarde`) |
+| `createEntity` `isEntityIdInUse` guard & `deserializeGameState` high-water-mark clamp | All ECS allocations and browser/JSON save loads | Protects and self-heals existing saves created before the floor-transition fix | Zero performance regression (`Map.has` across live, persistent, and saved area maps) |
 
 ---
 
-## 4. Declarative Purity & Anti-Hardcoding Audit Table (`AGENTS.md` Rule 21)
+## 5. Verification Plan
 
-| Behavior | Rejected Imperative Shortcut | Chosen Declarative Schema / JSON Mechanism | Passes "New Content Mod" Litmus Test? |
-| :--- | :--- | :--- | :--- |
-| Spell duration parsing | `if (spell.id === 'divine_favor') return 10` | Generic formula parser (`parseSpellDurationTurns`) over `spell.duration` string + `metamagic.extend` | **Yes** — any new modded spell uses standard SRD duration notation |
-| Buff / debuff / mixed polarity | Hardcoded `BUFF_SPELL_IDS` / `DEBUFF_SPELL_IDS` `Set`s | Derived strictly from `StatModifier.value` signs, `condition` / `ability_harm` units, and `targetRole` | **Yes** — modded bundles auto-classify without `.ts` changes |
-| Instantaneous spell lingering conditions | `if (spell.id === 'color_spray') duration = 2` | Optional `duration` property on `'condition'` unit in `DnD35SpellEffectUnitSchema` + named fallback constant | **Yes** — modders set `condition` unit `duration` directly in JSON |
-| Weapon `DR/magic` bypass from buffs | `if (hasSpell('magic_weapon')) addBypass('magic')` | Generic `grantedTags` projection (`'weapon:magic'`) from `ActiveStatusEffect` onto `selfTags` -> `bypassTags` | **Yes** — any spell/aura/feat emitting `'weapon:magic'` grants `'magic'` bypass |
-| Overlapping spell condition removal | Unconditionally deleting condition ID on expiry | Reference-counting check across remaining `StatusEffectsComponent` entries sharing `linkedConditionId` | **Yes** — works identically for any custom spell pairing |
-| HUD alert & auto-pause gating | Checking hardcoded spell/status names | Generic `polarity === 'debuff'` / `campaign.status[id]?.detrimental` predicate | **Yes** — works for all modded statuses and dynamic spells |
-| Spatial aura & overlay UI projection | Separate UI loops per spell or form type | Aggregated in `evaluateActiveSpellAuraContributions().activeAuras` & `PropertyOverlayComponent` -> `ActiveEffectDisplayDTO` | **Yes** — any new aura spell or form overlay displays automatically |
-
----
-
-**STOPPING HERE PER `AGENTS.md` RULE 5:** Please review [docs/implementation_plan.md](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/docs/implementation_plan.md) and confirm if you approve proceeding to implementation.
+1. Run `./verify.sh` across all 8 stages (`tsc --noEmit`, `prettier`, `eslint`, `depcruise` + file length, `knip`, `bun test`, `vite build`, `run-validator.ts` including disk parity & SSOT parity).
+2. **Manual Playtest Scenario:** Start `realms-of-shroudgarde`, open Chrome DevTools Console + Network tab (confirm 0 `404`s on `/data/rulesets/...`), take the stairs down to `Shroudgarde Inn Cellar`, walk around, fight enemies / trigger spell effects and actor turns, and confirm both the `<` stairs back up and all `#`/`/` iron portcullises remain intact and interactable.

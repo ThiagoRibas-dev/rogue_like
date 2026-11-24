@@ -5384,6 +5384,8 @@
       "ViewPanelType",
       "TabDefinition",
       "ViewGroup",
+      "RulesetBaseContentKey",
+      "RulesetBaseFileDescriptor",
       "RulesetIdSchema",
       "RulesetId",
       "EffectiveStats"
