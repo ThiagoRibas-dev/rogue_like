@@ -30,7 +30,7 @@ import {
 import { EngineMode, type EntityId, type GameState } from '../../types/game-state.types.ts';
 import { formatTurnDurationCompact } from '../../utils/duration.ts';
 import { isHostile } from '../../utils/faction.ts';
-import { coordToIndex } from '../../utils/grid.ts';
+import { isTileKeyInFov } from '../../map/map_accessor.ts';
 import { getEffectiveStats } from '../../utils/stats.ts';
 import { resolveEntityDisplayName } from '../inspect_tooltip.ts';
 import { getActiveCartridgeUI } from './cartridge_ui_registry.ts';
@@ -68,8 +68,7 @@ export function isActorPerceivedByPlayer(state: GameState, actorId: EntityId, pl
   if (!anyTileVisible) {
     for (let dy = 0; dy < height && !anyTileVisible; dy++) {
       for (let dx = 0; dx < width; dx++) {
-        const idx = coordToIndex(pos.x + dx, pos.y + dy, state.map.width);
-        if (state.cachedFov.has(idx)) {
+        if (isTileKeyInFov(state, pos.x + dx, pos.y + dy)) {
           anyTileVisible = true;
           break;
         }
@@ -203,9 +202,7 @@ export function projectHudAlertsList(state: GameState, playerEntityId: EntityId)
     const targetFighter = getComponent(state, entityId, ComponentType.Fighter) as FighterComponent | undefined;
     if (!pos || !targetFighter) continue;
 
-    const tileIdx = coordToIndex(pos.x, pos.y, state.map.width);
-    const isVisible = state.map.isFullyExplored || state.cachedFov.has(tileIdx);
-    if (!isVisible) continue;
+    if (!isTileKeyInFov(state, pos.x, pos.y)) continue;
 
     if (isHostile(state, playerEntityId, entityId)) {
       const nemesis = getComponent(state, entityId, ComponentType.Nemesis) as NemesisComponent | undefined;

@@ -4,6 +4,7 @@ import type { GameMap } from '../types/game-state.types.ts';
 import type { DirectorContext } from '../types/encounter.types.ts';
 import { runEncounterDirector } from './encounter_director.ts';
 import { parseStaticMap } from './static-parser.ts';
+import { createInitialStreamingGrid } from './chunk_generator.ts';
 import type { GeneratedArea } from './generator.ts';
 import { MapGenStage, MAP_GEN_STAGE_LABELS } from '../constants/scheduler.constants.ts';
 import {
@@ -59,6 +60,36 @@ export function* generateAreaAsync(
       portals,
       rooms: [],
       placedEntities: [...(areaDef.placedEntities || []), ...parsedEntities]
+    };
+  }
+
+  if (areaDef.generatorType === 'streaming_overworld') {
+    let rngState = ROT.RNG.getState();
+    yield { stage: MapGenStage.Init, progress: 0.2, message: MAP_GEN_STAGE_LABELS[MapGenStage.Init] };
+    ROT.RNG.setState(rngState);
+
+    const chunkGrid = createInitialStreamingGrid(campaign, areaDef, 0, 0);
+    const portals = (areaDef.connections ?? []).map((conn, idx) => ({
+      x: conn.placementX ?? idx + 1,
+      y: conn.placementY ?? 0,
+      connection: conn
+    }));
+
+    rngState = ROT.RNG.getState();
+    yield { stage: MapGenStage.Complete, progress: 1.0, message: MAP_GEN_STAGE_LABELS[MapGenStage.Complete] };
+    ROT.RNG.setState(rngState);
+
+    return {
+      map: {
+        width: 0,
+        height: 0,
+        tiles: [],
+        chunkGrid
+      },
+      startPos: { x: 0, y: 0 },
+      portals,
+      rooms: [],
+      placedEntities: areaDef.placedEntities
     };
   }
 

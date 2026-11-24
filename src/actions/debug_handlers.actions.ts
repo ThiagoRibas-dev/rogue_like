@@ -8,7 +8,7 @@ import { processRivalries } from '../systems/rivalry.system.ts';
 import { promoteEntity } from '../systems/chronicle.system.ts';
 import { ComponentType, type GodModeComponent, type SchemeComponent } from '../types/components.types.ts';
 import { GameEventType, type ClueDiscoveredEvent, type SchemeMutatedAreaEvent } from '../types/events.types.ts';
-import { coordToIndex } from '../utils/grid.ts';
+import { getTileDefAt } from '../map/map_accessor.ts';
 
 /**
  * Toggles full map exploration visibility for debugging.
@@ -59,9 +59,7 @@ export function processDebugSpawnEntity(state: GameState, entityId: EntityId): {
   let spawnY = -1;
 
   for (const n of neighbors) {
-    const idx = coordToIndex(n.x, n.y, state.map.width);
-    const tile = state.map.tiles[idx];
-    if (tile && state.campaign.tiles[tile.tileId]?.walkable) {
+    if (getTileDefAt(state, n.x, n.y)?.walkable) {
       const entitiesAt = state.spatialIndex.get(`${n.x},${n.y}`);
       if (!entitiesAt || entitiesAt.length === 0) {
         spawnX = n.x;

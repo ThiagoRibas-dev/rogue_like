@@ -19,7 +19,7 @@ import type {
   TilePassabilityTier,
   TileTraversalEvaluation
 } from '../types/ruleset.types.ts';
-import { coordToIndex, isInBounds } from '../utils/grid.ts';
+import { getTileIdAt, isInMapBounds } from '../map/map_accessor.ts';
 import { runActorMovementStep } from './lifecycle.system.ts';
 import {
   evaluateFootprintOccupancy,
@@ -290,11 +290,11 @@ function evaluateFootprintMaxTier(
     for (let ox = 0; ox < width; ox++) {
       const tx = anchorX + ox;
       const ty = anchorY + oy;
-      if (!isInBounds(tx, ty, state.map.width, state.map.height)) {
+      if (!isInMapBounds(state.map, tx, ty)) {
         return { allowed: false, enteredHazard: false, stopReason: 'out_of_bounds', collidedTileId: undefined };
       }
-      const tile = state.map.tiles[coordToIndex(tx, ty, state.map.width)];
-      const tileDef = tile ? state.campaign.tiles[tile.tileId] : undefined;
+      const tileId = getTileIdAt(state.map, tx, ty);
+      const tileDef = tileId ? state.campaign.tiles[tileId] : undefined;
       const evalRes = evaluateTileTraversal(tileDef, movementModes, state, tx, ty);
       if (evalRes.passability === 'hazardous') {
         enteredHazard = true;
@@ -305,15 +305,15 @@ function evaluateFootprintMaxTier(
             allowed: false,
             enteredHazard: false,
             stopReason: 'solid_obstacle',
-            collidedTileId: tile?.tileId
+            collidedTileId: tileId
           };
         }
         if (evalRes.passability === 'difficult') {
           blockedReason = blockedReason ?? 'difficult_terrain_blocked';
-          collidedTileId = collidedTileId ?? tile?.tileId;
+          collidedTileId = collidedTileId ?? tileId;
         } else {
           blockedReason = blockedReason ?? 'hazard_halted';
-          collidedTileId = collidedTileId ?? tile?.tileId;
+          collidedTileId = collidedTileId ?? tileId;
         }
       }
     }
@@ -327,10 +327,10 @@ function evaluateFootprintMaxTier(
 }
 
 function buildTileEnteredEvents(state: GameState, entityId: EntityId, x: number, y: number): ReadonlyArray<GameEvent> {
-  if (!isInBounds(x, y, state.map.width, state.map.height)) return [];
-  const tile = state.map.tiles[coordToIndex(x, y, state.map.width)];
-  if (!tile) return [];
-  const tileTags = state.campaign.tiles[tile.tileId]?.tags ?? [tile.tileId];
+  if (!isInMapBounds(state.map, x, y)) return [];
+  const tileId = getTileIdAt(state.map, x, y);
+  if (!tileId) return [];
+  const tileTags = state.campaign.tiles[tileId]?.tags ?? [tileId];
   return tileTags.map((tag) => ({
     type: GameEventType.TileEntered as const,
     entityId,
@@ -373,7 +373,7 @@ export function displaceEntityStep(params: {
     };
   }
 
-  if (!isInBounds(targetX, targetY, state.map.width, state.map.height)) {
+  if (!isInMapBounds(state.map, targetX, targetY)) {
     return {
       state,
       moved: false,

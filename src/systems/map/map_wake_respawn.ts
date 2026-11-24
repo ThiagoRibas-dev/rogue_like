@@ -22,7 +22,7 @@ import {
   type GameState,
   type PersistentEntityRecord
 } from '../../types/game-state.types.ts';
-import { coordToIndex } from '../../utils/grid.ts';
+import { findRandomWalkableCoord } from '../../map/map_accessor.ts';
 
 /**
  * Collects unfulfilled minion Agreements targeting the specified area across both active and persistent entities.
@@ -134,12 +134,12 @@ export function wakeSavedAreaFloor(
     }
 
     for (const token of reservedTokens) {
+      const tempStateForSampling: GameState = { ...nextState, map: targetMap };
       for (let attempt = 0; attempt < 100; attempt++) {
-        const rx = Math.floor(rng.getUniform() * targetMap.width);
-        const ry = Math.floor(rng.getUniform() * targetMap.height);
-        const idx = coordToIndex(rx, ry, targetMap.width);
-        const tile = targetMap.tiles[idx];
-        if (tile && nextState.campaign.tiles[tile.tileId]?.walkable && !occupiedCoords.has(`${rx},${ry}`)) {
+        const sampled = findRandomWalkableCoord(tempStateForSampling, () => rng.getUniform(), 1);
+        if (sampled && !occupiedCoords.has(`${sampled.x},${sampled.y}`)) {
+          const rx = sampled.x;
+          const ry = sampled.y;
           const minionComps =
             nextState.components.get(token.minionId) || nextState.persistentEntities.get(token.minionId)?.components;
           if (minionComps) {

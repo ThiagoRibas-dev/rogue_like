@@ -12,6 +12,47 @@ export async function validateAreas(campaign: Readonly<CampaignData>): Promise<V
   for (const [areaId, area] of Object.entries(campaign.areas)) {
     if (!area) continue;
 
+    if (area.generatorType !== 'streaming_overworld') {
+      area.placedEntities?.forEach((ent, eIdx) => {
+        if (ent.x < 0 || ent.y < 0) {
+          errors.push({
+            severity: 'error',
+            path: `/areas/${areaId}/placedEntities/${eIdx}`,
+            message: `Placed entity '${ent.templateId}' at (${ent.x}, ${ent.y}) cannot have negative coordinates in finite area '${areaId}'.`,
+            fixSuggestion: 'Use non-negative (x, y) coordinates inside the finite map bounds.'
+          });
+        }
+      });
+    }
+
+    area.connections?.forEach((conn, cIdx) => {
+      if (
+        area.generatorType !== 'streaming_overworld' &&
+        ((conn.placementX !== undefined && conn.placementX < 0) ||
+          (conn.placementY !== undefined && conn.placementY < 0))
+      ) {
+        errors.push({
+          severity: 'error',
+          path: `/areas/${areaId}/connections/${cIdx}`,
+          message: `Connection placement (${conn.placementX ?? 0}, ${conn.placementY ?? 0}) cannot be negative in finite area '${areaId}'.`,
+          fixSuggestion: 'Use non-negative placementX/placementY coordinates.'
+        });
+      }
+      const targetArea = campaign.areas[conn.targetAreaId];
+      if (
+        targetArea &&
+        targetArea.generatorType !== 'streaming_overworld' &&
+        ((conn.targetX !== undefined && conn.targetX < 0) || (conn.targetY !== undefined && conn.targetY < 0))
+      ) {
+        errors.push({
+          severity: 'error',
+          path: `/areas/${areaId}/connections/${cIdx}`,
+          message: `Connection target coordinates (${conn.targetX ?? 0}, ${conn.targetY ?? 0}) cannot be negative for finite area '${conn.targetAreaId}'.`,
+          fixSuggestion: 'Use non-negative targetX/targetY coordinates or target a streaming_overworld area.'
+        });
+      }
+    });
+
     // Procedural direction check
     if (area.generatorType === 'digger' || area.generatorType === 'cellular') {
       if (area.connections) {
@@ -34,6 +75,47 @@ export async function validateAreas(campaign: Readonly<CampaignData>): Promise<V
             }
           }
         });
+      }
+    }
+
+    // Streaming Overworld check
+    if (area.generatorType === 'streaming_overworld') {
+      if (!area.streamingConfig) {
+        errors.push({
+          severity: 'error',
+          path: `/areas/${areaId}/streamingConfig`,
+          message: `Streaming overworld area '${areaId}' requires a 'streamingConfig' block.`,
+          fixSuggestion: 'Add streamingConfig with chunkSize, worldSeed, and biomePalette tile mappings.'
+        });
+      } else {
+        const cfg = area.streamingConfig;
+        if (cfg.prefetchRadiusChunks < cfg.activeRadiusChunks) {
+          errors.push({
+            severity: 'error',
+            path: `/areas/${areaId}/streamingConfig/prefetchRadiusChunks`,
+            message: `prefetchRadiusChunks (${cfg.prefetchRadiusChunks}) must be >= activeRadiusChunks (${cfg.activeRadiusChunks}).`,
+            fixSuggestion: 'Increase prefetchRadiusChunks so Ring 1 surrounds Ring 0.'
+          });
+        }
+        const palette = cfg.biomePalette;
+        const paletteEntries: ReadonlyArray<readonly [string, string | undefined]> = [
+          ['water', palette.water],
+          ['shore', palette.shore],
+          ['plains', palette.plains],
+          ['forest', palette.forest],
+          ['ridge', palette.ridge],
+          ['road', palette.road]
+        ];
+        for (const [slot, tileId] of paletteEntries) {
+          if (tileId !== undefined && !campaign.tiles[tileId]) {
+            errors.push({
+              severity: 'error',
+              path: `/areas/${areaId}/streamingConfig/biomePalette/${slot}`,
+              message: `Streaming biomePalette.${slot} references missing tile '${tileId}'.`,
+              fixSuggestion: `Register tile '${tileId}' in tiles.json or point biomePalette.${slot} to an existing tile.`
+            });
+          }
+        }
       }
     }
 

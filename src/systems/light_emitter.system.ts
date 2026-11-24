@@ -11,7 +11,7 @@ import {
 } from '../types/components.types.ts';
 import type { EntityId, GameState } from '../types/game-state.types.ts';
 import { assertNever } from '../utils/assert.ts';
-import { coordToIndex, isInBounds } from '../utils/grid.ts';
+import { getTileDefAt, isInMapBounds } from '../map/map_accessor.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 
 /** Standard grid square length in feet (`5` ft). */
@@ -116,9 +116,8 @@ function hasClearLightLineOfSight(state: Readonly<GameState>, x0: number, y0: nu
       y += sy;
     }
     if (x === x1 && y === y1) break;
-    if (!isInBounds(x, y, state.map.width, state.map.height)) return false;
-    const tile = state.map.tiles[coordToIndex(x, y, state.map.width)];
-    const tileDef = tile ? state.campaign.tiles[tile.tileId] : undefined;
+    if (!isInMapBounds(state.map, x, y)) return false;
+    const tileDef = getTileDefAt(state, x, y);
     if (tileDef?.transparent === false) return false;
   }
   return true;

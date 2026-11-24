@@ -4,6 +4,7 @@ import { runEncounterDirector } from './encounter_director.ts';
 import type { DirectorContext } from '../types/encounter.types.ts';
 import type { GeneratedArea } from '../types/generation.types.ts';
 import { parseStaticMap } from './static-parser.ts';
+import { createInitialStreamingGrid } from './chunk_generator.ts';
 import {
   resolvePalette,
   carveBaseGeometry,
@@ -37,6 +38,27 @@ export function generateArea(campaign: CampaignData, areaId: string, context?: D
       portals,
       rooms: [],
       placedEntities: [...(areaDef.placedEntities || []), ...parsedEntities]
+    };
+  }
+
+  if (areaDef.generatorType === 'streaming_overworld') {
+    const chunkGrid = createInitialStreamingGrid(campaign, areaDef, 0, 0);
+    const portals = (areaDef.connections ?? []).map((conn, idx) => ({
+      x: conn.placementX ?? idx + 1,
+      y: conn.placementY ?? 0,
+      connection: conn
+    }));
+    return {
+      map: {
+        width: 0,
+        height: 0,
+        tiles: [],
+        chunkGrid
+      },
+      startPos: { x: 0, y: 0 },
+      portals,
+      rooms: [],
+      placedEntities: areaDef.placedEntities
     };
   }
 

@@ -15,7 +15,7 @@ import {
 } from '../../../types/components.types.ts';
 import { EngineMode, type EntityId, type GameState } from '../../../types/game-state.types.ts';
 import { isHostile } from '../../../utils/faction.ts';
-import { coordToIndex, isInBounds } from '../../../utils/grid.ts';
+import { getTileDefAt, isInMapBounds } from '../../../map/map_accessor.ts';
 import { useImmediateAction } from '../action_economy_reactions.ts';
 import { evaluateDnD35eEntityDAG } from '../cartridge/dnd35e_dag_adapter.ts';
 import { hydrateEntityRoundActionBudget } from '../cartridge/dnd35e_turn_budget.ts';
@@ -142,9 +142,8 @@ export function evaluateReactiveCounterspellInterrupt(
   forcedSpellcraftRoll?: number
 ): { readonly state: GameState; readonly countered: boolean; readonly reactorId?: EntityId | undefined } {
   const isWallAt = (x: number, y: number): boolean => {
-    if (!isInBounds(x, y, state.map.width, state.map.height)) return true;
-    const tile = state.map.tiles[coordToIndex(x, y, state.map.width)];
-    return !tile || !(state.campaign.tiles[tile.tileId]?.transparent ?? false);
+    if (!isInMapBounds(state.map, x, y)) return true;
+    return !(getTileDefAt(state, x, y)?.transparent ?? false);
   };
 
   for (const candId of state.entities) {

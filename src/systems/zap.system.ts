@@ -5,6 +5,7 @@ import { addComponent, getComponent, resolveEntityDisplayName } from '../core/ec
 import { getActiveRuleset } from '../rulesets/registry.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import { getBresenhamLine } from '../utils/grid.ts';
+import { getTileDefAt } from '../map/map_accessor.ts';
 import { applyItemEffect } from './effects.system.ts';
 import { processReactions } from './reaction.system.ts';
 import { rng } from '../core/rng.ts';
@@ -83,9 +84,7 @@ export function processWandZap(state: GameState, intent: ApplyIntent): { state: 
       affectedTiles.push(point);
 
       // Check for walls
-      const tileIndex = point.y * state.map.width + point.x;
-      const tile = state.map.tiles[tileIndex];
-      const tileDef = tile ? state.campaign.tiles[tile.tileId] : null;
+      const tileDef = getTileDefAt(state, point.x, point.y);
       if (!tileDef || !tileDef.walkable) {
         break; // Stop at walls for both bolt and beam
       }

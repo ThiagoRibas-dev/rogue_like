@@ -8,9 +8,19 @@ import {
   UIMode
 } from '../types/game-state.types.ts';
 import { updateSpatialIndex, collectOwnedEntityIds } from './ecs.ts';
+import {
+  clearChunkStoreScope,
+  flushDirtyChunksToStore,
+  getCachedWorldChunkDeltaSync,
+  putWorldChunkDeltaSync,
+  rehydrateStreamingWorldAsync,
+  resolveDefaultChunkScopeKey
+} from './chunk_store.ts';
+import { createInitialStreamingGrid } from '../map/chunk_generator.ts';
 import { loadCampaign } from './loader.ts';
 import { getTelemetryStore, setTelemetryStore } from './telemetry.ts';
-import type { SerializedPersistentEntityRecord, PersistentEntityRecord } from '../types/game-state.types.ts';
+import type { GameMap, SerializedPersistentEntityRecord, PersistentEntityRecord } from '../types/game-state.types.ts';
+import type { ChunkedWorldGrid, SerializedStreamingWorldState } from '../types/world-chunk.types.ts';
 import {
   ComponentType,
   type EquipmentComponent,
@@ -18,6 +28,7 @@ import {
   type ItemComponent,
   type ShopComponent
 } from '../types/components.types.ts';
+import { CHUNK_DIRTY_PERSIST } from '../constants/world_chunk.constants.ts';
 import { DEFAULT_ZOOM_LEVEL } from '../constants/display.constants.ts';
 import { DEFAULT_GLOBAL_DRAMA_BUDGET } from '../constants/pacing.constants.ts';
 
@@ -39,12 +50,28 @@ export function hasSaveGame(): boolean {
 }
 
 /**
- * Deletes the save game from localStorage.
+ * Deletes the save game from localStorage and clears persisted streaming chunk deltas
+ * for the saved campaign (or the supplied fallback `campaignId`).
  */
-export function deleteSave(): void {
+export function deleteSave(campaignId?: string): void {
+  let resolvedCampaignId = campaignId;
   if (typeof localStorage !== 'undefined') {
+    if (resolvedCampaignId === undefined) {
+      const raw = localStorage.getItem(SAVE_KEY);
+      if (raw) {
+        try {
+          const parsed = JSON.parse(raw) as { readonly campaignId?: unknown };
+          if (typeof parsed.campaignId === 'string' && parsed.campaignId.trim().length > 0) {
+            resolvedCampaignId = parsed.campaignId;
+          }
+        } catch {
+          // Ignore malformed save strings and clear default scope below.
+        }
+      }
+    }
     localStorage.removeItem(SAVE_KEY);
   }
+  void clearChunkStoreScope(resolveDefaultChunkScopeKey(resolvedCampaignId ?? 'default'));
 }
 
 /**
@@ -62,9 +89,87 @@ export function setSaveData(data: string): void {
   localStorage.setItem(SAVE_KEY, data);
 }
 
+function serializeStreamingGridMetadata(grid: ChunkedWorldGrid): SerializedStreamingWorldState {
+  return {
+    areaId: grid.areaId,
+    worldSeed: grid.worldSeed,
+    chunkSize: grid.chunkSize,
+    activeRadiusChunks: grid.activeRadiusChunks,
+    prefetchRadiusChunks: grid.prefetchRadiusChunks,
+    evictRadiusChunks: grid.evictRadiusChunks,
+    originChunkX: grid.originChunkX,
+    originChunkY: grid.originChunkY,
+    dirtyChunkKeys: Array.from(grid.dirtyChunkKeys),
+    evictedChunkEntities: grid.evictedChunkEntities
+  };
+}
+
+function stripRuntimeChunkGrid(map: GameMap): GameMap {
+  if (map.chunkGrid === undefined) return map;
+  return {
+    width: map.width,
+    height: map.height,
+    tiles: [],
+    ...(map.isFullyExplored !== undefined ? { isFullyExplored: map.isFullyExplored } : {})
+  };
+}
+
+function hydrateStreamingMapSync(
+  rawMap: GameMap,
+  streamingState: SerializedStreamingWorldState | undefined,
+  campaign: GameState['campaign'],
+  campaignId: string
+): GameMap {
+  if (!streamingState) return rawMap;
+  const areaDef = campaign.areas[streamingState.areaId];
+  if (!areaDef) return rawMap;
+  const baseGrid = createInitialStreamingGrid(
+    campaign,
+    areaDef,
+    streamingState.originChunkX,
+    streamingState.originChunkY,
+    streamingState
+  );
+  const scopeKey = resolveDefaultChunkScopeKey(campaignId);
+  const nextChunks = new Map(baseGrid.chunks);
+  let patched = false;
+  for (const [packed, chunk] of nextChunks.entries()) {
+    const cached = getCachedWorldChunkDeltaSync(scopeKey, baseGrid.areaId, chunk.cx, chunk.cy, chunk.cz);
+    if (cached) {
+      nextChunks.set(packed, cached);
+      patched = true;
+    }
+  }
+  const finalGrid = patched ? { ...baseGrid, chunks: nextChunks } : baseGrid;
+  return {
+    width: rawMap.width,
+    height: rawMap.height,
+    tiles: [],
+    ...(rawMap.isFullyExplored !== undefined ? { isFullyExplored: rawMap.isFullyExplored } : {}),
+    chunkGrid: finalGrid
+  };
+}
+
+function markEvictedEntitiesReachable(
+  grid: ChunkedWorldGrid | undefined,
+  mark: (id: EntityId) => void,
+  reachable: Set<EntityId>
+): void {
+  if (!grid) return;
+  for (const list of Object.values(grid.evictedChunkEntities)) {
+    for (const rec of list) {
+      reachable.add(rec.entityId);
+      mark(rec.entityId);
+      for (const child of rec.ownedEntities) {
+        reachable.add(child.entityId);
+      }
+    }
+  }
+}
+
 /**
  * Prunes unreferenced entity components from state.components that are no longer
- * reachable by the active floor, sleeping areas, factions, or persistent entities.
+ * reachable by the active floor, sleeping areas, dormant streaming chunks, factions, or persistent entities.
  *
  * @param state The current game state.
  * @returns The sanitized game state with orphan components purged.
@@ -78,7 +183,9 @@ export function pruneOrphanEntities(state: GameState): GameState {
   for (const id of state.entities) mark(id);
   for (const area of state.areas.values()) {
     for (const id of area.entities) mark(id);
+    markEvictedEntitiesReachable(area.map.chunkGrid, mark, reachable);
   }
+  markEvictedEntitiesReachable(state.map.chunkGrid, mark, reachable);
   for (const id of Object.values(state.factionEntityIds || {})) mark(id);
   for (const id of Object.values(state.areaEntityIds || {})) mark(id);
 
@@ -106,6 +213,7 @@ export function pruneOrphanEntities(state: GameState): GameState {
 
 /**
  * Purely serializes a live GameState (after pruning orphan entities) into a JSON-ready SerializedGameState DTO.
+ * Stripping runtime `chunkGrid` TypedArrays keeps the JSON save slim while emitting `streamingState` metadata.
  *
  * @param state The current live GameState.
  * @returns The JSON-serializable SerializedGameState DTO.
@@ -117,12 +225,15 @@ export function serializeGameState(state: GameState): SerializedGameState {
     ([areaId, areaData]) => [
       areaId,
       {
-        map: areaData.map,
+        map: stripRuntimeChunkGrid(areaData.map),
         entities: areaData.entities,
         components: Array.from(areaData.components.entries()),
         rooms: areaData.rooms,
         lastSpawnTurn: areaData.lastSpawnTurn,
-        lastVisitedTurn: areaData.lastVisitedTurn
+        lastVisitedTurn: areaData.lastVisitedTurn,
+        ...(areaData.map.chunkGrid !== undefined
+          ? { streamingState: serializeStreamingGridMetadata(areaData.map.chunkGrid) }
+          : {})
       }
     ]
   );
@@ -135,7 +246,10 @@ export function serializeGameState(state: GameState): SerializedGameState {
     campaignId: sanitized.campaignId,
     entities: sanitized.entities,
     components: Array.from(sanitized.components.entries()),
-    map: sanitized.map,
+    map: stripRuntimeChunkGrid(sanitized.map),
+    ...(sanitized.map.chunkGrid !== undefined
+      ? { streamingState: serializeStreamingGridMetadata(sanitized.map.chunkGrid) }
+      : {}),
     nextEntityId: sanitized.nextEntityId,
     nextItemInstanceId: sanitized.nextItemInstanceId,
     nextQuestId: sanitized.nextQuestId,
@@ -196,9 +310,25 @@ function computeSafeNextEntityId(
     if (Number.isFinite(id) && id > maxId) maxId = id;
   };
 
+  const inspectDormantStreaming = (streaming: SerializedStreamingWorldState | undefined): void => {
+    if (!streaming) return;
+    for (const list of Object.values(streaming.evictedChunkEntities)) {
+      for (const rec of list) {
+        recordId(rec.entityId);
+        for (const child of rec.ownedEntities) {
+          recordId(child.entityId);
+        }
+      }
+    }
+  };
+
   for (const id of sState.entities) recordId(id);
   for (const [id] of sState.components) recordId(id);
   for (const [id] of rehydratedPersistentEntities) recordId(id);
+  inspectDormantStreaming(sState.streamingState);
+  for (const [, sArea] of sState.areas) {
+    inspectDormantStreaming(sArea.streamingState);
+  }
   for (const area of rehydratedAreas.values()) {
     for (const id of area.entities) recordId(id);
     for (const [id] of area.components) recordId(id);
@@ -236,6 +366,19 @@ function computeSafeNextItemInstanceId(
 
   for (const [, comps] of sState.components) inspectCompMap(comps);
   for (const record of rehydratedPersistentEntities.values()) inspectCompMap(record.components);
+  const inspectDormantStreamingItems = (streaming: SerializedStreamingWorldState | undefined): void => {
+    if (!streaming) return;
+    for (const list of Object.values(streaming.evictedChunkEntities)) {
+      for (const rec of list) {
+        inspectCompMap(rec.components);
+        for (const child of rec.ownedEntities) {
+          inspectCompMap(child.components);
+        }
+      }
+    }
+  };
+  inspectDormantStreamingItems(sState.streamingState);
+  for (const [, sArea] of sState.areas) inspectDormantStreamingItems(sArea.streamingState);
   for (const area of rehydratedAreas.values()) {
     for (const comps of area.components.values()) inspectCompMap(comps);
   }
@@ -261,7 +404,7 @@ export function deserializeGameState(
   const rehydratedAreas = new Map<string, AreaData>();
   for (const [areaId, sAreaData] of sState.areas) {
     rehydratedAreas.set(areaId, {
-      map: sAreaData.map,
+      map: hydrateStreamingMapSync(sAreaData.map, sAreaData.streamingState, campaign, campaignId),
       entities: sAreaData.entities,
       components: new Map(sAreaData.components),
       spatialIndex: new Map(),
@@ -286,7 +429,7 @@ export function deserializeGameState(
     campaign,
     entities: sState.entities,
     components: new Map(sState.components),
-    map: sState.map,
+    map: hydrateStreamingMapSync(sState.map, sState.streamingState, campaign, campaignId),
     fovNeedsUpdate: true,
     cachedFov: new Set(),
     nextEntityId: computeSafeNextEntityId(sState, rehydratedAreas, rehydratedPersistentEntities),
@@ -370,17 +513,31 @@ export function deserializeGameState(
 export function saveGame(state: GameState): void {
   if (state.isSandbox) return;
 
+  const scopeKey = resolveDefaultChunkScopeKey(state.campaignId);
+  const putSync = (grid: ChunkedWorldGrid | undefined): void => {
+    if (!grid) return;
+    for (const chunk of grid.chunks.values()) {
+      if ((chunk.dirtyFlags & CHUNK_DIRTY_PERSIST) !== 0) {
+        putWorldChunkDeltaSync(scopeKey, grid.areaId, chunk);
+      }
+    }
+  };
+  putSync(state.map.chunkGrid);
+  for (const area of state.areas.values()) putSync(area.map.chunkGrid);
+
   const serializedState = serializeGameState(state);
 
   try {
     localStorage.setItem(SAVE_KEY, JSON.stringify(serializedState));
+    void flushDirtyChunksToStore(state, scopeKey);
   } catch (err) {
     console.error('Failed to save game to localStorage', err);
   }
 }
 
 /**
- * Loads and deserializes the GameState from localStorage.
+ * Loads and deserializes the GameState from localStorage and asynchronously overlays
+ * persisted WorldChunk deltas from IndexedDB.
  * Reconstructs Map objects and rebuilds the spatial index.
  * @returns The GameState, or null if no save exists or loading fails.
  */
@@ -401,7 +558,8 @@ export async function loadGame(): Promise<GameState | null> {
       );
     }
 
-    return deserializeGameState(sState, campaign, campaignId);
+    const syncState = deserializeGameState(sState, campaign, campaignId);
+    return await rehydrateStreamingWorldAsync(syncState, resolveDefaultChunkScopeKey(campaignId));
   } catch (err) {
     console.error('Failed to load game from localStorage', err);
     return null;

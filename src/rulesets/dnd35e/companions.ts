@@ -9,7 +9,7 @@ import {
   type PositionComponent
 } from '../../types/components.types.ts';
 import type { EntityId, GameState } from '../../types/game-state.types.ts';
-import { coordToIndex, isInBounds } from '../../utils/grid.ts';
+import { getTileDefAt, isInMapBounds } from '../../map/map_accessor.ts';
 import { hydrateArchetypeData } from './archetype_resolver.ts';
 import { evaluateDnD35ActorStatDAG } from './modifiers/dag_resolver.ts';
 import { getDnD35EntityData, getDnD35Race, setDnD35EntityData } from './srd_registry.ts';
@@ -224,10 +224,10 @@ function findAdjacentCompanionSpawnTile(
   for (const [dx, dy] of ADJACENT_SPAWN_OFFSETS) {
     const cx = masterPos.x + dx;
     const cy = masterPos.y + dy;
-    if (!isInBounds(cx, cy, state.map.width, state.map.height)) continue;
-    const tile = state.map.tiles[coordToIndex(cx, cy, state.map.width)];
-    if (!tile) continue;
-    const traversal = evaluateTileTraversal(state.campaign.tiles[tile.tileId], dndData.movementModes, state, cx, cy);
+    if (!isInMapBounds(state.map, cx, cy)) continue;
+    const tileDef = getTileDefAt(state, cx, cy);
+    if (!tileDef) continue;
+    const traversal = evaluateTileTraversal(tileDef, dndData.movementModes, state, cx, cy);
     if (traversal.passability !== 'unimpeded' && traversal.passability !== 'difficult') continue;
     const occupants = state.spatialIndex.get(`${cx},${cy}`) ?? [];
     const blocked = occupants.some(

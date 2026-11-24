@@ -2,6 +2,7 @@ import type { CampaignData } from '../types/campaign.types.ts';
 import type { EntityId } from '../types/game-state.types.ts';
 import type { FuzzerOptions, FuzzerReport } from '../types/fuzzer.types.ts';
 import type { GeneratedArea } from '../map/generator.ts';
+import type { ChunkSynthesisParams } from '../map/chunk_generator.ts';
 import type { MapGenStage } from '../constants/scheduler.constants.ts';
 
 /** Serializable director context for thread boundaries without Set/Map. */
@@ -30,8 +31,29 @@ export interface MapWorkerRequest {
   readonly context?: SerializableDirectorContext | undefined;
 }
 
+/** Coordinates identifying a single chunk inside a batch generation request. */
+export interface StreamingChunkCoord {
+  readonly cx: number;
+  readonly cy: number;
+  readonly cz: number;
+}
+
+/** Payload for requesting a batch of deterministically synthesized WorldChunks off-thread. */
+export interface ChunkBatchWorkerRequest {
+  readonly id: string;
+  readonly type: 'generate_chunk_batch';
+  readonly params: ChunkSynthesisParams;
+  readonly coords: ReadonlyArray<StreamingChunkCoord>;
+}
+
+/** Zero-copy transferable response payload returning serialized ArrayBuffers for requested chunks. */
+export interface GeneratedChunkTransferPayload {
+  readonly coords: ReadonlyArray<StreamingChunkCoord>;
+  readonly buffers: ReadonlyArray<ArrayBuffer>;
+}
+
 /** Union of all worker request message contracts. */
-export type WorkerRequest = FuzzerWorkerRequest | MapWorkerRequest;
+export type WorkerRequest = FuzzerWorkerRequest | MapWorkerRequest | ChunkBatchWorkerRequest;
 
 /** Progress payload reported by offloaded worker tasks. */
 export interface WorkerProgressPayload {

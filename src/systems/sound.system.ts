@@ -13,7 +13,7 @@ import {
 import type { EntityId, GameState } from '../types/game-state.types.ts';
 import type { InteractionChain } from '../types/interaction_provenance.types.ts';
 import { isHostile } from '../utils/faction.ts';
-import { coordToIndex, isInBounds } from '../utils/grid.ts';
+import { getTileDefAt, isInMapBounds, isTileKeyInFov } from '../map/map_accessor.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import { SLEEPING_AWARENESS_PENALTY, SLEEPING_STATUS_ID, wakeSleepingActor } from './rest.system.ts';
 
@@ -89,11 +89,10 @@ export interface SoundEventResult {
  * @returns Acoustic attenuation in dB.
  */
 export function resolveTileSoundAttenuation(state: Readonly<GameState>, x: number, y: number): number {
-  if (!isInBounds(x, y, state.map.width, state.map.height)) {
+  if (!isInMapBounds(state.map, x, y)) {
     return DEFAULT_WALL_SOUND_ATTENUATION * 4;
   }
-  const tile = state.map.tiles[coordToIndex(x, y, state.map.width)];
-  const tileDef = tile ? state.campaign.tiles[tile.tileId] : undefined;
+  const tileDef = getTileDefAt(state, x, y);
   if (tileDef?.soundAttenuation !== undefined) {
     return tileDef.soundAttenuation;
   }
@@ -132,7 +131,7 @@ export function propagateSoundField(
   dbLevel: number
 ): Map<string, number> {
   const bestDb = new Map<string, number>();
-  if (dbLevel <= 0 || !isInBounds(originX, originY, state.map.width, state.map.height)) {
+  if (dbLevel <= 0 || !isInMapBounds(state.map, originX, originY)) {
     return bestDb;
   }
 
@@ -155,7 +154,7 @@ export function propagateSoundField(
     for (const off of CARDINAL_OFFSETS) {
       const nx = current.x + off.dx;
       const ny = current.y + off.dy;
-      if (!isInBounds(nx, ny, state.map.width, state.map.height)) continue;
+      if (!isInMapBounds(state.map, nx, ny)) continue;
       if (
         Math.abs(nx - originX) > MAX_SOUND_PROPAGATION_RADIUS_TILES ||
         Math.abs(ny - originY) > MAX_SOUND_PROPAGATION_RADIUS_TILES
@@ -245,8 +244,7 @@ export function emitSoundEvent(
 
   let nextState = state;
   const heardByEntityIds: EntityId[] = [];
-  const originIdx = coordToIndex(originX, originY, state.map.width);
-  const isOriginVisibleToPlayer = state.cachedFov.has(originIdx);
+  const isOriginVisibleToPlayer = isTileKeyInFov(state, originX, originY);
 
   for (const listenerId of state.entities) {
     if (listenerId === sourceEntityId) continue;

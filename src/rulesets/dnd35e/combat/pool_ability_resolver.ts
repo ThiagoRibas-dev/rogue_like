@@ -10,7 +10,7 @@ import {
 } from '../../../types/components.types.ts';
 import { EngineMode, type EntityId, type GameState } from '../../../types/game-state.types.ts';
 import { isHostile } from '../../../utils/faction.ts';
-import { coordToIndex } from '../../../utils/grid.ts';
+import { getTileDefAt, isInMapBounds } from '../../../map/map_accessor.ts';
 import { consumeStandardActionFromBudget } from '../action_economy.ts';
 import { evaluateDnD35eEntityDAG } from '../cartridge/dnd35e_dag_adapter.ts';
 import { hydrateEntityRoundActionBudget } from '../cartridge/dnd35e_turn_budget.ts';
@@ -137,10 +137,8 @@ function resolveTurnUndeadPool(state: GameState, actorId: EntityId, poolId: stri
   }
 
   const isWallAt = (x: number, y: number): boolean => {
-    if (x < 0 || y < 0 || x >= state.map.width || y >= state.map.height) return true;
-    const tile = state.map.tiles[coordToIndex(x, y, state.map.width)];
-    if (!tile) return true;
-    const def = state.campaign.tiles[tile.tileId];
+    if (!isInMapBounds(state.map, x, y)) return true;
+    const def = getTileDefAt(state, x, y);
     return def === undefined || !def.transparent;
   };
 

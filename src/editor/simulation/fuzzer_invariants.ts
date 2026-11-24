@@ -5,6 +5,7 @@ import { ComponentType } from '../../types/components.types.ts';
 import { IntentType } from '../../types/intents/intent.enum.ts';
 import type { Intent } from '../../types/intents/intent.union.ts';
 import { getComponent } from '../../core/ecs.ts';
+import { getTileIdAt, isInMapBounds } from '../../map/map_accessor.ts';
 
 export const MAX_SAVE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
 export const SOFTLOCK_TURN_THRESHOLD = 50;
@@ -148,10 +149,9 @@ export function generatePlayerFuzzerIntent(state: GameState, playerEnt: EntityId
     const nx = playerPos.x + dir.dx;
     const ny = playerPos.y + dir.dy;
 
-    if (nx >= 0 && nx < state.map.width && ny >= 0 && ny < state.map.height) {
-      const idx = ny * state.map.width + nx;
-      const tile = state.map.tiles[idx];
-      if (tile && !tile.tileId.includes('wall')) {
+    if (isInMapBounds(state.map, nx, ny)) {
+      const tileId = getTileIdAt(state.map, nx, ny);
+      if (tileId && !tileId.includes('wall')) {
         return {
           type: IntentType.Move,
           entityId: playerEnt,

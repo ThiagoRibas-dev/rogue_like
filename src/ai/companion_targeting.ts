@@ -7,7 +7,7 @@ import {
 import { ComponentType, type CompanionStance, type ControllerLinkComponent } from '../types/components.types.ts';
 import type { EntityId, GameState } from '../types/game-state.types.ts';
 import { isHostile } from '../utils/faction.ts';
-import { coordToIndex } from '../utils/grid.ts';
+import { toMapTileKey } from '../map/map_accessor.ts';
 
 /** Default tile distance within which a following companion stops approaching its controller. */
 export const DEFAULT_COMPANION_FOLLOW_DISTANCE = 2;
@@ -97,8 +97,7 @@ function isCandidateTargetInRange(
   if (!isHostile(state, attackerId, targetId)) return null;
 
   if (fov !== undefined) {
-    const targetIndex = coordToIndex(otherPos.x, otherPos.y, state.map.width);
-    if (!fov.has(targetIndex)) return null;
+    if (!fov.has(toMapTileKey(state.map, otherPos.x, otherPos.y))) return null;
   }
 
   const attackerPos = getComponent(state, attackerId, ComponentType.Position);

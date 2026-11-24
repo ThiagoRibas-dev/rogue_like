@@ -13,7 +13,7 @@ import {
 import { getAvailableSpriteKeys } from './sprite_keys.ts';
 import { recordMissingSprite } from './render_debug.ts';
 import type { GameState } from '../types/game-state.types.ts';
-import { coordToIndex } from '../utils/grid.ts';
+import { getTileAt, isInMapBounds, toMapTileKey } from '../map/map_accessor.ts';
 import { resolveThemeSpriteSheets } from '../utils/sprite_pack.ts';
 import { getCameraOffset } from './camera.ts';
 import { buildTacticalViewportData } from './tactical_snapshot.ts';
@@ -66,9 +66,9 @@ export function buildViewportSnapshot(state: GameState, viewportW: number, viewp
       let isVisible = false;
       const entitiesAtTile: EntityRenderDTO[] = [];
 
-      if (mapX >= 0 && mapX < state.map.width && mapY >= 0 && mapY < state.map.height) {
-        const tileIndex = coordToIndex(mapX, mapY, state.map.width);
-        const tile = state.map.tiles[tileIndex];
+      if (isInMapBounds(state.map, mapX, mapY)) {
+        const tile = getTileAt(state.map, mapX, mapY);
+        const tileIndex = toMapTileKey(state.map, mapX, mapY);
         isExplored = tile !== undefined && (state.map.isFullyExplored || tile.explored);
         isVisible = state.map.isFullyExplored || visibleIndices.has(tileIndex);
 

@@ -1,4 +1,4 @@
-import { addComponent, getComponent, resolveEntityDisplayName } from '../core/ecs.ts';
+import { getComponent, resolveEntityDisplayName, withEcsBatchState } from '../core/ecs.ts';
 import { ComponentType, type MovementModes, type PositionComponent } from '../types/components.types.ts';
 import type { TileDefinition } from '../types/campaign/world.ts';
 import type { GameEvent } from '../types/events.types.ts';
@@ -6,7 +6,7 @@ import type { GameState } from '../types/game-state.types.ts';
 import { IntentType } from '../types/intents/intent.enum.ts';
 import type { MoveIntent } from '../types/intents/movement.intents.ts';
 import { getFactionRelation } from '../utils/faction.ts';
-import { coordToIndex, isInBounds } from '../utils/grid.ts';
+import { getTileAt, getTileDefAt, getTileIdAt, isInMapBounds, setTileIdAt } from '../map/map_accessor.ts';
 import { processApplyIntent } from './apply.system.ts';
 import { processMeleeAttackIntent } from './combat.system.ts';
 import { isPlayerControlledCompanion } from './companion_commands.system.ts';
@@ -65,12 +65,11 @@ export function processMoveIntent(
   const targetX: number = position.x + dx;
   const targetY: number = position.y + dy;
 
-  if (!isInBounds(targetX, targetY, state.map.width, state.map.height)) {
+  if (!isInMapBounds(state.map, targetX, targetY)) {
     return { state, success: false };
   }
 
-  const targetTileIndex: number = coordToIndex(targetX, targetY, state.map.width);
-  const targetTile = state.map.tiles[targetTileIndex];
+  const targetTile = getTileAt(state.map, targetX, targetY);
   if (targetTile === undefined) {
     return { state, success: false };
   }
@@ -91,29 +90,26 @@ export function processMoveIntent(
     const directTileDef = state.campaign.tiles[targetTile.tileId];
     const bumpTileDef = directTileDef?.bumpTransition ? directTileDef : placement.blockedByObstacleDef;
     if (bumpTileDef?.bumpTransition) {
-      let bumpIdx = targetTileIndex;
+      let bumpX = targetX;
+      let bumpY = targetY;
       if (bumpTileDef !== directTileDef) {
         const fw = Math.max(1, placement.width);
         const fh = Math.max(1, placement.height);
-        for (let oy = 0; oy < fh; oy++) {
+        bumpSearch: for (let oy = 0; oy < fh; oy++) {
           for (let ox = 0; ox < fw; ox++) {
             const bx = targetX + ox;
             const by = targetY + oy;
-            if (!isInBounds(bx, by, state.map.width, state.map.height)) continue;
-            const idx = coordToIndex(bx, by, state.map.width);
-            const t = state.map.tiles[idx];
-            if (t && state.campaign.tiles[t.tileId]?.bumpTransition) {
-              bumpIdx = idx;
-              break;
+            if (!isInMapBounds(state.map, bx, by)) continue;
+            if (getTileDefAt(state, bx, by)?.bumpTransition) {
+              bumpX = bx;
+              bumpY = by;
+              break bumpSearch;
             }
           }
         }
       }
-      const nextTiles = [...state.map.tiles];
-      const existingBumpTile = nextTiles[bumpIdx];
-      if (existingBumpTile) {
-        nextTiles[bumpIdx] = { ...existingBumpTile, tileId: bumpTileDef.bumpTransition };
-        const nextMap = { ...state.map, tiles: nextTiles };
+      if (getTileIdAt(state.map, bumpX, bumpY) !== undefined) {
+        const nextMap = setTileIdAt(state.map, bumpX, bumpY, bumpTileDef.bumpTransition);
         let nextState: GameState = { ...state, map: nextMap, fovNeedsUpdate: true };
         if (isPlayer) {
           const msg = bumpTileDef.interactMessage ?? 'You bump into it.';
@@ -170,8 +166,7 @@ export function processMoveIntent(
     if (blockedByEntityId !== undefined) {
       const dialogueComp = getComponent(state, blockedByEntityId, ComponentType.Dialogue);
       const interactable = getComponent(state, blockedByEntityId, ComponentType.Interactable);
-      const originTile = state.map.tiles[coordToIndex(position.x, position.y, state.map.width)];
-      const originTileDef = originTile ? state.campaign.tiles[originTile.tileId] : undefined;
+      const originTileDef = getTileDefAt(state, position.x, position.y);
       const blockerPos = getComponent(state, blockedByEntityId, ComponentType.Position) as
         PositionComponent | undefined;
       const moverIsSingleTile = (position.footprintWidth ?? 1) === 1 && (position.footprintHeight ?? 1) === 1;
@@ -198,12 +193,14 @@ export function processMoveIntent(
           placement.profile,
           position.facing
         );
-        let nextState = addComponent(state, entityId, moverPosComp);
-        nextState = addComponent(nextState, blockedByEntityId, {
-          ...blockerPos,
-          type: ComponentType.Position,
-          x: position.x,
-          y: position.y
+        let nextState = withEcsBatchState(state, (batch) => {
+          batch.addComponent(entityId, moverPosComp);
+          batch.addComponent(blockedByEntityId, {
+            ...blockerPos,
+            type: ComponentType.Position,
+            x: position.x,
+            y: position.y
+          });
         });
         nextState = runActorMovementStep(
           nextState,

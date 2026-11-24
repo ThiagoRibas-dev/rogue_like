@@ -134,6 +134,9 @@ function spawnEnemy(state: GameState, x: number, y: number, hp = 12): { state: G
 }
 
 describe('Companion AI, Stances, Focus-Target Directives & Corridor Swap', () => {
+  // Pre-warm cold ruleset JSON & Zod parse cache outside per-test 5000ms budget.
+  loadCampaignFromDisk('dnd35e-crypt');
+
   test('D&D 3.5e companion spawning attaches AIComponent on an adjacent walkable tile and preserves stance on resync', () => {
     const { state: baseState, playerId } = buildOpenArenaState('dnd35e-crypt');
     const created = applyCharacterCreationToPlayer(baseState, playerId, {

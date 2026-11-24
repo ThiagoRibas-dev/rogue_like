@@ -21,7 +21,7 @@ import {
 } from '../../../types/components.types.ts';
 import type { EntityId, GameState } from '../../../types/game-state.types.ts';
 import { IntentType } from '../../../types/intents/intent.enum.ts';
-import { isInBounds } from '../../../utils/grid.ts';
+import { isInMapBounds } from '../../../map/map_accessor.ts';
 import { resolveDnD35eMeleeAttack } from '../cartridge/dnd35e_combat_adapter.ts';
 import { evaluateDnD35eEntityDAG } from '../cartridge/dnd35e_dag_adapter.ts';
 import { computeActorTacticalLandSpeedFt } from '../cartridge/dnd35e_turn_budget.ts';
@@ -283,7 +283,7 @@ export function validateChargeLine(
   for (const step of rawSteps) {
     const nextX = simPos.x + step.dx;
     const nextY = simPos.y + step.dy;
-    if (!isInBounds(nextX, nextY, state.map.width, state.map.height)) {
+    if (!isInMapBounds(state.map, nextX, nextY)) {
       return fail('Charge path leaves the map.');
     }
 

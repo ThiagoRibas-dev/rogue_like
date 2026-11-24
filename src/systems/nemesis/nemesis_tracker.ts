@@ -15,7 +15,7 @@ import {
 } from '../../types/components.types.ts';
 import { GameEventType, type EntityDamagedEvent, type EntityDiedEvent } from '../../types/events.types.ts';
 import { type EntityId, type GameState } from '../../types/game-state.types.ts';
-import { coordToIndex } from '../../utils/grid.ts';
+import { findRandomWalkableCoord } from '../../map/map_accessor.ts';
 import { recordChronicleEvent } from '../chronicle.system.ts';
 import { addMessage, MessageLogCategory } from '../message.system.ts';
 import { fillVacancy } from './nemesis_hierarchy.ts';
@@ -131,15 +131,12 @@ export function processNemesisSystem(state: GameState): GameState {
           }
 
           for (let attempt = 0; attempt < 100; attempt++) {
-            const rx = Math.floor(rng.getUniform() * nextState.map.width);
-            const ry = Math.floor(rng.getUniform() * nextState.map.height);
-            const idx = coordToIndex(rx, ry, nextState.map.width);
-            const tile = nextState.map.tiles[idx];
-            if (tile && nextState.campaign.tiles[tile.tileId]?.walkable && !occupiedCoords.has(`${rx},${ry}`)) {
+            const sampled = findRandomWalkableCoord(nextState, () => rng.getUniform(), 1);
+            if (sampled && !occupiedCoords.has(`${sampled.x},${sampled.y}`)) {
               const positionCmp: PositionComponent = {
                 type: ComponentType.Position,
-                x: rx,
-                y: ry
+                x: sampled.x,
+                y: sampled.y
               };
               const finalComps: Record<string, Component> = {
                 ...updatedComps,

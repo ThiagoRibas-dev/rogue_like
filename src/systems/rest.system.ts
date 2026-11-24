@@ -19,7 +19,7 @@ import {
   type StatusEffectsComponent
 } from '../types/components.types.ts';
 import type { EntityId, GameState } from '../types/game-state.types.ts';
-import { coordToIndex } from '../utils/grid.ts';
+import { getTileDefAt, isInMapBounds } from '../map/map_accessor.ts';
 import { getPlayerCompanions } from './companion_commands.system.ts';
 import { queryActiveFieldsAtPosition } from './field.system.ts';
 import { getHungerState, HungerState } from './hunger.system.ts';
@@ -327,9 +327,8 @@ export function spawnCampAmbushPatrol(
       if (dist < AMBUSH_SPAWN_MIN_DIST || dist > AMBUSH_SPAWN_MAX_DIST) continue;
       const tx = targetPos.x + dx;
       const ty = targetPos.y + dy;
-      if (tx < 0 || tx >= state.map.width || ty < 0 || ty >= state.map.height) continue;
-      const tile = state.map.tiles[coordToIndex(tx, ty, state.map.width)];
-      if (!tile || !state.campaign.tiles[tile.tileId]?.walkable) continue;
+      if (!isInMapBounds(state.map, tx, ty)) continue;
+      if (!getTileDefAt(state, tx, ty)?.walkable) continue;
       const occupants = state.spatialIndex.get(`${tx},${ty}`) ?? [];
       if (occupants.some((id) => getComponent(state, id, ComponentType.Fighter) !== undefined)) continue;
       candidateCoords.push({ x: tx, y: ty });
@@ -342,9 +341,8 @@ export function spawnCampAmbushPatrol(
         if (dx === 0 && dy === 0) continue;
         const tx = targetPos.x + dx;
         const ty = targetPos.y + dy;
-        if (tx < 0 || tx >= state.map.width || ty < 0 || ty >= state.map.height) continue;
-        const tile = state.map.tiles[coordToIndex(tx, ty, state.map.width)];
-        if (!tile || !state.campaign.tiles[tile.tileId]?.walkable) continue;
+        if (!isInMapBounds(state.map, tx, ty)) continue;
+        if (!getTileDefAt(state, tx, ty)?.walkable) continue;
         const occupants = state.spatialIndex.get(`${tx},${ty}`) ?? [];
         if (occupants.some((id) => getComponent(state, id, ComponentType.Fighter) !== undefined)) continue;
         candidateCoords.push({ x: tx, y: ty });

@@ -1,4 +1,21 @@
 import { z } from 'zod';
+import {
+  DEFAULT_ACTIVE_RADIUS_CHUNKS,
+  DEFAULT_CHUNK_SIZE,
+  DEFAULT_PREFETCH_RADIUS_CHUNKS,
+  DEFAULT_SPAWN_CLEARING_RADIUS,
+  DEFAULT_STREAMING_WORLD_SEED,
+  MAX_ACTIVE_RADIUS_CHUNKS,
+  MAX_CHUNK_SIZE,
+  MAX_EVICT_RADIUS_CHUNKS,
+  MAX_PREFETCH_RADIUS_CHUNKS,
+  MAX_SPAWN_CLEARING_RADIUS,
+  MIN_ACTIVE_RADIUS_CHUNKS,
+  MIN_CHUNK_SIZE,
+  MIN_EVICT_RADIUS_CHUNKS,
+  MIN_PREFETCH_RADIUS_CHUNKS,
+  MIN_SPAWN_CLEARING_RADIUS
+} from '../../constants/world_chunk.constants.ts';
 
 /** Zod enum for faction stances. */
 export const FactionRelationEnum = z.enum(['hostile', 'neutral', 'friendly']);
@@ -43,9 +60,49 @@ export const AreaIlluminationEnum = z.enum(['bright', 'shadowy', 'darkness']);
 export type AreaIllumination = z.infer<typeof AreaIlluminationEnum>;
 
 /** Zod enum for generation strategies. */
-export const AreaGeneratorTypeEnum = z.enum(['digger', 'cellular', 'static', 'dla']);
+export const AreaGeneratorTypeEnum = z.enum(['digger', 'cellular', 'static', 'dla', 'streaming_overworld']);
 /** Inferred type representing an area generator type. */
 export type AreaGeneratorType = z.infer<typeof AreaGeneratorTypeEnum>;
+
+/** Zod schema defining biome tile mappings for declarative `streaming_overworld` areas. */
+export const StreamingBiomePaletteSchema = z.object({
+  water: z.string().describe('Water/lake Tile ID'),
+  shore: z.string().optional().describe('Shoreline/sand Tile ID (falls back to plains)'),
+  plains: z.string().describe('Primary open ground Tile ID'),
+  forest: z.string().optional().describe('Forest/overgrown ground Tile ID (falls back to plains)'),
+  ridge: z.string().describe('Impassable mountain/cliff ridge Tile ID'),
+  road: z.string().optional().describe('Road/path Tile ID (falls back to plains)')
+});
+/** Inferred type for streaming overworld biome tile ID mappings. */
+export type StreamingBiomePaletteConfig = z.infer<typeof StreamingBiomePaletteSchema>;
+
+/** Zod schema configuring chunk dimensions, ring radii, seed, and biomes for `streaming_overworld` areas. */
+export const StreamingAreaConfigSchema = z.object({
+  chunkSize: z.number().int().min(MIN_CHUNK_SIZE).max(MAX_CHUNK_SIZE).default(DEFAULT_CHUNK_SIZE),
+  activeRadiusChunks: z
+    .number()
+    .int()
+    .min(MIN_ACTIVE_RADIUS_CHUNKS)
+    .max(MAX_ACTIVE_RADIUS_CHUNKS)
+    .default(DEFAULT_ACTIVE_RADIUS_CHUNKS),
+  prefetchRadiusChunks: z
+    .number()
+    .int()
+    .min(MIN_PREFETCH_RADIUS_CHUNKS)
+    .max(MAX_PREFETCH_RADIUS_CHUNKS)
+    .default(DEFAULT_PREFETCH_RADIUS_CHUNKS),
+  evictRadiusChunks: z.number().int().min(MIN_EVICT_RADIUS_CHUNKS).max(MAX_EVICT_RADIUS_CHUNKS).optional(),
+  worldSeed: z.number().int().default(DEFAULT_STREAMING_WORLD_SEED),
+  spawnClearingRadius: z
+    .number()
+    .int()
+    .min(MIN_SPAWN_CLEARING_RADIUS)
+    .max(MAX_SPAWN_CLEARING_RADIUS)
+    .default(DEFAULT_SPAWN_CLEARING_RADIUS),
+  biomePalette: StreamingBiomePaletteSchema
+});
+/** Inferred type for streaming overworld area configuration. */
+export type StreamingAreaConfig = z.infer<typeof StreamingAreaConfigSchema>;
 
 /** Zod schema defining a Voronoi sub-biome rule. */
 export const VoronoiSubBiomeRuleSchema = z.object({
@@ -58,10 +115,10 @@ export type VoronoiSubBiomeRule = z.infer<typeof VoronoiSubBiomeRuleSchema>;
 /** Zod schema representing connections between different area maps. */
 export const AreaConnectionSchema = z.object({
   targetAreaId: z.string(),
-  targetX: z.number().int().nonnegative().optional(),
-  targetY: z.number().int().nonnegative().optional(),
-  placementX: z.number().int().nonnegative().optional(),
-  placementY: z.number().int().nonnegative().optional(),
+  targetX: z.number().int().optional(),
+  targetY: z.number().int().optional(),
+  placementX: z.number().int().optional(),
+  placementY: z.number().int().optional(),
   direction: z.enum(['up', 'down', 'edge', 'portal']),
   portalTemplateId: z.string().optional(),
   placementSide: z.enum(['top', 'bottom', 'left', 'right', 'any']).optional()
@@ -117,8 +174,8 @@ export const AreaDefinitionSchema = z.object({
     .array(
       z.object({
         templateId: z.string(),
-        x: z.number().int().nonnegative(),
-        y: z.number().int().nonnegative(),
+        x: z.number().int(),
+        y: z.number().int(),
         inventory: z.array(z.string()).optional()
       })
     )
@@ -172,6 +229,9 @@ export const AreaDefinitionSchema = z.object({
     .describe('Overrides the auto-calculated hot path thickness.'),
   restPressure: RestPressureOverrideSchema.optional().describe(
     'Per-area override for camp rest ambush risk, watch duration, scheme acceleration, and respawn scaling.'
+  ),
+  streamingConfig: StreamingAreaConfigSchema.optional().describe(
+    'Declarative chunk streaming geometry, seed, ring radii, and biome palette for streaming_overworld areas.'
   )
 });
 /** Inferred type for an area definition. */

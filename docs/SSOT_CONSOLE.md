@@ -9,13 +9,19 @@
 - [Core Console: App Entry & Wiring (2 files)](#core-console-app-entry-wiring)
 - [Core Console: Campaign Editor Subsystem (27 files)](#core-console-campaign-editor-subsystem)
 - [Core Console: Constants & Dictionaries (17 files)](#core-console-constants-dictionaries)
+- [Core Console: Constants & World Chunk Layout (1 files)](#core-console-constants-world-chunk-layout)
+- [Core Console: ECS & State Management (1 files)](#core-console-ecs-state-management)
 - [Core Console: ECS Systems & Simulation (75 files)](#core-console-ecs-systems-simulation)
 - [Core Console: ECS, Loop, RNG & Loader (44 files)](#core-console-ecs-loop-rng-loader)
 - [Core Console: Engine Types & Schemas (39 files)](#core-console-engine-types-schemas)
+- [Core Console: Map & Spatial Simulation (1 files)](#core-console-map-spatial-simulation)
 - [Core Console: Map Generation & Director (10 files)](#core-console-map-generation-director)
+- [Core Console: Map Generation & Spatial Plane (4 files)](#core-console-map-generation-spatial-plane)
+- [Core Console: Persistence & Delta Storage (1 files)](#core-console-persistence-delta-storage)
 - [Core Console: Presentation & UI Views (31 files)](#core-console-presentation-ui-views)
 - [Core Console: Rendering & UI Views (77 files)](#core-console-rendering-ui-views)
 - [Core Console: Ruleset Cartridge Registry (1 files)](#core-console-ruleset-cartridge-registry)
+- [Core Console: Types & World Chunk Contracts (1 files)](#core-console-types-world-chunk-contracts)
 - [Core Console: Utility Helpers (11 files)](#core-console-utility-helpers)
 - [Core Console: Web Workers & Async Simulation (4 files)](#core-console-web-workers-async-simulation)
 
@@ -118,6 +124,22 @@
 | `src/constants/verbs.constants.ts` | `tier1_console` | Canonical interaction verbs supported by the engine's ApplyIntent pipeline. | `Verb`, `VERBS` | **Includes:** Pure implementation and exports for src/constants/verbs.constants.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/constants/verbs.constants.ts. |
 | `src/constants/world_clock.constants.ts` | `tier1_console` | Constants for diurnal World Clock timing, neutral Console turn-unit labels, bulk rest chunk sizing, baseline hunger scaling, and HUD clock badges. | `DEFAULT_CLOCK_START_HOUR`, `DEFAULT_SECONDS_PER_TURN`, `DEFAULT_HOURS_PER_DAY`, `MINUTES_PER_HOUR`, `SECONDS_PER_MINUTE`, `STANDARD_ENERGY_PER_TURN`, `DEFAULT_TURN_UNIT_SHORT`, `DEFAULT_TURN_UNIT_SINGULAR`, `DEFAULT_TURN_UNIT_PLURAL`, `BULK_CADENCE_STEP_SIZE`, `BULK_REST_CHUNK_TURNS`, `DEFAULT_SATIATION_LOSS_PER_STANDARD_TURN`, `CLOCK_PHASE_ICONS`, `BULK_REST_PROGRESS_DOTS` | **Includes:** Pure implementation and exports for src/constants/world_clock.constants.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/constants/world_clock.constants.ts. |
 | `src/constants/world_events.constants.ts` | `tier1_console` | Generic flavor text events that can occur to Areas. | `AREA_NARRATIVE_EVENTS`, `FACTION_NARRATIVE_EVENTS` | **Includes:** Pure implementation and exports for src/constants/world_events.constants.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/constants/world_events.constants.ts. |
+
+## Core Console: Constants & World Chunk Layout
+
+**Modules in this domain:** 1
+
+| File | Tier | Responsibility | Canonical Entry Points | Ownership Boundary (Includes / Excludes) | Anti-Patterns |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `src/constants/world_chunk.constants.ts` | `tier1_console` | Named constants for WorldChunk dimensions, streaming ring radii, coordinate bit-packing, SoA bitflags, and delta IndexedDB store metadata. | `DEFAULT_CHUNK_SIZE`, `DEFAULT_ACTIVE_RADIUS_CHUNKS`, `DEFAULT_PREFETCH_RADIUS_CHUNKS`, `DEFAULT_EVICT_RADIUS_CHUNKS`, `CHUNK_FLAG_EXPLORED`, `CHUNK_DIRTY_PERSIST`, `WORLD_CHUNKS_DB_NAME`, `WORLD_CHUNKS_STORE` | **Includes:** Pure constants governing chunk SoA buffers, packing biases, and delta binary storage headers.<br>**Excludes:** Runtime map logic, state mutations, or generator algorithms. | • Do not hardcode chunk dimensions, flag masks, or store identifiers; import from src/constants/world_chunk.constants.ts. |
+
+## Core Console: ECS & State Management
+
+**Modules in this domain:** 1
+
+| File | Tier | Responsibility | Canonical Entry Points | Ownership Boundary (Includes / Excludes) | Anti-Patterns |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `src/core/ecs/ecs_batch.ts` | `tier1_console` | Opt-in copy-on-write ECS batch transaction primitive eliminating redundant intermediate Map clones while preserving untouched entity reference identity and snapshot immutability. | `EcsBatch`, `withEcsBatch`, `withEcsBatchState` | **Includes:** Transactional batched createEntity, addComponent, removeComponent, removeEntity, and incremental spatialIndex patching.<br>**Excludes:** High-level game rules, combat mechanics, or content spawning logic. | • Do not hand-roll mutable GameState copies in hot loops; use withEcsBatch / withEcsBatchState. |
 
 ## Core Console: ECS Systems & Simulation
 
@@ -298,6 +320,14 @@
 | `src/types/trigger.types.ts` | `tier1_types` | Zod schema for declarative condition predicates evaluated by the trigger system. | `ConditionPredicateSchema`, `ConditionPredicate`, `ConsequenceActionSchema`, `ConsequenceAction`, `PacingSchema`, `PacingSettings`, `ForeshadowingSchema`, `ForeshadowingSettings` | **Includes:** Pure implementation and exports for src/types/trigger.types.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/types/trigger.types.ts. |
 | `src/types/ui_adapter.types.ts` | `tier1_console` | Type definitions for ICartridgeUIAdapter, UICharacterSheetModel, UIInventoryModel, UIAnatomicalSlotDescriptor, UIAttackGroupModel, and UIInspectData. | `ICartridgeUIAdapter`, `UICharacterSheetModel`, `UIInventoryModel`, `UIInventoryItem`, `UIAnatomicalSlotDescriptor`, `UIAttackGroupModel`, `UISkillRowModel`, `UIFeatureEntryModel`, `UILevelHistoryRowModel`, `UIInspectData` | **Includes:** Pure implementation and exports for src/types/ui_adapter.types.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/types/ui_adapter.types.ts. |
 
+## Core Console: Map & Spatial Simulation
+
+**Modules in this domain:** 1
+
+| File | Tier | Responsibility | Canonical Entry Points | Ownership Boundary (Includes / Excludes) | Anti-Patterns |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `src/systems/map/chunk_streaming.ts` | `tier1_console` | Orchestrates Ring 0/1/2 streaming window shifts around the focal anchor, packs/wakes out-of-window chunk entities cleanly, and schedules batched worker prefetch requests. | `updateStreamingWorldWindow`, `clearStreamingPrefetchCache` | **Includes:** Sliding chunk window lifecycle, dormant chunk entity packing/waking, and Ring 1 prefetch orchestration.<br>**Excludes:** Binary chunk framing or IndexedDB open/transaction primitives. | • Do not manually slice or evict grid.chunks or evictedChunkEntities outside updateStreamingWorldWindow(). |
+
 ## Core Console: Map Generation & Director
 
 **Modules in this domain:** 10
@@ -314,6 +344,25 @@
 | `src/map/stages/biome_dijkstra_stages.ts` | `tier1_console` | Partitions sub-biomes with Voronoi, culls non-bordering walls, scatters water, and computes Dijkstra hot paths. | `applyBiomesAndCull`, `computeHotPathDijkstra` | **Includes:** Pure implementation and exports for src/map/stages/biome_dijkstra_stages.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/map/stages/biome_dijkstra_stages.ts. |
 | `src/map/static-parser.ts` | `tier1_console` | Parses a static ASCII map layout into a GameMap. | `ParsedStaticMap`, `parseStaticMap` | **Includes:** Pure implementation and exports for src/map/static-parser.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/map/static-parser.ts. |
 | `src/map/voronoi.ts` | `tier1_console` | Noise factor added to Euclidean distance calculations to create organic, non-linear Voronoi borders. | `applyVoronoiBiomes` | **Includes:** Pure implementation and exports for src/map/voronoi.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/map/voronoi.ts. |
+
+## Core Console: Map Generation & Spatial Plane
+
+**Modules in this domain:** 4
+
+| File | Tier | Responsibility | Canonical Entry Points | Ownership Boundary (Includes / Excludes) | Anti-Patterns |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `src/map/chunk_generator.ts` | `tier1_console` | Pure deterministic fractal value-noise biome synthesizer and initial Ring 0 ChunkedWorldGrid builder for declarative streaming_overworld areas. | `buildChunkSynthesisParams`, `generateWorldChunkFromParams`, `generateWorldChunk`, `createInitialStreamingGrid` | **Includes:** Pure coordinate-hashed biome classification runnable identically on main thread and Web Workers.<br>**Excludes:** Worker messaging, IndexedDB persistence, or ECS entity spawning. | • Do not mutate global ROT.RNG during chunk synthesis; keep chunk generation purely coordinate-hashed. |
+| `src/map/map_accessor.ts` | `tier1_console` | Canonical compatibility facade unifying tile bounds, coordinate keying, FOV checks, tile inspection, terrain mutation, and exploration updates across finite GameMap.tiles and ChunkedWorldGrid. | `isInMapBounds`, `toMapTileKey`, `isTileKeyInFov`, `getTileAt`, `getTileIdAt`, `getTileDefAt`, `isTileExploredAt`, `setTileIdAt`, `markTilesExplored`, `findRandomWalkableCoord`, `getMapCenterFallbackCoord` | **Includes:** All ruleset-agnostic spatial tile reads/writes bridging legacy finite maps and SoA chunk grids.<br>**Excludes:** Procedural terrain synthesis or Ring 0/1 streaming window eviction. | • Never index state.map.tiles[coordToIndex(...)] directly in engine/ruleset/rendering code; call MapAccessor helpers. |
+| `src/map/tile_palette.ts` | `tier1_console` | Builds deterministic bidirectional flyweight mappings between string campaign tile IDs and Uint16Array indices. | `buildTilePaletteRegistry`, `getTileIdFromPaletteIndex`, `getPaletteIndexForTileId` | **Includes:** Deterministic lexicographic palette construction and index lookup.<br>**Excludes:** Hardcoded tile ID enums or content-specific branching. | • Do not hardcode numeric tile IDs for campaign tiles; resolve via buildTilePaletteRegistry(). |
+| `src/map/world_chunk.ts` | `tier1_console` | Allocates, clones, and binary-serializes/deserializes Structure-of-Arrays (SoA) TypedArray WorldChunks into transferable ArrayBuffers. | `createEmptyWorldChunk`, `cloneWorldChunk`, `serializeWorldChunkToBuffer`, `deserializeWorldChunkFromBuffer` | **Includes:** SoA TypedArray buffer allocation, copy-on-write chunk cloning, and RLCK binary framing.<br>**Excludes:** Biome synthesis, IndexedDB I/O, and entity sleep/wake orchestration. | • Do not serialize WorldChunks as bloated JSON tile arrays; use serializeWorldChunkToBuffer(). |
+
+## Core Console: Persistence & Delta Storage
+
+**Modules in this domain:** 1
+
+| File | Tier | Responsibility | Canonical Entry Points | Ownership Boundary (Includes / Excludes) | Anti-Patterns |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `src/core/chunk_store.ts` | `tier1_console` | Manages delta-only binary ArrayBuffer chunk persistence in IndexedDB WORLD_CHUNKS_STORE with synchronous write-behind cache and headless in-memory fallback. | `buildChunkStorageKey`, `resolveDefaultChunkScopeKey`, `putWorldChunkDeltaSync`, `getCachedWorldChunkDeltaSync`, `saveWorldChunkDelta`, `loadWorldChunkDelta`, `flushDirtyChunksToStore`, `clearChunkStoreScope`, `rehydrateStreamingWorldAsync`, `resetInMemoryChunkStore` | **Includes:** Binary delta persistence, IndexedDB lifecycle, and save/load rehydration for modified WorldChunks.<br>**Excludes:** Streaming window geometry decisions or procedural terrain generation. | • Do not store raw TypedArray chunks in localStorage JSON; persist dirty deltas via src/core/chunk_store.ts. |
 
 ## Core Console: Presentation & UI Views
 
@@ -444,6 +493,14 @@
 | File | Tier | Responsibility | Canonical Entry Points | Ownership Boundary (Includes / Excludes) | Anti-Patterns |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | `src/rulesets/registry.ts` | `tier1_console` | Pure Tier 1 Console Ruleset Cartridge Registry exposing only RulesetContract registration and lookup. | `registerRuleset`, `getRuleset`, `getAllRulesets`, `getActiveRuleset` | **Includes:** Registering and resolving active RulesetContract instances by RulesetId.<br>**Excludes:** Re-exporting cartridge-specific internal functions, types, or UI adapters. | • Never re-export concrete cartridge internals (e.g. dnd35e or classic symbols) through src/rulesets/registry.ts. |
+
+## Core Console: Types & World Chunk Contracts
+
+**Modules in this domain:** 1
+
+| File | Tier | Responsibility | Canonical Entry Points | Ownership Boundary (Includes / Excludes) | Anti-Patterns |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `src/types/world-chunk.types.ts` | `tier1_console` | Pure interfaces for flyweight TilePaletteRegistry, SoA TypedArray WorldChunk, ChunkedWorldGrid, dormant chunk entity records, and slim SerializedStreamingWorldState. | `TilePaletteRegistry`, `WorldChunk`, `DormantChunkEntityRecord`, `ChunkedWorldGrid`, `SerializedStreamingWorldState`, `TileSnapshot` | **Includes:** Pure TypeScript type contracts shared by utils, map, core save, workers, and systems.<br>**Excludes:** Runtime logic or upward imports into core/systems/map. | • Do not duplicate chunk or palette type shapes; import from src/types/world-chunk.types.ts. |
 
 ## Core Console: Utility Helpers
 

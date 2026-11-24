@@ -1,5 +1,9 @@
 import { generateAreaAsync } from '../map/generator_async.ts';
+import { generateWorldChunkFromParams } from '../map/chunk_generator.ts';
+import { serializeWorldChunkToBuffer } from '../map/world_chunk.ts';
 import type {
+  ChunkBatchWorkerRequest,
+  GeneratedChunkTransferPayload,
   MapWorkerRequest,
   WorkerProgressMessage,
   WorkerSuccessMessage,
@@ -8,9 +12,38 @@ import type {
 import type { GeneratedArea } from '../map/generator.ts';
 import type { DirectorContext } from '../types/encounter.types.ts';
 
-self.onmessage = (event: MessageEvent<MapWorkerRequest>): void => {
+self.onmessage = (event: MessageEvent<MapWorkerRequest | ChunkBatchWorkerRequest>): void => {
   const data = event.data;
-  if (!data || data.type !== 'generate_map') return;
+  if (!data) return;
+
+  if (data.type === 'generate_chunk_batch') {
+    try {
+      const buffers: ArrayBuffer[] = [];
+      for (const coord of data.coords) {
+        const chunk = generateWorldChunkFromParams(data.params, coord.cx, coord.cy, coord.cz);
+        buffers.push(serializeWorldChunkToBuffer(chunk));
+      }
+      const successMsg: WorkerSuccessMessage<GeneratedChunkTransferPayload> = {
+        id: data.id,
+        type: 'success',
+        result: {
+          coords: data.coords,
+          buffers
+        }
+      };
+      self.postMessage(successMsg, { transfer: buffers });
+    } catch (err) {
+      const errorMsg: WorkerErrorMessage = {
+        id: data.id,
+        type: 'error',
+        error: err instanceof Error ? err.message : String(err)
+      };
+      self.postMessage(errorMsg);
+    }
+    return;
+  }
+
+  if (data.type !== 'generate_map') return;
 
   try {
     const context: DirectorContext | undefined = data.context

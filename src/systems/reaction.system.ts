@@ -1,5 +1,6 @@
 import type { GameState, EntityId } from '../types/game-state.types.ts';
 import { getComponent } from '../core/ecs.ts';
+import { getTileAt } from '../map/map_accessor.ts';
 import { ComponentType } from '../types/components.types.ts';
 import type { ItemComponent, TagsComponent, TraitsComponent, MemoryComponent } from '../types/components.types.ts';
 import { applyConsequence } from './trigger.system.ts';
@@ -185,8 +186,7 @@ export function evaluateTargetMatcher(
   } else if (matcher.targetType === 'tile') {
     if (target.type !== 'tile') return false;
 
-    const tileIndex = target.y * state.map.width + target.x;
-    const tile = state.map.tiles[tileIndex];
+    const tile = getTileAt(state.map, target.x, target.y);
     if (!tile) return false;
 
     const tileDef = state.campaign.tiles[tile.tileId];

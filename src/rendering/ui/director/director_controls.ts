@@ -227,9 +227,9 @@ export function runAutoSimulation(controller: EditorController, generated: Gener
     try {
       const result = runEncounterArena(
         playerTemplateId,
-        generated.placedEntities!.map((e) => ({ templateId: e.templateId, x: e.x, y: e.y })),
+        (generated.placedEntities ?? []).map((e) => ({ templateId: e.templateId, x: e.x, y: e.y })),
         doc,
-        { width: map.width, height: map.height, tiles: map.tiles },
+        map,
         startPos,
         DEFAULT_MAX_SIM_TURNS
       );

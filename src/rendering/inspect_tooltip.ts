@@ -21,7 +21,7 @@ import {
 import type { ActiveEffectDisplayDTO } from '../types/ruleset.types.ts';
 import { type EntityId, type GameState, UIMode } from '../types/game-state.types.ts';
 import { formatTurnDurationCompact } from '../utils/duration.ts';
-import { coordToIndex } from '../utils/grid.ts';
+import { getTileAt } from '../map/map_accessor.ts';
 import { getEffectiveStats } from '../utils/stats.ts';
 import { FACET_DOMINANT_HIGH_THRESHOLD, FACET_DOMINANT_LOW_THRESHOLD } from '../constants/personality.constants.ts';
 import type { InspectSectionDTO, InspectTooltipDTO } from './viewport_snapshot.types.ts';
@@ -284,8 +284,7 @@ export function buildInspectTooltip(
     return { active: false, vx, vy, sections: [] };
   }
 
-  const idx = coordToIndex(ix, iy, state.map.width);
-  const tile = state.map.tiles[idx];
+  const tile = getTileAt(state.map, ix, iy);
   if (!tile || (!tile.explored && !state.map.isFullyExplored)) {
     return { active: false, vx, vy, sections: [] };
   }

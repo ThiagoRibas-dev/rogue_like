@@ -306,7 +306,46 @@
       {
         "targetAreaId": "safe_hub",
         "direction": "down"
+      },
+      {
+        "targetAreaId": "endless_frontier",
+        "direction": "edge"
       }
     ]
+  },
+  "endless_frontier": {
+    "id": "endless_frontier",
+    "name": "The Endless Frontier",
+    "generatorType": "streaming_overworld",
+    "dangerRating": 2,
+    "environmentType": "outdoors",
+    "tags": [
+      "wilderness",
+      "overworld",
+      "streaming"
+    ],
+    "connections": [
+      {
+        "targetAreaId": "outer_crossroads",
+        "direction": "edge",
+        "placementX": 0,
+        "placementY": 0
+      }
+    ],
+    "streamingConfig": {
+      "chunkSize": 16,
+      "activeRadiusChunks": 4,
+      "prefetchRadiusChunks": 6,
+      "worldSeed": 45175,
+      "spawnClearingRadius": 4,
+      "biomePalette": {
+        "water": "shallow_water",
+        "shore": "stone_floor",
+        "plains": "stone_floor",
+        "forest": "stone_floor",
+        "ridge": "stone_wall",
+        "road": "stone_floor"
+      }
+    }
   }
 }

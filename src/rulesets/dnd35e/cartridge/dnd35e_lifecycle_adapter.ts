@@ -1,6 +1,7 @@
 import { getComponent, resolveEntityDisplayName } from '../../../core/ecs.ts';
 import { addMessage, MessageLogCategory } from '../../../systems/message.system.ts';
 import { queryActiveFieldsAtPosition } from '../../../systems/field.system.ts';
+import { isTileKeyInFov } from '../../../map/map_accessor.ts';
 import {
   ComponentType,
   type FieldComponent,
@@ -216,8 +217,7 @@ export function onDnD35eActorTurnStart(state: GameState, entityId: EntityId): Ga
       const otherFighter = getComponent(nextState, otherId, ComponentType.Fighter) as FighterComponent | undefined;
       const otherPos = getComponent(nextState, otherId, ComponentType.Position) as PositionComponent | undefined;
       if (!otherFighter || otherFighter.hp <= 0 || !otherPos) continue;
-      const tileIdx = otherPos.y * nextState.map.width + otherPos.x;
-      if (nextState.cachedFov.has(tileIdx)) {
+      if (isTileKeyInFov(nextState, otherPos.x, otherPos.y)) {
         nextState = evaluateAndRecordMonsterLore(nextState, entityId, otherId).state;
       }
     }

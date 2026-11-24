@@ -15,7 +15,7 @@ import {
 } from '../../../types/components.types.ts';
 import type { EntityId, GameState } from '../../../types/game-state.types.ts';
 import { isHostile } from '../../../utils/faction.ts';
-import { coordToIndex, isInBounds } from '../../../utils/grid.ts';
+import { getTileDefAt, isInMapBounds } from '../../../map/map_accessor.ts';
 import { evaluateDnD35eEntityDAG } from '../cartridge/dnd35e_dag_adapter.ts';
 import { rollD20 } from '../math/dice.ts';
 import { getDnD35EntityData } from '../srd_registry.ts';
@@ -113,10 +113,8 @@ function resolveObserverSensoryProfile(state: GameState, observerId: EntityId): 
 }
 
 function isTileOpaqueWall(state: Readonly<GameState>, x: number, y: number): boolean {
-  if (!isInBounds(x, y, state.map.width, state.map.height)) return true;
-  const tile = state.map.tiles[coordToIndex(x, y, state.map.width)];
-  const tileDef = tile ? state.campaign.tiles[tile.tileId] : undefined;
-  return tileDef?.transparent === false;
+  if (!isInMapBounds(state.map, x, y)) return true;
+  return getTileDefAt(state, x, y)?.transparent === false;
 }
 
 function hasDirectHostileObserverWithoutConcealment(

@@ -2,17 +2,31 @@ import type { CampaignData } from '../types/campaign.types.ts';
 import type { DirectorContext } from '../types/encounter.types.ts';
 import type { FuzzerOptions, FuzzerReport } from '../types/fuzzer.types.ts';
 import type { GeneratedArea } from '../map/generator.ts';
+import { type ChunkSynthesisParams, generateWorldChunkFromParams } from '../map/chunk_generator.ts';
 import { generateAreaAsync } from '../map/generator_async.ts';
+import { deserializeWorldChunkFromBuffer } from '../map/world_chunk.ts';
 import { runNarrativeFuzzerAsync } from '../editor/simulation/narrative_fuzzer_async.ts';
+import type { WorldChunk } from '../types/world-chunk.types.ts';
 import type {
+  ChunkBatchWorkerRequest,
   WorkerProgressPayload,
   WorkerResponse,
   FuzzerWorkerRequest,
+  GeneratedChunkTransferPayload,
   MapWorkerRequest,
-  SerializableDirectorContext
+  SerializableDirectorContext,
+  StreamingChunkCoord
 } from './worker.types.ts';
 
 let nextRequestId = 1;
+let pooledChunkWorker: Worker | null = null;
+const pendingChunkBatchJobs = new Map<
+  string,
+  {
+    readonly resolve: (payload: GeneratedChunkTransferPayload) => void;
+    readonly reject: (err: Error) => void;
+  }
+>();
 
 /**
  * Checks whether Web Workers are supported in the current runtime environment.
@@ -213,5 +227,90 @@ export async function generateMapOffload(
   } catch (err) {
     console.warn('Map worker dispatch failed, falling back to main thread generator:', err);
     return generateMapMainThreadFallback(campaign, areaId, context, onProgress);
+  }
+}
+
+function getOrCreatePooledChunkWorker(): Worker {
+  if (pooledChunkWorker) return pooledChunkWorker;
+  const worker = new Worker(new URL('./map.worker.ts', import.meta.url), { type: 'module' });
+  worker.onmessage = (event: MessageEvent<WorkerResponse<GeneratedChunkTransferPayload>>): void => {
+    const msg = event.data;
+    if (!msg) return;
+    const pending = pendingChunkBatchJobs.get(msg.id);
+    if (!pending) return;
+    if (msg.type === 'success') {
+      pendingChunkBatchJobs.delete(msg.id);
+      pending.resolve(msg.result);
+    } else if (msg.type === 'error') {
+      pendingChunkBatchJobs.delete(msg.id);
+      pending.reject(new Error(msg.error));
+    }
+  };
+  worker.onerror = (err: ErrorEvent): void => {
+    const error = new Error(err.message || 'Pooled chunk worker failed.');
+    for (const pending of pendingChunkBatchJobs.values()) {
+      pending.reject(error);
+    }
+    pendingChunkBatchJobs.clear();
+    worker.terminate();
+    if (pooledChunkWorker === worker) {
+      pooledChunkWorker = null;
+    }
+  };
+  pooledChunkWorker = worker;
+  return worker;
+}
+
+/**
+ * Generates a batch of `WorldChunk`s via a persistent pooled Web Worker using transferable `ArrayBuffer`s
+ * (falling back cleanly to cooperative main-thread synthesis in headless environments without `Worker`).
+ *
+ * @param params Pre-resolved deterministic synthesis parameters.
+ * @param coords Chunk coordinates to synthesize in a single batched postMessage.
+ * @returns Generated `WorldChunk`s matching the requested coordinates.
+ */
+export async function generateChunkBatchOffload(
+  params: ChunkSynthesisParams,
+  coords: ReadonlyArray<StreamingChunkCoord>
+): Promise<ReadonlyArray<WorldChunk>> {
+  if (coords.length === 0) return [];
+
+  if (!isWorkerAvailable()) {
+    await Promise.resolve();
+    return coords.map((coord) => generateWorldChunkFromParams(params, coord.cx, coord.cy, coord.cz));
+  }
+
+  const id = `chunk_batch_${nextRequestId++}`;
+  const request: ChunkBatchWorkerRequest = {
+    id,
+    type: 'generate_chunk_batch',
+    params,
+    coords
+  };
+
+  try {
+    const payload = await new Promise<GeneratedChunkTransferPayload>((resolve, reject) => {
+      const worker = getOrCreatePooledChunkWorker();
+      pendingChunkBatchJobs.set(id, { resolve, reject });
+      worker.postMessage(request);
+    });
+    return payload.buffers.map((buf) => deserializeWorldChunkFromBuffer(buf));
+  } catch (err) {
+    console.warn('Chunk batch worker failed, falling back to main thread synthesis:', err);
+    return coords.map((coord) => generateWorldChunkFromParams(params, coord.cx, coord.cy, coord.cz));
+  }
+}
+
+/**
+ * Terminates the persistent pooled chunk Web Worker and clears pending jobs.
+ */
+export function terminateChunkWorkerPool(): void {
+  for (const pending of pendingChunkBatchJobs.values()) {
+    pending.reject(new Error('Chunk worker pool terminated.'));
+  }
+  pendingChunkBatchJobs.clear();
+  if (pooledChunkWorker) {
+    pooledChunkWorker.terminate();
+    pooledChunkWorker = null;
   }
 }

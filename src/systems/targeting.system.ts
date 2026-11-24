@@ -8,6 +8,7 @@ import {
   type ToggleTargetingIntent
 } from '../types/intents/combat.intents.ts';
 import { isHostile } from '../utils/faction.ts';
+import { isInMapBounds } from '../map/map_accessor.ts';
 import { assignCompanionCommandTarget } from './companion_commands.system.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 
@@ -70,7 +71,7 @@ export function processMoveTargetIntent(
   const newY = state.targetingMode.y + intent.dy;
 
   // Clamp to map boundaries
-  if (newX < 0 || newX >= state.map.width || newY < 0 || newY >= state.map.height) {
+  if (!isInMapBounds(state.map, newX, newY)) {
     return { state, success: false };
   }
 

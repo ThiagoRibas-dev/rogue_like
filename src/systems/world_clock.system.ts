@@ -20,7 +20,7 @@ import type {
 import { ComponentType, type FighterComponent, type PositionComponent } from '../types/components.types.ts';
 import type { EntityId, GameState } from '../types/game-state.types.ts';
 import { isHostile } from '../utils/faction.ts';
-import { coordToIndex } from '../utils/grid.ts';
+import { isTileKeyInFov } from '../map/map_accessor.ts';
 
 /** Fallback proximity radius (tiles) used when `cachedFov` is unpopulated in headless unit tests. */
 const HEADLESS_VISIBLE_THREAT_RADIUS = 8;
@@ -298,8 +298,7 @@ export function isActorThreatenedByVisibleHostiles(state: GameState, actorId: En
     if (!candPos) continue;
 
     if (useFov) {
-      const idx = coordToIndex(candPos.x, candPos.y, state.map.width);
-      if (state.cachedFov.has(idx)) return true;
+      if (isTileKeyInFov(state, candPos.x, candPos.y)) return true;
     } else {
       const dist = Math.max(Math.abs(candPos.x - actorPos.x), Math.abs(candPos.y - actorPos.y));
       if (dist <= HEADLESS_VISIBLE_THREAT_RADIUS) return true;

@@ -12,6 +12,7 @@ import {
 } from '../../../types/components.types.ts';
 import type { EntityId, GameState } from '../../../types/game-state.types.ts';
 import { getFactionRelation, isHostile } from '../../../utils/faction.ts';
+import { getTileDefAt, isInMapBounds } from '../../../map/map_accessor.ts';
 import { evaluateDnD35eEntityDAG } from '../cartridge/dnd35e_dag_adapter.ts';
 import { DND35E_DEATH_HP_THRESHOLD } from '../combat/damage_vitality.ts';
 import type { DnD35TargetCategory } from '../types/system/effect_system.types.ts';
@@ -158,9 +159,8 @@ export function enumerateSpellTargets(
         ? { x: casterPos.x, y: casterPos.y }
         : targetPos;
     const isWallAt = (x: number, y: number): boolean => {
-      if (x < 0 || x >= state.map.width || y < 0 || y >= state.map.height) return true;
-      const tile = state.map.tiles[y * state.map.width + x];
-      return !tile || !(state.campaign.tiles[tile.tileId]?.walkable ?? false);
+      if (!isInMapBounds(state.map, x, y)) return true;
+      return !(getTileDefAt(state, x, y)?.walkable ?? false);
     };
     const affectedSquares = computeAoEAffectedSquares(
       shape,

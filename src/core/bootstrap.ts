@@ -19,7 +19,9 @@ import { loadCampaign } from './loader.ts';
 import { compilePhases } from '../systems/scheme_compiler.ts';
 import { initRNG } from './rng.ts';
 import { startRecording } from './replay.ts';
+import { clearChunkStoreScope, resolveDefaultChunkScopeKey } from './chunk_store.ts';
 import { deleteSave } from './save.ts';
+import { clearStreamingPrefetchCache, updateStreamingWorldWindow } from '../systems/map/chunk_streaming.ts';
 import { setTelemetryStore } from './telemetry.ts';
 import { addActor, clearScheduler, initEngine, startEngine } from './scheduler.ts';
 import { DEFAULT_GLOBAL_DRAMA_BUDGET } from '../constants/pacing.constants.ts';
@@ -70,6 +72,8 @@ export async function startNewGame(
   syncDisplayLayout(display, state);
 
   deleteSave();
+  clearStreamingPrefetchCache(undefined, resolveDefaultChunkScopeKey(campaignId));
+  void clearChunkStoreScope(resolveDefaultChunkScopeKey(campaignId));
   clearScheduler();
   initEngine();
 
@@ -136,6 +140,9 @@ export async function startNewGame(
   const spawnY = spawnOverride?.y ?? startPos.y;
   const [stateAfterPlayerSpawn] = spawnEntity(state, 'player', spawnX, spawnY);
   state = stateAfterPlayerSpawn;
+  if (state.map.chunkGrid !== undefined) {
+    state = updateStreamingWorldWindow(state, spawnX, spawnY);
+  }
 
   const mastermindId = state.nextEntityId as EntityId;
   state = { ...state, nextEntityId: state.nextEntityId + 1 };

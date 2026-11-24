@@ -14,6 +14,11 @@ import { recordRenderSample } from '../core/performance.ts';
 import { recordEarlyReturn, recordDisplayCanvas, recordMapRender } from './render_debug.ts';
 import { uiStore } from './ui/core/ui_store.ts';
 
+/** Default viewport fallback width when neither ROT.Display nor GameMap provides finite dimensions. */
+const DEFAULT_PRESENTER_VIEWPORT_W = 50;
+/** Default viewport fallback height when neither ROT.Display nor GameMap provides finite dimensions. */
+const DEFAULT_PRESENTER_VIEWPORT_H = 25;
+
 /**
  * Module-level cache of the last rendered ViewportSnapshot to drive dirty-cell diffing.
  */
@@ -89,8 +94,8 @@ export function renderPresenterFrame(
     dirtyDomains.has(PresentationDomain.VFX)
   ) {
     const options = display.getOptions();
-    const viewportW = options.width ?? state.map.width;
-    const viewportH = options.height ?? state.map.height;
+    const viewportW = options.width ?? (state.map.width > 0 ? state.map.width : DEFAULT_PRESENTER_VIEWPORT_W);
+    const viewportH = options.height ?? (state.map.height > 0 ? state.map.height : DEFAULT_PRESENTER_VIEWPORT_H);
 
     const tSnap0 = performance.now();
     const snapshot = buildViewportSnapshot(state, viewportW, viewportH);

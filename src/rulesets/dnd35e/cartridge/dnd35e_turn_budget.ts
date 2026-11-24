@@ -14,7 +14,7 @@ import { EngineMode, type EntityId, type GameState, UIMode } from '../../../type
 import { IntentType } from '../../../types/intents/intent.enum.ts';
 import type { Intent } from '../../../types/intents/intent.union.ts';
 import { assertNever } from '../../../utils/assert.ts';
-import { coordToIndex } from '../../../utils/grid.ts';
+import { getTileDefAt, isInMapBounds } from '../../../map/map_accessor.ts';
 import { resolveEffectiveItemDefinition } from '../equipment/item_inheritance.ts';
 import type { DnD35ItemDefinition } from '../types/dnd35e_system.types.ts';
 import {
@@ -336,11 +336,8 @@ export function resolveDnD35eActionEnergyCost(
           for (let dx = 0; dx < fw; dx++) {
             const sqX = posAfter.x + dx;
             const sqY = posAfter.y + dy;
-            if (sqX < 0 || sqX >= state.map.width || sqY < 0 || sqY >= state.map.height) continue;
-            const tile = state.map.tiles[coordToIndex(sqX, sqY, state.map.width)];
-            const tileCost = tile
-              ? (state.campaign.tiles[tile.tileId]?.movementCost ?? NORMAL_TILE_MOVEMENT_COST)
-              : NORMAL_TILE_MOVEMENT_COST;
+            if (!isInMapBounds(state.map, sqX, sqY)) continue;
+            const tileCost = getTileDefAt(state, sqX, sqY)?.movementCost ?? NORMAL_TILE_MOVEMENT_COST;
             if (tileCost > maxTileCost) {
               maxTileCost = tileCost;
             }

@@ -7,6 +7,7 @@ import type { ApplyIntentTarget, VerbOption } from './intents/interaction.intent
 import type { Verb } from '../constants/verbs.constants.ts';
 import type { PendingKnowledgePropagation, PendingRumorPropagation } from './knowledge.types.ts';
 import type { RoomBounds } from './encounter.types.ts';
+import type { ChunkedWorldGrid, SerializedStreamingWorldState } from './world-chunk.types.ts';
 
 /**
  * Enum defining the engine mode.
@@ -75,6 +76,7 @@ export interface GameMap {
   readonly height: number;
   readonly tiles: ReadonlyArray<Tile>;
   readonly isFullyExplored?: boolean;
+  readonly chunkGrid?: ChunkedWorldGrid | undefined;
 }
 
 /**
@@ -299,6 +301,7 @@ export interface SerializedAreaData {
   readonly rooms?: ReadonlyArray<RoomBounds>;
   readonly lastSpawnTurn?: number;
   readonly lastVisitedTurn?: number | undefined;
+  readonly streamingState?: SerializedStreamingWorldState | undefined;
 }
 
 /**
@@ -371,4 +374,5 @@ export interface SerializedGameState {
   readonly pendingRivalries: ReadonlyArray<PendingRivalry>;
   readonly dramaTracker: DramaTracker;
   readonly telemetry?: TelemetryMetrics;
+  readonly streamingState?: SerializedStreamingWorldState | undefined;
 }

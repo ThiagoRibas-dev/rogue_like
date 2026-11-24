@@ -8,6 +8,7 @@ import {
   type CoatingComponent
 } from '../types/components.types.ts';
 import { getComponent, addComponent, removeComponent, removeEntity, resolveEntityDisplayName } from '../core/ecs.ts';
+import { getTileDefAt } from '../map/map_accessor.ts';
 import { processReactions } from './reaction.system.ts';
 import { rng } from '../core/rng.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
@@ -94,12 +95,9 @@ export function processProjectileThrow(state: GameState, intent: ApplyIntent): {
     }
 
     // Check Map Walls
-    const tileIndex = point.y * state.map.width + point.x;
-    const tile = state.map.tiles[tileIndex];
-    if (!tile) break;
-
-    const tileDef = state.campaign.tiles[tile.tileId];
-    if (!tileDef || !tileDef.walkable) {
+    const tileDef = getTileDefAt(state, point.x, point.y);
+    if (!tileDef) break;
+    if (!tileDef.walkable) {
       // Impact is the LAST valid tile before the wall, or the wall itself?
       // Typically, hitting a wall means it drops right before the wall or at the wall if it's an impact effect.
       // Let's set impact to the previous point so it drops on the floor instead of "inside" the wall.
@@ -141,14 +139,10 @@ export function processProjectileThrow(state: GameState, intent: ApplyIntent): {
   if (missed && !hitEntityId) {
     const scatterX = impactX + rng.getUniformInt(-1, 1);
     const scatterY = impactY + rng.getUniformInt(-1, 1);
-    const scatterTileIdx = scatterY * state.map.width + scatterX;
-    const scatterTile = state.map.tiles[scatterTileIdx];
-    if (scatterTile) {
-      const scatterTileDef = state.campaign.tiles[scatterTile.tileId];
-      if (scatterTileDef?.walkable) {
-        impactX = scatterX;
-        impactY = scatterY;
-      }
+    const scatterTileDef = getTileDefAt(state, scatterX, scatterY);
+    if (scatterTileDef?.walkable) {
+      impactX = scatterX;
+      impactY = scatterY;
     }
   }
 

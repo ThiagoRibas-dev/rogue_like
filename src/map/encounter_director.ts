@@ -52,6 +52,10 @@ export function runEncounterDirector(
     return { newEntities: [], traitOverrides: [], receipt: buildEmptyReceipt(areaDef.id) };
   }
 
+  if (areaDef.generatorType === 'streaming_overworld') {
+    return { newEntities: [], traitOverrides: [], receipt: buildEmptyReceipt(areaDef.id) };
+  }
+
   const zones: RoomBounds[] = [];
   if (areaDef.generatorType === 'digger' && rooms.length > 0) {
     zones.push(...rooms.filter((r) => !r.isSafe));

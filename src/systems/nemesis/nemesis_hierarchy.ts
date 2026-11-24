@@ -12,7 +12,7 @@ import {
 } from '../../types/components.types.ts';
 import { GameEventType } from '../../types/events.types.ts';
 import { type EntityId, type GameState } from '../../types/game-state.types.ts';
-import { coordToIndex } from '../../utils/grid.ts';
+import { findRandomWalkableCoord, getMapCenterFallbackCoord } from '../../map/map_accessor.ts';
 import { promoteEntity, recordChronicleEvent } from '../chronicle.system.ts';
 import { addMessage, MessageLogCategory } from '../message.system.ts';
 import { generateEventDrivenRivalry } from '../rivalry.system.ts';
@@ -302,21 +302,19 @@ export function fillVacancy(state: GameState, hierarchyId: string, rankId: strin
       }
 
       for (let attempt = 0; attempt < 100; attempt++) {
-        const rx = Math.floor(rng.getUniform() * state.map.width);
-        const ry = Math.floor(rng.getUniform() * state.map.height);
-        const idx = coordToIndex(rx, ry, state.map.width);
-        const tile = state.map.tiles[idx];
-        if (tile && state.campaign.tiles[tile.tileId]?.walkable && !occupiedCoords.has(`${rx},${ry}`)) {
-          spawnX = rx;
-          spawnY = ry;
+        const sampled = findRandomWalkableCoord(state, () => rng.getUniform(), 1);
+        if (sampled && !occupiedCoords.has(`${sampled.x},${sampled.y}`)) {
+          spawnX = sampled.x;
+          spawnY = sampled.y;
           spawned = true;
           break;
         }
       }
 
       if (!spawned) {
-        spawnX = Math.floor(state.map.width / 2);
-        spawnY = Math.floor(state.map.height / 2);
+        const fallback = getMapCenterFallbackCoord(state.map);
+        spawnX = fallback.x;
+        spawnY = fallback.y;
       }
 
       const [stateAfterSpawn, newEntityId] = spawnEntity(state, templateId, spawnX, spawnY);

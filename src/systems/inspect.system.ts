@@ -2,7 +2,7 @@ import type { GameState } from '../types/game-state.types.ts';
 import type { ToggleInspectIntent, MoveInspectIntent } from '../types/intents/inspect.intents.ts';
 import { ComponentType } from '../types/components.types.ts';
 import { getComponent } from '../core/ecs.ts';
-import { coordToIndex } from '../utils/grid.ts';
+import { getTileAt, isInMapBounds } from '../map/map_accessor.ts';
 
 /**
  * Toggles inspect mode on or off. Centers the cursor on the player when opening.
@@ -47,13 +47,12 @@ export function processMoveInspectIntent(
   const newY = state.inspectMode.y + intent.dy;
 
   // Restrict to map bounds
-  if (newX < 0 || newX >= state.map.width || newY < 0 || newY >= state.map.height) {
+  if (!isInMapBounds(state.map, newX, newY)) {
     return { state, success: false };
   }
 
   // Restrict to explored tiles (can't inspect unrevealed fog of war)
-  const idx = coordToIndex(newX, newY, state.map.width);
-  const tile = state.map.tiles[idx];
+  const tile = getTileAt(state.map, newX, newY);
   if (!tile || (!tile.explored && !state.map.isFullyExplored)) {
     return { state, success: false };
   }

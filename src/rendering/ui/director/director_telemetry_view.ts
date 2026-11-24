@@ -1,6 +1,8 @@
+import { DEFAULT_STREAMING_PREVIEW_SPAN } from '../../../constants/world_chunk.constants.ts';
 import type { CampaignData, AreaDefinition } from '../../../types/campaign.types.ts';
 import type { DirectorReceipt } from '../../../types/encounter.types.ts';
 import type { GeneratedArea } from '../../../map/generator.ts';
+import { getTileAt, getTileIdAt } from '../../../map/map_accessor.ts';
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 export const MAP_CELL_SIZE = 6; // px per tile in the DOM mini-map
@@ -73,8 +75,11 @@ export function getDispositionLabel(disposition: string): string {
  * Builds a static area definition representation from a generated area.
  */
 export function buildBakedStaticArea(newId: string, areaDef: AreaDefinition, generated: GeneratedArea): AreaDefinition {
-  const width = generated.map.width;
-  const height = generated.map.height;
+  const isStreaming = generated.map.chunkGrid !== undefined;
+  const width = isStreaming ? DEFAULT_STREAMING_PREVIEW_SPAN : generated.map.width;
+  const height = isStreaming ? DEFAULT_STREAMING_PREVIEW_SPAN : generated.map.height;
+  const originX = isStreaming ? generated.startPos.x - Math.floor(width / 2) : 0;
+  const originY = isStreaming ? generated.startPos.y - Math.floor(height / 2) : 0;
 
   // Map tile definitions dynamically to build legend
   const legend: Record<string, string> = {
@@ -89,12 +94,10 @@ export function buildBakedStaticArea(newId: string, areaDef: AreaDefinition, gen
   };
 
   const layoutRows: string[] = [];
-  for (let y = 0; y < height; y++) {
+  for (let vy = 0; vy < height; vy++) {
     let rowStr = '';
-    for (let x = 0; x < width; x++) {
-      const idx = y * width + x;
-      const tile = generated.map.tiles[idx];
-      const tileId = tile?.tileId || 'empty_space';
+    for (let vx = 0; vx < width; vx++) {
+      const tileId = getTileIdAt(generated.map, originX + vx, originY + vy) || 'empty_space';
 
       let char = legendInverse[tileId];
       if (!char) {
@@ -176,13 +179,20 @@ export function renderMiniMap(container: HTMLElement, campaign: CampaignData, re
   }
 
   // Build grid
-  mapGrid.style.gridTemplateColumns = `repeat(${map.width}, ${MAP_CELL_SIZE}px)`;
+  const isStreaming = map.chunkGrid !== undefined;
+  const viewW = isStreaming ? DEFAULT_STREAMING_PREVIEW_SPAN : map.width;
+  const viewH = isStreaming ? DEFAULT_STREAMING_PREVIEW_SPAN : map.height;
+  const originX = isStreaming ? startPos.x - Math.floor(viewW / 2) : 0;
+  const originY = isStreaming ? startPos.y - Math.floor(viewH / 2) : 0;
+
+  mapGrid.style.gridTemplateColumns = `repeat(${viewW}, ${MAP_CELL_SIZE}px)`;
   mapGrid.replaceChildren();
 
-  for (let y = 0; y < map.height; y++) {
-    for (let x = 0; x < map.width; x++) {
-      const idx = y * map.width + x;
-      const tile = map.tiles[idx];
+  for (let vy = 0; vy < viewH; vy++) {
+    for (let vx = 0; vx < viewW; vx++) {
+      const x = originX + vx;
+      const y = originY + vy;
+      const tile = getTileAt(map, x, y);
       const cell = document.createElement('div');
       cell.style.width = `${MAP_CELL_SIZE}px`;
       cell.style.height = `${MAP_CELL_SIZE}px`;
@@ -247,7 +257,10 @@ export function renderMiniMap(container: HTMLElement, campaign: CampaignData, re
     const totalBudget = directorReceipt?.effectiveBudget ?? 0;
     const totalSpent = Object.values(directorReceipt?.axisResults ?? {}).reduce((s, a) => s + a.spent, 0);
     const totalRooms = rooms.length;
-    mapStats.textContent = `🗺 ${map.width}×${map.height} | 🚪 ${totalRooms} rooms | 👾 ${entityCount} entities | 💰 ${totalSpent}/${totalBudget} CR spent`;
+    const sizeLabel = map.chunkGrid
+      ? `Streaming (${map.chunkGrid.chunkSize}×${map.chunkGrid.chunkSize} chunks)`
+      : `${map.width}×${map.height}`;
+    mapStats.textContent = `🗺 ${sizeLabel} | 🚪 ${totalRooms} rooms | 👾 ${entityCount} entities | 💰 ${totalSpent}/${totalBudget} CR spent`;
   }
 }
 

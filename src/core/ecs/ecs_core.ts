@@ -1,16 +1,41 @@
-import { type Component, ComponentType, type MemoryComponent } from '../../types/components.types.ts';
+import {
+  type Component,
+  ComponentType,
+  type MemoryComponent,
+  type PositionComponent
+} from '../../types/components.types.ts';
 import { type EntityId, type GameState, toEntityId } from '../../types/game-state.types.ts';
+
+import type { DormantChunkEntityRecord } from '../../types/world-chunk.types.ts';
+
+function isEntityInDormantChunkMap(
+  evicted: Readonly<Record<string, ReadonlyArray<DormantChunkEntityRecord>>> | undefined,
+  id: EntityId
+): boolean {
+  if (!evicted) return false;
+  for (const list of Object.values(evicted)) {
+    for (const rec of list) {
+      if (rec.entityId === id) return true;
+      for (const owned of rec.ownedEntities) {
+        if (owned.entityId === id) return true;
+      }
+    }
+  }
+  return false;
+}
 
 /**
  * Checks whether `id` is already allocated in active components, persistent entities,
- * or any saved dormant area floor so stale `nextEntityId` values never clobber existing entities.
+ * dormant chunk cold storage, or any saved dormant area floor so stale `nextEntityId` values never collide.
  */
-function isEntityIdInUse(state: Readonly<GameState>, id: EntityId): boolean {
+export function isEntityIdInUse(state: Readonly<GameState>, id: EntityId): boolean {
   if (state.components.has(id)) return true;
   if (state.persistentEntities?.has(id)) return true;
+  if (isEntityInDormantChunkMap(state.map?.chunkGrid?.evictedChunkEntities, id)) return true;
   if (state.areas) {
     for (const area of state.areas.values()) {
       if (area.components.has(id)) return true;
+      if (isEntityInDormantChunkMap(area.map.chunkGrid?.evictedChunkEntities, id)) return true;
     }
   }
   return false;
@@ -44,8 +69,109 @@ export function createEntity(state: GameState): [GameState, EntityId] {
   return [nextState, newId];
 }
 
+function getPositionFootprintKeys(pos: PositionComponent | undefined): ReadonlyArray<string> {
+  if (pos === undefined) return [];
+  const footprintWidth = Math.max(1, pos.footprintWidth ?? 1);
+  const footprintHeight = Math.max(1, pos.footprintHeight ?? 1);
+  if (footprintWidth === 1 && footprintHeight === 1) {
+    return [`${pos.x},${pos.y}`];
+  }
+  const keys: string[] = [];
+  for (let dy = 0; dy < footprintHeight; dy++) {
+    for (let dx = 0; dx < footprintWidth; dx++) {
+      keys.push(`${pos.x + dx},${pos.y + dy}`);
+    }
+  }
+  return keys;
+}
+
+function sameSpatialFootprint(a: PositionComponent | undefined, b: PositionComponent | undefined): boolean {
+  if (a === undefined && b === undefined) return true;
+  if (a === undefined || b === undefined) return false;
+  return (
+    a.x === b.x &&
+    a.y === b.y &&
+    Math.max(1, a.footprintWidth ?? 1) === Math.max(1, b.footprintWidth ?? 1) &&
+    Math.max(1, a.footprintHeight ?? 1) === Math.max(1, b.footprintHeight ?? 1)
+  );
+}
+
+/**
+ * Incrementally patches a working spatialIndex Map in place with copy-on-write per touched bucket array,
+ * ensuring frozen or shared prior-snapshot bucket arrays are never mutated directly.
+ *
+ * @param workingIndex Mutable working spatial index Map.
+ * @param copiedKeys Set of bucket keys already cloned during the current transaction.
+ * @param entityId Entity whose spatial footprint changed.
+ * @param prevPos Previous PositionComponent (or undefined if newly added).
+ * @param nextPos Next PositionComponent (or undefined if removed).
+ */
+export function patchSpatialIndexInPlace(
+  workingIndex: Map<string, ReadonlyArray<EntityId>>,
+  copiedKeys: Set<string>,
+  entityId: EntityId,
+  prevPos: PositionComponent | undefined,
+  nextPos: PositionComponent | undefined
+): void {
+  if (sameSpatialFootprint(prevPos, nextPos)) return;
+
+  for (const oldKey of getPositionFootprintKeys(prevPos)) {
+    const existing = workingIndex.get(oldKey);
+    if (!existing) continue;
+    const filtered = existing.filter((id) => id !== entityId);
+    if (filtered.length === 0) {
+      workingIndex.delete(oldKey);
+      copiedKeys.delete(oldKey);
+    } else if (filtered.length !== existing.length) {
+      workingIndex.set(oldKey, filtered);
+      copiedKeys.add(oldKey);
+    }
+  }
+
+  for (const newKey of getPositionFootprintKeys(nextPos)) {
+    const existing = workingIndex.get(newKey);
+    if (!existing) {
+      workingIndex.set(newKey, [entityId]);
+      copiedKeys.add(newKey);
+      continue;
+    }
+    if (existing.includes(entityId)) continue;
+    if (copiedKeys.has(newKey)) {
+      (existing as EntityId[]).push(entityId);
+    } else {
+      workingIndex.set(newKey, [...existing, entityId]);
+      copiedKeys.add(newKey);
+    }
+  }
+}
+
+/**
+ * Incrementally patches `spatialIndex` for a single entity's previous vs. next `PositionComponent` in O(k).
+ *
+ * @param spatialIndex Current spatial index Map.
+ * @param entityId Target EntityId.
+ * @param prevPos Previous PositionComponent or undefined.
+ * @param nextPos Next PositionComponent or undefined.
+ * @returns Updated spatial index Map (or the original reference if unchanged).
+ */
+export function patchSpatialIndexForEntity(
+  spatialIndex: ReadonlyMap<string, ReadonlyArray<EntityId>>,
+  entityId: EntityId,
+  prevPos: PositionComponent | undefined,
+  nextPos: PositionComponent | undefined
+): ReadonlyMap<string, ReadonlyArray<EntityId>> {
+  if (sameSpatialFootprint(prevPos, nextPos)) {
+    return spatialIndex;
+  }
+  const nextIndex = new Map<string, ReadonlyArray<EntityId>>(spatialIndex);
+  const copiedKeys = new Set<string>();
+  patchSpatialIndexInPlace(nextIndex, copiedKeys, entityId, prevPos, nextPos);
+  return nextIndex;
+}
+
 /**
  * Rebuilds the spatial index by scanning all entities for Position components.
+ * Reserved for full save rehydration and area transitions.
  * @param state The current game state.
  * @returns The updated game state with the new spatial index.
  */
@@ -86,20 +212,24 @@ export function updateSpatialIndex(state: GameState): GameState {
  */
 export function addComponent<C extends Component>(state: GameState, entityId: EntityId, component: C): GameState {
   const entityComponents = state.components.get(entityId) ?? {};
+  const prevPos =
+    component.type === ComponentType.Position
+      ? (entityComponents[ComponentType.Position] as PositionComponent | undefined)
+      : undefined;
 
   const nextComponents = new Map(state.components);
   nextComponents.set(entityId, { ...entityComponents, [component.type]: component });
 
-  const nextState = {
+  const nextSpatialIndex =
+    component.type === ComponentType.Position
+      ? patchSpatialIndexForEntity(state.spatialIndex, entityId, prevPos, component)
+      : state.spatialIndex;
+
+  return {
     ...state,
-    components: nextComponents
+    components: nextComponents,
+    spatialIndex: nextSpatialIndex
   };
-
-  if (component.type === ComponentType.Position) {
-    return updateSpatialIndex(nextState);
-  }
-
-  return nextState;
 }
 
 /**
@@ -111,7 +241,7 @@ export function addComponent<C extends Component>(state: GameState, entityId: En
  */
 export function removeComponent<T extends ComponentType>(state: GameState, entityId: EntityId, type: T): GameState {
   const entityComponents = state.components.get(entityId);
-  if (!entityComponents) return state;
+  if (!entityComponents || entityComponents[type] === undefined) return state;
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { [type]: removed, ...rest } = entityComponents;
@@ -119,13 +249,14 @@ export function removeComponent<T extends ComponentType>(state: GameState, entit
   const nextComponents = new Map(state.components);
   nextComponents.set(entityId, rest);
 
-  const nextState = { ...state, components: nextComponents };
+  const prevPos =
+    type === (ComponentType.Position as ComponentType) ? (removed as PositionComponent | undefined) : undefined;
+  const nextSpatialIndex =
+    prevPos !== undefined
+      ? patchSpatialIndexForEntity(state.spatialIndex, entityId, prevPos, undefined)
+      : state.spatialIndex;
 
-  if (type === (ComponentType.Position as ComponentType)) {
-    return updateSpatialIndex(nextState);
-  }
-
-  return nextState;
+  return { ...state, components: nextComponents, spatialIndex: nextSpatialIndex };
 }
 
 /**
@@ -174,15 +305,20 @@ export function queryEntities<T extends ComponentType>(
  * @returns The updated game state.
  */
 export function removeEntity(state: GameState, entityId: EntityId): GameState {
+  const prevPos = getComponent(state, entityId, ComponentType.Position);
   const nextEntities = state.entities.filter((id) => id !== entityId);
   const nextComponents = new Map(state.components);
   nextComponents.delete(entityId);
 
-  return updateSpatialIndex({
+  return {
     ...state,
     entities: nextEntities,
-    components: nextComponents
-  });
+    components: nextComponents,
+    spatialIndex:
+      prevPos !== undefined
+        ? patchSpatialIndexForEntity(state.spatialIndex, entityId, prevPos, undefined)
+        : state.spatialIndex
+  };
 }
 
 /**

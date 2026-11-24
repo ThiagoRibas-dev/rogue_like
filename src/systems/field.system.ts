@@ -11,7 +11,7 @@ import {
   type RenderableComponent
 } from '../types/components.types.ts';
 import type { EntityId, GameState } from '../types/game-state.types.ts';
-import { coordToIndex, isInBounds } from '../utils/grid.ts';
+import { getTileDefAt, isInMapBounds } from '../map/map_accessor.ts';
 import { destroyCrossingEntity, queryCrossingAtPosition, spawnCrossingEntity } from './crossing.system.ts';
 import { appendInteractionFrame } from './interaction_provenance.system.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
@@ -145,9 +145,8 @@ function collectTargetTagsAtTile(
   const matchingFieldEntityIds: EntityId[] = [];
   let frozenCrossingEntityId: EntityId | undefined;
 
-  if (isInBounds(x, y, state.map.width, state.map.height)) {
-    const tile = state.map.tiles[coordToIndex(x, y, state.map.width)];
-    const tileDef = tile ? state.campaign.tiles[tile.tileId] : undefined;
+  if (isInMapBounds(state.map, x, y)) {
+    const tileDef = getTileDefAt(state, x, y);
     if (tileDef) {
       for (const t of tileDef.tags ?? []) tags.add(t);
       if (tileDef.hazardKind) tags.add(tileDef.hazardKind);
@@ -287,7 +286,7 @@ function resolveFieldInteractionsTransaction(
   incomingTags: ReadonlyArray<string>,
   interaction?: InteractionChain
 ): FieldInteractionTransactionResult {
-  if (incomingTags.length === 0 || !isInBounds(originX, originY, state.map.width, state.map.height)) {
+  if (incomingTags.length === 0 || !isInMapBounds(state.map, originX, originY)) {
     return { state, matched: false };
   }
 
@@ -333,7 +332,7 @@ function resolveFieldInteractionsTransaction(
           { x: curr.x, y: curr.y - 1 }
         ];
         for (const n of neighbors) {
-          if (isInBounds(n.x, n.y, nextState.map.width, nextState.map.height) && !visited.has(`${n.x},${n.y}`)) {
+          if (isInMapBounds(nextState.map, n.x, n.y) && !visited.has(`${n.x},${n.y}`)) {
             queue.push(n);
           }
         }

@@ -4,8 +4,8 @@ import {
   type InventoryComponent,
   type PositionComponent
 } from '../types/components.types.ts';
-import { type EntityId, type GameState, UIMode } from '../types/game-state.types.ts';
-import { coordToIndex } from '../utils/grid.ts';
+import { type EntityId, type GameMap, type GameState, UIMode } from '../types/game-state.types.ts';
+import { toMapTileKey } from '../map/map_accessor.ts';
 import { recordDomainMarkedDirty } from './performance.ts';
 
 /**
@@ -37,13 +37,17 @@ interface ComponentDiffResult {
   readonly inventoryDirty: boolean;
 }
 
-function isFootprintInFov(pos: PositionComponent | undefined, mapWidth: number, fov: ReadonlySet<number>): boolean {
+function isFootprintInFov(
+  pos: PositionComponent | undefined,
+  map: Readonly<GameMap>,
+  fov: ReadonlySet<number>
+): boolean {
   if (!pos) return false;
   const w = pos.footprintWidth ?? 1;
   const h = pos.footprintHeight ?? 1;
   for (let dy = 0; dy < h; dy++) {
     for (let dx = 0; dx < w; dx++) {
-      if (fov.has(coordToIndex(pos.x + dx, pos.y + dy, mapWidth))) {
+      if (fov.has(toMapTileKey(map, pos.x + dx, pos.y + dy))) {
         return true;
       }
     }
@@ -93,9 +97,6 @@ function classifyPresentationComponentDiff(prev: GameState, next: GameState): Co
     collectPlayerOwnedItems(next.components.get(playerId), playerItemIds);
   }
 
-  const nextWidth = next.map.width;
-  const prevWidth = prev.map.width;
-
   for (const id of next.entities) {
     const pMap = prev.components.get(id);
     const nMap = next.components.get(id);
@@ -127,9 +128,9 @@ function classifyPresentationComponentDiff(prev: GameState, next: GameState): Co
     const pPos = pMap?.[ComponentType.Position] as PositionComponent | undefined;
     const nPos = nMap?.[ComponentType.Position] as PositionComponent | undefined;
     if (
-      isFootprintInFov(nPos, nextWidth, next.cachedFov) ||
-      isFootprintInFov(pPos, nextWidth, next.cachedFov) ||
-      isFootprintInFov(pPos, prevWidth, prev.cachedFov)
+      isFootprintInFov(nPos, next.map, next.cachedFov) ||
+      isFootprintInFov(pPos, next.map, next.cachedFov) ||
+      isFootprintInFov(pPos, prev.map, prev.cachedFov)
     ) {
       entitiesDirty = true;
       hudDirty = true;

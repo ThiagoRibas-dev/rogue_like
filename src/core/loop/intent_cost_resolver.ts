@@ -12,7 +12,8 @@ import type { GameEvent } from '../../types/events.types.ts';
 import { resolveActorActionEnergyCost } from '../../systems/lifecycle.system.ts';
 import { updateExploredTiles } from '../../systems/map.system.ts';
 import { evaluateAutoPause } from '../auto_pause.ts';
-import { coordToIndex } from '../../utils/grid.ts';
+import { getTileDefAt } from '../../map/map_accessor.ts';
+import { updateStreamingWorldWindow } from '../../systems/map/chunk_streaming.ts';
 import { resolveStateStabilization } from '../state_stabilizer.ts';
 import { processInvestigationEvents } from '../../systems/investigation.system.ts';
 import { processFieldsTick } from '../../systems/field.system.ts';
@@ -40,11 +41,7 @@ export function applyIntentWithCost(state: GameState, intent: Intent): ActionRes
   } else if ('isImmediate' in intent && intent.isImmediate) {
     baseEnergyCost = 0;
   } else if (intent.type === IntentType.Move && didDisplaceTile && posAfter) {
-    const tileIdx = coordToIndex(posAfter.x, posAfter.y, state.map.width);
-    const tile = state.map.tiles[tileIdx];
-    if (tile) {
-      baseEnergyCost = state.campaign.tiles[tile.tileId]?.movementCost ?? 100;
-    }
+    baseEnergyCost = getTileDefAt(nextState, posAfter.x, posAfter.y)?.movementCost ?? 100;
   }
 
   const intentForCost: Intent =
@@ -105,6 +102,15 @@ export function applyIntentWithCost(state: GameState, intent: Intent): ActionRes
   const tAfterFields = performance.now();
 
   const isPlayerAction = getComponent(state, intent.entityId, ComponentType.Player) !== undefined;
+  if (nextState.map.chunkGrid !== undefined) {
+    const playerId = isPlayerAction
+      ? intent.entityId
+      : nextState.entities.find((id) => getComponent(nextState, id, ComponentType.Player) !== undefined);
+    const playerPos = playerId !== undefined ? getComponent(nextState, playerId, ComponentType.Position) : undefined;
+    if (playerPos !== undefined) {
+      nextState = updateStreamingWorldWindow(nextState, playerPos.x, playerPos.y);
+    }
+  }
   nextState = processTier2LocalCadence(nextState, false);
   const tAfterCadence = performance.now();
 

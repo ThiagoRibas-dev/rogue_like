@@ -23,13 +23,18 @@ import { type EntityId, type GameState, UIMode } from '../../types/game-state.ty
 import { IntentType } from '../../types/intents/intent.enum.ts';
 import type { ApplyIntentTarget } from '../../types/intents/interaction.intents.ts';
 import { isHostile } from '../../utils/faction.ts';
-import { coordToIndex, getBresenhamLine, isInBounds } from '../../utils/grid.ts';
+import { getBresenhamLine } from '../../utils/grid.ts';
+import { getTileAt, isInMapBounds } from '../../map/map_accessor.ts';
 import { getComponent } from '../ecs.ts';
 import { getGameState, queuePlayerIntent, setGameState } from '../game-loop.ts';
 import { setContextMenuAnchor, setHoveredTile } from '../hover_state.ts';
 import { recordHoverTileChange } from '../performance.ts';
 import { markDomainDirty, PresentationDomain } from '../presentation_queue.ts';
 import { getIsPlayingReplay } from '../replay.ts';
+
+/** Fallback viewport dimensions used when ROT.Display options omit width/height on unbounded maps. */
+const DEFAULT_MOUSE_VIEWPORT_COLS = 50;
+const DEFAULT_MOUSE_VIEWPORT_ROWS = 25;
 
 /**
  * Converts a DOM MouseEvent over the display canvas into world map coordinates `(mapX, mapY)`.
@@ -46,13 +51,13 @@ function resolveEventWorldCoords(
   if (typeof vx !== 'number' || typeof vy !== 'number' || vx < 0 || vy < 0) return null;
 
   const opts = display.getOptions();
-  const viewportW = opts.width ?? state.map.width;
-  const viewportH = opts.height ?? state.map.height;
+  const viewportW = opts.width ?? (state.map.width > 0 ? state.map.width : DEFAULT_MOUSE_VIEWPORT_COLS);
+  const viewportH = opts.height ?? (state.map.height > 0 ? state.map.height : DEFAULT_MOUSE_VIEWPORT_ROWS);
   const { x: cameraX, y: cameraY } = getCameraOffset(state, viewportW, viewportH);
 
   const mapX = vx + cameraX;
   const mapY = vy + cameraY;
-  if (!isInBounds(mapX, mapY, state.map.width, state.map.height)) return null;
+  if (!isInMapBounds(state.map, mapX, mapY)) return null;
 
   return { mapX, mapY };
 }
@@ -181,8 +186,7 @@ function handleCanvasLeftClick(state: GameState, playerEntityId: EntityId, mapX:
   }
 
   // Non-adjacent or diagonal tile: step 1 orthogonal tile along Bresenham path toward clicked tile
-  const tileIdx = coordToIndex(mapX, mapY, state.map.width);
-  const tile = state.map.tiles[tileIdx];
+  const tile = getTileAt(state.map, mapX, mapY);
   if (!tile || (!tile.explored && !state.map.isFullyExplored)) return;
 
   const line = getBresenhamLine(playerPos.x, playerPos.y, mapX, mapY);

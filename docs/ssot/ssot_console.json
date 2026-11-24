@@ -6215,5 +6215,182 @@
     "antiPatterns": [
       "Do not mutate data-ui-scale, data-high-contrast, or data-ui-theme attributes ad hoc; call applySettingsToDOM()."
     ]
+  },
+  "src/constants/world_chunk.constants.ts": {
+    "domain": "Core Console: Constants & World Chunk Layout",
+    "tier": "tier1_console",
+    "responsibility": "Named constants for WorldChunk dimensions, streaming ring radii, coordinate bit-packing, SoA bitflags, and delta IndexedDB store metadata.",
+    "canonicalEntryPoints": [
+      "DEFAULT_CHUNK_SIZE",
+      "DEFAULT_ACTIVE_RADIUS_CHUNKS",
+      "DEFAULT_PREFETCH_RADIUS_CHUNKS",
+      "DEFAULT_EVICT_RADIUS_CHUNKS",
+      "CHUNK_FLAG_EXPLORED",
+      "CHUNK_DIRTY_PERSIST",
+      "WORLD_CHUNKS_DB_NAME",
+      "WORLD_CHUNKS_STORE"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure constants governing chunk SoA buffers, packing biases, and delta binary storage headers.",
+      "excludes": "Runtime map logic, state mutations, or generator algorithms."
+    },
+    "antiPatterns": [
+      "Do not hardcode chunk dimensions, flag masks, or store identifiers; import from src/constants/world_chunk.constants.ts."
+    ]
+  },
+  "src/types/world-chunk.types.ts": {
+    "domain": "Core Console: Types & World Chunk Contracts",
+    "tier": "tier1_console",
+    "responsibility": "Pure interfaces for flyweight TilePaletteRegistry, SoA TypedArray WorldChunk, ChunkedWorldGrid, dormant chunk entity records, and slim SerializedStreamingWorldState.",
+    "canonicalEntryPoints": [
+      "TilePaletteRegistry",
+      "WorldChunk",
+      "DormantChunkEntityRecord",
+      "ChunkedWorldGrid",
+      "SerializedStreamingWorldState",
+      "TileSnapshot"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure TypeScript type contracts shared by utils, map, core save, workers, and systems.",
+      "excludes": "Runtime logic or upward imports into core/systems/map."
+    },
+    "antiPatterns": [
+      "Do not duplicate chunk or palette type shapes; import from src/types/world-chunk.types.ts."
+    ]
+  },
+  "src/core/ecs/ecs_batch.ts": {
+    "domain": "Core Console: ECS & State Management",
+    "tier": "tier1_console",
+    "responsibility": "Opt-in copy-on-write ECS batch transaction primitive eliminating redundant intermediate Map clones while preserving untouched entity reference identity and snapshot immutability.",
+    "canonicalEntryPoints": [
+      "EcsBatch",
+      "withEcsBatch",
+      "withEcsBatchState"
+    ],
+    "ownershipBoundary": {
+      "includes": "Transactional batched createEntity, addComponent, removeComponent, removeEntity, and incremental spatialIndex patching.",
+      "excludes": "High-level game rules, combat mechanics, or content spawning logic."
+    },
+    "antiPatterns": [
+      "Do not hand-roll mutable GameState copies in hot loops; use withEcsBatch / withEcsBatchState."
+    ]
+  },
+  "src/map/tile_palette.ts": {
+    "domain": "Core Console: Map Generation & Spatial Plane",
+    "tier": "tier1_console",
+    "responsibility": "Builds deterministic bidirectional flyweight mappings between string campaign tile IDs and Uint16Array indices.",
+    "canonicalEntryPoints": [
+      "buildTilePaletteRegistry",
+      "getTileIdFromPaletteIndex",
+      "getPaletteIndexForTileId"
+    ],
+    "ownershipBoundary": {
+      "includes": "Deterministic lexicographic palette construction and index lookup.",
+      "excludes": "Hardcoded tile ID enums or content-specific branching."
+    },
+    "antiPatterns": [
+      "Do not hardcode numeric tile IDs for campaign tiles; resolve via buildTilePaletteRegistry()."
+    ]
+  },
+  "src/map/world_chunk.ts": {
+    "domain": "Core Console: Map Generation & Spatial Plane",
+    "tier": "tier1_console",
+    "responsibility": "Allocates, clones, and binary-serializes/deserializes Structure-of-Arrays (SoA) TypedArray WorldChunks into transferable ArrayBuffers.",
+    "canonicalEntryPoints": [
+      "createEmptyWorldChunk",
+      "cloneWorldChunk",
+      "serializeWorldChunkToBuffer",
+      "deserializeWorldChunkFromBuffer"
+    ],
+    "ownershipBoundary": {
+      "includes": "SoA TypedArray buffer allocation, copy-on-write chunk cloning, and RLCK binary framing.",
+      "excludes": "Biome synthesis, IndexedDB I/O, and entity sleep/wake orchestration."
+    },
+    "antiPatterns": [
+      "Do not serialize WorldChunks as bloated JSON tile arrays; use serializeWorldChunkToBuffer()."
+    ]
+  },
+  "src/map/map_accessor.ts": {
+    "domain": "Core Console: Map Generation & Spatial Plane",
+    "tier": "tier1_console",
+    "responsibility": "Canonical compatibility facade unifying tile bounds, coordinate keying, FOV checks, tile inspection, terrain mutation, and exploration updates across finite GameMap.tiles and ChunkedWorldGrid.",
+    "canonicalEntryPoints": [
+      "isInMapBounds",
+      "toMapTileKey",
+      "isTileKeyInFov",
+      "getTileAt",
+      "getTileIdAt",
+      "getTileDefAt",
+      "isTileExploredAt",
+      "setTileIdAt",
+      "markTilesExplored",
+      "findRandomWalkableCoord",
+      "getMapCenterFallbackCoord"
+    ],
+    "ownershipBoundary": {
+      "includes": "All ruleset-agnostic spatial tile reads/writes bridging legacy finite maps and SoA chunk grids.",
+      "excludes": "Procedural terrain synthesis or Ring 0/1 streaming window eviction."
+    },
+    "antiPatterns": [
+      "Never index state.map.tiles[coordToIndex(...)] directly in engine/ruleset/rendering code; call MapAccessor helpers."
+    ]
+  },
+  "src/map/chunk_generator.ts": {
+    "domain": "Core Console: Map Generation & Spatial Plane",
+    "tier": "tier1_console",
+    "responsibility": "Pure deterministic fractal value-noise biome synthesizer and initial Ring 0 ChunkedWorldGrid builder for declarative streaming_overworld areas.",
+    "canonicalEntryPoints": [
+      "buildChunkSynthesisParams",
+      "generateWorldChunkFromParams",
+      "generateWorldChunk",
+      "createInitialStreamingGrid"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure coordinate-hashed biome classification runnable identically on main thread and Web Workers.",
+      "excludes": "Worker messaging, IndexedDB persistence, or ECS entity spawning."
+    },
+    "antiPatterns": [
+      "Do not mutate global ROT.RNG during chunk synthesis; keep chunk generation purely coordinate-hashed."
+    ]
+  },
+  "src/core/chunk_store.ts": {
+    "domain": "Core Console: Persistence & Delta Storage",
+    "tier": "tier1_console",
+    "responsibility": "Manages delta-only binary ArrayBuffer chunk persistence in IndexedDB WORLD_CHUNKS_STORE with synchronous write-behind cache and headless in-memory fallback.",
+    "canonicalEntryPoints": [
+      "buildChunkStorageKey",
+      "resolveDefaultChunkScopeKey",
+      "putWorldChunkDeltaSync",
+      "getCachedWorldChunkDeltaSync",
+      "saveWorldChunkDelta",
+      "loadWorldChunkDelta",
+      "flushDirtyChunksToStore",
+      "clearChunkStoreScope",
+      "rehydrateStreamingWorldAsync",
+      "resetInMemoryChunkStore"
+    ],
+    "ownershipBoundary": {
+      "includes": "Binary delta persistence, IndexedDB lifecycle, and save/load rehydration for modified WorldChunks.",
+      "excludes": "Streaming window geometry decisions or procedural terrain generation."
+    },
+    "antiPatterns": [
+      "Do not store raw TypedArray chunks in localStorage JSON; persist dirty deltas via src/core/chunk_store.ts."
+    ]
+  },
+  "src/systems/map/chunk_streaming.ts": {
+    "domain": "Core Console: Map & Spatial Simulation",
+    "tier": "tier1_console",
+    "responsibility": "Orchestrates Ring 0/1/2 streaming window shifts around the focal anchor, packs/wakes out-of-window chunk entities cleanly, and schedules batched worker prefetch requests.",
+    "canonicalEntryPoints": [
+      "updateStreamingWorldWindow",
+      "clearStreamingPrefetchCache"
+    ],
+    "ownershipBoundary": {
+      "includes": "Sliding chunk window lifecycle, dormant chunk entity packing/waking, and Ring 1 prefetch orchestration.",
+      "excludes": "Binary chunk framing or IndexedDB open/transaction primitives."
+    },
+    "antiPatterns": [
+      "Do not manually slice or evict grid.chunks or evictedChunkEntities outside updateStreamingWorldWindow()."
+    ]
   }
 }

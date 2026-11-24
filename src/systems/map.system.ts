@@ -1,5 +1,12 @@
 import { collectOwnedEntityIds, getComponent, queryEntities, updateSpatialIndex } from '../core/ecs.ts';
 import { computeFOV } from '../map/fov.ts';
+import {
+  getMapCenterFallbackCoord,
+  getTileIdAt,
+  isInMapBounds,
+  isTileKeyInFov,
+  markTilesExplored
+} from '../map/map_accessor.ts';
 import type { RoomBounds } from '../types/encounter.types.ts';
 import {
   ComponentType,
@@ -10,13 +17,14 @@ import {
   type AttitudeComponent
 } from '../types/components.types.ts';
 import { type AreaData, type EntityId, type GameMap, type GameState } from '../types/game-state.types.ts';
-import { coordToIndex } from '../utils/grid.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import type { ChangeAreaIntent } from '../types/intents/movement.intents.ts';
 import { addActor, resetSchedulerActors } from '../core/scheduler.ts';
 import { deliverPendingKnowledgeToArea } from './knowledge.system.ts';
 import { wakeSavedAreaFloor } from './map/map_wake_respawn.ts';
 import { generateAndPopulateAreaFloor } from './map/map_generation_spawner.ts';
+import { updateStreamingWorldWindow } from './map/chunk_streaming.ts';
+import { flushDirtyChunksToStore } from '../core/chunk_store.ts';
 import { processQuestEvent } from './quest.system.ts';
 
 /**
@@ -33,21 +41,13 @@ export function updateExploredTiles(state: GameState): GameState {
   if (playerPos === undefined) return state;
 
   const visibleIndices: Set<number> = computeFOV(state, playerPos.x, playerPos.y);
-
-  let modified = false;
-  const nextTiles = state.map.tiles.map((tile, idx) => {
-    if (visibleIndices.has(idx) && !tile.explored) {
-      modified = true;
-      return { ...tile, explored: true };
-    }
-    return tile;
-  });
+  const nextMap = markTilesExplored(state.map, visibleIndices);
 
   return {
     ...state,
     fovNeedsUpdate: false,
     cachedFov: visibleIndices,
-    map: modified ? { ...state.map, tiles: nextTiles } : state.map
+    map: nextMap
   };
 }
 
@@ -68,8 +68,7 @@ export function getVisibleHostileEntityIds(state: GameState): ReadonlyArray<Enti
     const position = getComponent(state, entityId, ComponentType.Position);
     if (position === undefined) continue;
 
-    const index = coordToIndex(position.x, position.y, state.map.width);
-    if (!state.cachedFov.has(index)) continue;
+    if (!isTileKeyInFov(state, position.x, position.y)) continue;
 
     const attitude = getComponent(state, entityId, ComponentType.Attitude) as AttitudeComponent | undefined;
     const isNemesis = getComponent(state, entityId, ComponentType.Nemesis) !== undefined;
@@ -130,6 +129,9 @@ export function processChangeAreaIntent(
 
   const nextAreas = new Map(state.areas);
   nextAreas.set(state.currentAreaId, currentAreaData);
+  if (state.map.chunkGrid !== undefined) {
+    void flushDirtyChunksToStore(state);
+  }
 
   // 2. Load or generate target floor
   let targetMap: GameMap;
@@ -184,9 +186,28 @@ export function processChangeAreaIntent(
       }
     }
 
+    if (!foundStairs && spawnX === -1 && targetMap.chunkGrid !== undefined) {
+      for (const records of Object.values(targetMap.chunkGrid.evictedChunkEntities)) {
+        for (const rec of records) {
+          const portal = rec.components[ComponentType.Portal] as PortalComponent | undefined;
+          if (portal && portal.targetAreaId === state.currentAreaId) {
+            const pos = rec.components[ComponentType.Position] as PositionComponent | undefined;
+            if (pos) {
+              spawnX = pos.x;
+              spawnY = pos.y;
+              foundStairs = true;
+              break;
+            }
+          }
+        }
+        if (foundStairs) break;
+      }
+    }
+
     if (!foundStairs && spawnX === -1) {
-      spawnX = Math.floor(targetMap.width / 2);
-      spawnY = Math.floor(targetMap.height / 2);
+      const center = getMapCenterFallbackCoord(targetMap);
+      spawnX = center.x;
+      spawnY = center.y;
     }
   } else {
     const genResult = generateAndPopulateAreaFloor(
@@ -252,10 +273,10 @@ export function processChangeAreaIntent(
         const cx = spawnX + off.x;
         const cy = spawnY + off.y;
         const cKey = `${cx},${cy}`;
-        if (cx >= 0 && cx < targetMap.width && cy >= 0 && cy < targetMap.height) {
-          const tile = targetMap.tiles[cy * targetMap.width + cx];
-          const tileDef = tile ? state.campaign.tiles[tile.tileId] : undefined;
-          if (tile && tileDef?.walkable !== false && !occupiedTileKeys.has(cKey)) {
+        if (isInMapBounds(targetMap, cx, cy)) {
+          const tileId = getTileIdAt(targetMap, cx, cy);
+          const tileDef = tileId ? state.campaign.tiles[tileId] : undefined;
+          if (tileId && tileDef?.walkable !== false && !occupiedTileKeys.has(cKey)) {
             occupiedTileKeys.add(cKey);
             comps = {
               ...comps,
@@ -293,6 +314,9 @@ export function processChangeAreaIntent(
   };
 
   nextState = updateSpatialIndex(nextState);
+  if (nextState.map.chunkGrid !== undefined) {
+    nextState = updateStreamingWorldWindow(nextState, spawnX, spawnY);
+  }
   nextState = deliverPendingKnowledgeToArea(nextState, targetAreaId);
 
   // 4. Update Scheduler

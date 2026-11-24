@@ -17,7 +17,7 @@ import {
   type TacticalDoctrineComponent
 } from '../../../types/components.types.ts';
 import type { EntityId, GameState } from '../../../types/game-state.types.ts';
-import { coordToIndex, isInBounds } from '../../../utils/grid.ts';
+import { getTileDefAt, isInMapBounds } from '../../../map/map_accessor.ts';
 import { isHostile } from '../../../utils/faction.ts';
 import { useImmediateAction } from '../action_economy_reactions.ts';
 import { evaluateDnD35eEntityDAG } from '../cartridge/dnd35e_dag_adapter.ts';
@@ -49,7 +49,7 @@ function isTileValidJauntDestination(
   targetX: number,
   targetY: number
 ): boolean {
-  if (!isInBounds(targetX, targetY, state.map.width, state.map.height)) return false;
+  if (!isInMapBounds(state.map, targetX, targetY)) return false;
   const distTiles = Math.max(Math.abs(targetX - actorPos.x), Math.abs(targetY - actorPos.y));
   if (distTiles < 1 || distTiles > ABRUPT_JAUNT_MAX_TILES) return false;
   const movementModes = getEntityMovementModes(state, actorId);
@@ -60,9 +60,8 @@ function isTileValidJauntDestination(
     for (let ox = 0; ox < w; ox++) {
       const cx = targetX + ox;
       const cy = targetY + oy;
-      if (!isInBounds(cx, cy, state.map.width, state.map.height)) return false;
-      const tile = state.map.tiles[coordToIndex(cx, cy, state.map.width)];
-      const tileDef = tile ? state.campaign.tiles[tile.tileId] : undefined;
+      if (!isInMapBounds(state.map, cx, cy)) return false;
+      const tileDef = getTileDefAt(state, cx, cy);
       const traversal = evaluateTileTraversal(tileDef, movementModes, state, cx, cy);
       if (traversal.passability !== 'unimpeded' && traversal.passability !== 'difficult') return false;
     }
@@ -80,9 +79,8 @@ function isTileValidJauntDestination(
   if (occupancy.blocked) return false;
 
   const isWallAt = (x: number, y: number): boolean => {
-    if (!isInBounds(x, y, state.map.width, state.map.height)) return true;
-    const t = state.map.tiles[coordToIndex(x, y, state.map.width)];
-    return !t || !state.campaign.tiles[t.tileId]?.transparent;
+    if (!isInMapBounds(state.map, x, y)) return true;
+    return !getTileDefAt(state, x, y)?.transparent;
   };
   return !evaluateCover(actorPos, { x: targetX, y: targetY }, isWallAt).blocksLineOfEffect;
 }

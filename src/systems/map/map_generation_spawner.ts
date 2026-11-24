@@ -1,6 +1,6 @@
-import { addComponent, createEntity, spawnEntity, spawnItem } from '../../core/ecs.ts';
+import { addComponent, createEntity, spawnEntity, spawnItem, withEcsBatchState } from '../../core/ecs.ts';
 import { generateArea } from '../../map/generator.ts';
-import { coordToIndex } from '../../utils/grid.ts';
+import { getTileIdAt, isInMapBounds } from '../../map/map_accessor.ts';
 import type { RoomBounds } from '../../types/encounter.types.ts';
 import {
   ComponentType,
@@ -20,6 +20,9 @@ import {
 } from '../../types/game-state.types.ts';
 import { buildAreaDirectorContext } from './map_wake_respawn.ts';
 
+/** Safety cap on BFS frontier nodes when resolving a walkable spawn tile. */
+const MAX_SAFE_PLACEMENT_BFS_NODES = 1024;
+
 const PLACEMENT_NEIGHBOR_OFFSETS: ReadonlyArray<readonly [number, number]> = [
   [0, -1],
   [1, 0],
@@ -32,9 +35,9 @@ const PLACEMENT_NEIGHBOR_OFFSETS: ReadonlyArray<readonly [number, number]> = [
 ];
 
 function isMapTileWalkable(state: Readonly<GameState>, map: Readonly<GameMap>, x: number, y: number): boolean {
-  if (x < 0 || x >= map.width || y < 0 || y >= map.height) return false;
-  const tile = map.tiles[coordToIndex(x, y, map.width)];
-  return tile !== undefined && Boolean(state.campaign.tiles[tile.tileId]?.walkable);
+  if (!isInMapBounds(map, x, y)) return false;
+  const tileId = getTileIdAt(map, x, y);
+  return tileId !== undefined && Boolean(state.campaign.tiles[tileId]?.walkable);
 }
 
 function resolveSafePlacedCoords(
@@ -44,8 +47,8 @@ function resolveSafePlacedCoords(
   desiredX: number,
   desiredY: number
 ): { readonly x: number; readonly y: number } | null {
-  const clampedX = Math.max(0, Math.min(map.width - 1, desiredX));
-  const clampedY = Math.max(0, Math.min(map.height - 1, desiredY));
+  const clampedX = map.chunkGrid !== undefined ? desiredX : Math.max(0, Math.min(map.width - 1, desiredX));
+  const clampedY = map.chunkGrid !== undefined ? desiredY : Math.max(0, Math.min(map.height - 1, desiredY));
   const initialKey = `${clampedX},${clampedY}`;
 
   if (isMapTileWalkable(state, map, clampedX, clampedY) && !occupiedCoords.has(initialKey)) {
@@ -57,12 +60,12 @@ function resolveSafePlacedCoords(
   const queue: Array<{ readonly x: number; readonly y: number }> = [{ x: clampedX, y: clampedY }];
   let head = 0;
 
-  while (head < queue.length) {
+  while (head < queue.length && queue.length < MAX_SAFE_PLACEMENT_BFS_NODES) {
     const cur = queue[head++]!;
     for (const [dx, dy] of PLACEMENT_NEIGHBOR_OFFSETS) {
       const nx = cur.x + dx;
       const ny = cur.y + dy;
-      if (nx < 0 || nx >= map.width || ny < 0 || ny >= map.height) continue;
+      if (!isInMapBounds(map, nx, ny)) continue;
       const key = `${nx},${ny}`;
       if (visited.has(key)) continue;
       visited.add(key);
@@ -157,8 +160,6 @@ export function generateAndPopulateAreaFloor(
         tempState = addComponent(addComponent(tempState, stairId, pos), stairId, portalComp);
       }
     } else {
-      [tempState, stairId] = createEntity(tempState);
-
       const stairTileKey = portal.connection.direction === 'up' ? 'stairs_up' : 'stairs_down';
       const pos: PositionComponent = { type: ComponentType.Position, x: portal.x, y: portal.y };
       const render: RenderableComponent = {
@@ -179,11 +180,13 @@ export function generateAndPopulateAreaFloor(
         tags: ['portal']
       };
 
-      tempState = addComponent(
-        addComponent(addComponent(addComponent(tempState, stairId, pos), stairId, render), stairId, portalComp),
-        stairId,
-        tags
-      );
+      tempState = withEcsBatchState(tempState, (batch) => {
+        stairId = batch.createEntity();
+        batch.addComponent(stairId, pos);
+        batch.addComponent(stairId, render);
+        batch.addComponent(stairId, portalComp);
+        batch.addComponent(stairId, tags);
+      });
     }
   }
 

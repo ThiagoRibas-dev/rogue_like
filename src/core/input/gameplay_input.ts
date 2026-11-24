@@ -17,6 +17,7 @@ import { EngineMode, type EntityId, type GameState, UIMode } from '../../types/g
 import type { ApplyIntentTarget } from '../../types/intents/interaction.intents.ts';
 import { Direction, getDirectionDelta } from '../../utils/direction.ts';
 import { isHostile } from '../../utils/faction.ts';
+import { isTileKeyInFov } from '../../map/map_accessor.ts';
 import { getComponent } from '../ecs.ts';
 import { queuePlayerIntent, setGameState } from '../game-loop.ts';
 import { getCommandBindings } from '../settings.ts';
@@ -106,8 +107,7 @@ function cycleVisibleTarget(state: GameState, playerEntityId: EntityId, delta: n
     const pos = getComponent(state, id, ComponentType.Position) as PositionComponent | undefined;
     if (!fighter || fighter.hp <= 0 || !pos) continue;
     if (!isHostile(state, playerEntityId, id)) continue;
-    const tileIdx = pos.y * state.map.width + pos.x;
-    if (!state.cachedFov.has(tileIdx) && !state.map.isFullyExplored) continue;
+    if (!isTileKeyInFov(state, pos.x, pos.y)) continue;
     candidates.push({ id, x: pos.x, y: pos.y });
   }
 

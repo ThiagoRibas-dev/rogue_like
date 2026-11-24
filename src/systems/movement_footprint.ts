@@ -6,7 +6,7 @@ import type { CardinalFacing } from '../types/components/world_components.types.
 import type { EntityId, GameState } from '../types/game-state.types.ts';
 import type { ActorSpatialProfile } from '../types/ruleset.types.ts';
 import { isHostile } from '../utils/faction.ts';
-import { coordToIndex, isInBounds } from '../utils/grid.ts';
+import { getTileDefAt, isInMapBounds } from '../map/map_accessor.ts';
 
 /** Size-rank delta threshold (`3`) allowing larger/smaller creatures to move through an opponent's square. */
 export const SIZE_DIFF_PASS_THROUGH_THRESHOLD = 3;
@@ -153,10 +153,8 @@ export function getEntitySpatialProfile(
 }
 
 function isHardCornerWallTile(state: GameState, x: number, y: number): boolean {
-  if (!isInBounds(x, y, state.map.width, state.map.height)) return true;
-  const tile = state.map.tiles[coordToIndex(x, y, state.map.width)];
-  if (!tile) return true;
-  const tileDef = state.campaign.tiles[tile.tileId];
+  if (!isInMapBounds(state.map, x, y)) return true;
+  const tileDef = getTileDefAt(state, x, y);
   if (!tileDef || tileDef.walkable) return false;
   if (tileDef.isSolidObstacle === true) return true;
   // SRD: You can move diagonally past impassable obstacles such as pits/chasms, only not past wall corners.
@@ -203,11 +201,10 @@ function checkRectTilesTraversable(
     for (let dx = 0; dx < width; dx++) {
       const tx = anchorX + dx;
       const ty = anchorY + dy;
-      if (!isInBounds(tx, ty, state.map.width, state.map.height)) {
+      if (!isInMapBounds(state.map, tx, ty)) {
         return { ok: false, firstBlockedDef: undefined };
       }
-      const tile = state.map.tiles[coordToIndex(tx, ty, state.map.width)];
-      const tileDef = tile ? state.campaign.tiles[tile.tileId] : undefined;
+      const tileDef = getTileDefAt(state, tx, ty);
       if (!canTraverse(tileDef, tx, ty)) {
         return { ok: false, firstBlockedDef: tileDef };
       }

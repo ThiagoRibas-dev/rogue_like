@@ -17,7 +17,7 @@ import {
   type StatusEffectsComponent
 } from '../../../types/components.types.ts';
 import type { EntityId, GameState } from '../../../types/game-state.types.ts';
-import { coordToIndex, isInBounds } from '../../../utils/grid.ts';
+import { getTileDefAt, isInMapBounds } from '../../../map/map_accessor.ts';
 import { evaluateDnD35eEntityDAG } from '../cartridge/dnd35e_dag_adapter.ts';
 import { resolveEffectiveItemDefinition } from '../equipment/item_inheritance.ts';
 import { evaluateDiceExpression, rollD20 } from '../math/dice.ts';
@@ -115,12 +115,11 @@ export function extinguishActorFireInWater(state: GameState, entityId: EntityId)
  */
 export function getShallowWaterStealthAndTumblePenalty(state: Readonly<GameState>, entityId: EntityId): number {
   const pos = getComponent(state, entityId, ComponentType.Position) as PositionComponent | undefined;
-  if (!pos || !isInBounds(pos.x, pos.y, state.map.width, state.map.height)) return 0;
+  if (!pos || !isInMapBounds(state.map, pos.x, pos.y)) return 0;
   const modes = getEntityMovementModes(state as GameState, entityId);
   if (modes?.fly !== undefined && modes.fly > 0) return 0;
 
-  const tile = state.map.tiles[coordToIndex(pos.x, pos.y, state.map.width)];
-  const tileDef = tile ? state.campaign.tiles[tile.tileId] : undefined;
+  const tileDef = getTileDefAt(state, pos.x, pos.y);
   const tags = tileDef?.tags ?? [];
   if (
     tileDef?.hazardKind === 'shallow_water' ||
@@ -475,9 +474,8 @@ function consumeOneInventoryItemEntity(state: GameState, actorId: EntityId, item
 }
 
 function isTileCrossingGapHazard(state: Readonly<GameState>, x: number, y: number): boolean {
-  if (!isInBounds(x, y, state.map.width, state.map.height)) return false;
-  const tile = state.map.tiles[coordToIndex(x, y, state.map.width)];
-  const tileDef = tile ? state.campaign.tiles[tile.tileId] : undefined;
+  if (!isInMapBounds(state.map, x, y)) return false;
+  const tileDef = getTileDefAt(state, x, y);
   if (!tileDef) return false;
   const tags = tileDef.tags ?? [];
   return (
@@ -508,9 +506,8 @@ function findAdjacentSolidAnchorCoords(
   for (const { dx, dy } of dirs) {
     const nx = x + dx;
     const ny = y + dy;
-    if (!isInBounds(nx, ny, state.map.width, state.map.height)) continue;
-    const tile = state.map.tiles[coordToIndex(nx, ny, state.map.width)];
-    const tileDef = tile ? state.campaign.tiles[tile.tileId] : undefined;
+    if (!isInMapBounds(state.map, nx, ny)) continue;
+    const tileDef = getTileDefAt(state, nx, ny);
     if (tileDef && (tileDef.walkable || tileDef.isSolidObstacle === true)) {
       anchors.push({ x: nx, y: ny });
     }
@@ -545,7 +542,7 @@ export function resolveRigCrossingWithGear(params: {
   const { state, entityId, targetX, targetY } = params;
   const actorName = resolveEntityDisplayName(state, entityId, 'The adventurer');
 
-  if (!isInBounds(targetX, targetY, state.map.width, state.map.height)) {
+  if (!isInMapBounds(state.map, targetX, targetY)) {
     return {
       state: addMessage(state, 'Target square is out of bounds.', MessageLogCategory.System),
       success: false
@@ -715,9 +712,8 @@ export function evaluateActorTileHazardOccupation(
   y: number,
   options?: { readonly isTurnStart?: boolean | undefined }
 ): GameState {
-  if (!isInBounds(x, y, state.map.width, state.map.height)) return state;
-  const tile = state.map.tiles[coordToIndex(x, y, state.map.width)];
-  const tileDef = tile ? state.campaign.tiles[tile.tileId] : undefined;
+  if (!isInMapBounds(state.map, x, y)) return state;
+  const tileDef = getTileDefAt(state, x, y);
   if (!tileDef) return state;
 
   const modes = getEntityMovementModes(state, entityId);

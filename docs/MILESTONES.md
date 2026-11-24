@@ -2406,4 +2406,97 @@ Rebuild the Campaign Creator (`~26` editor UI modules) directly onto Phase 43's 
 - [ ] **Simulation & Fuzzer Panels Rewrite (`AiArena`, `DirectorSandbox`, `KnowledgeSimulator`, `NarrativeFuzzer`, `BalanceLab`)**: Port all Campaign Editor simulation labs onto Preact primitives and unified themes.
 - [ ] **Legacy Editor Eviction & Final Verification Sweep**: Remove `src/rendering/editor_ui.ts`, `src/styles/editor.css`, legacy `knip.json` ignores, and any remaining legacy UI adapters; synchronize `docs/SSOT_CONSOLE.md` and `docs/ARCHITECTURE.md` and confirm full 8-stage `./verify.sh` passes cleanly.
 
+---
+
+# ✅ Phase 45: High-Throughput ECS Hot-Path & Chunked `TypedArray` SoA Ground Plane (Completed)
+
+Upgrade the Tier 1 Core Console substrate to sustain Dwarf Fortress / RimWorld simulation density at 60 FPS without breaking 100% compatibility with existing 2D dungeon campaigns, `RulesetContract`, or D&D 3.5e rules. Replaces full-map index rebuilds and repeated intermediate `Map` cloning with incremental $O(1)$ spatial patching, batched tick transactions, flyweight `TypedArray` SoA world chunks, async Worker streaming, and delta-only IndexedDB chunk storage.
+
+## 🟢 Milestone 173: Incremental $O(1)$ `spatialIndex` & Batched Per-Tick ECS Transactions (Completed)
+
+- [x] **Incremental Footprint-Scoped `spatialIndex` Patching (`src/core/ecs/ecs_core.ts`, `ecs_lifecycle.ts`, `map.system.ts`)**: Introduced `patchSpatialIndexForEntity` and `patchSpatialIndexInPlace` to add/remove only an entity's old vs. new footprint keys in $O(k)$ rather than running full-floor $O(N)$ `updateSpatialIndex` rebuilds on every `Position` write, `removeEntity`, or `moveToLimbo`, keeping `updateSpatialIndex` for full save rehydration and transitions.
+- [x] **Batched Per-Tick ECS Transactions (`src/core/ecs/ecs_batch.ts`, `ecs.ts`)**: Added opt-in `withEcsBatch` / `withEcsBatchState` transaction helpers eliminating redundant intermediate `new Map(state.components)` allocations across `spawnEntity`, `generateAndPopulateAreaFloor`, friendly swaps, and chunk sleep/wake while preserving untouched entity component reference identity (`PresentationEventQueue` / `campaignEntityDagCache`) and post-commit immutability (`deepFreezeGameState`).
+- [x] **ECS Hot-Path & Immutability Verification (`tests/m173_ecs_spatial_batch.test.ts`)**: Verified identical `spatialIndex` outputs vs. full rebuild across 1x1, multi-tile, and limbo moves, batched reference-equality invariants, and 2,000-entity spawn/move throughput.
+
+## 🟢 Milestone 174: Chunked `TypedArray` SoA World Grid (`WorldChunk`), Flyweight Palettes & `MapAccessor` Compatibility Facade (Completed)
+
+- [x] **Flyweight Tile Palette & `WorldChunk` SoA Buffers (`src/types/world-chunk.types.ts`, `src/constants/world_chunk.constants.ts`, `src/map/{world_chunk,tile_palette}.ts`)**: Built deterministic flyweight `TilePaletteRegistry` indexing `campaign.tiles` (`0 = void/unloaded`, `1..N = tileId`) and `WorldChunk` (configurable via `streamingConfig.chunkSize`, `DEFAULT_CHUNK_SIZE = 16`, SoA `TypedArray` layers: `tileType: Uint16Array`, `materialId: Uint16Array`, `fluid: Uint8Array`, `temperature: Int16Array`, `flags: Uint8Array`, `regionId: Uint16Array`, plus `dirtyFlags` bitmask and `lastSimulatedTurn`).
+- [x] **Coordinate-Safe World Indexing & `MapAccessor` Facade (`src/utils/grid.ts`, `src/map/map_accessor.ts`)**: Added signed 26-bit world coordinate packing (`packWorldCoord` / `unpackWorldCoord`) and chunk coordinate math replacing bounded `y * width + x` lookups in `cachedFov`, `fov.ts`, and render/system lookups, exposed via unified `MapAccessor` bridging finite `GameMap.tiles` and `ChunkedWorldGrid`.
+- [x] **Full `.map.tiles` Consumer Migration (`src/{core,map,systems,rulesets,rendering,ai,actions,editor}/**`)**: Migrated all `.map.tiles` and `cachedFov` call sites (movement, displacement, FOV, viewport/tactical snapshots, inspect tooltips, D&D 3.5e spatial/spell resolvers, sound, light, rest) onto `MapAccessor` with zero regressions (`tests/m174_world_chunk_accessor.test.ts`).
+
+## 🟢 Milestone 175: Seamless Overworld Chunk Streaming, Async Worker Prefetching & Delta-Only IndexedDB Persistence (Completed)
+
+- [x] **Declarative `streaming_overworld` Generator & Ring 0/1 Windowing (`src/types/campaign/world.ts`, `src/map/chunk_generator.ts`, `src/systems/map/chunk_streaming.ts`)**: Added declarative `streamingConfig` (configurable `chunkSize`, `activeRadiusChunks`, `prefetchRadiusChunks`, `evictRadiusChunks`, `worldSeed`, `biomePalette`) to `AreaDefinitionSchema` and deterministically streamed ground-plane chunks around the active anchor (`Ring 0` loaded window + recursive entity pack/wake on chunk eviction).
+- [x] **Pooled Async Chunk Worker & Delta-Only IndexedDB Storage (`src/worker/map.worker.ts`, `worker_bridge.ts`, `src/core/chunk_store.ts`, `src/core/save.ts`)**: Added batched pooled worker generation (`generate_chunk_batch`) transferring zero-copy `ArrayBuffer` responses (with main-thread fallback) and persisted **only** mutated (`CHUNK_DIRTY_PERSIST`) chunks as compact binary buffers in IndexedDB `WORLD_CHUNKS_STORE` (or headless memory fallback) while keeping `localStorage` `SerializedGameState` slim.
+- [x] **Default Campaign Streaming Overworld Showcase & Phase 45 Sweep (`public/data/campaigns/default/*`, `tests/m175_chunk_streaming.test.ts`)**: Connected `endless_frontier` (`streaming_overworld`) to `outer_crossroads` in `default`, synced `ai-prompt-kit` and SSOT registries, verified delta-only persistence and configurable `16×16`/`32×32` streaming round-trips, and passed all 8 `./verify.sh` stages.
+
+---
+
+# 🚀 Phase 46: True Multi-Z Voxel Space, 3D Vision, HPA\* Pathfinding & Z-Aware Cartridges
+
+Evolve the chunked ground plane into a true multi-Z voxel world (`(x, y, z)`) with vertical line of sight, multi-floor peeking, hierarchical 3D pathfinding, and cartridge-agnostic Z-level mechanics.
+
+## ⚪ Milestone 176: 3D Coordinates (`PositionComponent.z`), Multi-Z Chunks, Ramps/Stairs & Gravity/Falling (Planned)
+
+- [ ] **3D ECS Position & Voxel Chunk Indexing (`src/types/components/world_components.types.ts`, `src/core/ecs/ecs_core.ts`, `src/map/world_chunk.ts`)**: Add optional `z: number` (default `0` for 100% 2D compatibility) to `PositionComponent` and `spatialIndex` (`"x,y,z"`), extend chunks to `(cx, cy, cz)` vertical slices, and add `open_air` / `ramp` / `stair` traversal traits.
+- [ ] **Vertical Movement, Gravity & Falling System (`src/systems/movement_displacement.ts`, `src/systems/gravity.system.ts`)**: Resolve up/down ramps and stairs seamlessly during normal movement, apply unsupported fall detection with terminal fall resolution, and preserve deterministic multi-tile 3D footprints.
+
+## ⚪ Milestone 177: Multi-Z Viewport Peeking, 3D Line-of-Sight & Vertical Lighting Propagation (Planned)
+
+- [ ] **3D Shadowcasting & Vertical Light Attenuation (`src/map/fov_3d.ts`, `src/systems/light_emitter.system.ts`)**: Extend FOV and mobile light emitters across vertical openings (ceilings, hatches, grates, chasms, towers) while keeping horizontal 2D maps $O(r^2)$ fast.
+- [ ] **Multi-Z Canvas Renderer & Peeking (`src/rendering/viewport_snapshot.ts`, `renderer.ts`)**: Render depth-dimmed lower Z-levels beneath `open_air` chasm/balcony tiles (`Z-1`, `Z-2` atmospheric depth tinting) plus `<`/`>` Z-slice camera peeking controls.
+
+## ⚪ Milestone 178: Hierarchical 3D Region Pathfinding (`RegionGrid` / HPA\*) & Shared Dijkstra Flow Fields (Planned)
+
+- [ ] **Chunk Connectivity `RegionGrid` & HPA\* Portal Graph (`src/map/region_graph.ts`, `src/ai/pathfinding_hpa.ts`)**: Partition walkable contiguous pockets into per-chunk `regionId`s linked by door/ramp/stair portal edges, giving $O(1)$ disconnected-target rejection and fast continent-scale 3D routing.
+- [ ] **Shared Multi-Agent Dijkstra Flow Fields (`src/ai/flow_field.ts`)**: Compute shared target/goal distance fields (for group pursuit, camp fleeing, and stockpile hauling) sampled by many agents in $O(1)$ per step with automatic dirty-chunk invalidation.
+
+## ⚪ Milestone 179: Z-Aware `RulesetContract` Hooks & D&D 3.5e 3D Mechanics (Planned)
+
+- [ ] **Ruleset 3D Combat & Movement Hooks (`src/types/ruleset.types.ts`, `src/rulesets/dnd35e/**`)**: Add optional 3D distance, elevation advantage, cover, and fall-mitigation hooks to `RulesetContract`, wiring D&D 3.5e 3D spell radii (*Fireball* spheres), *Fly*/*Feather Fall* altitude control, *Climb* wall scaling, high-ground `+1` melee bonus, and `1d6` per 10 ft falling damage.
+
+---
+
+# 🚀 Phase 47: Active-Chunk Cellular Physics, Terrain Sculpting & RimWorld/DF Agent Substrate
+
+Turn loaded chunks into a dynamic Dwarf Fortress / RimWorld simulation: dirty-flagged cellular fluids and heat, digging and structural support, agent psychology/moods, and designation-driven autonomous labor.
+
+## ⚪ Milestone 180: Dirty-Bitset Cellular Physics & Analytical Sleep Catch-Up (Planned)
+
+- [ ] **Dirty-Chunk Cellular Fluids & Temperature Diffusion (`src/systems/physics/fluid_physics.ts`, `temperature_physics.ts`)**: Simulate liquid depth `1/7..7/7` (water/magma/oil) with vertical spillover, hydrostatic flow, obsidian/steam phase transitions, and ambient heat diffusion **only** across chunks holding active `dirtyFlags` bits (auto-sleeping settled chunks at zero CPU cost).
+- [ ] **Analytical Chunk Sleep Catch-Up (`src/systems/physics/chunk_catchup.ts`)**: Track `lastSimulatedTurn` per chunk and compute closed-form catch-up on wake (fire burnout, equilibrium fluid drainage, temperature normalization, crop/growth progression, spoilage) without per-turn ticking while dormant.
+
+## ⚪ Milestone 181: Dynamic Terrain Sculpting, Construction & Structural Support (Planned)
+
+- [ ] **Mining, Channeling, Smoothing & Building (`src/systems/construction.system.ts`, `src/map/structural_support.ts`)**: Support runtime terrain voxel mutation (`tileType` + `materialId` updates flagging `dirtyFlags`), item/boulder drops from mined rock, floor/wall/bridge construction consuming materials, and connected-support cave-in checks.
+- [ ] **Cartridge Spell & Ability Terrain Hooks (`src/rulesets/dnd35e/**`)**: Integrate D&D 3.5e earth/stone sculpting spells (*Passwall*, *Stone Shape*, *Transmute Rock to Mud*) and *Create Water* directly with live voxel terrain and fluid layers.
+
+## ⚪ Milestone 182: Universal Needs, Thoughts, Mood & Stress Engine (Planned)
+
+- [ ] **Needs & Thought Memory Pipeline (`src/systems/psychology/needs.system.ts`, `thoughts.system.ts`)**: Extend Tier 1 `PersonalityComponent`, `HungerComponent`, and `MemoryComponent` with configurable needs (rest, nourishment, shelter, comfort, social, safety) and decaying/stacking situational thoughts driving mood thresholds, inspiration, and mental breaks across both Adventure Mode NPCs and Fortress colonists.
+
+## ⚪ Milestone 183: Designation Layer, Job-Reservation Blackboard, Stockpiles, Hauling AI & Workshop Crafting DAGs (Planned)
+
+- [ ] **Spatial Designations, Stockpiles & Atomic Job Reservations (`src/systems/labor/designation.system.ts`, `job_blackboard.ts`, `stockpile.system.ts`)**: Add player/AI designation overlays (mine, chop, haul, build, harvest), typed item-filter stockpile zones, and conflict-free atomic job/item/tool reservation tokens.
+- [ ] **Autonomous Hauling, Work Orders & Workshop Crafting DAG (`src/ai/labor.behavior.ts`, `src/systems/labor/workshop.system.ts`)**: Implement priority-based labor utility scoring and multi-step recipe/bill queues inside the shared `ActionIntent` pipeline so both autonomous villages and player-controlled strongholds run deterministically in RTwP or Turn-Based mode.
+
+---
+
+# 🚀 Phase 48: Ring 2 Parallel Macro-World Simulation & Offline Legends Worldgen
+
+Add Dwarf Fortress's continent-wide living history layer: an offline multi-century Worldgen / Legends generator plus a background Ring 2 Web Worker advancing factions, armies, caravans, weather, and rumors seamlessly alongside local gameplay.
+
+## ⚪ Milestone 184: Dedicated Ring 2 Macro-World Simulation Worker (Planned)
+
+- [ ] **Macro-World Worker & Deterministic Turn-Boundary Sync (`src/worker/world_sim.worker.ts`, `src/systems/macro/macro_world.system.ts`)**: Offload continent-scale simulation (settlement economies, caravan routes, faction troop movements, off-screen scheme progression, rumor travel, and seasonal weather fronts) to a persistent Web Worker emitting ordered deterministic site-mutation deltas synced cleanly at world-clock intervals.
+
+## ⚪ Milestone 185: Offline Multi-Century Legends Worldgen Worker (Planned)
+
+- [ ] **Pre-Play Historical Simulator (`src/worker/legends_worldgen.worker.ts`, `src/map/worldgen_continent.ts`)**: Generate continental heightmaps/biomes/civilizations and simulate `N` centuries using the shared faction, scheme, rivalry, nemesis, lineage, and `ChronicleComponent` engines before Turn 1 to seed ruins, tomb artifacts, living dynasties, and historical grudges.
+
+## ⚪ Milestone 186: Site Materialization on Chunk Wake, Legends Browser UI & Systemic Substrate Verification Sweep (Planned)
+
+- [ ] **Macro-Delta Site Materialization & Legends Modal (`src/systems/map/site_materializer.ts`, `src/rendering/ui/modals/LegendsModal.tsx`)**: Materialize Ring 2 world mutations (raided hamlets, burnt taverns, merchant caravans, scarred survivors) into Ring 0 chunks upon entry; add a Preact Legends / World Chronicle browser modal built on shared accessible primitives; and run full `./verify.sh` + SSOT parity sweep.
+
+
 

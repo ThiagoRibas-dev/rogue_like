@@ -15,7 +15,7 @@ import type { ActorSpatialProfile } from '../types/ruleset.types.ts';
 import { IntentType } from '../types/intents/intent.enum.ts';
 import type { Intent } from '../types/intents/intent.union.ts';
 import { isHostile } from '../utils/faction.ts';
-import { coordToIndex, isInBounds } from '../utils/grid.ts';
+import { getTileDefAt, isInMapBounds } from '../map/map_accessor.ts';
 import { DEFAULT_COMPANION_FOLLOW_DISTANCE } from './companion_targeting.ts';
 
 const CARDINAL_AND_DIAGONAL_OFFSETS: ReadonlyArray<{ readonly dx: number; readonly dy: number }> = [
@@ -108,10 +108,9 @@ function isStepPassable(
     for (let dx = 0; dx < minW; dx++) {
       const tx = x + dx;
       const ty = y + dy;
-      if (!isInBounds(tx, ty, state.map.width, state.map.height)) return false;
-      const tile = state.map.tiles[coordToIndex(tx, ty, state.map.width)];
-      if (!tile) return false;
-      const tileDef = state.campaign.tiles[tile.tileId];
+      if (!isInMapBounds(state.map, tx, ty)) return false;
+      const tileDef = getTileDefAt(state, tx, ty);
+      if (!tileDef) return false;
       const traversal = evaluateTileTraversal(tileDef, movementModes, state, tx, ty);
       if (traversal.passability !== 'unimpeded' && traversal.passability !== 'difficult') return false;
       if (isTileBlockedByActor(state, tx, ty, entityId, profile, profileCache)) return false;

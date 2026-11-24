@@ -17,7 +17,8 @@ import {
 } from '../types/components.types.ts';
 import type { EntityId, GameState } from '../types/game-state.types.ts';
 import { getFactionRelation } from '../utils/faction.ts';
-import { coordToIndex, getBresenhamLine, isInBounds } from '../utils/grid.ts';
+import { getBresenhamLine } from '../utils/grid.ts';
+import { getTileAt, getTileDefAt, isInMapBounds, toMapTileKey } from '../map/map_accessor.ts';
 import { getEffectiveStats } from '../utils/stats.ts';
 import type {
   TacticalAttitude,
@@ -90,8 +91,8 @@ export function buildTacticalViewportData(
     for (let vx = 0; vx < viewportW; vx++) {
       const mapX = vx + cameraX;
       const mapY = vy + cameraY;
-      if (!isInBounds(mapX, mapY, state.map.width, state.map.height)) continue;
-      const tileIdx = coordToIndex(mapX, mapY, state.map.width);
+      if (!isInMapBounds(state.map, mapX, mapY)) continue;
+      const tileIdx = toMapTileKey(state.map, mapX, mapY);
       if (state.map.isFullyExplored || visibleIndices.has(tileIdx)) {
         visibleCells.push({ vx, vy });
       }
@@ -133,8 +134,8 @@ export function buildTacticalViewportData(
       for (let dx = 0; dx < fw; dx++) {
         const sx = pos.x + dx;
         const sy = pos.y + dy;
-        if (isInBounds(sx, sy, state.map.width, state.map.height)) {
-          const tileIdx = coordToIndex(sx, sy, state.map.width);
+        if (isInMapBounds(state.map, sx, sy)) {
+          const tileIdx = toMapTileKey(state.map, sx, sy);
           if (visibleIndices.has(tileIdx)) {
             anyVisible = true;
           }
@@ -232,14 +233,14 @@ function buildTacticalCursorData(
   }
 
   if (targetX === undefined || targetY === undefined) return null;
-  if (!isInBounds(targetX, targetY, state.map.width, state.map.height)) return null;
+  if (!isInMapBounds(state.map, targetX, targetY)) return null;
 
   const vx = targetX - cameraX;
   const vy = targetY - cameraY;
   if (vx < 0 || vx >= viewportW || vy < 0 || vy >= viewportH) return null;
 
-  const tileIdx = coordToIndex(targetX, targetY, state.map.width);
-  const tile = state.map.tiles[tileIdx];
+  const tile = getTileAt(state.map, targetX, targetY);
+  const tileIdx = toMapTileKey(state.map, targetX, targetY);
   const isExplored = tile !== undefined && (state.map.isFullyExplored || tile.explored);
   if (!isExplored) return null;
 
@@ -264,9 +265,8 @@ function buildTacticalCursorData(
       const stepVy = pt.y - cameraY;
       if (stepVx < 0 || stepVx >= viewportW || stepVy < 0 || stepVy >= viewportH) continue;
 
-      const stepIdx = coordToIndex(pt.x, pt.y, state.map.width);
-      const stepTile = state.map.tiles[stepIdx];
-      const stepDef = stepTile ? state.campaign.tiles[stepTile.tileId] : undefined;
+      const stepTile = getTileAt(state.map, pt.x, pt.y);
+      const stepDef = getTileDefAt(state, pt.x, pt.y);
       const walkable = Boolean(stepTile && (state.map.isFullyExplored || stepTile.explored) && stepDef?.walkable);
       if (!walkable) {
         encounteredBlock = true;

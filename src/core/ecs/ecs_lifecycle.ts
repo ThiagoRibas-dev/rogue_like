@@ -4,13 +4,14 @@ import {
   type EquipmentComponent,
   type ShopComponent,
   type ControllerLinkComponent,
+  type PositionComponent,
   type PropertyOverlayComponent,
   type ResourcePoolComponent,
   type ResourcePoolEntry,
   type ResourceRefreshCycle
 } from '../../types/components.types.ts';
 import type { EntityId, GameState } from '../../types/game-state.types.ts';
-import { addComponent, getComponent, removeComponent, removeEntity, updateSpatialIndex } from './ecs_core.ts';
+import { addComponent, getComponent, patchSpatialIndexInPlace, removeComponent, removeEntity } from './ecs_core.ts';
 
 /**
  * Recursively collects a root entity ID and all owned child entity IDs
@@ -223,19 +224,26 @@ export function moveToLimbo(state: GameState, rootEntityId: EntityId, targetArea
   const nextActiveEntities = nextState.entities.filter((id) => !toMove.has(id));
   const nextActiveComponents = new Map(nextState.components);
   const nextPersistent = new Map(nextState.persistentEntities);
+  const nextSpatialIndex = new Map(nextState.spatialIndex);
+  const copiedKeys = new Set<string>();
 
   for (const id of toMove) {
     const comps = nextActiveComponents.get(id);
     if (comps) {
+      const prevPos = comps[ComponentType.Position] as PositionComponent | undefined;
+      if (prevPos !== undefined) {
+        patchSpatialIndexInPlace(nextSpatialIndex, copiedKeys, id, prevPos, undefined);
+      }
       nextPersistent.set(id, { areaId: targetAreaId, components: comps });
       nextActiveComponents.delete(id);
     }
   }
 
-  return updateSpatialIndex({
+  return {
     ...nextState,
     entities: nextActiveEntities,
     components: nextActiveComponents,
+    spatialIndex: nextSpatialIndex,
     persistentEntities: nextPersistent
-  });
+  };
 }

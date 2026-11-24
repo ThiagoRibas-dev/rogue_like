@@ -1,4 +1,5 @@
 import { type AreaDefinition, AreaDefinitionSchema } from '../../types/campaign.types.ts';
+import { getTileAt } from '../../map/map_accessor.ts';
 import { createDisplay, drawCell } from '../display.ts';
 import { isEffectiveSpriteMode } from '../procedural_sprites.ts';
 import type { EditorController } from '../editor_ui.ts';
@@ -63,28 +64,40 @@ export function renderAreaEditor(
           try {
             const generated = controller.generateSandboxArea(area.id);
 
-            for (let y = 0; y < height; y++) {
-              for (let x = 0; x < width; x++) {
-                const idx = y * width + x;
-                const tileData = generated.map.tiles[idx];
+            const previewOriginX =
+              generated.map.chunkGrid !== undefined ? generated.startPos.x - Math.floor(width / 2) : 0;
+            const previewOriginY =
+              generated.map.chunkGrid !== undefined ? generated.startPos.y - Math.floor(height / 2) : 0;
+
+            for (let vy = 0; vy < height; vy++) {
+              for (let vx = 0; vx < width; vx++) {
+                const wx = previewOriginX + vx;
+                const wy = previewOriginY + vy;
+                const tileData = getTileAt(generated.map, wx, wy);
                 if (tileData) {
                   const tileDef = doc.tiles[tileData.tileId];
                   if (tileDef) {
-                    drawCell(display, x, y, isSpriteMode, tileDef);
+                    drawCell(display, vx, vy, isSpriteMode, tileDef);
                   }
                 }
               }
             }
 
-            drawCell(display, generated.startPos.x, generated.startPos.y, isSpriteMode, {
-              glyph: '@',
-              fg: '#00ff00',
-              bg: '#000',
-              spriteId: 'player'
-            });
+            drawCell(
+              display,
+              generated.startPos.x - previewOriginX,
+              generated.startPos.y - previewOriginY,
+              isSpriteMode,
+              {
+                glyph: '@',
+                fg: '#00ff00',
+                bg: '#000',
+                spriteId: 'player'
+              }
+            );
 
             for (const portal of generated.portals) {
-              drawCell(display, portal.x, portal.y, isSpriteMode, {
+              drawCell(display, portal.x - previewOriginX, portal.y - previewOriginY, isSpriteMode, {
                 glyph: 'O',
                 fg: '#ff00ff',
                 bg: '#000',
@@ -106,11 +119,15 @@ export function renderAreaEditor(
               ] as const) {
                 const nx = cx + dx;
                 const ny = cy + dy;
-                if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
+                if (
+                  nx >= previewOriginX &&
+                  nx < previewOriginX + width &&
+                  ny >= previewOriginY &&
+                  ny < previewOriginY + height
+                ) {
                   const key = `${nx},${ny}`;
                   if (!visited.has(key)) {
-                    const idx = ny * width + nx;
-                    const t = generated.map.tiles[idx];
+                    const t = getTileAt(generated.map, nx, ny);
                     if (t) {
                       const def = doc.tiles[t.tileId];
                       if (def && def.walkable !== false) {
