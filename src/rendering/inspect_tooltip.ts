@@ -1,6 +1,7 @@
 import { getComponent, resolveEntityDisplayName } from '../core/ecs.ts';
 import { getHoverState } from '../core/hover_state.ts';
 import { getActiveRuleset } from '../rulesets/registry.ts';
+import { getEffectiveWorldClockConfig } from '../systems/world_clock.system.ts';
 import {
   ComponentType,
   type ChronicleComponent,
@@ -13,15 +14,47 @@ import {
   type MemoryComponent,
   type NemesisComponent,
   type PortalComponent,
-  type ShopComponent
+  type ShopComponent,
+  type StatusEffectsComponent,
+  type StatusEffectPolarity
 } from '../types/components.types.ts';
+import type { ActiveEffectDisplayDTO } from '../types/ruleset.types.ts';
 import { type EntityId, type GameState, UIMode } from '../types/game-state.types.ts';
+import { formatTurnDurationCompact } from '../utils/duration.ts';
 import { coordToIndex } from '../utils/grid.ts';
 import { getEffectiveStats } from '../utils/stats.ts';
 import { FACET_DOMINANT_HIGH_THRESHOLD, FACET_DOMINANT_LOW_THRESHOLD } from '../constants/personality.constants.ts';
 import type { InspectSectionDTO, InspectTooltipDTO } from './viewport_snapshot.types.ts';
 
 export { resolveEntityDisplayName };
+
+const INSPECT_POLARITY_COLORS: Readonly<Record<StatusEffectPolarity, string>> = {
+  buff: '#2ed573',
+  debuff: '#ff4757',
+  mixed: '#a855f7',
+  neutral: '#f1c40f'
+};
+
+function collectInspectActiveEffects(state: GameState, entityId: EntityId): ReadonlyArray<ActiveEffectDisplayDTO> {
+  const activeRuleset = getActiveRuleset(state);
+  if (activeRuleset.projectActiveEffects) {
+    return activeRuleset.projectActiveEffects(state, entityId);
+  }
+  const statuses = getComponent(state, entityId, ComponentType.StatusEffects) as StatusEffectsComponent | undefined;
+  return (statuses?.activeEffects ?? []).map((eff) => {
+    const def = state.campaign.status[eff.effectId];
+    const polarity: StatusEffectPolarity = eff.polarity ?? (def?.detrimental ? 'debuff' : 'neutral');
+    const summary = eff.summary ?? def?.description;
+    return {
+      id: eff.effectId,
+      label: eff.displayName ?? def?.name ?? eff.effectId,
+      polarity,
+      durationTurns: eff.duration,
+      ...(eff.isPermanent === true ? { isPermanent: true } : {}),
+      ...(summary ? { summary } : {})
+    };
+  });
+}
 
 /** Default patience threshold when none is explicitly set on a MemoryComponent. */
 const DEFAULT_PATIENCE_THRESHOLD = 5;
@@ -175,6 +208,20 @@ function appendEntityComponentSections(state: GameState, entityId: EntityId, sec
       for (const loreLine of activeRuleset.projectInspectLoreLines(state, entityId)) {
         sections.push({ type: 'desc', value: loreLine.value, color: loreLine.color });
       }
+    }
+    const clock = getEffectiveWorldClockConfig(state);
+    const activeEffects = collectInspectActiveEffects(state, entityId);
+    for (const eff of activeEffects) {
+      const durText =
+        eff.durationTurns !== undefined || eff.isPermanent === true
+          ? ` (${formatTurnDurationCompact(eff.durationTurns ?? 0, eff.isPermanent, clock)})`
+          : '';
+      const summaryText = eff.summary ? `: ${eff.summary}` : '';
+      sections.push({
+        type: 'desc',
+        value: `${eff.label}${durText}${summaryText}`,
+        color: eff.color ?? INSPECT_POLARITY_COLORS[eff.polarity]
+      });
     }
   }
 

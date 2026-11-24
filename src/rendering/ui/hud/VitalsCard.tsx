@@ -1,11 +1,60 @@
 import type { JSX } from 'preact';
 import { getComponent } from '../../../core/ecs.ts';
 import { getActiveRuleset } from '../../../rulesets/registry.ts';
-import { ComponentType, type StatusEffectsComponent } from '../../../types/components.types.ts';
+import { getEffectiveWorldClockConfig } from '../../../systems/world_clock.system.ts';
+import {
+  ComponentType,
+  type StatusEffectsComponent,
+  type StatusEffectPolarity
+} from '../../../types/components.types.ts';
 import type { EntityId, GameState } from '../../../types/game-state.types.ts';
+import type { ActiveEffectDisplayDTO } from '../../../types/ruleset.types.ts';
+import { formatTurnDurationCompact, formatTurnDurationVerbose } from '../../../utils/duration.ts';
 import { uiStore, useUiSelector } from '../core/ui_store.ts';
 import { IconButton } from '../primitives/Button.tsx';
-import { Badge, StatChip } from '../primitives/DataDisplay.tsx';
+import { Badge, type BadgeTone, StatChip } from '../primitives/DataDisplay.tsx';
+
+function polarityToBadgeTone(polarity: StatusEffectPolarity): BadgeTone {
+  switch (polarity) {
+    case 'buff':
+      return 'success';
+    case 'debuff':
+      return 'danger';
+    case 'mixed':
+      return 'info';
+    case 'neutral':
+      return 'warning';
+  }
+}
+
+function buildEffectBadgeTooltip(
+  eff: ActiveEffectDisplayDTO,
+  clock: ReturnType<typeof getEffectiveWorldClockConfig>
+): string {
+  const parts: string[] = [eff.label];
+  if (eff.summary) parts.push(eff.summary);
+  if (eff.durationTurns !== undefined || eff.isPermanent === true) {
+    parts.push(formatTurnDurationVerbose(eff.durationTurns ?? 0, eff.isPermanent, clock));
+  }
+  return parts.join(' • ');
+}
+
+function buildFallbackStatusDTOs(state: GameState, playerId: EntityId): ReadonlyArray<ActiveEffectDisplayDTO> {
+  const statuses = getComponent(state, playerId, ComponentType.StatusEffects) as StatusEffectsComponent | undefined;
+  return (statuses?.activeEffects ?? []).map((eff) => {
+    const def = state.campaign.status[eff.effectId];
+    const polarity: StatusEffectPolarity = eff.polarity ?? (def?.detrimental ? 'debuff' : 'neutral');
+    const summary = eff.summary ?? def?.description;
+    return {
+      id: eff.effectId,
+      label: eff.displayName ?? def?.name ?? eff.effectId,
+      polarity,
+      durationTurns: eff.duration,
+      ...(eff.isPermanent === true ? { isPermanent: true } : {}),
+      ...(summary ? { summary } : {})
+    };
+  });
+}
 
 /** Props for `<VitalsCard />`. */
 export interface VitalsCardProps {
@@ -20,11 +69,14 @@ export interface VitalsCardProps {
  */
 export function VitalsCard({ state, playerId, isHudFocused }: VitalsCardProps): JSX.Element | null {
   const folded = useUiSelector((s) => Boolean(s.hudFolded['vitals']));
-  const vitals = getActiveRuleset(state).projectHudVitals(state, playerId);
+  const activeRuleset = getActiveRuleset(state);
+  const vitals = activeRuleset.projectHudVitals(state, playerId);
   if (!vitals) return null;
 
-  const statuses = getComponent(state, playerId, ComponentType.StatusEffects) as StatusEffectsComponent | undefined;
-  const activeEffects = statuses?.activeEffects ?? [];
+  const clock = getEffectiveWorldClockConfig(state);
+  const activeEffects = activeRuleset.projectActiveEffects
+    ? activeRuleset.projectActiveEffects(state, playerId)
+    : buildFallbackStatusDTOs(state, playerId);
   const hpPercent = Math.max(0, Math.min(100, vitals.hpPercent));
   const xpPercent = Math.max(0, Math.min(100, vitals.xpPercent));
 
@@ -91,10 +143,17 @@ export function VitalsCard({ state, playerId, isHudFocused }: VitalsCardProps): 
           {activeEffects.length > 0 ? (
             <div className="ui-status-list" role="list" aria-label="Active status effects">
               {activeEffects.map((eff) => {
-                const def = state.campaign.status[eff.effectId];
+                const durSuffix =
+                  eff.durationTurns !== undefined || eff.isPermanent === true
+                    ? ` (${formatTurnDurationCompact(eff.durationTurns ?? 0, eff.isPermanent, clock)})`
+                    : '';
                 return (
-                  <Badge key={`${eff.effectId}_${eff.duration}`} tone="warning">
-                    {`${def?.name ?? eff.effectId} (${eff.duration}t)`}
+                  <Badge
+                    key={`${eff.id}_${eff.durationTurns ?? 'perm'}`}
+                    tone={polarityToBadgeTone(eff.polarity)}
+                    title={buildEffectBadgeTooltip(eff, clock)}
+                  >
+                    {`${eff.label}${durSuffix}`}
                   </Badge>
                 );
               })}

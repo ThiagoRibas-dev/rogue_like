@@ -1,716 +1,426 @@
-# Implementation Plan — Milestones 166 & 167: Gameplay UI, Parchment Contrast, Adaptive Layouts, Reach-Gated Fuzzy Verb Menu & D&D 3.5e Mechanics/Content Audit
+# Implementation Plan — Milestone 168: Active Buffs, Debuffs & Spell Duration Lifecycle, Expiration, Dispel Sync & UI Observability
 
 **Date:** 2026-11-23  
-**Scope:**
-- **Milestone 166**: Post-Phase-43 Gameplay UI, Parchment Contrast, Adaptive Layouts & Reach-Gated Fuzzy Verb Menu Polish
-- **Milestone 167**: D&D 3.5e Mechanics, Modifier Targets, Spell Effect Units & SRD Content Parity  
-**Workflow Stage:** `AGENTS.md` Phase 1 Kickoff Flow — Steps 4 & 5 (`./docs/implementation_plan.md` Draft + Enhanced Code Diffs)
+**Research Basis:** [docs/research_notes.md](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/docs/research_notes.md)  
+**Workflow Stage:** `AGENTS.md` Phase 1 Kickoff Flow — Steps 4 & 5 (Enhanced Implementation Plan — **Awaiting Explicit User Approval**)
 
 ---
 
-## 0. Architectural Governance & SSOT Ownership (`AGENTS.md` Rules 15–21)
+## 0. Confirmed User Decisions & Scope Summary
 
-- **Three-Tier Placement (`Rule 16`)**:
-  - **Tier 1 (Console Engine — `src/core/`, `src/systems/`, `src/types/`, `src/rendering/`, `src/styles/`)**:
-    - Semantic keycap tokens (`--ui-kbd-bg`, `--ui-kbd-ink`, `--ui-kbd-border`), `ModalShell` `fullHeight` prop, `CommandDockCard` cartridge inventory command deduplication, `TacticalScannerCard` `"Inspect"` label, `RulesetContract.projectInspectStats` & `RulesetContract.resolveInteractionReachTiles` contract hooks, `resolveActorInteractionReachTiles` & `isTargetWithinInteractionReach` in `src/systems/apply.system.ts`, `Look` (`[X]`) + `Enter` reticle interaction in `src/core/input/gameplay_input.ts`, and `VerbMenuPopover` valid-only filtering + auto-focused fuzzy search.
-  - **Tier 2 (Ruleset Cartridge — `src/rulesets/dnd35e/`, `src/rendering/ui/cartridges/dnd35e/`)**:
-    - `projectDnD35eInspectStats` and `resolveDnD35eInteractionReachTiles` in `src/rulesets/dnd35e/dnd35e_ruleset.ts` (evaluating `StatModifier` target `'interaction_reach_tiles'`), class `featureDetails` label lookup in `CharBuilderClassStep.tsx` and `DnD35eLevelUpClassStep.tsx`, `class_race_validator.ts` feature coverage check, and Milestone 167 DAG/spell/turning resolver fixes.
-  - **Tier 3 (System Content — `public/data/rulesets/dnd35e/**/*.json`)**:
-    - Canonical `StatModifier` target IDs, magic item `spell:<id>` effect hooks, 39 SRD spell `effectUnits` / `effectBundle` definitions, and modular `races/*.json`.
+All five design questions from research were confirmed by the user:
+1. **Include Related Correctness Fixes:** Propagate `weapon:magic` -> `'magic'` DR bypass tag on strikes, enforce `'enhancement'` stacking competition between equipped weapon damage bonuses and *Magic Weapon*, preserve intra-cast modifiers in `appendTargetModifiers`, and synchronize *Dispel Magic* CL checks plus status/condition removal.
+2. **Unified Aura & Overlay UI Projection:** Surface active spatial emanation auras (`FieldComponent`) and form overlays (`PropertyOverlayComponent`) alongside timed spells and conditions through `RulesetContract.projectActiveEffects`.
+3. **Dynamic Monotonic Duration Badges + Tooltip Details:** Render compact human-readable durations that transition cleanly as turns tick down (`Xd` -> `Xh` -> `Xm` -> `Xr`, plus `Perm`), with exact round counts and modifier summaries on hover (`"Divine Favor: +2 luck Attack, +2 luck Damage • 1m (10 rounds)"`).
+4. **Declarative Condition Duration Override:** Add optional `duration?: string` to the `condition` effect unit Zod schema (`DnD35SpellEffectUnitSchema`), with a named fallback constant when omitted on an `instantaneous` spell (zero spell-ID hardcoding per Rule 21).
+5. **Polarity-Gated Alerts & Auto-Pause:** Keep friendly buffs (`'buff'`) out of top-right warning `AlertsStack` ribbons and detrimental RTwP auto-pause while keeping debuffs (`'debuff'`) in both.
 
 ---
 
-## 1. Cascading Effects Matrix (`AGENTS.md` Rule 15)
+## 1. SSOT Ownership & Old-Brain Eviction Table
 
-| Change | Upstream (Callers / Emitters / Data Authors / Tests) | Downstream (Consumers / Renderers / Validators / Save Schemas) | Lateral (Sibling JSONs / Docs / Parallel Registries) |
+| Responsibility | Canonical SSOT Owner | Evicted / Fixed Split-Brain |
+| :--- | :--- | :--- |
+| Turn time unit constants (`ROUNDS_PER_MINUTE`, `ROUNDS_PER_HOUR`, `ROUNDS_PER_DAY`) | [world_clock.constants.ts](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/constants/world_clock.constants.ts) | Eliminates ad-hoc `60 / 6`, `10`, `14400` literals across spell/UI code |
+| Compact & verbose turn duration formatting (`formatTurnDurationCompact`, `formatTurnDurationVerbose`) | [duration.ts](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/utils/duration.ts) *(New Tier 1 util)* | Replaces raw `(${eff.duration}t)` string interpolation in `VitalsCard`, `DnD35eSheetOverviewCol`, `dnd35e_ui_projection`, `hud_alerts.ui` |
+| Timed status storage, metadata, expiration callbacks & $O(1)$ bulk advance | [actor_components.types.ts](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/types/components/actor_components.types.ts) & [status-effect.system.ts](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/systems/status-effect.system.ts) | Replaces un-tracked `statModifiers` & slow 1-turn-per-step bulk ticking |
+| Bulk-time local hazard predicate (`hasActivePerTurnLocalHazard`) | [world_time_skip.ts](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/systems/world_time_skip.ts) | Delegates to `hasPerTurnStatusActivity` instead of forcing 1-turn steps for passive buffs |
+| Cartridge lifecycle & unified display contracts | [ruleset.types.ts](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/types/ruleset.types.ts) (`ActiveEffectDisplayDTO`, `onStatusEffectExpired`, `projectActiveEffects`) | Eliminates direct `dndData` casting inside Tier 1 HUD/Inspect views |
+| Spell duration parsing, polarity inference & modifier summary formatting | [spell_duration.ts](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/rulesets/dnd35e/magic/spell_duration.ts) *(New Tier 2 module)* | Purely data-driven over `spell.duration` & emitted `StatModifier[]` |
+| Spell cast effect application & timed status registration | [spell_cast_effects.ts](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/rulesets/dnd35e/magic/spell_cast_effects.ts) | Fixes `appendTargetModifiers` overwriting earlier units of the same `castId` |
+| *Dispel Magic* CL resolution & synchronized revocation | [spell_cast_units.ts](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/rulesets/dnd35e/magic/spell_cast_units.ts) | Fixes dispeller-CL self-check & cleans up `StatusEffectsComponent` + linked conditions alongside `statModifiers` |
+| Active spell emanation aura projection | [spell_aura_resolver.ts](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/rulesets/dnd35e/magic/spell_aura_resolver.ts) (`activeAuras`) | Single pass reused by `projectDnD35eActiveEffects`; no duplicate field scanning |
+| Weapon enhancement stacking, `weapon:magic` DR bypass & DAG status cache invariance | [srd_registry.ts](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/rulesets/dnd35e/srd_registry.ts), [dnd35e_dag_adapter.ts](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/rulesets/dnd35e/cartridge/dnd35e_dag_adapter.ts), [attack_routine.ts](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/rulesets/dnd35e/combat/attack_routine.ts), [semantic_tags_context.ts](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/rulesets/dnd35e/semantic_tags_context.ts), [semantic_tags.ts](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/rulesets/dnd35e/semantic_tags.ts) | Fixes `+1` sword + *Magic Weapon* double damage & per-turn DAG cache misses |
+| HUD, Inspect, Canvas Pips, Auto-Pause & Sheet rendering | `DataDisplay.tsx`, `VitalsCard.tsx`, `hud_alerts.ui.ts`, `auto_pause_signals.ts`, `tactical_snapshot.ts`, `inspect_tooltip.ts`, `DnD35eSheetOverviewCol.tsx`, `dnd35e_ui_projection.ts` | Replaces warning-only/un-tooltipped badges with polarity tones & breakdown tooltips |
+
+---
+
+## 2. Step-by-Step Implementation Plan
+
+### Phase 1: Tier 1 Console Constants, Duration Utilities & Component/Contract Types
+
+#### 1.1 Add `ROUNDS_PER_MINUTE` & `ROUNDS_PER_DAY` — `src/constants/world_clock.constants.ts`
+Add canonical round conversion constants immediately alongside `ROUNDS_PER_HOUR`:
+
+```ts
+/** Number of 6-second global turns in 1 game minute (`60 / 6 = 10` rounds). */
+export const ROUNDS_PER_MINUTE = SECONDS_PER_MINUTE / DEFAULT_SECONDS_PER_TURN;
+
+/** Number of 6-second global turns in 1 full 24-hour game day (`600 * 24 = 14400` rounds). */
+export const ROUNDS_PER_DAY = ROUNDS_PER_HOUR * DEFAULT_HOURS_PER_DAY;
+```
+
+#### 1.2 Create Shared Duration Formatter — `src/utils/duration.ts`
+Pure, ruleset-agnostic formatter driving monotonic transitions (`Xd` -> `Xh` -> `Xm` -> `Xr` / `Perm`):
+
+```ts
+import {
+  DEFAULT_SECONDS_PER_TURN,
+  MINUTES_PER_HOUR,
+  ROUNDS_PER_DAY,
+  ROUNDS_PER_HOUR,
+  ROUNDS_PER_MINUTE
+} from '../constants/world_clock.constants.ts';
+
+/**
+ * Formats a turn/round count into a compact, monotonically transitioning UI pill string
+ * (`Perm`, `Xd`, `Xh`, `Xm`, or `Xr`).
+ */
+export function formatTurnDurationCompact(turns: number, isPermanent?: boolean): string {
+  if (isPermanent === true) return 'Perm';
+  const clamped = Math.max(0, Math.floor(turns));
+  if (clamped >= ROUNDS_PER_DAY) return `${Math.floor(clamped / ROUNDS_PER_DAY)}d`;
+  if (clamped >= ROUNDS_PER_HOUR) return `${Math.floor(clamped / ROUNDS_PER_HOUR)}h`;
+  if (clamped >= ROUNDS_PER_MINUTE) return `${Math.floor(clamped / ROUNDS_PER_MINUTE)}m`;
+  return `${clamped}r`;
+}
+
+/**
+ * Formats a turn/round count into a verbose tooltip string showing units and exact rounds
+ * (e.g., `"1m (10 rounds)"`, `"1h 30m (900 rounds)"`, `"6 rounds"`, `"Permanent"`).
+ */
+export function formatTurnDurationVerbose(turns: number, isPermanent?: boolean): string {
+  if (isPermanent === true) return 'Permanent';
+  const clamped = Math.max(0, Math.floor(turns));
+  const roundLabel = `${clamped} ${clamped === 1 ? 'round' : 'rounds'}`;
+  if (clamped < ROUNDS_PER_MINUTE) return roundLabel;
+
+  if (clamped >= ROUNDS_PER_DAY) {
+    const days = Math.floor(clamped / ROUNDS_PER_DAY);
+    const remHours = Math.floor((clamped % ROUNDS_PER_DAY) / ROUNDS_PER_HOUR);
+    const prefix = remHours > 0 ? `${days}d ${remHours}h` : `${days}d`;
+    return `${prefix} (${roundLabel})`;
+  }
+  if (clamped >= ROUNDS_PER_HOUR) {
+    const hours = Math.floor(clamped / ROUNDS_PER_HOUR);
+    const remMins = Math.floor((clamped % ROUNDS_PER_HOUR) / ROUNDS_PER_MINUTE);
+    const prefix = remMins > 0 ? `${hours}h ${remMins}m` : `${hours}h`;
+    return `${prefix} (${roundLabel})`;
+  }
+  const mins = Math.floor(clamped / ROUNDS_PER_MINUTE);
+  const remSecs = (clamped % ROUNDS_PER_MINUTE) * DEFAULT_SECONDS_PER_TURN;
+  const totalMins = mins % MINUTES_PER_HOUR;
+  const prefix = remSecs > 0 ? `${totalMins}m ${remSecs}s` : `${totalMins}m`;
+  return `${prefix} (${roundLabel})`;
+}
+```
+
+#### 1.3 Extend `ActiveStatusEffect` — `src/types/components/actor_components.types.ts` & `src/types/components.types.ts`
+Add `StatusEffectPolarity` and optional JSON-serializable metadata fields to `ActiveStatusEffect` (backward-compatible with all existing saves and mocks):
+
+```ts
+/** Polarity classification for active status effects and ruleset buffs/debuffs. */
+export type StatusEffectPolarity = 'buff' | 'debuff' | 'mixed' | 'neutral';
+
+export interface ActiveStatusEffect {
+  readonly effectId: string;
+  readonly duration: number;
+  readonly sourceEntityId?: EntityId;
+  readonly elapsedTurns?: number | undefined;
+  readonly secondaryResolved?: boolean | undefined;
+  readonly interaction?: InteractionChain | undefined;
+  readonly displayName?: string | undefined;
+  readonly summary?: string | undefined;
+  readonly polarity?: StatusEffectPolarity | undefined;
+  readonly color?: string | undefined;
+  readonly sourcePath?: string | undefined;
+  readonly casterLevel?: number | undefined;
+  readonly linkedConditionId?: string | undefined;
+  readonly grantedTags?: ReadonlyArray<string> | undefined;
+  readonly isPermanent?: boolean | undefined;
+}
+```
+Re-export `StatusEffectPolarity` alongside `ActiveStatusEffect` in `src/types/components.types.ts`.
+
+#### 1.4 Extend `RulesetContract` — `src/types/ruleset.types.ts`
+Add `ActiveEffectDisplayDTO` and optional lifecycle/projection hooks:
+
+```ts
+/** Polarity-aware display DTO projected by a ruleset for HUD Vitals, Inspect, and Character Sheet badges. */
+export interface ActiveEffectDisplayDTO {
+  readonly id: string;
+  readonly label: string;
+  readonly polarity: StatusEffectPolarity;
+  readonly durationTurns?: number | undefined;
+  readonly isPermanent?: boolean | undefined;
+  readonly isAura?: boolean | undefined;
+  readonly summary?: string | undefined;
+  readonly sourceLabel?: string | undefined;
+  readonly color?: string | undefined;
+}
+```
+On `RulesetContract`:
+```ts
+  /** Optional hook invoked immediately after an `ActiveStatusEffect` expires and is removed from `StatusEffectsComponent`. */
+  onStatusEffectExpired?(state: GameState, entityId: EntityId, expiredEffect: ActiveStatusEffect): GameState;
+
+  /** Optional hook projecting all active buffs, debuffs, conditions, overlays, and auras for HUD/Inspect rendering. */
+  projectActiveEffects?(state: Readonly<GameState>, entityId: EntityId): ReadonlyArray<ActiveEffectDisplayDTO>;
+```
+
+---
+
+### Phase 2: Tier 1 Console Status Tick, $O(1)$ Bulk Advance, Auto-Pause & Alerts
+
+#### 2.1 `src/systems/status-effect.system.ts`
+1. Add `ActiveStatusEffectMetadata` and optional 7th parameter `metadata?: ActiveStatusEffectMetadata` on `applyStatusEffect`:
+```ts
+export interface ActiveStatusEffectMetadata {
+  readonly displayName?: string | undefined;
+  readonly summary?: string | undefined;
+  readonly polarity?: StatusEffectPolarity | undefined;
+  readonly color?: string | undefined;
+  readonly sourcePath?: string | undefined;
+  readonly casterLevel?: number | undefined;
+  readonly linkedConditionId?: string | undefined;
+  readonly grantedTags?: ReadonlyArray<string> | undefined;
+  readonly isPermanent?: boolean | undefined;
+  readonly replaceExisting?: boolean | undefined;
+}
+```
+2. Export `hasPerTurnStatusActivity(state: Readonly<GameState>, entityId: EntityId): boolean`:
+```ts
+export function hasPerTurnStatusActivity(state: Readonly<GameState>, entityId: EntityId): boolean {
+  const statuses = getComponent(state, entityId, ComponentType.StatusEffects) as StatusEffectsComponent | undefined;
+  if (!statuses || statuses.activeEffects.length === 0) return false;
+  return statuses.activeEffects.some((eff) => {
+    const def = state.campaign.status[eff.effectId];
+    if (!def) return false;
+    const hasDot = (def.perTurnDamage ?? 0) > 0 || (def.perTurnHeal ?? 0) > 0;
+    const hasPendingSecondary = def.secondaryTriggerAfterTurns !== undefined && eff.secondaryResolved !== true;
+    return hasDot || hasPendingSecondary;
+  });
+}
+```
+3. In `tickActorStatusEffectsSingleTurn`:
+   - Collect `const expiredEffects: ActiveStatusEffect[] = [];`.
+   - If `active.isPermanent === true`, keep unchanged in `nextActiveEffects`.
+   - Otherwise, if `active.duration > 1`, decrement `duration - 1`; else push to `expiredEffects` and log for player:
+     ```ts
+     const expiryMsg = active.displayName
+       ? `${active.displayName} has worn off.`
+       : `You are no longer ${def?.name ?? active.effectId}.`;
+     ```
+   - Commit updated/removed `StatusEffectsComponent`, then if `expiredEffects.length > 0` and `getComponent(nextState, entityId, ComponentType.Fighter) !== undefined`:
+     ```ts
+     const ruleset = getRuleset(nextState.campaign?.manifest?.rulesetId);
+     if (ruleset.onStatusEffectExpired) {
+       for (const expired of expiredEffects) {
+         nextState = ruleset.onStatusEffectExpired(nextState, entityId, expired);
+       }
+     }
+     ```
+4. In `advanceActorStatusEffectsByTurns`:
+   - When `turnsElapsed <= 0`, return `state`.
+   - When `hasPerTurnStatusActivity(nextState, entityId)` is **true**, step turn-by-turn up to `remainingTurns`, breaking early to the $O(1)$ fast path as soon as `!hasPerTurnStatusActivity(nextState, entityId)`.
+   - When `!hasPerTurnStatusActivity(nextState, entityId)`, compute remaining durations in a single $O(k)$ pass (`active.isPermanent === true ? active : { ...active, duration: active.duration - remainingTurns }`), expire anything `<= 0`, log player expirations, update/remove `StatusEffectsComponent`, and invoke `ruleset.onStatusEffectExpired` per expired entry.
+
+#### 2.2 `src/systems/world_time_skip.ts`
+Update `hasActivePerTurnLocalHazard(state)` line 58:
+```ts
+if (hasPerTurnStatusActivity(state, entityId)) return true;
+```
+
+#### 2.3 `src/core/auto_pause_signals.ts`
+Update `detectDetrimentalStatus` to inspect `StatusEffectsComponent.activeEffects` directly so dynamic enemy spell debuffs trigger pause while buffs and mixed self-buffs do not:
+```ts
+const afterStatuses = getComponent(after, playerEntityId, ComponentType.StatusEffects) as StatusEffectsComponent | undefined;
+for (const eff of afterStatuses?.activeEffects ?? []) {
+  if (previousEffectIds.has(eff.effectId)) continue;
+  if (eff.polarity === 'debuff') return 'detrimental_status';
+  if (eff.polarity === undefined && after.campaign.status[eff.effectId]?.detrimental === true) {
+    return 'detrimental_status';
+  }
+}
+```
+
+#### 2.4 `src/rendering/ui/hud_alerts.ui.ts`
+Filter `statuses.activeEffects` in `projectHudAlertsList` so friendly buffs do not produce warning alert ribbons:
+```ts
+  if (statuses) {
+    for (const active of statuses.activeEffects) {
+      const def = state.campaign.status[active.effectId];
+      const isFriendlyOrNeutral =
+        active.polarity === 'buff' ||
+        active.polarity === 'neutral' ||
+        (active.polarity === undefined && def !== undefined && !def.detrimental);
+      if (isFriendlyOrNeutral) continue;
+      alerts.push({
+        label: active.displayName ?? def?.name ?? active.effectId,
+        detail: `${formatTurnDurationCompact(active.duration, active.isPermanent)} remaining`,
+        severity: 'warning'
+      });
+    }
+  }
+```
+*(Wait: check `tests/hud_rest_and_display_name.test.ts` — confirmed it only asserts `isActorPerceivedByPlayer`, `buildTurnStatusRibbon`, and `evaluateActorRestSafety`, not alert detail string formatting.)*
+
+---
+
+### Phase 3: Tier 2 D&D 3.5e Duration Parser, Cast Registration, Expiration, Dispel Sync & Stacking Fixes
+
+#### 3.1 Declarative Condition Duration Field — `src/rulesets/dnd35e/types/system/spell_system.types.ts`
+Extend the `'condition'` unit schema with optional `duration: z.string().optional()`:
+```ts
+  SpellEffectUnitBaseSchema.extend({
+    type: z.literal('condition'),
+    conditionId: z.string(),
+    duration: z.string().optional(),
+    durationRoundsScaling: DnD35SpellScalingRuleSchema.optional(),
+    ...
+```
+
+#### 3.2 Pure Spell Duration Parser, Polarity & Summary Helpers — `src/rulesets/dnd35e/magic/spell_duration.ts`
+Create `src/rulesets/dnd35e/magic/spell_duration.ts` (zero content-ID checks):
+- Export named constants:
+  - `DEFAULT_CONCENTRATION_FALLBACK_ROUNDS = ROUNDS_PER_MINUTE` (`10`)
+  - `DEFAULT_INSTANTANEOUS_CONDITION_DURATION_ROUNDS = 2`
+  - `EXTEND_METAMAGIC_DURATION_MULTIPLIER = 2`
+  - `MIN_ACTIVE_SPELL_DURATION_ROUNDS = 1`
+  - `POLARITY_COLORS`: `{ buff: '#2ed573', debuff: '#ff4757', mixed: '#a855f7', neutral: '#f1c40f' }`
+- Implement `parseSpellDurationTurns(rawDuration, casterLevel, options)`:
+  - Normalize whitespace/underscores (`1_round_per_level` -> `1 round/level`, strip `or until discharged`, extract `"concentration, up to ..."` cap, handle `instantaneous / 1 hour` by taking the post-`/` ongoing component when modifiers/conditions exist).
+  - Recognize `"permanent"` -> `{ durationTurns: 0, isPermanent: true, isConcentration: false }`.
+  - Recognize `"instantaneous"` -> returns `DEFAULT_INSTANTANEOUS_CONDITION_DURATION_ROUNDS` only if `options?.fallbackRoundsForCondition === true`, otherwise `{ durationTurns: 0, isPermanent: false, isConcentration: false }`.
+  - Recognize `"concentration"` -> `{ durationTurns: DEFAULT_CONCENTRATION_FALLBACK_ROUNDS, isPermanent: false, isConcentration: true }`.
+  - Evaluate compound/scaled durations (`"1 round + 1 round/3 levels"` -> `1 + Math.floor(cl / 3)`, `"N round/level"`, `"N min/level"`, `"N hour/level"`, `"N day/level"`, fixed `"30 minutes"`, `"24 hours"`, `"7 rounds"`, and dice durations `"1d6+2 rounds"`, `"4d12 hours"`, `"1d4 rounds or 1 round"` via `evaluateDiceExpression`).
+  - Double non-permanent `durationTurns` when `options?.extend === true`.
+- Implement `classifyEffectPolarity(modifiers, options)` strictly from numeric signs, target roles, and condition/ability-harm presence (`'buff' | 'debuff' | 'mixed' | 'neutral'`).
+- Implement `formatSpellModifiersSummary(modifiers, options)` turning modifiers (`+2 luck Attack, -2 size DEX, +1 size step`, `Quicken <= Lvl 3`, `Retaliation 1d8 force`), `grantedTags` (filtering out internal `*_active` flags or formatting clean labels like `Magic Weapon`, `Enlarged`), and condition names into concise single-line tooltip strings.
+
+#### 3.3 Cast Registration & Multi-Unit Safe `appendTargetModifiers` — `src/rulesets/dnd35e/magic/spell_cast_effects.ts`
+1. Update `appendTargetModifiers(state, targetId, spellId, castId, newModifiers)` so revoking older casts of the same spell never strips earlier units of the **current** `castId`:
+```ts
+function appendTargetModifiers(
+  state: GameState,
+  targetId: EntityId,
+  spellId: string,
+  castId: string,
+  newModifiers: ReadonlyArray<StatModifier>
+): GameState {
+  if (newModifiers.length === 0) return state;
+  const targetDnd = getDnD35EntityData(state, targetId);
+  const existing = targetDnd.statModifiers ?? [];
+  const bareSpellRoot = `spell:${spellId}`;
+  const currentCastPrefix = `spell:${spellId}:${castId}`;
+  const cleaned = existing.filter((m) => {
+    const path = m.sourcePath ?? m.sourceId;
+    const isThisSpell =
+      path === bareSpellRoot || path.startsWith(`${bareSpellRoot}:`) || path.startsWith(`${bareSpellRoot}/`);
+    if (!isThisSpell) return true;
+    return path === currentCastPrefix || path.startsWith(`${currentCastPrefix}/`);
+  });
+  return setDnD35EntityData(state, targetId, {
+    ...targetDnd,
+    statModifiers: [...cleaned, ...newModifiers]
+  });
+}
+```
+2. During `applyResolvedSpellEffectsToTarget(ctx)`:
+   - Track applied modifiers, `grantedTags`, `hasAbilityHarm`, and active condition registrations on the target.
+   - Compute `parsedDuration` for main modifier/bundle effects (`spell.duration`) and per-unit duration for `condition` units (`unit.duration ?? (unit.durationRoundsScaling ? evaluateSpellScalingRule(...) : spell.duration)`, with `fallbackRoundsForCondition: true`).
+   - Also pass `grantedTags` from `ctx.spell.effectBundle?.grantedTags` and `stat_bundle.effectBundle.grantedTags`.
+   - Call `applyStatusEffect` with `replaceExisting: true`, `sourcePath: spell:${spell.id}:${castId}`, `casterLevel`, `displayName`, `summary`, `polarity`, `color: POLARITY_COLORS[polarity]`, `grantedTags`, `linkedConditionId` (for conditions), and `isPermanent`.
+   - In `case 'stat_bundle'` when `clearsDrain === true` (*Restoration*), also prune any active `StatusEffectsComponent` entry whose `polarity === 'debuff'` and `effectId.startsWith('spell:')` and `summary` indicates ability harm / negative modifiers, or remove corresponding modifiers & stale status entries when `statModifiers` no longer exist for that `sourcePath`.
+
+#### 3.4 *Dispel Magic* Synchronization — `src/rulesets/dnd35e/magic/spell_cast_units.ts`
+Update `case 'dispel'` (L111–145):
+- Gather candidate root paths (`spell:<spellId>:<castId>`) from both `targetDnd.statModifiers` and `StatusEffectsComponent.activeEffects` matching `unit.revokesPathPrefix`.
+- Look up each root path's stored `casterLevel` from matching `ActiveStatusEffect` entries (falling back to `DEFAULT_DISPEL_FALLBACK_CL = 1`, never blindly reusing the dispeller's `casterLevel` when target CL exists).
+- When `resolveDispelCheck(casterLevel, targetSpellCl, unit.maxCasterLevelBonus > 10).dispelled` is `true`:
+  - Revoke modifiers (`revokeModifiersByPathPrefix(cleanedMods, rootPath)`), collect dispelled `linkedConditionId`s, and filter out status entries whose `sourcePath` starts with `rootPath`.
+- After the loop, if `dispelledCount > 0`, commit updated `StatusEffectsComponent` (removing component if empty via `removeComponent`), clear any dispelled `linkedConditionId` not still kept alive by remaining `StatusEffectsComponent` entries, update `statModifiers`, call `syncDnD35eActorSpatialFootprint`, and log the dispel count.
+
+#### 3.5 Active Aura Summaries — `src/rulesets/dnd35e/magic/spell_aura_resolver.ts`
+Expose `ActiveSpellAuraSummary` inside `ActiveSpellAuraContributions` (`activeAuras: ReadonlyArray<ActiveSpellAuraSummary>`) using the `FieldComponent`'s `duration` and `classifyEffectPolarity` / `formatSpellModifiersSummary` on each matching aura unit (single loop, zero extra spatial scans).
+
+#### 3.6 Weapon Damage Enhancement Competition, `weapon:magic` DR Bypass & DAG Cache Coherence
+1. **`src/rulesets/dnd35e/srd_registry.ts` (`getEquippedItemBonuses`):**
+   Compute `equipDamageBonus` alongside `equipAttackBonus` from `itemDef.magicalProperties?.enhancementBonus ?? 0` on the primary/active weapon (masterwork grants +1 attack only, +0 damage) and return `{ equipAttackBonus, equipArmorBonus, equipDamageBonus }`.
+2. **`src/rulesets/dnd35e/cartridge/dnd35e_dag_adapter.ts`:**
+   - Destructure `equipDamageBonus` from `getEquippedItemBonuses` and emit:
+     `pushMod('damage', equipDamageBonus, 'enhancement', 'equipment_damage', 'item:weapon/damage_enhancement', 'mundane');`
+   - Update line 589:
+     `const nonStrNonDoctrineFlatDamage = dagResult.damageBonus - strMod - equipDamageBonus - doctrineMod.damageBonus;`
+     *(Preserves exact same net weapon damage formula while making `+1` weapon damage and `+1 enhancement` *Magic Weapon* properly compete in `resolveTypedModifiers`!)*
+   - Add `areStatusEffectsStructurallyEqual(a?: StatusEffectsComponent, b?: StatusEffectsComponent): boolean` in `evaluateDnD35eEntityDAG` (L297) comparing length, `effectId`, `sourcePath`, `polarity`, `isPermanent`, `duration > 0`, and `grantedTags`—so routine countdown decrements (`10 -> 9`) remain DAG cache hits!
+3. **`src/rulesets/dnd35e/semantic_tags_context.ts` & `src/rulesets/dnd35e/semantic_tags.ts`:**
+   Collect `grantedTags` from active `StatusEffectsComponent` entries (`e.duration > 0 || e.isPermanent`) into `SituationalTagContext.activeStatusGrantedTags` and merge them into `selfTags` in `projectDnD35ActorSemanticTags`.
+4. **`src/rulesets/dnd35e/combat/attack_routine.ts`:**
+   When `params.selfTags?.includes('weapon:magic')` is true for manufactured weapons (or `'natural_weapon:magic'` / `'weapon:magic'` for natural attacks), append `'magic'` to `strike.bypassTags` (deduplicated) so *Magic Weapon* penetrates `DR/magic`.
+
+#### 3.7 Ruleset Expiration & Unified Active Effect Projection — `src/rulesets/dnd35e/dnd35e_ruleset.ts`
+Implement two cleanly typed functions and wire them onto `dnd35eRulesetContract`:
+- `onDnD35eStatusEffectExpired(state, entityId, expiredEffect)`:
+  - Revokes `statModifiers` matching `expiredEffect.sourcePath` (if present).
+  - If `expiredEffect.linkedConditionId` is set, checks remaining `StatusEffectsComponent.activeEffects` on `entityId` for any other active effect with the same `linkedConditionId`; if none remains, removes `linkedConditionId` from `dndData.conditions`.
+  - Runs `syncDnD35eActorSpatialFootprint(nextState, entityId)`.
+- `projectDnD35eActiveEffects(state, entityId): ReadonlyArray<ActiveEffectDisplayDTO>`:
+  - Emits entries from `StatusEffectsComponent.activeEffects`, remaining unlinked `dndData.conditions`, active `PropertyOverlayComponent` form, and `evaluateActiveSpellAuraContributions(...).activeAuras` (`isAura: true`), deduplicated cleanly.
+
+---
+
+### Phase 4: UI Observability Across All 5 Presentation Surfaces
+
+1. **`BadgeProps.title` (`src/rendering/ui/primitives/DataDisplay.tsx`):**
+   Add `readonly title?: string | undefined;` to `BadgeProps` and forward `title={title}` to the `<span className={classes} title={title}>` element.
+2. **HUD Vitals (`src/rendering/ui/hud/VitalsCard.tsx`):**
+   - Query `getActiveRuleset(state).projectActiveEffects?.(state, playerId)` (falling back to `StatusEffectsComponent` for cartridges without the hook).
+   - Map `polarity` -> `BadgeTone` (`buff -> 'success'`, `debuff -> 'danger'`, `mixed -> 'info'`, `neutral -> 'warning'`).
+   - Display `${eff.label} (${formatTurnDurationCompact(eff.durationTurns, eff.isPermanent)})` (when timed/permanent) with verbose tooltip `title` combining `eff.label`, `formatTurnDurationVerbose`, and `eff.summary`.
+3. **Inspect / TacticalScanner (`src/rendering/inspect_tooltip.ts`):**
+   - For `Fighter` or `Actor` entities, query `activeRuleset.projectActiveEffects?.(state, entityId)` (or `StatusEffectsComponent` fallback).
+   - Append concise `type: 'desc'` lines colored by polarity (`#2ed573` buff, `#ff4757` debuff, `#a855f7` mixed, `#f1c40f` neutral) showing `Label (duration): summary` or `Label (duration)` so hovering or pressing `[X]` on enemies, allies, or self displays all active buffs/debuffs and durations.
+4. **Canvas Status Pips (`src/rendering/tactical_snapshot.ts`):**
+   Update L158–159 to `effect.color ?? def?.color ?? polarityDefaultColor(effect.polarity)`.
+5. **Character Sheet & Feature Projection (`src/rendering/ui/cartridges/dnd35e/DnD35eSheetOverviewCol.tsx`, `src/rulesets/dnd35e/ui/dnd35e_ui_projection.ts`):**
+   - Update `"Active Conditions"` banner to `"Active Effects & Conditions"` and render `projectDnD35eActiveEffects(state, playerId)` with polarity tones, compact ticking durations, and verbose tooltips.
+   - Add pure `formatResolutionBreakdownTooltip` helpers on Defenses (`AC`, `Touch`, `Flat`, `Fort`, `Ref`, `Will`) and Ability Score cells reading `evalResult?.dagResult.acResolution`, `saveBreakdowns`, and `abilityBreakdowns` (including active and shadowed modifiers).
+   - Update `buildActorFeatureEntries` in `dnd35e_ui_projection.ts` to format status names with `eff.displayName ?? def?.name ?? eff.effectId` + `formatTurnDurationCompact` + `description: eff.summary ?? def?.description`.
+
+---
+
+### Phase 5: Tests, SSOT Registry Sync & Full 8-Stage Verification
+
+1. Create `tests/m168_active_buffs_debuffs_duration_ui.test.ts` testing:
+   - `parseSpellDurationTurns` across SRD formats + Extend Spell `2x` doubling + monotonic `formatTurnDurationCompact`/`Verbose` transitions (`2d -> 1d -> 23h -> 1h -> 59m -> 1m -> 9r -> 1r`, `Perm`).
+   - *Divine Favor* (scaling luck, personal) vs *Magic Weapon* (enhancement + `weapon:magic` `'magic'` DR bypass + `+1` weapon damage competition + stacking with *Divine Favor*).
+   - Mixed self-buff/penalty (*Enlarge Person* footprint + STR/DEX) and dual-role AoE (*Prayer* ally `'buff'` / enemy `'debuff'`).
+   - Turn expiration (`processStatusEffectsTick`) and 8-hour bulk rest (`advanceWorldTimeBulk` O(1) fast path without 4800-step stall), cleanly revoking `statModifiers`, `grantedTags`, and non-overlapping `dndData.conditions`.
+   - Multi-unit same-cast safety in `appendTargetModifiers` & *Dispel Magic* CL + synchronized status/condition removal.
+   - Console invariants: friendly buffs skipped by `detectDetrimentalStatus` & `projectHudAlertsList`, enemy debuffs included in both, and DAG cache hits preserved across duration decrements.
+   - UI projections (`projectDnD35eActiveEffects` including auras & `PropertyOverlay`, `buildInspectTooltip`, `buildActorFeatureEntries`).
+2. Add `src/utils/duration.ts` to `docs/ssot/ssot_console.json` and `src/rulesets/dnd35e/magic/spell_duration.ts` to `docs/ssot/ssot_dnd35e.json`, run `bun scripts/map-codebase.ts`, update `docs/ARCHITECTURE.md` & `docs/MILESTONES.md`, and run `./verify.sh`.
+
+---
+
+## 3. Cascading Effects Matrix
+
+| Change | Upstream | Downstream | Lateral |
 | :--- | :--- | :--- | :--- |
-| **1. Parchment Theme Naming & `--ui-kbd-*` / Hover Tokens** (`SettingsModal.tsx`, `tokens.css`, `parchment.css`, `primitives.css`, `dnd35e.css`) | `SettingsModal.tsx` `THEME_OPTIONS`; `tokens.css` & `parchment.css` token definitions | `<Keycap>` (`Keycap.tsx`), `HelpReminderChip.tsx`, `CommandDockCard.tsx`, `.ui-dnd-list-row:hover`, `.ui-dnd-table-scroll`, `.ui-dnd-quickcast-count` | `obsidian-brass.css`, `retro-crt.css`, `docs/UI_UX_STANDARDS.md`, `tests/console_ui_architecture.test.ts` |
-| **2. `ModalShell` `fullHeight` & Content-Adaptive `SplitPane` / `.ui-dnd-wizard-stage`** (`ModalShell.tsx`, `primitives.css`, `RulesetSelectModal.tsx`, `CampaignSelectModal.tsx`, `dnd35e.css`) | `RulesetSelectModal` & `CampaignSelectModal` passing `fullHeight` + `size="xl"` + `leftWidth="minmax(320px, max-content)"`; `DnD35eCharBuilderModal` & `DnD35eLevelUpModal` stages | All 5 D&D 3.5e Character Builder steps (`Race/Abilities`, `Class`, `Skills`, `Feats`, `Summary`) and Level-Up steps | Other `ModalShell` consumers (`GameOverModal`, `HelpModal`, `SettingsModal`) remain unaffected because `fullHeight` is opt-in |
-| **3. Class `featureDetails` Label Resolution & Validator Check** (`CharBuilderClassStep.tsx`, `DnD35eLevelUpClassStep.tsx`, `class_race_validator.ts`) | `public/data/rulesets/dnd35e/classes/*.json` (`progression[].features`, `featureDetails`, `acfSwaps`) | `CharBuilderClassStep` progression preview & ACF cards; `DnD35eLevelUpClassStep` progression preview & ACF cards; `bun run scripts/run-validator.ts` | `systemContent.feats` fallback lookup for bonus feat progression entries (`fighter_bonus_feat`, `wizard_bonus_feat`) |
-| **4. HUD Single-Row `End Turn`, Compact Chronicle Log Tabs & Unified `Pack [I]` Dock Command** (`BottomActionDock.tsx`, `hud.css`, `CommandDockCard.tsx`, `dnd35e_ui_registration.tsx`) | `dnd35eUIDefinition.dockCommands` (consolidating `dnd35e_sheet` + `dnd35e_inventory` into a single `Pack [I]` dock entry while preserving `C` and `I` keyboard commands); `CommandDockCard` deduplicating Console `dock-btn-inventory` when cartridge provides `dnd35e:inventory` / `Pack` | `CommandDockCard` DOM buttons; `BottomActionDock` hotbar row layout; `ChronicleLogCard` tab strip | `classic_ui_registration.tsx` (retains Classic Dossier `[C]` + Console Pack `[I]`), `tests/input_scope_and_keymap.test.ts` |
-| **5. `"Inspect"` Card Rename & `RulesetContract.projectInspectStats`** (`TacticalScannerCard.tsx`, `inspect_tooltip.ts`, `ruleset.types.ts`, `dnd35e_ruleset.ts`) | Mouse hover / `Look` (`[X]`) reticle updates calling `buildInspectTooltip(state, ...)` | `TacticalScannerCard` HUD panel rendering `InspectTooltipDTO.sections`; `evaluateDnD35eEntityDAG` | `classicRulesetContract` (falls back cleanly to `HP`, `ATK`, `DEF` + `Patience`) |
-| **6. `Look` (`[X]`) + `Enter` Reticle Targeting & Extensible Interaction Reach** (`gameplay_input.ts`, `apply.system.ts`, `mouse_input.ts`, `ruleset.types.ts`, `dnd35e_ruleset.ts`) | Keyboard `action.verb_menu` (`Enter`/`m`), `combat.target_confirm` (`Enter` in `inspectMode`), `action.interact` (`e`), mouse right-click `openContextVerbMenuAtTile` | `getValidVerbsForTarget`, `processApplyIntent` reach check, `resolveActorInteractionReachTiles`, `dnd35eRulesetContract.resolveInteractionReachTiles` (`interaction_reach_tiles` StatModifier) | Existing reach probe tests (`tests/m156_durability_doors_spells_ecology.test.ts` for `pole_10ft`), door/trap interaction tests |
-| **7. `VerbMenuPopover` Valid-Only Filtering & Auto-Focused Fuzzy Search** (`VerbMenuPopover.tsx`, `apply.system.ts`, `modal_input.ts`, `input_scope_manager.ts`, `hud.css`) | `VerbMenuPopover` filtering to `option.valid`, auto-focusing search `<input>`, handling `ArrowUp`/`ArrowDown`/`Enter`/`Escape` | `InputScopeManager` `Escape` handling in `UIMode.VerbMenu` when text input is focused | `tests/companion_ai_commands.test.ts` (headless `handleModalKey` calls with `'1'`–`'9'`, `'Enter'`, `'Escape'`) |
-| **8. Milestone 167 D&D 3.5e Mechanics & Content Parity** (`dag_helpers.ts`, `ac_breakdown.ts`, `spell_cast_*.ts`, `turning_resolver.ts`, `public/data/rulesets/dnd35e/**/*.json`) | `feats/*.json`, `races/*.json`, `classes/*.json`, `spells/*.json`, `items/*.json` | `evaluateDnD35eEntityDAG`, `resolveDnD35eSpellCast`, `resolveTurnOrRebukeUndead`, `scripts/run-validator.ts` | Default campaign showcase entities & items (`public/data/campaigns/default/*.json`) |
+| Add `ROUNDS_PER_MINUTE`, `ROUNDS_PER_DAY` & `src/utils/duration.ts` | `world_clock.constants.ts` | `spell_duration.ts`, `VitalsCard.tsx`, `hud_alerts.ui.ts`, `inspect_tooltip.ts`, `DnD35eSheetOverviewCol.tsx`, `dnd35e_ui_projection.ts` | `docs/ssot/ssot_console.json`, `docs/SSOT_CONSOLE.md` |
+| Extend `ActiveStatusEffect` & `RulesetContract` (`ActiveEffectDisplayDTO`, `onStatusEffectExpired`, `projectActiveEffects`) | `dnd35e_ruleset.ts`, `applyStatusEffect`, `spell_cast_effects.ts` | `status-effect.system.ts`, `VitalsCard.tsx`, `hud_alerts.ui.ts`, `auto_pause_signals.ts`, `inspect_tooltip.ts`, `tactical_snapshot.ts`, `save.ts` | `classic` cartridge (`classic_stats.ts`, `classic_ui_adapter.ts` keep fallback path intact) |
+| $O(1)$ bulk advance & `hasPerTurnStatusActivity` (`status-effect.system.ts`, `world_time_skip.ts`) | `advanceWorldTimeBulk`, `advanceWorldTimeBulkAsync`, `executeEightHourRest` | `rest_recovery.ts`, `onStatusEffectExpired` triggers | `m153_rest_pressure_logistics.test.ts`, `unified_round_clock.test.ts` |
+| Polarity filtering (`hud_alerts.ui.ts`, `auto_pause_signals.ts`) | `applyStatusEffect`, `spell_cast_effects.ts` | `AlertsStack.tsx`, RTwP auto-pause checks | `tests/hud_rest_and_display_name.test.ts` |
+| Add optional `condition.duration` schema field + `spell_duration.ts` + cast registration & `appendTargetModifiers` fix | `spell_system.types.ts`, `executeDnD35eSpellCast`, `resolveDnD35eSpellItemEffect` | `StatusEffectsComponent`, `dndData.statModifiers`, `dndData.conditions`, `dnd35e_dag_adapter.ts` | `spell_duration.ts` registered in `docs/ssot/ssot_dnd35e.json` |
+| `getEquippedItemBonuses` (`equipDamageBonus`) + `weapon:magic` `'magic'` bypass + DAG status equivalence | `collectEquippedItemDAGContributions`, `dnd35e_dag_adapter.ts`, `semantic_tags_context.ts`, `semantic_tags.ts` | `resolveActorAttackRoutine`, `executeCombatStrikeExchange`, `DnD35eSheetOverviewCol` damage displays | Existing weapon/DR tests |
+| *Dispel Magic* CL check & synchronized cleanup (`spell_cast_units.ts`) | `dispel_magic` / `greater_dispel_magic` casts | `StatusEffectsComponent`, `dndData.statModifiers`, `dndData.conditions`, `syncDnD35eActorSpatialFootprint` | `dnd35e_m136_acf_mechanics.test.ts`, `dnd35e_phase21_primitives.test.ts` |
+| `activeAuras` on `ActiveSpellAuraContributions` + UI rendering (`BadgeProps.title`, `VitalsCard`, `inspect_tooltip`, `DnD35eSheetOverviewCol`, `dnd35e_ui_projection`) | `evaluateActiveSpellAuraContributions`, `projectDnD35eActiveEffects`, `dagResult` breakdowns | `TacticalScannerCard`, `DnD35eSheetModal`, HUD Zone 1 & Zone 3, Canvas pips | `console_ui_architecture.test.ts`, `docs/ARCHITECTURE.md`, `docs/MILESTONES.md` |
 
 ---
 
-## 2. Declarative Purity & Anti-Hardcoding Audit Table (`AGENTS.md` Rule 21)
+## 4. Declarative Purity & Anti-Hardcoding Audit Table (`AGENTS.md` Rule 21)
 
 | Behavior | Rejected Imperative Shortcut | Chosen Declarative Schema / JSON Mechanism | Passes "New Content Mod" Litmus Test? |
 | :--- | :--- | :--- | :--- |
-| **Class Feature Display Labels** (`aura`, `cleric_domains`, etc.) | Hardcoding a `FEATURE_LABELS: Record<string, string>` dictionary in `CharBuilderClassStep.tsx` | Look up `classDef.featureDetails[featureId]?.name ?? sys.feats[featureId]?.name` from Tier 3 JSON + enforce coverage in `class_race_validator.ts` | **Yes** — Campaign authors add new features in `classes/*.json` `featureDetails` without touching `.ts`/`.tsx`. |
-| **HUD `"Inspect"` Combat Stats per Ruleset** | Branching `if (state.campaign.rulesetId === 'dnd35e')` inside `src/rendering/inspect_tooltip.ts` | Optional `RulesetContract.projectInspectStats?(state, entityId)` method implemented by `dnd35eRulesetContract` | **Yes** — Any ruleset cartridge can project custom inspect stats via `RulesetContract`. |
-| **Extended Interaction Reach** (*Mage Hand*, 10-ft pole, reach creatures) | Branching `if (hasSpell('mage_hand') \|\| itemId === 'pole_10ft')` in `apply.system.ts` | Baseline `getEntitySpatialProfile(state, actorId).naturalReachTiles` + declarative item tag `REACH_PROBE_ITEM_TAG` + `RulesetContract.resolveInteractionReachTiles` reading `StatModifier` target `'interaction_reach_tiles'` | **Yes** — Any new spell, feat, or item in JSON can grant `target: 'interaction_reach_tiles'` without editing `.ts` code. |
-| **Command Dock `Pack [I]` Deduplication** | Checking `if (rulesetId === 'dnd35e')` inside `CommandDockCard.tsx` | Declarative deduplication in `CommandDockCard.tsx` suppressing Console `dock-btn-inventory` when any cartridge `dockCommands` entry binds key `'i'` or label `'Pack'` | **Yes** — Any cartridge can override or supplement Console dock commands declaratively. |
-| **Magic Item Spell Effects** (`potion_of_cure_light_wounds`, etc.) | Hardcoding `if (itemId === 'potion_of_cure_light_wounds')` in `effects.system.ts` | Declarative `effectId: "spell:cure_light_wounds"` routed generically through `resolveDnD35eSpellCast` | **Yes** — Any new potion, scroll, wand, or staff in JSON works automatically by referencing `"spell:<spell_id>"`. |
+| Spell duration parsing | `if (spell.id === 'divine_favor') return 10` | Generic formula parser (`parseSpellDurationTurns`) over `spell.duration` string + `metamagic.extend` | **Yes** — any new modded spell uses standard SRD duration notation |
+| Buff / debuff / mixed polarity | Hardcoded `BUFF_SPELL_IDS` / `DEBUFF_SPELL_IDS` `Set`s | Derived strictly from `StatModifier.value` signs, `condition` / `ability_harm` units, and `targetRole` | **Yes** — modded bundles auto-classify without `.ts` changes |
+| Instantaneous spell lingering conditions | `if (spell.id === 'color_spray') duration = 2` | Optional `duration` property on `'condition'` unit in `DnD35SpellEffectUnitSchema` + named fallback constant | **Yes** — modders set `condition` unit `duration` directly in JSON |
+| Weapon `DR/magic` bypass from buffs | `if (hasSpell('magic_weapon')) addBypass('magic')` | Generic `grantedTags` projection (`'weapon:magic'`) from `ActiveStatusEffect` onto `selfTags` -> `bypassTags` | **Yes** — any spell/aura/feat emitting `'weapon:magic'` grants `'magic'` bypass |
+| Overlapping spell condition removal | Unconditionally deleting condition ID on expiry | Reference-counting check across remaining `StatusEffectsComponent` entries sharing `linkedConditionId` | **Yes** — works identically for any custom spell pairing |
+| HUD alert & auto-pause gating | Checking hardcoded spell/status names | Generic `polarity === 'debuff'` / `campaign.status[id]?.detrimental` predicate | **Yes** — works for all modded statuses and dynamic spells |
+| Spatial aura & overlay UI projection | Separate UI loops per spell or form type | Aggregated in `evaluateActiveSpellAuraContributions().activeAuras` & `PropertyOverlayComponent` -> `ActiveEffectDisplayDTO` | **Yes** — any new aura spell or form overlay displays automatically |
 
 ---
 
-## 3. Detailed Step-by-Step Implementation Plan & Code Diffs — Milestone 166
-
-### Step 166.1: Parchment Theme Naming, Dark Leather Keycap Contrast & D&D 3.5e Hover/Table Surfaces
-
-#### 1. `src/rendering/ui/menus/SettingsModal.tsx`
-Rename `'Warm Tactical Parchment'` to `'Parchment'`:
-```diff
- const THEME_OPTIONS: ReadonlyArray<SelectOption> = [
-   { value: 'auto', label: 'Auto (Default / Match Game System)' },
-   { value: 'obsidian-brass', label: 'Obsidian & Brass (Classic Dark)' },
--  { value: 'parchment', label: 'Warm Tactical Parchment' },
-+  { value: 'parchment', label: 'Parchment' },
-   { value: 'retro-crt', label: 'Retro Phosphor CRT' }
- ];
-```
-
-#### 2. `src/styles/tokens.css`, `src/styles/themes/parchment.css` & `src/styles/primitives.css`
-Define semantic `--ui-kbd-bg`, `--ui-kbd-ink`, and `--ui-kbd-border` tokens so `.ui-kbd` renders as Dark Leather (`#2a241e`) with high-contrast Cream Text (`#f5ebd9`) and a warm leather border (`#5c4730`) in Parchment while preserving Obsidian & Brass and Retro CRT:
-
-In `src/styles/tokens.css`:
-```diff
-   --ui-btn-primary-border: var(--ui-border-accent);
-   --ui-btn-primary-ink: var(--ui-accent-primary-ink);
-   --ui-btn-primary-shadow: none;
-+
-+  /* Keycap (<kbd>) Surface & Ink Defaults */
-+  --ui-kbd-bg: var(--ui-bg-socket);
-+  --ui-kbd-ink: var(--ui-ink-heading);
-+  --ui-kbd-border: var(--ui-border-strong);
-```
-
-In `src/styles/themes/parchment.css`:
-```diff
-   --ui-btn-primary-border: var(--ui-border-accent);
-   --ui-btn-primary-ink: var(--ui-accent-primary-ink);
-   --ui-btn-primary-shadow: none;
-+  --ui-kbd-bg: #2a241e;
-+  --ui-kbd-ink: #f5ebd9;
-+  --ui-kbd-border: #6e5536;
-```
-
-In `src/styles/primitives.css`:
-```diff
- .ui-kbd {
-   display: inline-flex;
-   align-items: center;
-   justify-content: center;
-   min-width: 1.4em;
-   padding: 0.12rem 0.38rem;
-   border-radius: var(--ui-radius-sm);
--  border: 1px solid var(--ui-border-strong);
--  background: var(--ui-bg-socket);
--  color: var(--ui-ink-heading);
-+  border: 1px solid var(--ui-kbd-border);
-+  background: var(--ui-kbd-bg);
-+  color: var(--ui-kbd-ink);
-   font-family: var(--ui-font-mono);
-   font-size: var(--ui-text-xs);
-   font-weight: 600;
-   line-height: 1.25;
-   box-shadow: inset 0 -1px 0 var(--ui-border-subtle);
- }
-```
-
-#### 3. `src/styles/views/dnd35e.css`
-Fix `--ui-bg-canvas` leaks on `.ui-dnd-table-scroll`, `.ui-dnd-quickcast-count`, and `.ui-dnd-list-row:hover:not(:disabled)`:
-```diff
- /* ---------- Tables (Skills, Progression, Companions) ---------- */
- .ui-dnd-table-scroll {
-   overflow-y: auto;
-   max-height: 280px;
-   border: 1px solid var(--ui-border-subtle);
-   border-radius: var(--ui-radius-sm);
--  background: var(--ui-bg-canvas);
-+  background: var(--ui-bg-panel-alt);
- }
-...
- .ui-dnd-quickcast-count {
-   padding: 1px 5px;
-   border-radius: var(--ui-radius-sm);
--  background: var(--ui-bg-canvas);
-+  background: var(--ui-bg-panel-alt);
-   font-family: var(--ui-font-mono);
-   font-weight: 700;
-   color: var(--ui-accent-primary);
- }
-...
- .ui-dnd-list-row:hover:not(:disabled) {
-   border-color: var(--ui-border-strong);
--  background: var(--ui-bg-canvas);
-+  background: var(--ui-bg-hover);
- }
-```
-
----
-
-### Step 166.2: Full-Height Selection Modals & Content-Adaptive Left Columns
-
-#### 1. `src/rendering/ui/primitives/ModalShell.tsx` & `src/styles/primitives.css`
-Add opt-in `fullHeight?: boolean | undefined` to `ModalShellProps`:
-```diff
- export interface ModalShellProps {
-   readonly title: string;
-   readonly subtitle?: string | undefined;
-   readonly isOpen?: boolean | undefined;
-   readonly size?: ModalSize | undefined;
-+  readonly fullHeight?: boolean | undefined;
-   readonly layer?: ModalLayer | undefined;
-```
-```diff
- export function ModalShell({
-   title,
-   subtitle,
-   isOpen = true,
-   size = 'md',
-+  fullHeight = false,
-   layer = 'modal',
-```
-```diff
--  const modalClasses = ['ui-modal', size !== 'md' ? `ui-modal--${size}` : '', className ?? '']
-+  const modalClasses = [
-+    'ui-modal',
-+    size !== 'md' ? `ui-modal--${size}` : '',
-+    fullHeight ? 'ui-modal--full-height' : '',
-+    className ?? ''
-+  ]
-     .filter(Boolean)
-     .join(' ');
-```
-
-In `src/styles/primitives.css`:
-```diff
- .ui-modal--xl {
-   width: min(96vw, 1240px);
- }
-+
-+.ui-modal--full-height {
-+  height: 90vh;
-+}
-```
-
-#### 2. `src/rendering/ui/menus/RulesetSelectModal.tsx` & `src/rendering/ui/menus/CampaignSelectModal.tsx`
-Enable `size="xl"`, `fullHeight`, and content-adaptive `leftWidth="minmax(320px, max-content)"`:
-
-In `src/rendering/ui/menus/RulesetSelectModal.tsx`:
-```diff
-   return (
-     <ModalShell
-       title="Choose Game System"
-       subtitle="Select the ruleset and combat system for your adventure"
--      size="lg"
-+      size="xl"
-+      fullHeight
-       onClose={(): void => returnToMainMenu()}
-```
-```diff
-       <SplitPane
--        leftWidth="280px"
-+        leftWidth="minmax(320px, max-content)"
-         left={
-```
-
-In `src/rendering/ui/menus/CampaignSelectModal.tsx`:
-```diff
-   return (
-     <ModalShell
-       title="Select Campaign"
-       subtitle={`System: ${activeRuleset.metadata.badgeIcon} ${activeRuleset.metadata.name}`}
--      size="lg"
-+      size="xl"
-+      fullHeight
-       onClose={(): void => openRulesetSelectMenu()}
-```
-```diff
-       <SplitPane
--        leftWidth="280px"
-+        leftWidth="minmax(320px, max-content)"
-         left={
-```
-
-#### 3. Content-Adaptive Left Pane in D&D 3.5e Character Creation & Level-Up (`src/styles/views/dnd35e.css`)
-Make the left column of `.ui-dnd-wizard-stage` adapt to its content (`minmax(280px, max-content)`) with a sensible `max-width: 420px` ceiling so pure selection lists (`Race`, `Class`) hug their content while the right detail column (`minmax(0, 1fr)`) receives the bulk of the modal width:
-```diff
- .ui-dnd-wizard-stage {
-   display: grid;
--  grid-template-columns: minmax(320px, 1.15fr) minmax(260px, 0.85fr);
-+  grid-template-columns: minmax(280px, max-content) minmax(0, 1fr);
-   gap: var(--ui-space-3);
-   min-height: 0;
-   flex: 1;
- }
-+
-+.ui-dnd-wizard-stage > .ui-dnd-wizard-pane:first-child {
-+  max-width: 420px;
-+}
-```
-
----
-
-### Step 166.3: Resolve Class Feature Labels from `featureDetails` / `feats` & Enforce in Validator
-
-#### 1. `src/rendering/ui/cartridges/dnd35e/CharBuilderClassStep.tsx` & `src/rendering/ui/cartridges/dnd35e/DnD35eLevelUpClassStep.tsx`
-Add a pure helper `resolveClassFeatureLabel(featureId: string, activeCls: DnD35ClassDefinition, sys: DnD35SystemContent): string` returning `activeCls.featureDetails[featureId]?.name ?? sys.feats[featureId]?.name ?? featureId`:
-
-In `src/rendering/ui/cartridges/dnd35e/CharBuilderClassStep.tsx`:
-```diff
-+function resolveClassFeatureLabel(
-+  featureId: string,
-+  activeCls: DnD35ClassDefinition,
-+  sys: DnD35SystemContent
-+): string {
-+  return activeCls.featureDetails[featureId]?.name ?? sys.feats[featureId]?.name ?? featureId;
-+}
-```
-```diff
-             <div className="ui-dnd-card">
-               {activeCls.progression.slice(0, 5).map((row) => {
--                const featsStr = row.features.length > 0 ? ` [${row.features.join(', ')}]` : '';
-+                const featureLabels = row.features.map((fId) => resolveClassFeatureLabel(fId, activeCls, sys));
-+                const featsStr = featureLabels.length > 0 ? ` [${featureLabels.join(', ')}]` : '';
-                 return (
-                   <div key={row.level} className="ui-dnd-card__sub ui-dnd-mono">
-                     {`Lv ${row.level}: BAB +${row.bab} | Fort +${row.fortSave}, Ref +${row.refSave}, Will +${row.willSave}${featsStr}`}
-                   </div>
-                 );
-               })}
-             </div>
-```
-```diff
-+                      const replacesLabel = resolveClassFeatureLabel(acf.replacesFeature, activeCls, sys);
-+                      const grantedLabel = resolveClassFeatureLabel(acf.grantedFeature, activeCls, sys);
-                       return (
-                         <button
-...
-                           <span>
--                            {`${isChecked ? '☑' : '☐'} [ACF] ${acf.name} (Replaces ${acf.replacesFeature} → ${acf.grantedFeature})${reqSuffix}`}
-+                            {`${isChecked ? '☑' : '☐'} [ACF] ${acf.name} (Replaces ${replacesLabel} → ${grantedLabel})${reqSuffix}`}
-                           </span>
-                         </button>
-                       );
-```
-
-In `src/rendering/ui/cartridges/dnd35e/DnD35eLevelUpClassStep.tsx`:
-```diff
-           <div className="ui-dnd-card__sub">
--            {`Features: ${rowDef?.features && rowDef.features.length > 0 ? rowDef.features.join(', ') : 'None'}`}
-+            {`Features: ${
-+              rowDef?.features && rowDef.features.length > 0
-+                ? rowDef.features
-+                    .map((fId) => activeCls.featureDetails[fId]?.name ?? sys.feats[fId]?.name ?? fId)
-+                    .join(', ')
-+                : 'None'
-+            }`}
-           </div>
-```
-```diff
-+                const replacesLabel =
-+                  activeCls.featureDetails[acf.replacesFeature]?.name ??
-+                  sys.feats[acf.replacesFeature]?.name ??
-+                  acf.replacesFeature;
-+                const grantedLabel =
-+                  activeCls.featureDetails[acf.grantedFeature]?.name ??
-+                  sys.feats[acf.grantedFeature]?.name ??
-+                  acf.grantedFeature;
-                 return (
-                   <button
-...
-                     <span>
--                      {`${isChecked ? '☑' : '☐'} [ACF] ${acf.name} (Replaces ${acf.replacesFeature} → ${acf.grantedFeature})`}
-+                      {`${isChecked ? '☑' : '☐'} [ACF] ${acf.name} (Replaces ${replacesLabel} → ${grantedLabel})`}
-                     </span>
-                   </button>
-```
-
-#### 2. `src/rulesets/dnd35e/validation/class_race_validator.ts`
-Validate that every feature ID in `classDef.progression[].features` exists in `classDef.featureDetails` or `sys.feats`:
-```diff
-       for (const feat of row.features) {
-         grantedFeatures.add(feat);
-+        const hasDetail = classDef.featureDetails && classDef.featureDetails[feat] !== undefined;
-+        const hasFeat = sys.feats && sys.feats[feat] !== undefined;
-+        if (!hasDetail && !hasFeat) {
-+          errors.push({
-+            path: `systemContent.classes.${classKey}.progression[${i}].features`,
-+            message: `Class "${classKey}" level ${row.level} grants feature "${feat}" which is missing from both class featureDetails and systemContent.feats.`,
-+            severity: 'error'
-+          });
-+        }
-       }
-```
-
----
-
-### Step 166.4: HUD Polish — Single-Row `End Turn`, Compact Chronicle Log Tabs & Unified `Pack [I]` Dock Command
-
-#### 1. `src/styles/views/hud.css` & `src/rendering/ui/hud/BottomActionDock.tsx`
-Keep `End Turn` on the same row as the hotkeys and make the Chronicle Log filter tabs fit inside the `280px` right column without horizontal scrollbars:
-
-In `src/styles/views/hud.css`:
-```diff
-+.ui-hud-card .ui-tabs__list {
-+  gap: 2px;
-+  overflow-x: hidden;
-+}
-+
-+.ui-hud-card .ui-tabs__tab {
-+  flex: 1 1 0;
-+  padding: 4px 6px;
-+  font-size: var(--ui-text-xs);
-+  text-align: center;
-+  white-space: nowrap;
-+}
-```
-```diff
- /* --- Bottom Action Dock --- */
- .ui-bottom-dock {
-   align-self: center;
-   display: flex;
-   flex-direction: column;
-   gap: 6px;
-   padding: 8px var(--ui-space-3);
-   background: var(--ui-surface-glass);
-   backdrop-filter: blur(var(--ui-glass-blur));
-   border: 1px solid var(--ui-border-accent);
-   border-radius: var(--ui-radius-lg);
-   box-shadow: var(--ui-shadow-modal);
--  max-width: min(860px, 94vw);
-+  max-width: min(960px, 96vw);
- }
-```
-```diff
- .ui-hotbar-row {
-   display: flex;
-   align-items: center;
-   gap: 6px;
--  flex-wrap: wrap;
-+  flex-wrap: nowrap;
- }
- 
- .ui-hotbar-grid {
-   display: grid;
--  grid-template-columns: repeat(12, minmax(52px, 1fr));
-+  grid-template-columns: repeat(12, minmax(44px, 1fr));
-   gap: 4px;
-   flex: 1;
-+  min-width: 0;
- }
-```
-
-#### 2. `src/rendering/ui/cartridges/dnd35e/dnd35e_ui_registration.tsx` & `src/rendering/ui/hud/CommandDockCard.tsx`
-Remove the separate `dnd35e_sheet` (`Sheet [C]`) button from `dnd35eUIDefinition.dockCommands` so D&D 3.5e only registers `Pack [I]` (`dnd35e_inventory`, opening `character_sheet`), and deduplicate Console's `dock-btn-inventory` in `CommandDockCard.tsx` when the active cartridge provides its own `Pack` / `i` dock command:
-
-In `src/rendering/ui/cartridges/dnd35e/dnd35e_ui_registration.tsx`:
-```diff
-   dockCommands: [
--    {
--      id: 'dnd35e_sheet',
--      commandId: 'dnd35e:sheet',
--      label: 'Sheet',
--      icon: '📜',
--      modalId: 'character_sheet',
--      defaultKey: 'c'
--    },
-     {
-       id: 'dnd35e_inventory',
-       commandId: 'dnd35e:inventory',
-       label: 'Pack',
-       icon: '🎒',
-       modalId: 'character_sheet',
-       defaultKey: 'i'
-     },
-```
-*(Note: `dnd35e:sheet` remains in `dnd35eUIDefinition.commands` bound to `'c'`, and in `src/core/input/shortcut_input.ts` / `modal_input.ts` we ensure both `dnd35e:sheet` (`c`) and `dnd35e:inventory` (`i`) toggle `character_sheet` via keyboard!)*
-
-Let's check `src/core/input/shortcut_input.ts` lines 100–170 to make sure `dnd35e:sheet` (`c`) still works if it's in `commands` rather than `dockCommands`, or keep `dnd35e:sheet` routed cleanly. In `CommandDockCard.tsx`:
-```diff
-   const cartridgeCommands = (cartridgeUI?.dockCommands ?? []).filter(
-     (cmd) => !cmd.isAvailable || cmd.isAvailable(state, playerId)
-   );
-+  const cartridgeOverridesInventory = cartridgeCommands.some(
-+    (cmd) => cmd.defaultKey.toLowerCase() === 'i' || cmd.label === 'Pack'
-+  );
-+  const consoleDockCommands = cartridgeOverridesInventory
-+    ? DOCK_COMMANDS.filter((spec) => spec.commandId !== 'panel.inventory')
-+    : DOCK_COMMANDS;
-```
-And render `consoleDockCommands.map(...)` instead of `DOCK_COMMANDS.map(...)`!
-
----
-
-### Step 166.5: Rename `"Tactical Scanner"` to `"Inspect"` & Add `RulesetContract.projectInspectStats`
-
-#### 1. `src/rendering/ui/hud/TacticalScannerCard.tsx`
-Rename `"Tactical Scanner"` to **`"Inspect"`**:
-```diff
-   return (
-     <section
-       className="ui-hud-card ui-hud-zone"
-       data-hud-zone="3"
-       data-hud-focused={isHudFocused ? 'true' : undefined}
--      aria-label="Tactical Scanner"
-+      aria-label="Inspect"
-     >
-       <div className="ui-hud-card__header">
--        <h3 className="ui-hud-card__title">Tactical Scanner</h3>
-+        <h3 className="ui-hud-card__title">Inspect</h3>
-         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-           <Badge tone={inspectTooltip?.active ? 'accent' : 'neutral'}>
-             {firstHeader ? firstHeader.value.slice(0, 12) : 'IDLE'}
-           </Badge>
-           <IconButton
--            ariaLabel={folded ? 'Expand Tactical Scanner' : 'Fold Tactical Scanner'}
-+            ariaLabel={folded ? 'Expand Inspect' : 'Fold Inspect'}
-             onClick={(): void => uiStore.toggleHudFolded('scanner')}
-           >
-```
-
-#### 2. `src/types/ruleset.types.ts`, `src/rendering/inspect_tooltip.ts` & `src/rulesets/dnd35e/dnd35e_ruleset.ts`
-Add `projectInspectStats` to `RulesetContract`:
-
-In `src/types/ruleset.types.ts`:
-```diff
-+  /**
-+   * Optional cartridge hook to project ruleset-native combat stats into the HUD Inspect panel
-+   * (e.g., D&D 3.5e HP, Full/Touch/Flat-Footed AC, BAB, and Fort/Ref/Will saves) instead of Classic ATK/DEF.
-+   */
-+  readonly projectInspectStats?: (
-+    state: GameState,
-+    targetEntityId: EntityId
-+  ) => ReadonlyArray<{
-+    readonly label: string;
-+    readonly value: string;
-+    readonly color?: string | undefined;
-+  }>;
-```
-
-In `src/rendering/inspect_tooltip.ts`:
-```diff
- function appendEntityComponentSections(state: GameState, entityId: EntityId, sections: InspectSectionDTO[]): void {
-   const fighter = getComponent(state, entityId, ComponentType.Fighter) as FighterComponent | undefined;
-   if (fighter) {
--    const stats = getEffectiveStats(state, entityId);
--    sections.push({ type: 'stat', label: 'HP', value: `${fighter.hp}/${stats.maxHp}` });
--    sections.push({ type: 'stat', label: 'ATK', value: `${stats.attack}` });
--    sections.push({ type: 'stat', label: 'DEF', value: `${stats.defense}` });
-+    const activeRuleset = getActiveRuleset(state);
-+    const customStats = activeRuleset.projectInspectStats?.(state, entityId);
-+    if (customStats && customStats.length > 0) {
-+      for (const stat of customStats) {
-+        sections.push({
-+          type: 'stat',
-+          label: stat.label,
-+          value: stat.value,
-+          ...(stat.color !== undefined ? { color: stat.color } : {})
-+        });
-+      }
-+    } else {
-+      const stats = getEffectiveStats(state, entityId);
-+      sections.push({ type: 'stat', label: 'HP', value: `${fighter.hp}/${stats.maxHp}` });
-+      sections.push({ type: 'stat', label: 'ATK', value: `${stats.attack}` });
-+      sections.push({ type: 'stat', label: 'DEF', value: `${stats.defense}` });
-+    }
-   }
-```
-
-In `src/rulesets/dnd35e/dnd35e_ruleset.ts`:
-```ts
-function formatSigned(val: number): string {
-  return val >= 0 ? `+${val}` : `${val}`;
-}
-
-function projectDnD35eInspectStats(
-  state: GameState,
-  targetEntityId: EntityId
-): ReadonlyArray<{ readonly label: string; readonly value: string; readonly color?: string | undefined }> {
-  const fighter = getComponent(state, targetEntityId, ComponentType.Fighter) as FighterComponent | undefined;
-  if (!fighter) return [];
-  const stats = computeDnD35eEffectiveStats(state, targetEntityId);
-  const dag = evaluateDnD35eEntityDAG(state, targetEntityId);
-  if (!dag) {
-    return [
-      { label: 'HP', value: `${fighter.hp}/${stats.maxHp}` },
-      { label: 'AC', value: `${DND35E_BASE_AC + stats.defense}` },
-      { label: 'BAB', value: formatSigned(stats.attack) }
-    ];
-  }
-  const { acBreakdown, saves, bab } = dag.dagResult;
-  return [
-    { label: 'HP', value: `${fighter.hp}/${stats.maxHp}` },
-    {
-      label: 'AC',
-      value: `${acBreakdown.fullAC} (T ${acBreakdown.touchAC} / FF ${acBreakdown.flatFootedAC})`
-    },
-    { label: 'BAB', value: formatSigned(bab) },
-    {
-      label: 'Saves',
-      value: `F ${formatSigned(saves.fort)} / R ${formatSigned(saves.ref)} / W ${formatSigned(saves.will)}`
-    }
-  ];
-}
-```
-
----
-
-### Step 166.6: `Look` (`[X]`) + `Enter` Reticle Targeting & Extensible Interaction Reach
-
-#### 1. `src/core/input/gameplay_input.ts`
-Fix both `combat.target_confirm` (`Enter` while in `TargetingInspectScope`) and `action.verb_menu` (`Enter`/`V` in `WorldGameplayScope`) so pressing `Enter` while `inspectMode.active === true` opens the verb menu / interacts with `(inspectMode.x, inspectMode.y)` instead of the player's own position:
-```diff
-+  const isInspecting = currentState.inspectMode?.active === true;
-+  const inspectMode = currentState.inspectMode;
-+
-   if (isTargeting && targeting !== undefined && isCommandMatched(event, 'combat.target_confirm')) {
-...
-     return true;
-   }
- 
-+  if (isInspecting && inspectMode !== undefined && isCommandMatched(event, 'combat.target_confirm')) {
-+    event.preventDefault();
-+    interactWithTile(currentState, playerEntityId, inspectMode.x, inspectMode.y);
-+    return true;
-+  }
-+
-   if (isTargeting && targeting !== undefined && isCommandMatched(event, 'action.verb_menu')) {
-     event.preventDefault();
-     handleSmartInteraction(currentState, playerEntityId, { type: 'tile', x: targeting.x, y: targeting.y });
-     return true;
-   }
- 
-+  if (isInspecting && inspectMode !== undefined && isCommandMatched(event, 'action.verb_menu')) {
-+    event.preventDefault();
-+    interactWithTile(currentState, playerEntityId, inspectMode.x, inspectMode.y);
-+    return true;
-+  }
-```
-And in the fallback `if (isCommandMatched(event, 'action.verb_menu'))` block at lines 245–251:
-```diff
-   if (isCommandMatched(event, 'action.verb_menu')) {
-     event.preventDefault();
-+    if (inspectMode?.active === true) {
-+      interactWithTile(currentState, playerEntityId, inspectMode.x, inspectMode.y);
-+      return true;
-+    }
-     const position = getComponent(currentState, playerEntityId, ComponentType.Position);
-     if (position === undefined) return false;
-     interactWithTile(currentState, playerEntityId, position.x, position.y);
-     return true;
-   }
-```
-
-#### 2. Extensible Physical/Touch Interaction Reach (`src/types/ruleset.types.ts`, `src/systems/apply.system.ts`, `src/rulesets/dnd35e/dnd35e_ruleset.ts`)
-- Add optional `resolveInteractionReachTiles` hook to `RulesetContract` (`src/types/ruleset.types.ts`):
-  ```ts
-  /**
-   * Optional cartridge hook to adjust an actor's effective interaction reach (in Chebyshev footprint tiles)
-   * for a physical/touch verb (e.g., applying `interaction_reach_tiles` StatModifiers from Mage Hand or reach effects).
-   */
-  readonly resolveInteractionReachTiles?: (
-    state: GameState,
-    actorId: EntityId,
-    verb: Verb,
-    baseReachTiles: number,
-    toolEntityId?: EntityId
-  ) => number;
-  ```
-- Implement `resolveDnD35eInteractionReachTiles` in `src/rulesets/dnd35e/dnd35e_ruleset.ts`:
-  ```ts
-  function resolveDnD35eInteractionReachTiles(
-    state: GameState,
-    actorId: EntityId,
-    _verb: Verb,
-    baseReachTiles: number
-  ): number {
-    const dag = evaluateDnD35eEntityDAG(state, actorId);
-    if (!dag) return baseReachTiles;
-    const bonusReach = resolveTypedModifiers(dag.allModifiers, 'interaction_reach_tiles', {
-      selfTags: dag.selfTags
-    });
-    return Math.max(baseReachTiles, baseReachTiles + bonusReach);
-  }
-  ```
-- In `src/systems/apply.system.ts`, add `TOUCH_INTERACTION_VERBS`, `resolveActorInteractionReachTiles`, and `isTargetWithinInteractionReach`:
-  - `TOUCH_INTERACTION_VERBS`: `'open'`, `'close'`, `'lock'`, `'unlock'`, `'kick'`, `'search'`, `'disarm'`, `'harvest'`, `'pray'`, `'apply'`, `'dip'`, `'ignite'`, `'eat'`, `'drink'`, `'heal'`, `'feint'`.
-  - When `target` is `{ type: 'self' }` or an item already in `actorId`'s `InventoryComponent`, distance is `0` (always within reach).
-  - Otherwise, resolve the target's world coordinates + footprint `(tx, ty, tw, th)` and actor's footprint `(ax, ay, aw, ah)` and compute `distanceTiles = computeRectDistanceTiles(ax, ay, aw, ah, tx, ty, tw, th)`.
-  - Base reach is `Math.max(1, getEntitySpatialProfile(state, actorId).naturalReachTiles)`.
-  - If `verb === 'search' || verb === 'disarm'` and the actor carries or uses a tool with `REACH_PROBE_ITEM_TAG` (`'pole_10ft'`), base reach is `Math.max(baseReach, REACH_PROBE_MAX_RANGE_TILES)` (`2` tiles).
-  - Pass `baseReach` through `activeRuleset.resolveInteractionReachTiles?.(state, actorId, verb, baseReach, toolEntityId) ?? baseReach`.
-  - Filter out-of-reach physical verbs in `getValidVerbsForTarget` and guard `processApplyIntent` so attempting a touch verb on an out-of-reach target returns `{ state: addMessage(state, 'That is out of reach.', MessageLogCategory.System), success: false }`.
-
----
-
-### Step 166.7: `VerbMenuPopover` Valid-Only Filtering & Auto-Focused Fuzzy Finder
-
-#### 1. `src/rendering/ui/hud/VerbMenuPopover.tsx` & `src/styles/views/hud.css`
-- Filter options to **valid verbs only** (`gameState.verbMenu.verbOptions.filter((opt) => opt.valid)`).
-- Add a pure fuzzy matcher `scoreFuzzyVerbMatch(query: string, verb: string): number | null`:
-  - Empty query returns `0` (keeps original priority order).
-  - Prefix match scores `100 - verb.length`, substring match scores `75 - index`, ordered character subsequence match scores `50 - span`, non-match returns `null`.
-- Render an auto-focused `<input ref={searchInputRef} type="text" className="ui-input ui-verb-popover__search" placeholder="Type to filter actions..." />` above `.ui-verb-popover__list`.
-- Track `selectedIndex` in component state (clamped to `0 .. filteredOptions.length - 1`, resetting to `0` when `searchQuery` or `gameState.verbMenu.target` changes).
-- Handle keyboard navigation directly in the search input's `onKeyDown` (and container `onKeyDown`):
-  - `ArrowDown`: `event.preventDefault(); event.stopPropagation();` -> `setSelectedIndex((prev) => (prev + 1) % filteredOptions.length)`
-  - `ArrowUp`: `event.preventDefault(); event.stopPropagation();` -> `setSelectedIndex((prev) => (prev - 1 + filteredOptions.length) % filteredOptions.length)`
-  - `Enter`: `event.preventDefault(); event.stopPropagation();` -> execute `filteredOptions[selectedIndex]`
-  - `Escape`: `event.preventDefault(); event.stopPropagation();` -> `closeMenu()`
-- In `src/core/input/input_scope_manager.ts:185-191`, when `state.uiMode === UIMode.VerbMenu` and `isTextInput` is true, pressing `Escape` delegates to `handleModalKey(event, state, playerEntityId)` so a single `Escape` press closes `VerbMenuPopover` immediately instead of only blurring the search input.
-- In `src/styles/views/hud.css:418`:
-  ```diff
-  +.ui-verb-popover__search-wrap {
-  +  padding: 6px;
-  +  border-bottom: 1px solid var(--ui-border-subtle);
-  +  background: var(--ui-surface-sunken);
-  +}
-  +
-   .ui-verb-popover__list {
-     display: flex;
-     flex-direction: column;
-     padding: 4px;
-     gap: 2px;
-  +  max-height: 240px;
-  +  overflow-y: auto;
-   }
-  +
-  +.ui-verb-popover__item[data-highlighted='true'] {
-  +  background: var(--ui-surface-selected);
-  +  border-color: var(--ui-border-accent);
-  +}
-  ```
-
----
-
-## 4. Detailed Step-by-Step Implementation Plan — Milestone 167 (D&D 3.5e Mechanics & Content Data Audit)
-
-1. **Step 167.1 — Canonical StatModifier Target Wiring & Normalization**:
-   - Wire `saves_all`, `save_reflex`, and `save_fear` in `src/rulesets/dnd35e/dag/dag_helpers.ts`.
-   - Wire `ac_deflection` and `ac_insight` in `src/rulesets/dnd35e/dag/ac_breakdown.ts` and normalize JSON entries in `public/data/rulesets/dnd35e/spells/divine.json` & `feats/psionic.json`.
-   - Normalize `skill_hide` -> `skill:hide` and `skill_swim` -> `skill:swim` in `public/data/rulesets/dnd35e/races.json`.
-   - Wire `caster_level_check_vs_sr` in `src/rulesets/dnd35e/magic/spell_cast_helpers.ts` (`resolveSpellResistanceCheck`).
-   - Wire `effective_turning_level` in `src/rulesets/dnd35e/combat/turning_resolver.ts`.
-2. **Step 167.2 — Spontaneous Slot `maxDaily === 0` Guard & Cure-Spell Condition Cleanup**:
-   - In `src/rulesets/dnd35e/magic/spell_cast_helpers.ts:253`, change `if (maxDaily > 0 && used >= maxDaily)` to `if (maxDaily <= 0 || used >= maxDaily)`.
-   - In `src/rulesets/dnd35e/magic/spell_cast_effects.ts:249-256`, only push `unit.conditionId` when it is not `'none'` / `'heal_restoration'` and exists in `sysContent.conditions`.
-3. **Step 167.3 — Direct Spell Effect Unit Handlers & `spell_modifiers.ts` Pipeline Integration**:
-   - Connect `resolveEffectiveCasterLevel` and `resolveEffectiveSpellSaveDC` in `spell_cast_resolver.ts`.
-   - Connect `buildSummonedCreatureModifiers` in `spell_cast_units.ts`.
-   - Implement direct handlers for `quicken_cast_grant`, `retaliation_rider`, and `form_overlay` in `spell_cast_effects.ts`.
-4. **Step 167.4 — SRD Magic Item `effectId` Wiring, 39 Spell `effectUnits` Population & Modular `races/*.json`**:
-   - Wire `potion_of_cure_light_wounds`, `potion_of_bulls_strength`, `scroll_of_mage_armor`, `wand_of_magic_missile`, and `staff_of_fire` to their canonical D&D 3.5e spells.
-   - Populate `effectUnits` / `effectBundle` for the 39 SRD spells.
-   - Split `races.json` into modular `races/*.json` and retire unused root monolith shells.
-
----
-
-## 5. Verification Plan (`AGENTS.md` Phase 3)
-
-After executing each milestone:
-1. Run the 8-stage verification pipeline (`./verify.sh`):
-   - `[1/8]` `bun x tsc --noEmit`
-   - `[2/8]` `bun run format`
-   - `[3/8]` `bun run lint --fix`
-   - `[4/8]` `bun run lint:arch`
-   - `[5/8]` `bun run lint:deadcode`
-   - `[6/8]` `bun test` (including new unit tests for `projectInspectStats`, `resolveActorInteractionReachTiles`, `Look` + `Enter` reticle interaction, `VerbMenuPopover` fuzzy filtering, and class `featureDetails` validator parity)
-   - `[7/8]` `bun run build`
-   - `[8/8]` `bun run scripts/run-validator.ts`
-2. Re-verify the Cascading Effects Matrix and update `docs/MILESTONES.md`.
+**STOPPING HERE PER `AGENTS.md` RULE 5:** Please review [docs/implementation_plan.md](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/docs/implementation_plan.md) and confirm if you approve proceeding to implementation.

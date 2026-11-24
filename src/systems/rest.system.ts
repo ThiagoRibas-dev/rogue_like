@@ -4,7 +4,7 @@
  * simulation primitives for any RPG ruleset cartridge.
  */
 
-import { ROUNDS_PER_HOUR } from '../constants/world_clock.constants.ts';
+import { getTurnsPerHour } from '../utils/duration.ts';
 import { addComponent, getComponent, spawnEntity } from '../core/ecs.ts';
 import { rng } from '../core/rng.ts';
 import { getRuleset } from '../rulesets/registry.ts';
@@ -28,6 +28,7 @@ import { triggerActiveAreaRespawnIfDue } from './map/map_wake_respawn.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import {
   computeTurnsUntilPhase,
+  getEffectiveWorldClockConfig,
   formatWorldClockShort,
   getClockPhaseLabel,
   isActorThreatenedByVisibleHostiles,
@@ -544,7 +545,10 @@ export function executeWatchChunkedBulkRest(
     return advanceWorldTimeBulk(state, totalTurns, playerId, shouldInterrupt);
   }
 
-  const watchTurns = Math.max(1, pressure.watchDurationHours * ROUNDS_PER_HOUR);
+  const watchTurns = Math.max(
+    1,
+    Math.round(pressure.watchDurationHours * getTurnsPerHour(getEffectiveWorldClockConfig(state)))
+  );
   let nextState = state;
   let remaining = totalTurns;
   let totalAdvanced = 0;
@@ -603,7 +607,10 @@ export async function executeWatchChunkedBulkRestAsync(
     return advanceWorldTimeBulkAsync(state, totalTurns, playerId, onProgress, shouldInterrupt);
   }
 
-  const watchTurns = Math.max(1, pressure.watchDurationHours * ROUNDS_PER_HOUR);
+  const watchTurns = Math.max(
+    1,
+    Math.round(pressure.watchDurationHours * getTurnsPerHour(getEffectiveWorldClockConfig(state)))
+  );
   let nextState = state;
   let remaining = totalTurns;
   let totalAdvanced = 0;

@@ -12,7 +12,8 @@ import {
   type IdentityComponent,
   type PositionComponent,
   type RenderableComponent,
-  type StatusEffectsComponent
+  type StatusEffectsComponent,
+  type StatusEffectPolarity
 } from '../types/components.types.ts';
 import type { EntityId, GameState } from '../types/game-state.types.ts';
 import { getFactionRelation } from '../utils/faction.ts';
@@ -150,13 +151,20 @@ export function buildTacticalViewportData(
     const hpRatio = Math.max(0, Math.min(1, fighter.hp / maxHp));
     const attitude = resolveUnitAttitude(state, playerEntityId, entityId);
 
+    const PIP_COLORS: Readonly<Record<StatusEffectPolarity, string>> = {
+      buff: '#2ed573',
+      debuff: '#ff4757',
+      mixed: '#a855f7',
+      neutral: '#f1c40f'
+    };
     const statusComp = getComponent(state, entityId, ComponentType.StatusEffects) as StatusEffectsComponent | undefined;
     const statusColors: string[] = [];
     if (statusComp) {
       for (const effect of statusComp.activeEffects) {
         if (statusColors.length >= MAX_UNIT_STATUS_PIPS) break;
         const def = state.campaign.status[effect.effectId];
-        statusColors.push(def?.color ?? '#f1c40f');
+        const polarityColor = effect.polarity ? PIP_COLORS[effect.polarity] : undefined;
+        statusColors.push(effect.color ?? def?.color ?? polarityColor ?? '#f1c40f');
       }
     }
 

@@ -320,6 +320,9 @@ export function projectDnD35ActorSemanticTags(
       tags.add('condition:squeezing');
     }
   }
+  for (const grantedTag of situationalContext?.activeStatusGrantedTags ?? []) {
+    tags.add(grantedTag);
+  }
 
   if (situationalContext?.environmentType) {
     tags.add(`env:${situationalContext.environmentType}`);

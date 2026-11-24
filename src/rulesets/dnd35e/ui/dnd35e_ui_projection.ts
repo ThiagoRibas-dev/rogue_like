@@ -5,6 +5,9 @@
  */
 
 import { getComponent } from '../../../core/ecs.ts';
+import { getEffectiveWorldClockConfig } from '../../../systems/world_clock.system.ts';
+import { formatTurnDurationCompact } from '../../../utils/duration.ts';
+import { DND35E_DEFAULT_WORLD_CLOCK_CONFIG } from '../world_clock.ts';
 import {
   ComponentType,
   type EquipmentSlotInstance,
@@ -289,12 +292,19 @@ export function buildActorFeatureEntries(
     state && entityId !== undefined
       ? (getComponent(state, entityId, ComponentType.StatusEffects) as StatusEffectsComponent | undefined)
       : undefined;
-  for (const eff of status?.activeEffects ?? [])
+  const clock = state ? getEffectiveWorldClockConfig(state) : DND35E_DEFAULT_WORLD_CLOCK_CONFIG;
+  for (const eff of status?.activeEffects ?? []) {
+    const def = state?.campaign?.status?.[eff.effectId];
+    const label = eff.displayName ?? def?.name ?? eff.effectId.replace(/_/g, ' ');
+    const durLabel = formatTurnDurationCompact(eff.duration, eff.isPermanent, clock);
+    const description = eff.summary ?? def?.description;
     entries.push({
       id: eff.effectId,
-      name: `${eff.effectId} (${eff.duration}t)`,
+      name: `${label} (${durLabel})`,
       category: 'condition',
-      sourceLabel: 'Status'
+      sourceLabel: eff.polarity === 'buff' ? 'Buff' : eff.polarity === 'debuff' ? 'Debuff' : 'Status',
+      ...(description ? { description } : {})
     });
+  }
   return entries;
 }

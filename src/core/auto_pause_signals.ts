@@ -187,12 +187,15 @@ function detectDetrimentalStatus(
   if (playerEntityId === undefined) return undefined;
 
   const previousEffectIds = getActiveEffectIds(before, playerEntityId);
-  const currentEffectIds = getActiveEffectIds(after, playerEntityId);
+  const afterStatuses = getComponent(after, playerEntityId, ComponentType.StatusEffects) as
+    StatusEffectsComponent | undefined;
 
-  for (const effectId of currentEffectIds) {
-    if (previousEffectIds.has(effectId)) continue;
-    const definition = after.campaign.status[effectId];
-    if (definition !== undefined && definition.detrimental) return 'detrimental_status';
+  for (const eff of afterStatuses?.activeEffects ?? []) {
+    if (previousEffectIds.has(eff.effectId)) continue;
+    if (eff.polarity === 'debuff') return 'detrimental_status';
+    if (eff.polarity === undefined && after.campaign.status[eff.effectId]?.detrimental === true) {
+      return 'detrimental_status';
+    }
   }
 
   return undefined;

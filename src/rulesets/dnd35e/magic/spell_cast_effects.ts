@@ -3,9 +3,11 @@
  * Applies evaluated `DnD35SpellEffectUnit`s and top-level `effectBundle`s.
  */
 
-import { addComponent, getComponent, queryEntities } from '../../../core/ecs.ts';
+import { addComponent, getComponent, queryEntities, removeComponent } from '../../../core/ecs.ts';
 import { addFloatingText } from '../../../systems/damage.system.ts';
 import { addMessage, MessageLogCategory } from '../../../systems/message.system.ts';
+import { applyStatusEffect } from '../../../systems/status-effect.system.ts';
+import { getEffectiveWorldClockConfig } from '../../../systems/world_clock.system.ts';
 import {
   ComponentType,
   type DamageComponent,
@@ -21,7 +23,6 @@ import { isHostile } from '../../../utils/faction.ts';
 import { evaluateDnD35eEntityDAG } from '../cartridge/dnd35e_dag_adapter.ts';
 import { applyConditionWithEscalation } from '../combat/condition_registry.ts';
 import { evaluateDiceExpression } from '../math/dice.ts';
-import { revokeModifiersByPathPrefix } from '../modifiers/provenance.ts';
 import {
   measureFootprintToFootprintDistanceFt,
   syncDnD35eActorSpatialFootprint
@@ -43,6 +44,13 @@ import {
   materializeSpellUnitModifiers,
   materializeTopLevelSpellModifiers
 } from './spell_effects.ts';
+import {
+  classifyEffectPolarity,
+  EXTEND_METAMAGIC_DURATION_MULTIPLIER,
+  formatSpellModifiersSummary,
+  parseSpellDurationTurns,
+  POLARITY_COLORS
+} from './spell_duration.ts';
 
 const MIN_ABILITY_SCORE_DEFAULT = 1;
 const DEFAULT_FORM_ABILITY_SCORE = 10;
@@ -162,22 +170,46 @@ function appendTargetModifiers(
   state: GameState,
   targetId: EntityId,
   spellId: string,
+  castId: string,
   newModifiers: ReadonlyArray<StatModifier>
 ): GameState {
   if (newModifiers.length === 0) return state;
   const targetDnd = getDnD35EntityData(state, targetId);
   const existing = targetDnd.statModifiers ?? [];
-  const spellPrefix = `spell:${spellId}:`;
-  const cleaned = revokeModifiersByPathPrefix(existing, `spell:${spellId}`).filter(
-    (m) => !(m.sourcePath ?? m.sourceId).startsWith(spellPrefix)
-  );
+  const bareSpellRoot = `spell:${spellId}`;
+  const currentCastPrefix = `spell:${spellId}:${castId}`;
+  const incomingPaths = new Set(newModifiers.map((m) => m.sourcePath ?? m.sourceId));
+  const cleaned = existing.filter((m) => {
+    const path = m.sourcePath ?? m.sourceId;
+    if (incomingPaths.has(path)) return false;
+    const isThisSpell =
+      path === bareSpellRoot || path.startsWith(`${bareSpellRoot}:`) || path.startsWith(`${bareSpellRoot}/`);
+    if (!isThisSpell) return true;
+    return path === currentCastPrefix || path.startsWith(`${currentCastPrefix}/`);
+  });
   return setDnD35EntityData(state, targetId, {
     ...targetDnd,
     statModifiers: [...cleaned, ...newModifiers]
   });
 }
 
-function applySingleSpellUnit(ctx: ApplySpellEffectsContext, unit: DnD35SpellEffectUnit, saved: boolean): GameState {
+interface AppliedTargetSpellEffectsTracker {
+  readonly modifiers: StatModifier[];
+  readonly grantedTags: string[];
+  readonly appliedConditions: Array<{
+    readonly unitId: string;
+    readonly conditionId: string;
+    readonly unit: Extract<DnD35SpellEffectUnit, { type: 'condition' }>;
+  }>;
+  hasAbilityHarm: boolean;
+}
+
+function applySingleSpellUnit(
+  ctx: ApplySpellEffectsContext,
+  unit: DnD35SpellEffectUnit,
+  saved: boolean,
+  tracker: AppliedTargetSpellEffectsTracker
+): GameState {
   const { casterId, targetId, targetPos, spell, casterLevel, castId, metamagic, sysContent } = ctx;
   let runningState = ctx.state;
   const saveEffect = unit.savingThrow?.effect ?? spell.savingThrow?.effect ?? 'negates';
@@ -258,12 +290,12 @@ function applySingleSpellUnit(ctx: ApplySpellEffectsContext, unit: DnD35SpellEff
     }
 
     case 'stat_bundle': {
-      runningState = appendTargetModifiers(
-        runningState,
-        targetId,
-        spell.id,
-        materializeSpellUnitModifiers(spell, unit, casterLevel, castId)
-      );
+      const unitMods = materializeSpellUnitModifiers(spell, unit, casterLevel, castId);
+      tracker.modifiers.push(...unitMods);
+      for (const gTag of unit.effectBundle.grantedTags) {
+        if (!tracker.grantedTags.includes(gTag)) tracker.grantedTags.push(gTag);
+      }
+      runningState = appendTargetModifiers(runningState, targetId, spell.id, castId, unitMods);
       const clearsDrain = unit.effectBundle.ruleOverrides.some(
         (r) => r.ruleKey === 'clears_negative_levels_and_ability_drain' && r.value === true
       );
@@ -287,9 +319,14 @@ function applySingleSpellUnit(ctx: ApplySpellEffectsContext, unit: DnD35SpellEff
         }
         const abilityIdSet = new Set<string>(ALL_ABILITY_IDS);
         const existingMods = curDnd.statModifiers ?? [];
-        const cleanedMods = existingMods.filter(
-          (m) => !(m.origin === 'spell' && m.value < 0 && abilityIdSet.has(m.targetStat))
-        );
+        const removedPrefixes = new Set<string>();
+        const cleanedMods = existingMods.filter((m) => {
+          const shouldRemove = m.origin === 'spell' && m.value < 0 && abilityIdSet.has(m.targetStat);
+          if (shouldRemove && m.sourcePath) {
+            removedPrefixes.add(m.sourcePath.split('/').slice(0, 2).join('/'));
+          }
+          return !shouldRemove;
+        });
         if (cleanedMods.length !== existingMods.length) {
           restoredAnything = true;
         }
@@ -299,6 +336,25 @@ function applySingleSpellUnit(ctx: ApplySpellEffectsContext, unit: DnD35SpellEff
             abilityScores: nextAbilities as unknown as AbilityScoresRecord,
             statModifiers: cleanedMods
           });
+          if (removedPrefixes.size > 0) {
+            const statusComp = getComponent(runningState, targetId, ComponentType.StatusEffects) as
+              StatusEffectsComponent | undefined;
+            if (statusComp) {
+              const filteredStatuses = statusComp.activeEffects.filter((eff) => {
+                if (!eff.sourcePath || !removedPrefixes.has(eff.sourcePath)) return true;
+                const stillHasMods = cleanedMods.some((m) => (m.sourcePath ?? '').startsWith(eff.sourcePath!));
+                return stillHasMods || eff.linkedConditionId !== undefined || (eff.grantedTags?.length ?? 0) > 0;
+              });
+              if (filteredStatuses.length === 0) {
+                runningState = removeComponent(runningState, targetId, ComponentType.StatusEffects);
+              } else if (filteredStatuses.length !== statusComp.activeEffects.length) {
+                runningState = addComponent(runningState, targetId, {
+                  ...statusComp,
+                  activeEffects: filteredStatuses
+                });
+              }
+            }
+          }
           runningState = addMessage(
             runningState,
             `${spell.name} restores drained abilities and dispels negative levels.`,
@@ -323,13 +379,18 @@ function applySingleSpellUnit(ctx: ApplySpellEffectsContext, unit: DnD35SpellEff
         ? applyConditionWithEscalation(filtered, rawCondId as DnD35ConditionId, sysContent?.conditionEffects)
         : filtered;
       runningState = setDnD35EntityData(runningState, targetId, { ...targetDnd, conditions: nextConds });
+      if (isValidCondition) {
+        tracker.appliedConditions.push({ unitId: unit.unitId, conditionId: rawCondId, unit });
+      }
       const statusComp = getComponent(runningState, targetId, ComponentType.StatusEffects) as
         StatusEffectsComponent | undefined;
       if (statusComp && cureSet.size > 0) {
         const nextActive = statusComp.activeEffects.filter(
           (eff) => !cureSet.has(eff.effectId) && !(eff.effectId === 'poison' && cureSet.has('poisoned'))
         );
-        if (nextActive.length !== statusComp.activeEffects.length) {
+        if (nextActive.length === 0) {
+          runningState = removeComponent(runningState, targetId, ComponentType.StatusEffects);
+        } else if (nextActive.length !== statusComp.activeEffects.length) {
           runningState = addComponent(runningState, targetId, { ...statusComp, activeEffects: nextActive });
         }
       }
@@ -349,6 +410,8 @@ function applySingleSpellUnit(ctx: ApplySpellEffectsContext, unit: DnD35SpellEff
         value: -penalty,
         origin: 'spell'
       };
+      tracker.modifiers.push(mod);
+      tracker.hasAbilityHarm = true;
       return setDnD35EntityData(runningState, targetId, {
         ...targetDnd,
         statModifiers: [...(targetDnd.statModifiers ?? []), mod]
@@ -390,7 +453,8 @@ function applySingleSpellUnit(ctx: ApplySpellEffectsContext, unit: DnD35SpellEff
         origin: 'spell',
         ...(unit.condition !== undefined ? { condition: unit.condition } : {})
       };
-      runningState = appendTargetModifiers(runningState, targetId, spell.id, [quickenMod]);
+      tracker.modifiers.push(quickenMod);
+      runningState = appendTargetModifiers(runningState, targetId, spell.id, castId, [quickenMod]);
       return addMessage(
         runningState,
         `${spell.name} enables quickened casting up to spell level ${maxQuickenLevel}.`,
@@ -408,7 +472,8 @@ function applySingleSpellUnit(ctx: ApplySpellEffectsContext, unit: DnD35SpellEff
         origin: 'spell',
         ...(unit.condition !== undefined ? { condition: unit.condition } : {})
       };
-      return appendTargetModifiers(runningState, targetId, spell.id, [riderMod]);
+      tracker.modifiers.push(riderMod);
+      return appendTargetModifiers(runningState, targetId, spell.id, castId, [riderMod]);
     }
 
     case 'form_overlay': {
@@ -501,18 +566,27 @@ function applySingleSpellUnit(ctx: ApplySpellEffectsContext, unit: DnD35SpellEff
 }
 
 /**
- * Applies top-level `spell.effectBundle` and all evaluated `units` onto a single target entity.
+ * Applies top-level `spell.effectBundle` and all evaluated `units` onto a single target entity,
+ * registering timed/permanent spell buffs, debuffs, and conditions in `StatusEffectsComponent`.
  */
 export function applyResolvedSpellEffectsToTarget(ctx: ApplySpellEffectsContext): GameState {
   let runningState = ctx.state;
+  const tracker: AppliedTargetSpellEffectsTracker = {
+    modifiers: [],
+    grantedTags: [...(ctx.spell.effectBundle?.grantedTags ?? [])],
+    appliedConditions: [],
+    hasAbilityHarm: false
+  };
+
   const topMods = materializeTopLevelSpellModifiers(ctx.spell, ctx.castId);
   if (topMods.length > 0) {
-    runningState = appendTargetModifiers(runningState, ctx.targetId, ctx.spell.id, topMods);
+    tracker.modifiers.push(...topMods);
+    runningState = appendTargetModifiers(runningState, ctx.targetId, ctx.spell.id, ctx.castId, topMods);
   }
 
   for (const unit of ctx.units) {
     const saved = ctx.saveResultByUnitId[unit.unitId] === true;
-    runningState = applySingleSpellUnit({ ...ctx, state: runningState }, unit, saved);
+    runningState = applySingleSpellUnit({ ...ctx, state: runningState }, unit, saved, tracker);
   }
 
   if (ctx.units.length === 0 && ctx.spell.damageDice && !ctx.spell.effectBundle) {
@@ -526,6 +600,101 @@ export function applyResolvedSpellEffectsToTarget(ctx: ApplySpellEffectsContext)
       finalDmg,
       ctx.spell.damageType ?? 'untyped'
     );
+  }
+
+  const spellSourcePath = `spell:${ctx.spell.id}:${ctx.castId}`;
+  const isExtended = ctx.metamagic.extend === true;
+  const activeClock = getEffectiveWorldClockConfig(runningState);
+
+  if (tracker.modifiers.length > 0 || tracker.grantedTags.length > 0) {
+    const parsed = parseSpellDurationTurns(ctx.spell.duration, ctx.casterLevel, {
+      extend: isExtended,
+      isConditionOrBuffSpell: true,
+      clock: activeClock
+    });
+    if (parsed.isPermanent || parsed.durationTurns > 0) {
+      const singleCondId =
+        tracker.appliedConditions.length === 1 ? tracker.appliedConditions[0]!.conditionId : undefined;
+      const polarity = classifyEffectPolarity(tracker.modifiers, {
+        ...(singleCondId !== undefined ? { linkedConditionId: singleCondId } : {}),
+        hasAbilityHarm: tracker.hasAbilityHarm
+      });
+      const summary = formatSpellModifiersSummary(tracker.modifiers, {
+        grantedTags: tracker.grantedTags,
+        ...(singleCondId !== undefined ? { linkedConditionId: singleCondId } : {})
+      });
+      runningState = applyStatusEffect(
+        runningState,
+        ctx.targetId,
+        `spell:${ctx.spell.id}`,
+        parsed.isPermanent ? 1 : parsed.durationTurns,
+        ctx.casterId,
+        undefined,
+        {
+          displayName: ctx.spell.name,
+          ...(summary ? { summary } : {}),
+          polarity,
+          color: POLARITY_COLORS[polarity],
+          sourcePath: spellSourcePath,
+          casterLevel: ctx.casterLevel,
+          ...(singleCondId !== undefined ? { linkedConditionId: singleCondId } : {}),
+          ...(tracker.grantedTags.length > 0 ? { grantedTags: tracker.grantedTags } : {}),
+          ...(parsed.isPermanent ? { isPermanent: true } : {}),
+          replaceExisting: true
+        }
+      );
+    }
+  }
+
+  const shouldRegisterIndividualConditions =
+    tracker.appliedConditions.length > 1 ||
+    (tracker.appliedConditions.length === 1 && tracker.modifiers.length === 0 && tracker.grantedTags.length === 0);
+
+  if (shouldRegisterIndividualConditions) {
+    const singleCond = tracker.appliedConditions.length === 1;
+    for (const entry of tracker.appliedConditions) {
+      let condDurationTurns = 0;
+      let condIsPermanent = false;
+      if (entry.unit.durationRoundsScaling) {
+        condDurationTurns = Math.max(1, evaluateSpellScalingRule(entry.unit.durationRoundsScaling, ctx.casterLevel));
+        if (isExtended) condDurationTurns *= EXTEND_METAMAGIC_DURATION_MULTIPLIER;
+      } else {
+        const parsedCond = parseSpellDurationTurns(entry.unit.duration ?? ctx.spell.duration, ctx.casterLevel, {
+          extend: isExtended,
+          fallbackRoundsForCondition: true,
+          clock: activeClock
+        });
+        condDurationTurns = parsedCond.durationTurns;
+        condIsPermanent = parsedCond.isPermanent;
+      }
+      if (!condIsPermanent && condDurationTurns <= 0) continue;
+
+      const polarity = classifyEffectPolarity([], {
+        linkedConditionId: entry.conditionId,
+        targetRole: entry.unit.targetRole
+      });
+      const summary = formatSpellModifiersSummary([], { linkedConditionId: entry.conditionId });
+      const condStatusId = singleCond ? `spell:${ctx.spell.id}` : `spell:${ctx.spell.id}:${entry.unitId}`;
+      runningState = applyStatusEffect(
+        runningState,
+        ctx.targetId,
+        condStatusId,
+        condIsPermanent ? 1 : condDurationTurns,
+        ctx.casterId,
+        undefined,
+        {
+          displayName: ctx.spell.name,
+          ...(summary ? { summary } : {}),
+          polarity,
+          color: POLARITY_COLORS[polarity],
+          sourcePath: spellSourcePath,
+          casterLevel: ctx.casterLevel,
+          linkedConditionId: entry.conditionId,
+          ...(condIsPermanent ? { isPermanent: true } : {}),
+          replaceExisting: true
+        }
+      );
+    }
   }
 
   return syncDnD35eActorSpatialFootprint(runningState, ctx.targetId);

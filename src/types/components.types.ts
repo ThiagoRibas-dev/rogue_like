@@ -72,6 +72,7 @@ export type {
   FactionComponent
 } from './components/actor_components.types.ts';
 export type {
+  StatusEffectPolarity,
   ActiveStatusEffect,
   StatusEffectsComponent,
   AttitudeTier,

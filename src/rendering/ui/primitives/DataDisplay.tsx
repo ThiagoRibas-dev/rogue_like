@@ -35,6 +35,7 @@ export function Chip({
 /** Props for `<Badge />`. */
 export interface BadgeProps {
   readonly tone?: BadgeTone | undefined;
+  readonly title?: string | undefined;
   readonly className?: string | undefined;
   readonly children: ComponentChildren;
 }
@@ -42,11 +43,15 @@ export interface BadgeProps {
 /**
  * Non-interactive semantic status or category badge.
  */
-export function Badge({ tone = 'neutral', className, children }: BadgeProps): JSX.Element {
+export function Badge({ tone = 'neutral', title, className, children }: BadgeProps): JSX.Element {
   const classes = ['ui-badge', tone !== 'neutral' ? `ui-badge--${tone}` : '', className ?? '']
     .filter(Boolean)
     .join(' ');
-  return <span className={classes}>{children}</span>;
+  return (
+    <span className={classes} title={title}>
+      {children}
+    </span>
+  );
 }
 
 /** Props for `<StatChip />` tabular metric display. */

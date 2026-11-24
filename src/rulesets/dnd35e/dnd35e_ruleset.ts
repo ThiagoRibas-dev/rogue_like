@@ -10,6 +10,7 @@ import type {
 } from '../../types/ruleset.types.ts';
 import { isHostile } from '../../utils/faction.ts';
 import { processDnD35eDamage, resolveDnD35eMeleeAttack } from './cartridge/dnd35e_combat_adapter.ts';
+import { onDnD35eStatusEffectExpired, projectDnD35eActiveEffects } from './cartridge/dnd35e_active_effects.ts';
 import { computeDnD35eEffectiveStats, evaluateDnD35eEntityDAG } from './cartridge/dnd35e_dag_adapter.ts';
 import { onDnD35eEntitySpawned } from './cartridge/dnd35e_spawn_hydrator.ts';
 import {
@@ -19,6 +20,7 @@ import {
 } from './combat/charge_resolver.ts';
 import { resolveSavingThrow } from './combat/damage_vitality.ts';
 import { DND35E_DEFAULT_CURRENCY_CONFIG } from './currency.ts';
+import { DND35E_DEFAULT_WORLD_CLOCK_CONFIG } from './world_clock.ts';
 import { checkDnD35eRuleset } from './dnd35e_validator.ts';
 import { resolveDnD35eItemHandRequirement } from './equipment_physics.ts';
 import { DND35E_BASE_AC, resolveTypedModifiers } from './modifiers.ts';
@@ -325,6 +327,7 @@ export const dnd35eRulesetContract: RulesetContract = {
   onWorldHourElapsed: onDnD35eWorldHourElapsed,
   resolveItemHandRequirement: resolveDnD35eItemHandRequirement,
   getDefaultCurrencyConfig: () => DND35E_DEFAULT_CURRENCY_CONFIG,
+  getDefaultWorldClockConfig: () => DND35E_DEFAULT_WORLD_CLOCK_CONFIG,
   getTradeSocialActions: getDnD35eTradeSocialActions,
   evaluateTradePriceModifier: evaluateDnD35eTradePriceModifier,
   resolveTradeSocialSkill: resolveDnD35eTradeSocialSkill,
@@ -405,5 +408,7 @@ export const dnd35eRulesetContract: RulesetContract = {
   },
   onEntityDied(state, victimId, x, y) {
     return spawnArcaneCasterSpellbookLoot(state, victimId, x, y).state;
-  }
+  },
+  onStatusEffectExpired: onDnD35eStatusEffectExpired,
+  projectActiveEffects: projectDnD35eActiveEffects
 };

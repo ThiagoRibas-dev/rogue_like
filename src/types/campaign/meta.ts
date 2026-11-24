@@ -65,6 +65,9 @@ export const WorldClockConfigSchema = z.object({
   secondsPerGlobalTurn: z.number().int().positive().default(6),
   startHour: z.number().int().min(0).max(23).default(8),
   hoursPerDay: z.number().int().positive().default(24),
+  turnUnitShort: z.string().min(1).optional(),
+  turnUnitSingular: z.string().min(1).optional(),
+  turnUnitPlural: z.string().min(1).optional(),
   waitTargets: z.array(z.string()).default(['dawn', 'night']),
   phases: z.array(DayPhaseSchema).min(1)
 });

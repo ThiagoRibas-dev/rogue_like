@@ -191,6 +191,40 @@ function areEquippedItemsEqual(
   return true;
 }
 
+function areStatusEffectsStructurallyEqual(
+  a: StatusEffectsComponent | undefined,
+  b: StatusEffectsComponent | undefined
+): boolean {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  const listA = a.activeEffects;
+  const listB = b.activeEffects;
+  if (listA.length !== listB.length) return false;
+  for (let i = 0; i < listA.length; i++) {
+    const ea = listA[i]!;
+    const eb = listB[i]!;
+    const activeA = ea.duration > 0 || ea.isPermanent === true;
+    const activeB = eb.duration > 0 || eb.isPermanent === true;
+    if (
+      ea.effectId !== eb.effectId ||
+      activeA !== activeB ||
+      ea.sourcePath !== eb.sourcePath ||
+      ea.polarity !== eb.polarity ||
+      ea.isPermanent !== eb.isPermanent ||
+      ea.linkedConditionId !== eb.linkedConditionId
+    ) {
+      return false;
+    }
+    const tagsA = ea.grantedTags ?? [];
+    const tagsB = eb.grantedTags ?? [];
+    if (tagsA.length !== tagsB.length) return false;
+    for (let j = 0; j < tagsA.length; j++) {
+      if (tagsA[j] !== tagsB[j]) return false;
+    }
+  }
+  return true;
+}
+
 function collectEquippedItemRefs(
   state: GameState,
   equipment: EquipmentComponent | undefined
@@ -294,7 +328,7 @@ export function evaluateDnD35eEntityDAG(
     cached.overlayRef === overlayRef &&
     cached.tagsRef === tagsRef &&
     cached.doctrineRef === doctrineRef &&
-    cached.statusRef === statusRef &&
+    areStatusEffectsStructurallyEqual(cached.statusRef, statusRef) &&
     cached.equipmentRef === equipmentRef &&
     cached.inventoryRef === inventoryRef &&
     cached.templateRef === templateRef &&
@@ -393,7 +427,7 @@ function evaluateDnD35eEntityDAGInternal(
   const condSummary = summarizeConditionEffects(dndData.conditions, sysContent?.conditionEffects);
 
   const rawChassis = aggregateProgressionChassis(dndData.tracks, 0);
-  const { equipAttackBonus, equipArmorBonus } = getEquippedItemBonuses(state, entityId);
+  const { equipAttackBonus, equipArmorBonus, equipDamageBonus } = getEquippedItemBonuses(state, entityId);
   const doctrine = getComponent(state, entityId, ComponentType.TacticalDoctrine) as
     TacticalDoctrineComponent | undefined;
   const suppressedIds = dndData.suppressedBundleIds ?? [];
@@ -450,6 +484,7 @@ function evaluateDnD35eEntityDAGInternal(
     if (value !== 0) extraModifiers.push({ targetStat, value, bonusType, sourceId, sourcePath, origin });
   };
   pushMod('attack', equipAttackBonus, 'enhancement', 'equipment_attack', 'item:weapon/enhancement', 'mundane');
+  pushMod('damage', equipDamageBonus, 'enhancement', 'equipment_damage', 'item:weapon/damage_enhancement', 'mundane');
   if (doctrineMod.dodgeAcBonus > 0) {
     pushMod('ac', doctrineMod.dodgeAcBonus, 'dodge', 'tactical_doctrine', 'stance:doctrine/dodge_ac', 'ex');
   }
@@ -586,7 +621,7 @@ function evaluateDnD35eEntityDAGInternal(
   const strMod = dagResult.effectiveAbilityModifiers.str;
   const dexMod = dagResult.effectiveAbilityModifiers.dex;
   const baseActorAttackBonus = dagResult.attackBonus - equipAttackBonus - doctrineMod.attackPenalty;
-  const nonStrNonDoctrineFlatDamage = dagResult.damageBonus - strMod - doctrineMod.damageBonus;
+  const nonStrNonDoctrineFlatDamage = dagResult.damageBonus - strMod - equipDamageBonus - doctrineMod.damageBonus;
 
   const featRuleOverrides = collectActiveFeatRuleOverrides(
     dndData.feats ?? [],

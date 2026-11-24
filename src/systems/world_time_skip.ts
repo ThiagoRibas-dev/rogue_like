@@ -34,7 +34,7 @@ import { processPersonalitySystem } from './personality.system.ts';
 import { processRivalries } from './rivalry.system.ts';
 import { processSchemeTurn } from './scheme.system.ts';
 import { advanceAIAlertnessDecayByTurns } from './sound.system.ts';
-import { advanceActorStatusEffectsByTurns } from './status-effect.system.ts';
+import { advanceActorStatusEffectsByTurns, hasPerTurnStatusActivity } from './status-effect.system.ts';
 import { applyElapsedWorldHours, resolveAreaRestPressure } from './world_clock.system.ts';
 import { processWorldEvents } from './world_events.system.ts';
 
@@ -55,7 +55,7 @@ export interface ActorElapsedTimeResult {
 
 function hasActivePerTurnLocalHazard(state: GameState): boolean {
   for (const entityId of state.entities) {
-    if (getComponent(state, entityId, ComponentType.StatusEffects) !== undefined) return true;
+    if (hasPerTurnStatusActivity(state, entityId)) return true;
     if (getComponent(state, entityId, ComponentType.Breath) !== undefined) return true;
     if (getComponent(state, entityId, ComponentType.Field) !== undefined) return true;
   }

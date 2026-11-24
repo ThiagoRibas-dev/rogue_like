@@ -2376,26 +2376,32 @@ Rebuild the entire Gameplay UI and Keyboard/Input stack onto **Preact (`preact` 
 - [x] **Direct Spell Effect Unit Handlers & `spell_modifiers.ts` Pipeline Integration (`spell_cast_effects.ts`, `spell_cast_resolver.ts`, `spell_cast_units.ts`, `spell_modifiers.ts`)**: Implement direct handlers for `quicken_cast_grant`, `retaliation_rider`, and `form_overlay` in `spell_cast_effects.ts`, and wire `resolveEffectiveCasterLevel`, `resolveEffectiveSpellSaveDC`, and `buildSummonedCreatureModifiers` into the active spellcasting and summon pipelines.
 - [x] **SRD Magic Item `effectId` Wiring, 39 Spell `effectUnits` Population & Legacy Monolith Cleanup (`public/data/rulesets/dnd35e/items/*.json`, `spells/*.json`, `races/*.json`, `loader.ts`)**: Wire `potion_of_cure_light_wounds`, `potion_of_bulls_strength`, `scroll_of_mage_armor`, `wand_of_magic_missile`, and `staff_of_fire` to their canonical D&D 3.5e spell effects; populate mechanical `effectUnits` / `effectBundle` for the 39 empty SRD spells; and split `races.json` into modular `races/*.json` while retiring stale root monoliths.
 
+## 🟢 Milestone 168: Active Buffs, Debuffs & Spell Duration Lifecycle, Expiration, Dispel Sync & UI Observability (Complete)
+
+- [x] **Tier 1 Console Duration & Status Lifecycle (`world_clock.constants.ts`, `duration.ts`, `world_clock.system.ts`, `rest.system.ts`, `actor_components.types.ts`, `ruleset.types.ts`, `status-effect.system.ts`, `world_time_skip.ts`)**: Extend `ActiveStatusEffect` with polarity/provenance/tooltip metadata (`displayName`, `summary`, `polarity`, `color`, `sourcePath`, `casterLevel`, `linkedConditionId`, `grantedTags`, `isPermanent`), replace static 6-second `ROUNDS_PER_*` Console constants with clock-parameterized `getTurnsPerMinute`/`Hour`/`Day` + `formatTurnDurationCompact`/`Verbose` and `RulesetContract.getDefaultWorldClockConfig()` (`campaign.rules.worldClock` -> ruleset -> neutral `'t'`/`'turn'` Console fallback, mirrored in `src/rulesets/dnd35e/world_clock.ts`), restrict `hasActivePerTurnLocalHazard` to per-turn ticks, fast-forward passive timers in $O(k)$ during bulk skips, and add `RulesetContract.onStatusEffectExpired` & `projectActiveEffects`.
+- [x] **D&D 3.5e Spell Duration, Expiration, Dispel Sync & Stacking Parity (`spell_duration.ts`, `spell_cast_effects.ts`, `spell_cast_units.ts`, `spell_aura_resolver.ts`, `dnd35e_active_effects.ts`, `srd_registry.ts`, `dnd35e_dag_adapter.ts`, `attack_routine.ts`)**: Parse all 28 SRD duration formats (`round/level`, `min/level`, `10 min/level`, `hour/level`, dice/compound, concentration, permanent, Extend Spell `2×`), register timed/permanent buff/debuff/condition statuses, preserve same-cast modifiers in `appendTargetModifiers`, sync *Dispel Magic* CL & condition/status cleanup, propagate `weapon:magic` -> `'magic'` DR bypass, enforce weapon damage `'enhancement'` competition, and preserve DAG cache hits across countdown ticks.
+- [x] **Polarity-Aware UI Observability (`DataDisplay.tsx`, `VitalsCard.tsx`, `hud_alerts.ui.ts`, `auto_pause_signals.ts`, `tactical_snapshot.ts`, `inspect_tooltip.ts`, `DnD35eSheetOverviewCol.tsx`, `dnd35e_ui_projection.ts`)**: Surface unified timed buffs, debuffs, conditions, form overlays, and spatial auras with monotonic (`Xd -> Xh -> Xm -> Xr` / `Perm`) badges, hover tooltips, and DAG stat breakdowns across HUD Vitals, Inspect, Canvas Pips, and Character Sheet while keeping friendly buffs out of warning `AlertsStack` and detrimental auto-pause.
+
 ---
 
 # 🚀 Phase 44: Campaign Editor Rewrite on Shared Preact Primitives, Scoped Input & Unified Themes
 
 Rebuild the Campaign Creator (`~26` editor UI modules) directly onto Phase 43's Preact Primitive Kit, `--ui-*` semantic theme tokens (`[data-ui-density="compact"]`), `InputScopeManager` (`EditorScope`), and `DialogService` — preserving the pure `src/editor/` controller, JSON-Patch undo/redo stack, reverse-reference index, and campaign validator.
 
-## ⚪ Milestone 168: Campaign Editor Shell, `EditorScope` Input, `DialogService` Migration & Validation Dock (Planned)
+## ⚪ Milestone 169: Campaign Editor Shell, `EditorScope` Input, `DialogService` Migration & Validation Dock (Planned)
 
 - [ ] **Editor Workspace Shell Rewrite (`src/rendering/ui/editor/{EditorShell,EditorToolbar,EditorActivityBar,EditorSidebar,EditorSplash,NewCampaignModal,ValidationDock}.tsx`)**: Rewrite shell layout onto Phase 43's `SplitPane`, `Toolbar`, `ModalShell`, and searchable `ListBox` with drag-and-drop and full 3-theme support.
 - [ ] **Editor Scope, Leak Fix & Dialog Migration**: Activate `EditorScope` (`Ctrl+Z`/`Ctrl+Shift+Z`/`Ctrl+Y` protected by `TextInputGuard` so text fields undo natively, `Ctrl+S` save, `F2` playtest, `F1` Editor Help), eliminate `editor_ui.ts`'s leaked `document` mouse listeners, and replace all remaining 24 editor `alert()`/`confirm()`/`prompt()` calls with `DialogService` + `ToastHost`.
 
-## ⚪ Milestone 169: Declarative Preact Zod Form Engine, Reference Pickers & Where-Used Inspector (Planned)
+## ⚪ Milestone 170: Declarative Preact Zod Form Engine, Reference Pickers & Where-Used Inspector (Planned)
 
 - [ ] **Preact Zod Form Renderer (`ZodFormRenderer`, `ZodFormContainers`, `ZodFormPrimitives`, `EditorForms`, `EditorObjectRenderer`, `WhereUsedDrawer`)**: Rebuild recursive Zod form generation (`ZodObject`, `ZodDiscriminatedUnion`, `ZodArray`, `ReferenceField` autocomplete, inline `toFormPath` validation errors) onto Preact `FormField`/`Accordion`/`Stepper`/`Select` components with automatic cursor, scroll, and accordion state preservation.
 
-## ⚪ Milestone 170: Visual & Graph Editor Workspaces (Area Painter, World Graph, Dialogue Tree, Faction Matrix, Trigger Composer) (Planned)
+## ⚪ Milestone 171: Visual & Graph Editor Workspaces (Area Painter, World Graph, Dialogue Tree, Faction Matrix, Trigger Composer) (Planned)
 
 - [ ] **Interactive Visual Tooling Rewrite (`AreaEditor`, `AreaStaticPainter`, `WorldGraph`, `DialogueEditor`, `DialogueSimulatorPanel`, `FactionMatrixEditor`, `TriggerComposer`)**: Wrap the pure Canvas2D tile painter inside Preact `SplitPane`/`Toolbar`/`GridNav` palette, rebuild `DialogueEditor` on `TreeList`, and unify `WorldGraph`, `FactionMatrixEditor`, and `TriggerComposer` onto `--ui-*` theme tokens and keyboard-accessible primitives.
 
-## ⚪ Milestone 171: Simulation Tooling Rewrite & Legacy Editor Eviction (Planned)
+## ⚪ Milestone 172: Simulation Tooling Rewrite & Legacy Editor Eviction (Planned)
 
 - [ ] **Simulation & Fuzzer Panels Rewrite (`AiArena`, `DirectorSandbox`, `KnowledgeSimulator`, `NarrativeFuzzer`, `BalanceLab`)**: Port all Campaign Editor simulation labs onto Preact primitives and unified themes.
 - [ ] **Legacy Editor Eviction & Final Verification Sweep**: Remove `src/rendering/editor_ui.ts`, `src/styles/editor.css`, legacy `knip.json` ignores, and any remaining legacy UI adapters; synchronize `docs/SSOT_CONSOLE.md` and `docs/ARCHITECTURE.md` and confirm full 8-stage `./verify.sh` passes cleanly.

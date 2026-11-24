@@ -6,21 +6,28 @@
 import type { JSX } from 'preact';
 import { useState } from 'preact/hooks';
 import { getComponent } from '../../../../core/ecs.ts';
+import { projectDnD35eActiveEffects } from '../../../../rulesets/dnd35e/cartridge/dnd35e_active_effects.ts';
 import type { evaluateDnD35eEntityDAG } from '../../../../rulesets/dnd35e/cartridge/dnd35e_dag_adapter.ts';
-import { summarizeConditionEffects } from '../../../../rulesets/dnd35e/combat/maneuvers_conditions.ts';
 import { aggregateProgressionChassis, computeXpThresholdForLevel } from '../../../../rulesets/dnd35e/progression.ts';
 import { getDnD35EntityData } from '../../../../rulesets/dnd35e/srd_registry.ts';
-import { ALL_ABILITY_IDS } from '../../../../rulesets/dnd35e/types/dnd35e.types.ts';
+import {
+  ALL_ABILITY_IDS,
+  type AbilityId,
+  type StatResolutionBreakdown
+} from '../../../../rulesets/dnd35e/types/dnd35e.types.ts';
 import {
   ComponentType,
   type FighterComponent,
   type IdentityComponent,
-  type StatusEffectsComponent
+  type StatusEffectPolarity
 } from '../../../../types/components.types.ts';
 import type { EntityId, GameState } from '../../../../types/game-state.types.ts';
+import type { ActiveEffectDisplayDTO } from '../../../../types/ruleset.types.ts';
 import type { UICharacterSheetModel } from '../../../../types/ui_adapter.types.ts';
+import { getEffectiveWorldClockConfig } from '../../../../systems/world_clock.system.ts';
+import { formatTurnDurationCompact, formatTurnDurationVerbose } from '../../../../utils/duration.ts';
 import { renderSpriteToDataUrl } from '../../../sprite_atlas.ts';
-import { Badge, Chip } from '../../primitives/DataDisplay.tsx';
+import { Badge, type BadgeTone, Chip } from '../../primitives/DataDisplay.tsx';
 
 const DEFAULT_ABILITY_SCORE = 10;
 const PORTRAIT_SIZE_PX = 48;
@@ -29,15 +36,41 @@ function formatSigned(val: number): string {
   return val >= 0 ? `+${val}` : `${val}`;
 }
 
-function buildConditionTooltip(cond: string, condSummary: ReturnType<typeof summarizeConditionEffects>): string {
-  const parts: string[] = [];
-  if (condSummary.meleeAttackPenalty < 0) parts.push(`${condSummary.meleeAttackPenalty} Attack`);
-  if (condSummary.acPenalty < 0) parts.push(`${condSummary.acPenalty} AC`);
-  if (condSummary.strPenalty > 0) parts.push(`-${condSummary.strPenalty} STR`);
-  if (condSummary.dexPenalty > 0) parts.push(`-${condSummary.dexPenalty} DEX`);
-  if (condSummary.losesDexToAC) parts.push('Loses DEX to AC');
-  if (!condSummary.canTakeActions) parts.push('Incapacitated');
-  return parts.length > 0 ? `${cond.toUpperCase()}: ${parts.join(', ')}` : cond.toUpperCase();
+function polarityToTone(polarity: StatusEffectPolarity): BadgeTone {
+  switch (polarity) {
+    case 'buff':
+      return 'success';
+    case 'debuff':
+      return 'danger';
+    case 'mixed':
+      return 'info';
+    case 'neutral':
+      return 'warning';
+  }
+}
+
+function buildEffectTooltip(
+  eff: ActiveEffectDisplayDTO,
+  clock: ReturnType<typeof getEffectiveWorldClockConfig>
+): string {
+  const parts: string[] = [eff.label];
+  if (eff.summary) parts.push(eff.summary);
+  if (eff.durationTurns !== undefined || eff.isPermanent === true) {
+    parts.push(formatTurnDurationVerbose(eff.durationTurns ?? 0, eff.isPermanent, clock));
+  }
+  return parts.join(' • ');
+}
+
+function formatBreakdownTooltip(label: string, breakdown: StatResolutionBreakdown | undefined): string | undefined {
+  if (!breakdown) return undefined;
+  const activeLines = breakdown.activeModifiers.map((m) =>
+    `${formatSigned(m.value)} ${m.bonusType !== 'untyped' ? m.bonusType : ''} (${m.sourceId})`.replace(/\s+/g, ' ')
+  );
+  const shadowedLines = breakdown.shadowedModifiers.map(
+    (s) => `Shadowed ${formatSigned(s.modifier.value)} ${s.modifier.bonusType} (${s.modifier.sourceId})`
+  );
+  const combined = [...activeLines, ...shadowedLines];
+  return combined.length > 0 ? `${label}: ${combined.join('; ')}` : `${label}: Base`;
 }
 
 /** Props for `<DnD35eSheetOverviewCol />`. */
@@ -62,7 +95,6 @@ export function DnD35eSheetOverviewCol({
   const dndData = getDnD35EntityData(state, playerId);
   const identity = getComponent(state, playerId, ComponentType.Identity) as IdentityComponent | undefined;
   const fighter = getComponent(state, playerId, ComponentType.Fighter) as FighterComponent | undefined;
-  const statusComp = getComponent(state, playerId, ComponentType.StatusEffects) as StatusEffectsComponent | undefined;
 
   const conMod = evalResult?.dagResult.effectiveAbilityModifiers.con ?? 0;
   const chassis = aggregateProgressionChassis(dndData.tracks, conMod, dndData.levelAdjustment ?? 0);
@@ -78,18 +110,47 @@ export function DnD35eSheetOverviewCol({
     { label: 'HP', value: `${fighter?.hp ?? chassis.maxHp} / ${fighter?.maxHp ?? chassis.maxHp}` },
     { label: 'XP', value: `${xpCurr.toLocaleString()} / ${xpNext.toLocaleString()}` },
     { label: 'INIT', value: formatSigned(evalResult?.dagResult.effectiveAbilityModifiers.dex ?? 0) },
-    { label: 'SPEED', value: '30 ft' }
+    { label: 'SPEED', value: `${evalResult?.dagResult.speed ?? 30} ft` }
   ];
 
   const acBreakdown = evalResult?.dagResult.acBreakdown;
   const saves = evalResult?.dagResult.saves;
-  const defenses: ReadonlyArray<{ readonly label: string; readonly value: string }> = [
-    { label: 'AC', value: `${acBreakdown?.fullAC ?? 10}` },
-    { label: 'Touch', value: `${acBreakdown?.touchAC ?? 10}` },
-    { label: 'Flat', value: `${acBreakdown?.flatFootedAC ?? 10}` },
-    { label: 'Fort', value: formatSigned(saves?.fort ?? chassis.baseSaves.fort) },
-    { label: 'Ref', value: formatSigned(saves?.ref ?? chassis.baseSaves.ref) },
-    { label: 'Will', value: formatSigned(saves?.will ?? chassis.baseSaves.will) },
+  const saveBreakdowns = evalResult?.dagResult.saveBreakdowns;
+  const defenses: ReadonlyArray<{
+    readonly label: string;
+    readonly value: string;
+    readonly title?: string | undefined;
+  }> = [
+    {
+      label: 'AC',
+      value: `${acBreakdown?.fullAC ?? 10}`,
+      title: formatBreakdownTooltip('Full AC', evalResult?.dagResult.acResolution)
+    },
+    {
+      label: 'Touch',
+      value: `${acBreakdown?.touchAC ?? 10}`,
+      title: formatBreakdownTooltip('Touch AC', evalResult?.dagResult.touchAcResolution)
+    },
+    {
+      label: 'Flat',
+      value: `${acBreakdown?.flatFootedAC ?? 10}`,
+      title: formatBreakdownTooltip('Flat-Footed AC', evalResult?.dagResult.flatFootedAcResolution)
+    },
+    {
+      label: 'Fort',
+      value: formatSigned(saves?.fort ?? chassis.baseSaves.fort),
+      title: formatBreakdownTooltip('Fortitude', saveBreakdowns?.fort.modifierBreakdown)
+    },
+    {
+      label: 'Ref',
+      value: formatSigned(saves?.ref ?? chassis.baseSaves.ref),
+      title: formatBreakdownTooltip('Reflex', saveBreakdowns?.ref.modifierBreakdown)
+    },
+    {
+      label: 'Will',
+      value: formatSigned(saves?.will ?? chassis.baseSaves.will),
+      title: formatBreakdownTooltip('Will', saveBreakdowns?.will.modifierBreakdown)
+    },
     { label: 'BAB', value: formatSigned(chassis.totalBab) },
     {
       label: 'Grapple',
@@ -97,9 +158,8 @@ export function DnD35eSheetOverviewCol({
     }
   ];
 
-  const conditions = dndData.conditions ?? [];
-  const activeEffects = statusComp?.activeEffects ?? [];
-  const condSummary = conditions.length > 0 ? summarizeConditionEffects(conditions) : undefined;
+  const clock = getEffectiveWorldClockConfig(state);
+  const projectedEffects = projectDnD35eActiveEffects(state, playerId);
   const skills = (sheetModel.skillRows ?? []).filter((s) => (showTrainedOnly ? s.ranks > 0 : true));
 
   return (
@@ -141,40 +201,45 @@ export function DnD35eSheetOverviewCol({
       <div className="ui-dnd-subbanner">Defenses &amp; Saves</div>
       <div className="ui-dnd-stat-grid ui-dnd-stat-grid--4">
         {defenses.map((d) => (
-          <div key={d.label} className="ui-dnd-stat-box">
+          <div key={d.label} className="ui-dnd-stat-box" title={d.title}>
             <span className="ui-dnd-stat-box__label">{d.label}</span>
             <span className="ui-dnd-stat-box__val">{d.value}</span>
           </div>
         ))}
       </div>
 
-      <div className="ui-dnd-subbanner">Active Conditions</div>
+      <div className="ui-dnd-subbanner">Active Effects &amp; Conditions</div>
       <div className="ui-dnd-chip-row">
-        {conditions.length === 0 && activeEffects.length === 0 ? (
+        {projectedEffects.length === 0 ? (
           <Badge tone="neutral">Normal</Badge>
         ) : (
-          <>
-            {conditions.map((cond) => (
-              <span key={cond} title={condSummary ? buildConditionTooltip(cond, condSummary) : cond.toUpperCase()}>
-                <Badge tone="danger">{cond.toUpperCase()}</Badge>
-              </span>
-            ))}
-            {activeEffects.map((eff) => (
-              <Badge key={`${eff.effectId}_${eff.duration}`} tone="info">
-                {`${eff.effectId} (${eff.duration}t)`}
+          projectedEffects.map((eff) => {
+            const durSuffix =
+              eff.durationTurns !== undefined || eff.isPermanent === true
+                ? ` (${formatTurnDurationCompact(eff.durationTurns ?? 0, eff.isPermanent, clock)})`
+                : '';
+            return (
+              <Badge
+                key={`${eff.id}_${eff.durationTurns ?? 'perm'}`}
+                tone={polarityToTone(eff.polarity)}
+                title={buildEffectTooltip(eff, clock)}
+              >
+                {`${eff.label}${durSuffix}`}
               </Badge>
-            ))}
-          </>
+            );
+          })
         )}
       </div>
 
       <div className="ui-dnd-subbanner">Ability Scores</div>
       <div className="ui-dnd-stat-grid">
-        {ALL_ABILITY_IDS.map((ab) => {
+        {ALL_ABILITY_IDS.map((ab: AbilityId) => {
+          const abRes = evalResult?.dagResult.abilityBreakdowns?.[ab];
           const scoreVal = evalResult?.dagResult.effectiveAbilities[ab]?.base ?? DEFAULT_ABILITY_SCORE;
           const modVal = evalResult?.dagResult.effectiveAbilityModifiers[ab] ?? 0;
+          const abTooltip = formatBreakdownTooltip(ab.toUpperCase(), abRes?.modifierBreakdown);
           return (
-            <div key={ab} className="ui-dnd-attr-cell">
+            <div key={ab} className="ui-dnd-attr-cell" title={abTooltip}>
               <span className="ui-dnd-attr-cell__name">{ab.toUpperCase()}</span>
               <span>{scoreVal}</span>
               <span className="ui-dnd-attr-cell__mod">{`(${formatSigned(modVal)})`}</span>

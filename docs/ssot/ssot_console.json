@@ -581,11 +581,17 @@
   "src/constants/world_clock.constants.ts": {
     "domain": "Core Console: Constants & Dictionaries",
     "tier": "tier1_console",
-    "responsibility": "Constants for diurnal World Clock timing, bulk rest chunk sizing, baseline hunger scaling, and HUD clock badges.",
+    "responsibility": "Constants for diurnal World Clock timing, neutral Console turn-unit labels, bulk rest chunk sizing, baseline hunger scaling, and HUD clock badges.",
     "canonicalEntryPoints": [
       "DEFAULT_CLOCK_START_HOUR",
       "DEFAULT_SECONDS_PER_TURN",
       "DEFAULT_HOURS_PER_DAY",
+      "MINUTES_PER_HOUR",
+      "SECONDS_PER_MINUTE",
+      "STANDARD_ENERGY_PER_TURN",
+      "DEFAULT_TURN_UNIT_SHORT",
+      "DEFAULT_TURN_UNIT_SINGULAR",
+      "DEFAULT_TURN_UNIT_PLURAL",
       "BULK_CADENCE_STEP_SIZE",
       "BULK_REST_CHUNK_TURNS",
       "DEFAULT_SATIATION_LOSS_PER_STANDARD_TURN",
@@ -5467,6 +5473,26 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/utils/direction.ts."
+    ]
+  },
+  "src/utils/duration.ts": {
+    "domain": "Core Console: Utility Helpers",
+    "tier": "tier1_console",
+    "responsibility": "Clock-scale parameterized turn-to-time conversion helpers and monotonic compact/verbose duration UI formatting (Perm, Xd, Xh, Xm, X<turnUnit>).",
+    "canonicalEntryPoints": [
+      "TurnDurationScale",
+      "getTurnsPerMinute",
+      "getTurnsPerHour",
+      "getTurnsPerDay",
+      "formatTurnDurationCompact",
+      "formatTurnDurationVerbose"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/utils/duration.ts.",
+      "excludes": "Ruleset spell duration string parsing or ECS state mutation."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/utils/duration.ts."
     ]
   },
   "src/utils/equipment.ts": {

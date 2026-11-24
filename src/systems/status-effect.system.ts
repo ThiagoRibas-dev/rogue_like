@@ -3,7 +3,8 @@ import {
   ComponentType,
   type FighterComponent,
   type StatusEffectsComponent,
-  type ActiveStatusEffect
+  type ActiveStatusEffect,
+  type StatusEffectPolarity
 } from '../types/components.types.ts';
 import { getComponent, addComponent, removeComponent, resolveEntityDisplayName } from '../core/ecs.ts';
 
@@ -13,12 +14,71 @@ import { getEffectiveStats } from '../utils/stats.ts';
 import type { DamageComponent, DamageInstance, InteractionChain } from '../types/components.types.ts';
 import { appendInteractionFrame, createInteractionChain } from './interaction_provenance.system.ts';
 
+/**
+ * Optional rich metadata attached when registering a dynamic `ActiveStatusEffect`
+ * (such as timed spell buffs, debuffs, or ruleset conditions).
+ */
+export interface ActiveStatusEffectMetadata {
+  readonly displayName?: string | undefined;
+  readonly summary?: string | undefined;
+  readonly polarity?: StatusEffectPolarity | undefined;
+  readonly color?: string | undefined;
+  readonly sourcePath?: string | undefined;
+  readonly casterLevel?: number | undefined;
+  readonly linkedConditionId?: string | undefined;
+  readonly grantedTags?: ReadonlyArray<string> | undefined;
+  readonly isPermanent?: boolean | undefined;
+  readonly replaceExisting?: boolean | undefined;
+}
+
+/**
+ * Returns `true` when at least one active status effect on `entityId` requires per-turn
+ * evaluation (`perTurnDamage`, `perTurnHeal`, or an unresolved `secondaryTriggerAfterTurns`).
+ */
+export function hasPerTurnStatusActivity(state: Readonly<GameState>, entityId: EntityId): boolean {
+  const statuses = getComponent(state, entityId, ComponentType.StatusEffects) as StatusEffectsComponent | undefined;
+  if (!statuses || statuses.activeEffects.length === 0) return false;
+
+  return statuses.activeEffects.some((eff) => {
+    const def = state.campaign.status[eff.effectId];
+    if (!def) return false;
+    const hasPerTurnTick = (def.perTurnDamage ?? 0) > 0 || (def.perTurnHeal ?? 0) > 0;
+    const hasPendingSecondary = def.secondaryTriggerAfterTurns !== undefined && eff.secondaryResolved !== true;
+    return hasPerTurnTick || hasPendingSecondary;
+  });
+}
+
+function buildExpiryMessage(state: Readonly<GameState>, active: ActiveStatusEffect): string {
+  if (active.displayName) {
+    return `${active.displayName} has worn off.`;
+  }
+  const def = state.campaign.status[active.effectId];
+  return `You are no longer ${def?.name ?? active.effectId}.`;
+}
+
+function notifyExpiredStatusEffects(
+  state: GameState,
+  entityId: EntityId,
+  expiredEffects: ReadonlyArray<ActiveStatusEffect>
+): GameState {
+  if (expiredEffects.length === 0) return state;
+  const ruleset = getRuleset(state.campaign?.manifest?.rulesetId);
+  if (!ruleset.onStatusEffectExpired) return state;
+
+  let nextState = state;
+  for (const expired of expiredEffects) {
+    nextState = ruleset.onStatusEffectExpired(nextState, entityId, expired);
+  }
+  return nextState;
+}
+
 function tickActorStatusEffectsSingleTurn(state: GameState, entityId: EntityId): GameState {
   const statuses = getComponent(state, entityId, ComponentType.StatusEffects);
   if (!statuses || statuses.activeEffects.length === 0) return state;
 
   let nextState = state;
   const nextActiveEffects: ActiveStatusEffect[] = [];
+  const expiredEffects: ActiveStatusEffect[] = [];
   let damageTaken = 0;
   let healthGained = 0;
 
@@ -91,7 +151,9 @@ function tickActorStatusEffectsSingleTurn(state: GameState, entityId: EntityId):
       }
     }
 
-    if (active.duration > 1) {
+    if (active.isPermanent === true) {
+      nextActiveEffects.push(active);
+    } else if (active.duration > 1) {
       nextActiveEffects.push({
         ...active,
         duration: active.duration - 1,
@@ -100,12 +162,9 @@ function tickActorStatusEffectsSingleTurn(state: GameState, entityId: EntityId):
           : {})
       });
     } else {
+      expiredEffects.push(active);
       if (isPlayer) {
-        nextState = addMessage(
-          nextState,
-          `You are no longer ${def?.name ?? active.effectId}.`,
-          MessageLogCategory.System
-        );
+        nextState = addMessage(nextState, buildExpiryMessage(nextState, active), MessageLogCategory.System);
       }
     }
   }
@@ -165,6 +224,7 @@ function tickActorStatusEffectsSingleTurn(state: GameState, entityId: EntityId):
       };
       nextState = addComponent(nextState, entityId, nextStatuses);
     }
+    nextState = notifyExpiredStatusEffects(nextState, entityId, expiredEffects);
   }
 
   return nextState;
@@ -172,7 +232,8 @@ function tickActorStatusEffectsSingleTurn(state: GameState, entityId: EntityId):
 
 /**
  * Advances active status effects on `entityId` across `turnsElapsed` turns using the
- * canonical status elapsed-stage resolver (shared between normal turn start and bulk time).
+ * canonical status elapsed-stage resolver for per-turn hazards and an $O(k)$ bulk countdown
+ * fast path once no per-turn DoT/HoT or unresolved secondary stage remains active.
  *
  * @param state The current GameState.
  * @param entityId The entity whose status effects are advancing.
@@ -186,12 +247,48 @@ export function advanceActorStatusEffectsByTurns(
 ): GameState {
   if (turnsElapsed <= 0) return state;
   let nextState = state;
-  for (let step = 0; step < turnsElapsed; step++) {
-    const statuses = getComponent(nextState, entityId, ComponentType.StatusEffects);
-    if (!statuses || statuses.activeEffects.length === 0) break;
+  let remaining = turnsElapsed;
+
+  while (remaining > 0 && hasPerTurnStatusActivity(nextState, entityId)) {
     nextState = tickActorStatusEffectsSingleTurn(nextState, entityId);
+    remaining -= 1;
   }
-  return nextState;
+
+  if (remaining <= 0) return nextState;
+
+  const statuses = getComponent(nextState, entityId, ComponentType.StatusEffects) as StatusEffectsComponent | undefined;
+  if (!statuses || statuses.activeEffects.length === 0) return nextState;
+
+  const isPlayer = getComponent(nextState, entityId, ComponentType.Player) !== undefined;
+  const nextActiveEffects: ActiveStatusEffect[] = [];
+  const expiredEffects: ActiveStatusEffect[] = [];
+
+  for (const active of statuses.activeEffects) {
+    if (active.isPermanent === true) {
+      nextActiveEffects.push(active);
+      continue;
+    }
+    const nextDuration = active.duration - remaining;
+    if (nextDuration > 0) {
+      nextActiveEffects.push({ ...active, duration: nextDuration });
+    } else {
+      expiredEffects.push(active);
+      if (isPlayer) {
+        nextState = addMessage(nextState, buildExpiryMessage(nextState, active), MessageLogCategory.System);
+      }
+    }
+  }
+
+  if (nextActiveEffects.length === 0) {
+    nextState = removeComponent(nextState, entityId, ComponentType.StatusEffects);
+  } else {
+    nextState = addComponent(nextState, entityId, {
+      type: ComponentType.StatusEffects,
+      activeEffects: nextActiveEffects
+    });
+  }
+
+  return notifyExpiredStatusEffects(nextState, entityId, expiredEffects);
 }
 
 /**
@@ -233,7 +330,8 @@ export function applyStatusEffect(
   effectId: string,
   duration: number,
   sourceEntityId?: EntityId,
-  interaction?: InteractionChain
+  interaction?: InteractionChain,
+  metadata?: ActiveStatusEffectMetadata
 ): GameState {
   const statuses = getComponent(state, entityId, ComponentType.StatusEffects);
   const def = state.campaign.status[effectId];
@@ -244,27 +342,53 @@ export function applyStatusEffect(
     duration,
     ...(resolvedSourceId !== undefined ? { sourceEntityId: resolvedSourceId } : {}),
     ...(hasSecondaryStage ? { elapsedTurns: 0, secondaryResolved: false } : {}),
-    ...(interaction !== undefined ? { interaction } : {})
+    ...(interaction !== undefined ? { interaction } : {}),
+    ...(metadata?.displayName !== undefined ? { displayName: metadata.displayName } : {}),
+    ...(metadata?.summary !== undefined ? { summary: metadata.summary } : {}),
+    ...(metadata?.polarity !== undefined ? { polarity: metadata.polarity } : {}),
+    ...(metadata?.color !== undefined ? { color: metadata.color } : {}),
+    ...(metadata?.sourcePath !== undefined ? { sourcePath: metadata.sourcePath } : {}),
+    ...(metadata?.casterLevel !== undefined ? { casterLevel: metadata.casterLevel } : {}),
+    ...(metadata?.linkedConditionId !== undefined ? { linkedConditionId: metadata.linkedConditionId } : {}),
+    ...(metadata?.grantedTags !== undefined ? { grantedTags: metadata.grantedTags } : {}),
+    ...(metadata?.isPermanent !== undefined ? { isPermanent: metadata.isPermanent } : {})
   };
 
   let nextState = state;
 
   if (statuses) {
-    // If the effect is already active, we refresh the duration to the max of current vs new
+    // If the effect is already active, either replace metadata cleanly (e.g. re-cast spell)
+    // or refresh duration to max(current, new).
     const existingIndex = statuses.activeEffects.findIndex((e) => e.effectId === effectId);
     const nextEffects = [...statuses.activeEffects];
 
     if (existingIndex >= 0) {
       const existing = nextEffects[existingIndex]!;
-      const newDuration = Math.max(existing.duration, duration);
       const nextInteraction = interaction ?? existing.interaction;
-      nextEffects[existingIndex] = {
-        ...existing,
-        duration: newDuration,
-        ...(resolvedSourceId !== undefined ? { sourceEntityId: resolvedSourceId } : {}),
-        ...(hasSecondaryStage ? { elapsedTurns: 0, secondaryResolved: false } : {}),
-        ...(nextInteraction !== undefined ? { interaction: nextInteraction } : {})
-      };
+      if (metadata?.replaceExisting === true) {
+        nextEffects[existingIndex] = {
+          ...nextActive,
+          ...(nextInteraction !== undefined ? { interaction: nextInteraction } : {})
+        };
+      } else {
+        const newDuration = Math.max(existing.duration, duration);
+        nextEffects[existingIndex] = {
+          ...existing,
+          duration: newDuration,
+          ...(resolvedSourceId !== undefined ? { sourceEntityId: resolvedSourceId } : {}),
+          ...(hasSecondaryStage ? { elapsedTurns: 0, secondaryResolved: false } : {}),
+          ...(nextInteraction !== undefined ? { interaction: nextInteraction } : {}),
+          ...(metadata?.displayName !== undefined ? { displayName: metadata.displayName } : {}),
+          ...(metadata?.summary !== undefined ? { summary: metadata.summary } : {}),
+          ...(metadata?.polarity !== undefined ? { polarity: metadata.polarity } : {}),
+          ...(metadata?.color !== undefined ? { color: metadata.color } : {}),
+          ...(metadata?.sourcePath !== undefined ? { sourcePath: metadata.sourcePath } : {}),
+          ...(metadata?.casterLevel !== undefined ? { casterLevel: metadata.casterLevel } : {}),
+          ...(metadata?.linkedConditionId !== undefined ? { linkedConditionId: metadata.linkedConditionId } : {}),
+          ...(metadata?.grantedTags !== undefined ? { grantedTags: metadata.grantedTags } : {}),
+          ...(metadata?.isPermanent !== undefined ? { isPermanent: metadata.isPermanent } : {})
+        };
+      }
     } else {
       nextEffects.push(nextActive);
     }

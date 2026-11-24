@@ -3,8 +3,10 @@ import {
   DEFAULT_CLOCK_START_HOUR,
   DEFAULT_HOURS_PER_DAY,
   DEFAULT_SECONDS_PER_TURN,
+  DEFAULT_TURN_UNIT_PLURAL,
+  DEFAULT_TURN_UNIT_SHORT,
+  DEFAULT_TURN_UNIT_SINGULAR,
   MINUTES_PER_HOUR,
-  ROUNDS_PER_HOUR,
   SECONDS_PER_MINUTE
 } from '../constants/world_clock.constants.ts';
 import { getComponent } from '../core/ecs.ts';
@@ -48,11 +50,14 @@ export const DEFAULT_REST_PRESSURE_CONFIG: RestPressureConfig = {
   alarmDecayTurns: DEFAULT_REST_ALARM_DECAY_TURNS
 };
 
-/** Canonical default SRD diurnal clock schedule (24h day starting 08:00 AM, Dawn 05:00, Day 07:00, Dusk 18:00, Night 20:00). */
+/** Canonical default Tier 1 Console diurnal clock schedule (24h day starting 08:00 AM, Dawn 05:00, Day 07:00, Dusk 18:00, Night 20:00). */
 export const DEFAULT_WORLD_CLOCK_CONFIG: WorldClockConfig = {
   secondsPerGlobalTurn: DEFAULT_SECONDS_PER_TURN,
   startHour: DEFAULT_CLOCK_START_HOUR,
   hoursPerDay: DEFAULT_HOURS_PER_DAY,
+  turnUnitShort: DEFAULT_TURN_UNIT_SHORT,
+  turnUnitSingular: DEFAULT_TURN_UNIT_SINGULAR,
+  turnUnitPlural: DEFAULT_TURN_UNIT_PLURAL,
   waitTargets: ['dawn', 'night'],
   phases: [
     { id: 'night', label: 'Night', startHour: 0, skyIllumination: 'shadowy', isNaturalSunlight: false },
@@ -83,10 +88,26 @@ export interface AreaEnvironmentProfile {
 }
 
 /**
- * Resolves the effective `WorldClockConfig` for a game state, falling back to `DEFAULT_WORLD_CLOCK_CONFIG`.
+ * Resolves the effective `WorldClockConfig` for a game state.
+ * Precedence: `campaign.rules.worldClock` -> `RulesetContract.getDefaultWorldClockConfig()` -> `DEFAULT_WORLD_CLOCK_CONFIG`.
+ * Optional unit display labels (`turnUnitShort`, `turnUnitSingular`, `turnUnitPlural`) fall back to the ruleset/console base if omitted.
  */
 export function getEffectiveWorldClockConfig(state: GameState): WorldClockConfig {
-  return state.campaign.rules.worldClock ?? DEFAULT_WORLD_CLOCK_CONFIG;
+  const rulesetDefault = getRuleset(state.campaign?.manifest?.rulesetId).getDefaultWorldClockConfig?.();
+  const base = rulesetDefault ?? DEFAULT_WORLD_CLOCK_CONFIG;
+  const campaignClock = state.campaign?.rules?.worldClock;
+  if (!campaignClock) return base;
+
+  const turnUnitShort = campaignClock.turnUnitShort ?? base.turnUnitShort;
+  const turnUnitSingular = campaignClock.turnUnitSingular ?? base.turnUnitSingular;
+  const turnUnitPlural = campaignClock.turnUnitPlural ?? base.turnUnitPlural;
+
+  return {
+    ...campaignClock,
+    ...(turnUnitShort !== undefined ? { turnUnitShort } : {}),
+    ...(turnUnitSingular !== undefined ? { turnUnitSingular } : {}),
+    ...(turnUnitPlural !== undefined ? { turnUnitPlural } : {})
+  };
 }
 
 /**
@@ -289,8 +310,8 @@ export function isActorThreatenedByVisibleHostiles(state: GameState, actorId: En
 }
 
 /**
- * Checks whether one or more whole clock hours (`ROUNDS_PER_HOUR`) were crossed between
- * `prevTurn` and `nextTurn` and invokes the active ruleset's `onWorldHourElapsed` hook.
+ * Checks whether one or more whole clock hours (derived from active `WorldClockConfig.secondsPerGlobalTurn`)
+ * were crossed between `prevTurn` and `nextTurn` and invokes the active ruleset's `onWorldHourElapsed` hook.
  *
  * @param state Current GameState at `nextTurn`.
  * @param prevTurn Turn index prior to advancing.
@@ -298,8 +319,10 @@ export function isActorThreatenedByVisibleHostiles(state: GameState, actorId: En
  * @returns Updated GameState.
  */
 export function applyElapsedWorldHours(state: GameState, prevTurn: number, nextTurn: number): GameState {
-  const prevHours = Math.floor(Math.max(0, prevTurn) / ROUNDS_PER_HOUR);
-  const nextHours = Math.floor(Math.max(0, nextTurn) / ROUNDS_PER_HOUR);
+  const clock = getEffectiveWorldClockConfig(state);
+  const secondsPerHour = MINUTES_PER_HOUR * SECONDS_PER_MINUTE;
+  const prevHours = Math.floor((Math.max(0, prevTurn) * clock.secondsPerGlobalTurn) / secondsPerHour);
+  const nextHours = Math.floor((Math.max(0, nextTurn) * clock.secondsPerGlobalTurn) / secondsPerHour);
   const hoursElapsed = nextHours - prevHours;
   if (hoursElapsed <= 0) return state;
 

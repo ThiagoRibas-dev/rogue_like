@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { ROUNDS_PER_HOUR } from '../src/constants/world_clock.constants.ts';
+import { getTurnsPerHour } from '../src/utils/duration.ts';
 import {
   addComponent,
   createEntity,
@@ -20,7 +20,7 @@ import { EIGHT_HOURS_IN_ROUNDS, OPEN_SLOT_PREPARATION_ROUNDS } from '../src/rule
 import { executeDnD35eSpellCast } from '../src/rulesets/dnd35e/magic/spell_cast_resolver.ts';
 import { getDnD35EntityData, setDnD35EntityData } from '../src/rulesets/dnd35e/srd_registry.ts';
 import { getDnD35SystemContent } from '../src/rulesets/dnd35e/types/dnd35e_system.types.ts';
-import { applyElapsedWorldHours } from '../src/systems/world_clock.system.ts';
+import { applyElapsedWorldHours, getEffectiveWorldClockConfig } from '../src/systems/world_clock.system.ts';
 import { advanceWorldTimeBulk } from '../src/systems/world_time_skip.ts';
 import {
   ComponentType,
@@ -283,15 +283,34 @@ describe('Display Name Resolution, Top-Right Turn Ribbon, Rest Rules & Contrast 
     // 3. Hourly nonlethal healing and non-living CON:null immunity + Cure Light Wounds nonlethal reduction
     const playerDndBefore = getDnD35EntityData(afterRest, playerId);
     const bruisedState = setDnD35EntityData(afterRest, playerId, { ...playerDndBefore, nonlethalDamage: 6 });
-    const afterOneHour = applyElapsedWorldHours(bruisedState, 0, ROUNDS_PER_HOUR);
+    const turnsPerHour = getTurnsPerHour(getEffectiveWorldClockConfig(bruisedState));
+    const afterOneHour = applyElapsedWorldHours(bruisedState, 0, turnsPerHour);
     expect(getDnD35EntityData(afterOneHour, playerId).nonlethalDamage).toBe(5);
+
+    // Custom non-6s worldClock scale (60s/turn -> 60 turns/hr) triggers hourly recovery after 60 turns
+    const customClockState: typeof bruisedState = {
+      ...bruisedState,
+      campaign: {
+        ...bruisedState.campaign,
+        rules: {
+          ...bruisedState.campaign.rules,
+          worldClock: {
+            ...getEffectiveWorldClockConfig(bruisedState),
+            secondsPerGlobalTurn: 60
+          }
+        }
+      }
+    };
+    expect(getDnD35EntityData(applyElapsedWorldHours(customClockState, 0, 60), playerId).nonlethalDamage).toBe(5);
 
     const nonLivingState = setDnD35EntityData(bruisedState, playerId, {
       ...playerDndBefore,
       nonlethalDamage: 6,
       abilityScores: { ...playerDndBefore.abilityScores, con: { ...playerDndBefore.abilityScores.con, base: null } }
     });
-    expect(getDnD35EntityData(applyElapsedWorldHours(nonLivingState, 0, ROUNDS_PER_HOUR), playerId).nonlethalDamage).toBe(6);
+    expect(getDnD35EntityData(applyElapsedWorldHours(nonLivingState, 0, turnsPerHour), playerId).nonlethalDamage).toBe(
+      6
+    );
 
     // Magical healing reduces both lethal & nonlethal damage
     const woundedP = addComponent(bruisedState, playerId, {

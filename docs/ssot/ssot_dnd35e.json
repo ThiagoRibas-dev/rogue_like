@@ -794,6 +794,22 @@
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/builder/starting_packages.ts."
     ]
   },
+  "src/rulesets/dnd35e/cartridge/dnd35e_active_effects.ts": {
+    "domain": "D&D 3.5e: Cartridge Adapters, Core & Validation",
+    "tier": "tier2_cartridge",
+    "responsibility": "Handles D&D 3.5e status effect expiration cleanup (statModifiers, linked conditions, footprints) and projects unified active effect DTOs (spells, conditions, form overlays, spatial auras).",
+    "canonicalEntryPoints": [
+      "onDnD35eStatusEffectExpired",
+      "projectDnD35eActiveEffects"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/cartridge/dnd35e_active_effects.ts.",
+      "excludes": "External UI component rendering."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/cartridge/dnd35e_active_effects.ts."
+    ]
+  },
   "src/rulesets/dnd35e/cartridge/dnd35e_combat_adapter.ts": {
     "domain": "D&D 3.5e: Cartridge Adapters, Core & Validation",
     "tier": "tier2_cartridge",
@@ -1686,6 +1702,27 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/magic/spell_cast_units.ts."
+    ]
+  },
+  "src/rulesets/dnd35e/magic/spell_duration.ts": {
+    "domain": "D&D 3.5e: Layer 6 — Vancian Magic & Fields",
+    "tier": "tier2_cartridge",
+    "responsibility": "Parses declarative SRD spell duration formulas into 6-second turns, classifies buff/debuff/mixed polarity from modifiers and conditions, and formats concise effect summaries.",
+    "canonicalEntryPoints": [
+      "DEFAULT_DISPEL_FALLBACK_CL",
+      "EXTEND_METAMAGIC_DURATION_MULTIPLIER",
+      "POLARITY_COLORS",
+      "ParsedSpellDuration",
+      "parseSpellDurationTurns",
+      "classifyEffectPolarity",
+      "formatSpellModifiersSummary"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/magic/spell_duration.ts.",
+      "excludes": "Spell content-ID branching or UI rendering."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/magic/spell_duration.ts."
     ]
   },
   "src/rulesets/dnd35e/magic/spell_effects.ts": {
@@ -3094,7 +3131,7 @@
   "src/rulesets/dnd35e/wild_shape.ts": {
     "domain": "D&D 3.5e: Races, Templates, Bestiary & Companions",
     "tier": "tier2_cartridge",
-    "responsibility": "Number of combat rounds in 1 hour (`600`).",
+    "responsibility": "Applies and reverts Druid Wild Shape forms via PropertyOverlayComponent and equipment melding.",
     "canonicalEntryPoints": [
       "WildShapeFormDefinition",
       "isWildShapeFormEligible",
@@ -3111,6 +3148,21 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/wild_shape.ts."
+    ]
+  },
+  "src/rulesets/dnd35e/world_clock.ts": {
+    "domain": "D&D 3.5e: Cartridge Adapters, Core & Validation",
+    "tier": "tier2_cartridge",
+    "responsibility": "Provides the D&D 3.5e canonical 6-second round diurnal clock scale and round unit labels (`r`, `round`, `rounds`).",
+    "canonicalEntryPoints": [
+      "DND35E_DEFAULT_WORLD_CLOCK_CONFIG"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/world_clock.ts.",
+      "excludes": "External state mutation or Console-level clock scheduling."
+    },
+    "antiPatterns": [
+      "Do not duplicate 6-second round defaults outside src/rulesets/dnd35e/world_clock.ts."
     ]
   }
 }

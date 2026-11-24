@@ -156,6 +156,7 @@ export const DnD35SpellEffectUnitSchema = z.discriminatedUnion('type', [
   SpellEffectUnitBaseSchema.extend({
     type: z.literal('condition'),
     conditionId: z.string(),
+    duration: z.string().optional(),
     durationRoundsScaling: DnD35SpellScalingRuleSchema.optional(),
     eachRoundSaveRetry: z.boolean().default(false),
     maxTargetHitDice: z.number().int().positive().optional(),

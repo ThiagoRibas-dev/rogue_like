@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { Verb } from '../constants/verbs.constants.ts';
-import type { CampaignData, CurrencyConfig, StatusEffectDefinition } from './campaign.types.ts';
-import type { ActiveStatusEffect, MovementModes } from './components.types.ts';
+import type { CampaignData, CurrencyConfig, StatusEffectDefinition, WorldClockConfig } from './campaign.types.ts';
+import type { ActiveStatusEffect, MovementModes, StatusEffectPolarity } from './components.types.ts';
 import type { CardinalFacing } from './components/world_components.types.ts';
 import type { GameEvent } from './events.types.ts';
 import type { EntityId, GameState, TargetingContext } from './game-state.types.ts';
@@ -446,6 +446,12 @@ export interface RulesetContract {
   getDefaultCurrencyConfig?(): CurrencyConfig;
 
   /**
+   * Optional hook returning the ruleset's default diurnal world clock & turn-unit configuration
+   * (`campaign.rules.worldClock` overrides).
+   */
+  getDefaultWorldClockConfig?(): WorldClockConfig;
+
+  /**
    * Optional hook allowing a ruleset cartridge to adjust shop buy/sell pricing
    * (e.g. Appraise accuracy, Charisma/Diplomacy discounts, Alignment/Guild bias).
    */
@@ -577,6 +583,33 @@ export interface RulesetContract {
     itemName: string,
     explicitTargetId?: EntityId
   ) => GameState | null;
+
+  /**
+   * Optional hook invoked immediately after an `ActiveStatusEffect` expires and is removed
+   * from an entity's `StatusEffectsComponent`.
+   */
+  onStatusEffectExpired?(state: GameState, entityId: EntityId, expiredEffect: ActiveStatusEffect): GameState;
+
+  /**
+   * Optional hook projecting unified active effects (timed statuses, conditions, form overlays,
+   * and spatial emanation auras) for HUD Vitals, Inspect, and Character Sheet rendering.
+   */
+  projectActiveEffects?(state: Readonly<GameState>, entityId: EntityId): ReadonlyArray<ActiveEffectDisplayDTO>;
+}
+
+/**
+ * Polarity-aware display DTO projected by a ruleset for HUD Vitals, Inspect, and Character Sheet badges.
+ */
+export interface ActiveEffectDisplayDTO {
+  readonly id: string;
+  readonly label: string;
+  readonly polarity: StatusEffectPolarity;
+  readonly durationTurns?: number | undefined;
+  readonly isPermanent?: boolean | undefined;
+  readonly isAura?: boolean | undefined;
+  readonly summary?: string | undefined;
+  readonly sourceLabel?: string | undefined;
+  readonly color?: string | undefined;
 }
 
 /** Context passed to `RulesetContract.evaluateTradePriceModifier`. */

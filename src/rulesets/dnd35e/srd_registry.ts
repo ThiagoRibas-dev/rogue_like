@@ -163,14 +163,15 @@ export function setDnD35EntityData(state: GameState, entityId: EntityId, data: D
 export function getEquippedItemBonuses(
   state: GameState,
   entityId: EntityId
-): { readonly equipAttackBonus: number; readonly equipArmorBonus: number } {
+): { readonly equipAttackBonus: number; readonly equipArmorBonus: number; readonly equipDamageBonus: number } {
   const equipment = getComponent(state, entityId, ComponentType.Equipment) as EquipmentComponent | undefined;
   if (!equipment) {
-    return { equipAttackBonus: 0, equipArmorBonus: 0 };
+    return { equipAttackBonus: 0, equipArmorBonus: 0, equipDamageBonus: 0 };
   }
 
   let equipAttackBonus = 0;
   let equipArmorBonus = 0;
+  let equipDamageBonus = 0;
   let hasMainHandWeapon = false;
   for (const slot of equipment.slots) {
     if (slot.equippedItem === null || slot.suppressed === true) continue;
@@ -188,15 +189,17 @@ export function getEquippedItemBonuses(
       if (isMainHand) {
         hasMainHandWeapon = true;
         equipAttackBonus = wpnAtk;
+        equipDamageBonus = enhBonus;
       } else if (!hasMainHandWeapon) {
         equipAttackBonus = Math.max(equipAttackBonus, wpnAtk);
+        equipDamageBonus = Math.max(equipDamageBonus, enhBonus);
       }
     } else if (itemDef.equippable && !itemDef.armorStats) {
       equipAttackBonus += itemDef.equippable.attackBonus ?? 0;
       equipArmorBonus += itemDef.equippable.defenseBonus ?? 0;
     }
   }
-  return { equipAttackBonus, equipArmorBonus };
+  return { equipAttackBonus, equipArmorBonus, equipDamageBonus };
 }
 
 /**

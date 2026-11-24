@@ -96,6 +96,11 @@ export interface FactionComponent {
 }
 
 /**
+ * Polarity classification for active status effects and ruleset buffs/debuffs.
+ */
+export type StatusEffectPolarity = 'buff' | 'debuff' | 'mixed' | 'neutral';
+
+/**
  * An instance of a status effect applied to an entity.
  */
 export interface ActiveStatusEffect {
@@ -105,6 +110,15 @@ export interface ActiveStatusEffect {
   readonly elapsedTurns?: number | undefined;
   readonly secondaryResolved?: boolean | undefined;
   readonly interaction?: InteractionChain | undefined;
+  readonly displayName?: string | undefined;
+  readonly summary?: string | undefined;
+  readonly polarity?: StatusEffectPolarity | undefined;
+  readonly color?: string | undefined;
+  readonly sourcePath?: string | undefined;
+  readonly casterLevel?: number | undefined;
+  readonly linkedConditionId?: string | undefined;
+  readonly grantedTags?: ReadonlyArray<string> | undefined;
+  readonly isPermanent?: boolean | undefined;
 }
 
 /**

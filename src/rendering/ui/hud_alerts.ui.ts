@@ -17,6 +17,7 @@ import { hasPendingIntents } from '../../core/input_queue.ts';
 import { markDomainDirty, PresentationDomain } from '../../core/presentation_queue.ts';
 import { getActiveTurnActorId, getActorRemainingScheduleTime, isTurnProcessingActive } from '../../core/scheduler.ts';
 import { getHungerState } from '../../systems/hunger.system.ts';
+import { getEffectiveWorldClockConfig } from '../../systems/world_clock.system.ts';
 import {
   ComponentType,
   type FighterComponent,
@@ -27,6 +28,7 @@ import {
   type StatusEffectsComponent
 } from '../../types/components.types.ts';
 import { EngineMode, type EntityId, type GameState } from '../../types/game-state.types.ts';
+import { formatTurnDurationCompact } from '../../utils/duration.ts';
 import { isHostile } from '../../utils/faction.ts';
 import { coordToIndex } from '../../utils/grid.ts';
 import { getEffectiveStats } from '../../utils/stats.ts';
@@ -245,11 +247,17 @@ export function projectHudAlertsList(state: GameState, playerEntityId: EntityId)
   const statuses = getComponent(state, playerEntityId, ComponentType.StatusEffects) as
     StatusEffectsComponent | undefined;
   if (statuses) {
+    const clock = getEffectiveWorldClockConfig(state);
     for (const active of statuses.activeEffects) {
       const def = state.campaign.status[active.effectId];
+      const isFriendlyOrNeutral =
+        active.polarity === 'buff' ||
+        active.polarity === 'neutral' ||
+        (active.polarity === undefined && def !== undefined && !def.detrimental);
+      if (isFriendlyOrNeutral) continue;
       alerts.push({
-        label: def?.name ?? active.effectId,
-        detail: `${active.duration}t remaining`,
+        label: active.displayName ?? def?.name ?? active.effectId,
+        detail: `${formatTurnDurationCompact(active.duration, active.isPermanent, clock)} remaining`,
         severity: 'warning'
       });
     }

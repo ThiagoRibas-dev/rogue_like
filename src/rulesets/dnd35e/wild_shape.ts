@@ -19,11 +19,10 @@ import { SIZE_METRICS } from './spatial/grid_geometry.ts';
 import type { DnD35RaceDefinition } from './types/dnd35e_system.types.ts';
 import { addFloatingText } from '../../systems/damage.system.ts';
 import { addMessage, MessageLogCategory } from '../../systems/message.system.ts';
+import { getEffectiveWorldClockConfig } from '../../systems/world_clock.system.ts';
+import { getTurnsPerHour } from '../../utils/duration.ts';
 
 export * from './shapeshift.ts';
-
-/** Number of combat rounds in 1 hour (`600`). */
-const ROUNDS_PER_HOUR = 600;
 
 /** Default priority for Wild Shape base form overlay (`100`). */
 const WILD_SHAPE_OVERLAY_PRIORITY = 100;
@@ -123,7 +122,7 @@ export function applyWildShapeForm(
   };
 
   // 3. Attach PropertyOverlayComponent
-  const durationTurns = druidLevel * ROUNDS_PER_HOUR;
+  const durationTurns = Math.max(1, Math.round(druidLevel * getTurnsPerHour(getEffectiveWorldClockConfig(nextState))));
   const overlay: PropertyOverlayComponent = {
     type: ComponentType.PropertyOverlay,
     source: `wild_shape:${form.formId}`,

@@ -3,9 +3,14 @@
  * `spell_strike`, `save_or_die`, `energy_drain`) called by `spell_cast_effects.ts`.
  */
 
-import { addComponent, createEntity, getComponent, spawnEntity } from '../../../core/ecs.ts';
+import { addComponent, createEntity, getComponent, removeComponent, spawnEntity } from '../../../core/ecs.ts';
 import { addMessage, MessageLogCategory } from '../../../systems/message.system.ts';
-import { ComponentType, type FieldComponent, type PositionComponent } from '../../../types/components.types.ts';
+import {
+  ComponentType,
+  type FieldComponent,
+  type PositionComponent,
+  type StatusEffectsComponent
+} from '../../../types/components.types.ts';
 import type { EntityId, GameState } from '../../../types/game-state.types.ts';
 import { evaluateDiceExpression } from '../math/dice.ts';
 import { evaluateDnD35eEntityDAG } from '../cartridge/dnd35e_dag_adapter.ts';
@@ -19,6 +24,7 @@ import type { StatModifier } from '../types/stats.types.ts';
 import type { DnD35SpellDefinition, DnD35SpellEffectUnit } from '../types/system/spell_system.types.ts';
 import { resolveDispelCheck, type MetamagicSpellModifiers } from './metamagic_dispel.ts';
 import { evaluateSpellScalingRule } from './spell_effects.ts';
+import { DEFAULT_DISPEL_FALLBACK_CL } from './spell_duration.ts';
 import { materializeSummonedCreatureModifiers } from './spell_modifiers.ts';
 import { resolveIterativeSpellStrike } from './spell_strike_resolver.ts';
 
@@ -111,33 +117,84 @@ export function applySpecialSpellUnit(params: {
     case 'dispel': {
       const targetDnd = getDnD35EntityData(runningState, targetId);
       const existing = targetDnd.statModifiers ?? [];
+      const statusComp = getComponent(runningState, targetId, ComponentType.StatusEffects) as
+        StatusEffectsComponent | undefined;
+      const activeStatuses = statusComp?.activeEffects ?? [];
+
+      const clByRoot = new Map<string, number>();
+      for (const eff of activeStatuses) {
+        if (!eff.sourcePath || !eff.sourcePath.startsWith(unit.revokesPathPrefix)) continue;
+        const rootPath = eff.sourcePath.split('/').slice(0, 2).join('/');
+        if (eff.casterLevel !== undefined && !clByRoot.has(rootPath)) {
+          clByRoot.set(rootPath, eff.casterLevel);
+        } else if (!clByRoot.has(rootPath)) {
+          clByRoot.set(rootPath, DEFAULT_DISPEL_FALLBACK_CL);
+        }
+      }
+
       const spellRoots = Array.from(
-        new Set(
-          existing
+        new Set([
+          ...existing
             .map((m) => m.sourcePath)
             .filter((p): p is string => p !== undefined && p.startsWith(unit.revokesPathPrefix))
-            .map((p) => p.split('/').slice(0, 2).join('/'))
-        )
+            .map((p) => p.split('/').slice(0, 2).join('/')),
+          ...clByRoot.keys()
+        ])
       );
+
       let cleaned: ReadonlyArray<StatModifier> = [...existing];
-      let dispelledCount = 0;
+      const dispelledRoots = new Set<string>();
       for (const rootPath of spellRoots) {
+        const targetSpellCl = clByRoot.get(rootPath) ?? DEFAULT_DISPEL_FALLBACK_CL;
         const res = resolveDispelCheck(
           Math.min(casterLevel, unit.maxCasterLevelBonus),
-          casterLevel,
+          targetSpellCl,
           unit.maxCasterLevelBonus > 10
         );
         if (res.dispelled) {
           cleaned = revokeModifiersByPathPrefix(cleaned, rootPath);
-          dispelledCount++;
+          dispelledRoots.add(rootPath);
         }
       }
-      if (dispelledCount > 0) {
-        runningState = setDnD35EntityData(runningState, targetId, { ...targetDnd, statModifiers: cleaned });
+
+      if (dispelledRoots.size > 0) {
+        const remainingStatuses = activeStatuses.filter(
+          (eff) => !eff.sourcePath || !dispelledRoots.has(eff.sourcePath.split('/').slice(0, 2).join('/'))
+        );
+        const removedConditions = activeStatuses
+          .filter((eff) => eff.sourcePath && dispelledRoots.has(eff.sourcePath.split('/').slice(0, 2).join('/')))
+          .map((eff) => eff.linkedConditionId)
+          .filter((c): c is string => c !== undefined);
+
+        const nextConditions =
+          removedConditions.length > 0
+            ? (targetDnd.conditions ?? []).filter((cond) => {
+                if (!removedConditions.includes(cond)) return true;
+                return remainingStatuses.some((rem) => rem.linkedConditionId === cond);
+              })
+            : targetDnd.conditions;
+
+        runningState = setDnD35EntityData(runningState, targetId, {
+          ...targetDnd,
+          statModifiers: cleaned,
+          conditions: nextConditions
+        });
+
+        if (statusComp) {
+          if (remainingStatuses.length === 0) {
+            runningState = removeComponent(runningState, targetId, ComponentType.StatusEffects);
+          } else if (remainingStatuses.length !== activeStatuses.length) {
+            runningState = addComponent(runningState, targetId, {
+              ...statusComp,
+              activeEffects: remainingStatuses
+            });
+          }
+        }
+
         runningState = syncDnD35eActorSpatialFootprint(runningState, targetId);
         runningState = addMessage(
           runningState,
-          `${spell.name} dispels ${dispelledCount} active spell effect(s)!`,
+          `${spell.name} dispels ${dispelledRoots.size} active spell effect(s)!`,
           MessageLogCategory.System
         );
       }

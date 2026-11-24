@@ -25,6 +25,7 @@ export interface SituationalTagContext {
   readonly loadCategory?: 'light' | 'medium' | 'heavy' | 'overloaded' | undefined;
   readonly doctrine?: TacticalDoctrineComponent | undefined;
   readonly activeStatusEffectIds?: ReadonlyArray<string> | undefined;
+  readonly activeStatusGrantedTags?: ReadonlyArray<string> | undefined;
   readonly environmentType?: AreaEnvironmentType | undefined;
   readonly phaseId?: string | undefined;
   readonly lightReading?: TileLightReading | undefined;
@@ -146,8 +147,15 @@ export function resolveEntitySituationalTagContext(
     TacticalDoctrineComponent | undefined;
   const statuses = getComponent(state, entityId, ComponentType.StatusEffects) as StatusEffectsComponent | undefined;
   const activeStatusEffectIds = statuses
-    ? statuses.activeEffects.filter((e) => e.duration > 0).map((e) => e.effectId)
+    ? statuses.activeEffects.filter((e) => e.duration > 0 || e.isPermanent === true).map((e) => e.effectId)
     : [];
+  const activeStatusGrantedTags: string[] = [];
+  for (const eff of statuses?.activeEffects ?? []) {
+    if (eff.duration <= 0 && eff.isPermanent !== true) continue;
+    for (const gTag of eff.grantedTags ?? []) {
+      if (!activeStatusGrantedTags.includes(gTag)) activeStatusGrantedTags.push(gTag);
+    }
+  }
   const pos = getComponent(state, entityId, ComponentType.Position) as PositionComponent | undefined;
   if (pos?.isSqueezing === true && !activeStatusEffectIds.includes('squeezing')) {
     activeStatusEffectIds.push('squeezing');
@@ -181,6 +189,7 @@ export function resolveEntitySituationalTagContext(
     phaseId: envProfile.clock.phaseId,
     lightReading,
     ...(doctrine !== undefined ? { doctrine } : {}),
-    ...(activeStatusEffectIds.length > 0 ? { activeStatusEffectIds } : {})
+    ...(activeStatusEffectIds.length > 0 ? { activeStatusEffectIds } : {}),
+    ...(activeStatusGrantedTags.length > 0 ? { activeStatusGrantedTags } : {})
   };
 }

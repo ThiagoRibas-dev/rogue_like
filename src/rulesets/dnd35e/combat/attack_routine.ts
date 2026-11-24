@@ -223,6 +223,9 @@ export function resolveActorAttackRoutine(params: {
           ? computeExpandedCritThreatMin(wpn.baseCritThreatMin ?? wpn.critThreatMin, critThreatExpansionSteps)
           : wpn.critThreatMin;
 
+      const hasMagicWeaponTag = params.selfTags?.includes('weapon:magic') === true;
+      const strikeBypassTags = hasMagicWeaponTag ? Array.from(new Set([...wpn.bypassTags, 'magic'])) : wpn.bypassTags;
+
       strikes.push({
         index: i,
         label: wpn.weaponName,
@@ -243,7 +246,7 @@ export function resolveActorAttackRoutine(params: {
         flatDamageBonus: params.flatDamageBonus + wpn.damageBonus + strikeDamageMod,
         critThreatMin: critMin,
         critMultiplier: wpn.critMultiplier,
-        bypassTags: wpn.bypassTags,
+        bypassTags: strikeBypassTags,
         damageRiders: wpn.damageRiders,
         critThreatBreakdown,
         weaponId: wpn.weaponItemId,
@@ -269,6 +272,13 @@ export function resolveActorAttackRoutine(params: {
       const critMin =
         critThreatExpansionSteps > 0 ? computeExpandedCritThreatMin(baseCrit, critThreatExpansionSteps) : baseCrit;
 
+      const hasMagicNaturalTag =
+        params.selfTags?.includes('natural_weapon:magic') === true ||
+        params.selfTags?.includes('weapon:magic') === true;
+      const natBypass = hasMagicNaturalTag
+        ? Array.from(new Set([natLimb?.damageType ?? 'slashing', 'magic']))
+        : [natLimb?.damageType ?? 'slashing'];
+
       strikes.push({
         index: i,
         label:
@@ -284,7 +294,7 @@ export function resolveActorAttackRoutine(params: {
         flatDamageBonus: params.flatDamageBonus + strikeDamageMod,
         critThreatMin: critMin,
         critMultiplier: natLimb?.critMultiplier ?? 2,
-        bypassTags: [natLimb?.damageType ?? 'slashing'],
+        bypassTags: natBypass,
         ...(natLimb?.riders !== undefined ? { onHitRiders: natLimb.riders } : {}),
         critThreatBreakdown,
         naturalWeaponId: entry.naturalWeaponId,

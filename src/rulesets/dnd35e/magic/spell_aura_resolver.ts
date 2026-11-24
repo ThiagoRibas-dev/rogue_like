@@ -6,14 +6,29 @@ import {
   ComponentType,
   type FactionComponent,
   type FieldComponent,
-  type PositionComponent
+  type PositionComponent,
+  type StatusEffectPolarity
 } from '../../../types/components.types.ts';
 import type { EntityId, GameState } from '../../../types/game-state.types.ts';
 import type { ActiveRetaliationRiderEntry } from '../combat/retaliation_resolver.ts';
 import { rollD20 } from '../math/dice.ts';
 import type { StatModifier } from '../types/dnd35e.types.ts';
 import { getDnD35SystemContent, type DnD35SpellDefinition } from '../types/dnd35e_system.types.ts';
+import { classifyEffectPolarity, formatSpellModifiersSummary, POLARITY_COLORS } from './spell_duration.ts';
 import { materializeSpellUnitModifiers, projectSpellEffectTags } from './spell_effects.ts';
+
+/**
+ * UI-ready summary of a single active spatial emanation aura affecting an entity.
+ */
+export interface ActiveSpellAuraSummary {
+  readonly spellId: string;
+  readonly spellName: string;
+  readonly fieldEntityId: number;
+  readonly remainingTurns: number;
+  readonly polarity: StatusEffectPolarity;
+  readonly summary: string;
+  readonly color: string;
+}
 
 /**
  * Aggregated contributions projected dynamically onto an entity occupying one or more active spell emanation fields.
@@ -26,6 +41,7 @@ export interface ActiveSpellAuraContributions {
   readonly retaliationRiders: ReadonlyArray<ActiveRetaliationRiderEntry>;
   readonly stanceGroupOptions: ReadonlyArray<ConsoleStanceGroupOption>;
   readonly quickenMaxSpellLevel: number;
+  readonly activeAuras: ReadonlyArray<ActiveSpellAuraSummary>;
 }
 
 /**
@@ -77,7 +93,8 @@ export function evaluateActiveSpellAuraContributions(
       lowLightVision: false,
       retaliationRiders: [],
       stanceGroupOptions: [],
-      quickenMaxSpellLevel: -1
+      quickenMaxSpellLevel: -1,
+      activeAuras: []
     };
   }
 
@@ -90,7 +107,8 @@ export function evaluateActiveSpellAuraContributions(
       lowLightVision: false,
       retaliationRiders: [],
       stanceGroupOptions: [],
-      quickenMaxSpellLevel: -1
+      quickenMaxSpellLevel: -1,
+      activeAuras: []
     };
   }
 
@@ -102,8 +120,9 @@ export function evaluateActiveSpellAuraContributions(
   const retaliationRiders: ActiveRetaliationRiderEntry[] = [];
   const stanceGroupOptions: ConsoleStanceGroupOption[] = [];
   let quickenMaxSpellLevel = -1;
+  const activeAuras: ActiveSpellAuraSummary[] = [];
 
-  for (const { field } of activeFields) {
+  for (const { entityId: fieldEntityId, field } of activeFields) {
     if (!field.spellId) continue;
     const spell: DnD35SpellDefinition | undefined = sys.spells[field.spellId];
     if (!spell) continue;
@@ -113,6 +132,10 @@ export function evaluateActiveSpellAuraContributions(
     const role = resolveAuraOccupantRole(state, entityId, field.sourceEntityId);
     const effectTags = projectSpellEffectTags(spell);
     const saveOutcome = field.auraSaveMemory?.[String(entityId)];
+    const fieldMods: StatModifier[] = [];
+    const fieldTags: string[] = [];
+    const fieldNotes: string[] = [];
+    let fieldMatched = false;
 
     for (const unit of spell.effectUnits) {
       if (unit.type === 'spatial_field') continue;
@@ -133,14 +156,21 @@ export function evaluateActiveSpellAuraContributions(
       }
 
       if (unit.type === 'stat_bundle') {
-        modifiers.push(...materializeSpellUnitModifiers(spell, unit, casterLevel, castId));
+        fieldMatched = true;
+        const unitMods = materializeSpellUnitModifiers(spell, unit, casterLevel, castId);
+        modifiers.push(...unitMods);
+        fieldMods.push(...unitMods);
         for (const t of unit.effectBundle.grantedTags) {
           grantedTags.push(t);
+          fieldTags.push(t);
         }
         if (unit.effectBundle.grantedSenses) {
           darkvisionRangeFt = Math.max(darkvisionRangeFt, unit.effectBundle.grantedSenses.darkvisionRangeFt ?? 0);
           if (unit.effectBundle.grantedSenses.lowLightVision) {
             lowLightVision = true;
+          }
+          if ((unit.effectBundle.grantedSenses.darkvisionRangeFt ?? 0) > 0) {
+            fieldNotes.push(`Darkvision ${unit.effectBundle.grantedSenses.darkvisionRangeFt} ft`);
           }
         }
         for (const act of unit.effectBundle.activatedAbilities) {
@@ -156,6 +186,8 @@ export function evaluateActiveSpellAuraContributions(
           }
         }
       } else if (unit.type === 'retaliation_rider') {
+        fieldMatched = true;
+        fieldNotes.push('Retaliation Aura');
         retaliationRiders.push({
           spellId: spell.id,
           castId,
@@ -163,6 +195,7 @@ export function evaluateActiveSpellAuraContributions(
           unit
         });
       } else if (unit.type === 'quicken_cast_grant') {
+        fieldMatched = true;
         const effectiveCl = Math.max(0, casterLevel - unit.maxSpellLevelScaling.startAboveCL);
         const steps =
           unit.maxSpellLevelScaling.clStepInterval > 0
@@ -173,7 +206,27 @@ export function evaluateActiveSpellAuraContributions(
           maxLvl = Math.min(unit.maxSpellLevelScaling.maxCap, maxLvl);
         }
         quickenMaxSpellLevel = Math.max(quickenMaxSpellLevel, maxLvl);
+        fieldNotes.push(`Quicken <= Lvl ${maxLvl}`);
       }
+    }
+
+    if (fieldMatched) {
+      const polarity = classifyEffectPolarity(fieldMods, {
+        targetRole: role === 'secondary_enemy' ? 'secondary_enemy' : 'secondary_ally'
+      });
+      const summary = formatSpellModifiersSummary(fieldMods, {
+        grantedTags: fieldTags,
+        extraNotes: fieldNotes
+      });
+      activeAuras.push({
+        spellId: spell.id,
+        spellName: spell.name,
+        fieldEntityId,
+        remainingTurns: field.duration,
+        polarity,
+        summary: summary || `${spell.name} Aura`,
+        color: POLARITY_COLORS[polarity]
+      });
     }
   }
 
@@ -184,7 +237,8 @@ export function evaluateActiveSpellAuraContributions(
     lowLightVision,
     retaliationRiders,
     stanceGroupOptions,
-    quickenMaxSpellLevel
+    quickenMaxSpellLevel,
+    activeAuras
   };
 }
 

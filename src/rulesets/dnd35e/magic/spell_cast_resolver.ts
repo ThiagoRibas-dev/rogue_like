@@ -293,8 +293,10 @@ export function executeDnD35eSpellCast(
     meta.areaMultiplier,
     meta.flags.judicious
   );
-  const castId = `cast_${runningState.globalTurn}_${spell.id}`;
   runningState = addMessage(runningState, `You cast ${spell.name}!`, MessageLogCategory.CombatHit);
+  const castMsgCount = runningState.messages.length;
+  const lastCastCount = castMsgCount > 0 ? (runningState.messages[castMsgCount - 1]?.count ?? 1) : 0;
+  const castId = `cast_${runningState.globalTurn}_${castMsgCount}_${lastCastCount}_${spell.id}`;
 
   const placementUnits = spell.effectUnits.filter((u) => u.type === 'spatial_field' || u.type === 'summon');
   const casterSelfUnits = evaluateSpellEffectUnitsForTarget(spell, {
