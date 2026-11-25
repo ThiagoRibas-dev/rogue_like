@@ -16,7 +16,8 @@
     "glyph": "8",
     "fg": "#aaaaaa",
     "bg": "transparent",
-    "blocksSight": true
+    "blocksSight": true,
+    "tags": ["smoke"]
   },
   "poison_gas": {
     "id": "poison_gas",

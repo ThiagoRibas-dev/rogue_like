@@ -6767,5 +6767,194 @@
     "antiPatterns": [
       "Do not store Map or Set objects inside ColonySimulationState."
     ]
+  },
+  "src/constants/macro_world.constants.ts": {
+    "domain": "Core Console: Engine Types & Schemas",
+    "tier": "tier1_console",
+    "responsibility": "Named constants for continental worldgen, seasonal calendar, Ring 2 simulation limits, weather thermal deltas, and map glyphs.",
+    "canonicalEntryPoints": [
+      "DEFAULT_MACRO_WORLD_WIDTH",
+      "DEFAULT_MACRO_WORLD_HEIGHT",
+      "DEFAULT_LEGENDS_HISTORY_YEARS",
+      "DEFAULT_MACRO_SITE_COUNT",
+      "DEFAULT_MACRO_TICK_INTERVAL_TURNS",
+      "DAYS_PER_SEASON",
+      "SEASONS_PER_YEAR",
+      "WEATHER_TEMP_DELTA_BY_KIND",
+      "MACRO_BIOME_GLYPHS",
+      "MACRO_SITE_STATUS_GLYPHS"
+    ],
+    "ownershipBoundary": {
+      "includes": "Macro-world dimensions, calendar periods, weather deltas, and cap constants.",
+      "excludes": "Runtime simulation logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate macro-world magic numbers in workers, systems, or UI modals."
+    ]
+  },
+  "src/types/macro_world.types.ts": {
+    "domain": "Core Console: Engine Types & Schemas",
+    "tier": "tier1_console",
+    "responsibility": "Pure JSON-serializable Ring 2 macro-world and multi-century Legends archive data interfaces.",
+    "canonicalEntryPoints": [
+      "MacroSeason",
+      "MacroBiomeKind",
+      "MacroSiteArchetype",
+      "MacroSiteStatus",
+      "MacroWeatherKind",
+      "MacroSiteDeltaKind",
+      "LegendsEventKind",
+      "MacroContinentCell",
+      "MacroContinentGrid",
+      "MacroSiteRecord",
+      "MacroCaravanRecord",
+      "MacroArmyRecord",
+      "MacroWeatherFront",
+      "MacroSiteDelta",
+      "MacroRumorPayload",
+      "HistoricalFigureRecord",
+      "HistoricalArtifactRecord",
+      "LegendsEraRecord",
+      "LegendsEventRecord",
+      "LegendsArchive",
+      "MacroWorldState",
+      "MacroSimCampaignContext",
+      "MacroTickDeltaBatch",
+      "LegendsWorldgenInput"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure serializable TypeScript interfaces for continental geography, Ring 2 entities, and Legends history.",
+      "excludes": "Runtime methods or Map/Set containers."
+    },
+    "antiPatterns": [
+      "Do not store Map or Set objects inside MacroWorldState."
+    ]
+  },
+  "src/map/worldgen_continent.ts": {
+    "domain": "Core Console: Map Generation & Spatial Math",
+    "tier": "tier1_console",
+    "responsibility": "Deterministic continental heightmap, climate, biome, river, road, and site placement synthesizer.",
+    "canonicalEntryPoints": [
+      "createMacroRng",
+      "mapWorldCoordToContinentCell",
+      "generateContinentalMacroWorld"
+    ],
+    "ownershipBoundary": {
+      "includes": "Coarse continental world synthesis and chunk-to-continent projection.",
+      "excludes": "Multi-century historical event simulation or local ECS entity spawning."
+    },
+    "antiPatterns": [
+      "Do not mutate global ROT.RNG inside continental worldgen."
+    ]
+  },
+  "src/systems/macro/macro_world.system.ts": {
+    "domain": "Core Console: ECS Systems & Simulation",
+    "tier": "tier1_console",
+    "responsibility": "Isolated seeded Ring 2 macro-world simulation kernel, outdoor weather lookup, and deterministic delta batch merger.",
+    "canonicalEntryPoints": [
+      "buildMacroSimContext",
+      "advanceMacroWorldTicks",
+      "getActiveOutdoorWeatherAt",
+      "applyMacroTickBatchToGameState"
+    ],
+    "ownershipBoundary": {
+      "includes": "Settlement economy, caravan routing, faction warbands, weather front progression, and delta merging.",
+      "excludes": "Web Worker pooling or chunk tile stamping."
+    },
+    "antiPatterns": [
+      "Do not mutate global ROT.RNG or import worker_bridge from macro_world.system.ts."
+    ]
+  },
+  "src/systems/macro/macro_world_sync.ts": {
+    "domain": "Core Console: ECS Systems & Simulation",
+    "tier": "tier1_console",
+    "responsibility": "Turn-boundary synchronization and bulk time-skip catch-up between GameState and the Ring 2 macro worker.",
+    "canonicalEntryPoints": [
+      "syncMacroWorldAtTurnBoundary",
+      "flushMacroWorldSyncForBulkTurns"
+    ],
+    "ownershipBoundary": {
+      "includes": "Cadence boundary dispatch and ordered delta drain onto GameState.",
+      "excludes": "Direct cellular weather or caravan math."
+    },
+    "antiPatterns": [
+      "Do not apply out-of-order Ring 2 batches mid-turn."
+    ]
+  },
+  "src/systems/macro/legends_simulator.ts": {
+    "domain": "Core Console: ECS Systems & Simulation",
+    "tier": "tier1_console",
+    "responsibility": "Cooperative multi-century Legends historical simulator and Turn-1 ECS persistent legend/chronicle seeder.",
+    "canonicalEntryPoints": [
+      "buildLegendsInputFromCampaign",
+      "simulateWorldLegendsAsync",
+      "generateLegendsWorldSync",
+      "seedGameStateFromLegends"
+    ],
+    "ownershipBoundary": {
+      "includes": "Dynasty, figure, artifact, era, ruin history simulation, and Turn-1 GameState seeding.",
+      "excludes": "Chunk-level terrain stamping or rendering."
+    },
+    "antiPatterns": [
+      "Do not hardcode faction or item IDs inside Legends historical simulation."
+    ]
+  },
+  "src/systems/map/site_materializer.ts": {
+    "domain": "Core Console: Map Generation & Spatial Math",
+    "tier": "tier1_console",
+    "responsibility": "Idempotent chunk-wake and finite-area materialization of Ring 2 sites, burned raids, artifacts, and passing caravans.",
+    "canonicalEntryPoints": [
+      "hasUnmaterializedMacroActivityForGrid",
+      "materializeMacroSitesForChunk",
+      "materializeMacroSitesForArea"
+    ],
+    "ownershipBoundary": {
+      "includes": "Idempotent SoA chunk/area terrain stamping and survivor/artifact/caravan spawning.",
+      "excludes": "Ring 2 economic or warband progression."
+    },
+    "antiPatterns": [
+      "Do not duplicate spawned entities or artifacts when evicted chunks wake again."
+    ]
+  },
+  "src/worker/world_sim.worker.ts": {
+    "domain": "Core Console: Web Workers & Async Simulation",
+    "tier": "tier1_console",
+    "responsibility": "Persistent Ring 2 Web Worker executing isolated macro-world simulation tick batches off the main thread.",
+    "canonicalEntryPoints": [],
+    "ownershipBoundary": {
+      "includes": "Worker message handling for macro_world_tick requests.",
+      "excludes": "DOM access or direct GameState mutation."
+    },
+    "antiPatterns": [
+      "Do not access window, DOM, or main-thread singletons inside world_sim.worker.ts."
+    ]
+  },
+  "src/worker/legends_worldgen.worker.ts": {
+    "domain": "Core Console: Web Workers & Async Simulation",
+    "tier": "tier1_console",
+    "responsibility": "Offline multi-century Legends worldgen Web Worker streaming decade progress updates.",
+    "canonicalEntryPoints": [],
+    "ownershipBoundary": {
+      "includes": "Worker message handling and progress emission for legends_worldgen requests.",
+      "excludes": "DOM access or direct GameState mutation."
+    },
+    "antiPatterns": [
+      "Do not access window, DOM, or main-thread singletons inside legends_worldgen.worker.ts."
+    ]
+  },
+  "src/rendering/ui/modals/LegendsModal.tsx": {
+    "domain": "Core Console: Presentation & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Accessible 5-tab Preact World Map, Historical Figures, Sites, Artifacts, and Chronicle browser modal.",
+    "canonicalEntryPoints": [
+      "LegendsModal"
+    ],
+    "ownershipBoundary": {
+      "includes": "Read-only interactive presentation and filtering of MacroWorldState and LegendsArchive.",
+      "excludes": "Direct state mutation outside ToggleLegendsIntent."
+    },
+    "antiPatterns": [
+      "Do not use innerHTML or hardcoded dark colors inside LegendsModal.tsx."
+    ]
   }
 }

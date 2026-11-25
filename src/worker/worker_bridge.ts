@@ -6,9 +6,19 @@ import { type ChunkSynthesisParams, generateWorldChunkFromParams } from '../map/
 import { generateAreaAsync } from '../map/generator_async.ts';
 import { deserializeWorldChunkFromBuffer } from '../map/world_chunk.ts';
 import { runNarrativeFuzzerAsync } from '../editor/simulation/narrative_fuzzer_async.ts';
+import { simulateWorldLegendsAsync } from '../systems/macro/legends_simulator.ts';
+import { advanceMacroWorldTicks } from '../systems/macro/macro_world.system.ts';
+import type {
+  LegendsWorldgenInput,
+  MacroSimCampaignContext,
+  MacroTickDeltaBatch,
+  MacroWorldState
+} from '../types/macro_world.types.ts';
 import type { WorldChunk } from '../types/world-chunk.types.ts';
 import type {
   ChunkBatchWorkerRequest,
+  LegendsWorldgenWorkerRequest,
+  MacroWorldTickWorkerRequest,
   WorkerProgressPayload,
   WorkerResponse,
   FuzzerWorkerRequest,
@@ -20,6 +30,12 @@ import type {
 
 let nextRequestId = 1;
 let pooledChunkWorker: Worker | null = null;
+let pooledMacroWorker: Worker | null = null;
+let macroWorkerEpoch = 0;
+let inFlightMacroTickJob = false;
+let pendingMacroPromise: Promise<void> | null = null;
+let resolvePendingMacroPromise: (() => void) | null = null;
+const readyMacroTickBatches: MacroTickDeltaBatch[] = [];
 const pendingChunkBatchJobs = new Map<
   string,
   {
@@ -59,7 +75,7 @@ function serializeDirectorContext(context?: DirectorContext): SerializableDirect
  * @param onProgress Optional progress callback.
  * @returns Settled task result promise.
  */
-function dispatchWorkerJob<TReq extends FuzzerWorkerRequest | MapWorkerRequest, TRes>(
+function dispatchWorkerJob<TReq extends FuzzerWorkerRequest | MapWorkerRequest | LegendsWorldgenWorkerRequest, TRes>(
   createWorker: () => Worker,
   request: TReq,
   onProgress?: (progress: WorkerProgressPayload) => void
@@ -312,5 +328,190 @@ export function terminateChunkWorkerPool(): void {
   if (pooledChunkWorker) {
     pooledChunkWorker.terminate();
     pooledChunkWorker = null;
+  }
+}
+
+async function runLegendsMainThreadFallback(
+  input: LegendsWorldgenInput,
+  onProgress?: (progress: WorkerProgressPayload) => void
+): Promise<MacroWorldState> {
+  const generator = simulateWorldLegendsAsync(input);
+  let step = generator.next();
+  while (!step.done) {
+    onProgress?.(step.value);
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    step = generator.next();
+  }
+  return step.value;
+}
+
+/**
+ * Generates continental geography and multi-century Legends history off the main thread
+ * using `legends_worldgen.worker.ts`, falling back cleanly to cooperative main-thread
+ * slicing in headless test environments.
+ *
+ * @param input Continent and history worldgen parameters.
+ * @param onProgress Optional decade progress callback for loading UI overlays.
+ * @returns Completed initial `MacroWorldState` with `LegendsArchive`.
+ */
+export async function runLegendsWorldgenOffload(
+  input: LegendsWorldgenInput,
+  onProgress?: (progress: WorkerProgressPayload) => void
+): Promise<MacroWorldState> {
+  const id = `legends_${nextRequestId++}`;
+  const request: LegendsWorldgenWorkerRequest = {
+    id,
+    type: 'legends_worldgen',
+    input
+  };
+
+  if (!isWorkerAvailable()) {
+    return runLegendsMainThreadFallback(input, onProgress);
+  }
+
+  try {
+    return await dispatchWorkerJob<LegendsWorldgenWorkerRequest, MacroWorldState>(
+      () => new Worker(new URL('./legends_worldgen.worker.ts', import.meta.url), { type: 'module' }),
+      request,
+      onProgress
+    );
+  } catch (err) {
+    console.warn('Legends worldgen worker failed, falling back to main thread generator:', err);
+    return runLegendsMainThreadFallback(input, onProgress);
+  }
+}
+
+function getOrCreatePooledMacroWorker(): Worker {
+  if (pooledMacroWorker) return pooledMacroWorker;
+  const epochAtCreation = macroWorkerEpoch;
+  const worker = new Worker(new URL('./world_sim.worker.ts', import.meta.url), { type: 'module' });
+  worker.onmessage = (event: MessageEvent<WorkerResponse<MacroTickDeltaBatch>>): void => {
+    if (epochAtCreation !== macroWorkerEpoch) return;
+    const msg = event.data;
+    if (!msg) return;
+    if (msg.type === 'success') {
+      inFlightMacroTickJob = false;
+      readyMacroTickBatches.push(msg.result);
+      readyMacroTickBatches.sort((a, b) => a.toTick - b.toTick);
+      resolvePendingMacroPromise?.();
+      resolvePendingMacroPromise = null;
+      pendingMacroPromise = null;
+    } else if (msg.type === 'error') {
+      inFlightMacroTickJob = false;
+      console.warn('Ring 2 macro-world worker reported an error:', msg.error);
+      resolvePendingMacroPromise?.();
+      resolvePendingMacroPromise = null;
+      pendingMacroPromise = null;
+    }
+  };
+  worker.onerror = (err: ErrorEvent): void => {
+    console.warn('Ring 2 macro-world worker failed:', err.message);
+    inFlightMacroTickJob = false;
+    resolvePendingMacroPromise?.();
+    resolvePendingMacroPromise = null;
+    pendingMacroPromise = null;
+    worker.terminate();
+    if (pooledMacroWorker === worker) {
+      pooledMacroWorker = null;
+    }
+  };
+  pooledMacroWorker = worker;
+  return worker;
+}
+
+/**
+ * Dispatches an isolated deterministic Ring 2 tick advancement request to `world_sim.worker.ts`
+ * (or runs deterministically inline when `Worker` is unavailable in headless `bun test`),
+ * queueing the resulting {@link MacroTickDeltaBatch} for deterministic turn-boundary sync.
+ *
+ * @param macroWorld Current immutable MacroWorldState.
+ * @param targetTick Target macro tick index.
+ * @param context Pure serializable campaign simulation context.
+ * @returns True if a batch was executed synchronously or dispatched to the worker.
+ */
+export function dispatchMacroWorldTickOffload(
+  macroWorld: MacroWorldState,
+  targetTick: number,
+  context: MacroSimCampaignContext
+): boolean {
+  if (targetTick <= macroWorld.currentTick) return false;
+  if (!isWorkerAvailable()) {
+    const batch = advanceMacroWorldTicks(macroWorld, targetTick, context);
+    readyMacroTickBatches.push(batch);
+    readyMacroTickBatches.sort((a, b) => a.toTick - b.toTick);
+    return true;
+  }
+  if (inFlightMacroTickJob) return false;
+
+  try {
+    const worker = getOrCreatePooledMacroWorker();
+    const request: MacroWorldTickWorkerRequest = {
+      id: `macro_${nextRequestId++}`,
+      type: 'macro_world_tick',
+      macroWorld,
+      targetTick,
+      context
+    };
+    inFlightMacroTickJob = true;
+    pendingMacroPromise = new Promise<void>((resolve) => {
+      resolvePendingMacroPromise = resolve;
+    });
+    worker.postMessage(request);
+    return true;
+  } catch (err) {
+    console.warn('Macro-world worker dispatch failed, running deterministically inline:', err);
+    inFlightMacroTickJob = false;
+    resolvePendingMacroPromise?.();
+    resolvePendingMacroPromise = null;
+    pendingMacroPromise = null;
+    const batch = advanceMacroWorldTicks(macroWorld, targetTick, context);
+    readyMacroTickBatches.push(batch);
+    readyMacroTickBatches.sort((a, b) => a.toTick - b.toTick);
+    return true;
+  }
+}
+
+/**
+ * Resolves once any currently in-flight Ring 2 worker tick batch has finished and queued for sync.
+ */
+export async function awaitPendingMacroTickJob(): Promise<void> {
+  if (pendingMacroPromise) {
+    await pendingMacroPromise;
+  }
+}
+
+/**
+ * Reports whether an asynchronous Ring 2 worker job is currently in flight.
+ */
+export function hasPendingMacroTickJob(): boolean {
+  return inFlightMacroTickJob;
+}
+
+/**
+ * Consumes and removes all ready Ring 2 delta batches newer than `currentTick` in monotonic order.
+ *
+ * @param currentTick The `MacroWorldState.currentTick` currently applied on `GameState`.
+ * @returns Ordered array of ready delta batches.
+ */
+export function consumeReadyMacroTickBatches(currentTick: number): ReadonlyArray<MacroTickDeltaBatch> {
+  if (readyMacroTickBatches.length === 0) return [];
+  const drained = readyMacroTickBatches.filter((b) => b.toTick > currentTick).sort((a, b) => a.toTick - b.toTick);
+  readyMacroTickBatches.length = 0;
+  return drained;
+}
+
+/**
+ * Terminates any active Ring 2 worker and flushes queued batches (used on new game / save load).
+ */
+export function resetMacroWorldWorker(): void {
+  macroWorkerEpoch += 1;
+  inFlightMacroTickJob = false;
+  resolvePendingMacroPromise?.();
+  resolvePendingMacroPromise = null;
+  pendingMacroPromise = null;
+  readyMacroTickBatches.length = 0;
+  if (pooledMacroWorker) {
+    pooledMacroWorker.terminate();
+    pooledMacroWorker = null;
   }
 }

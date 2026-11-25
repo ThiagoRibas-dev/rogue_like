@@ -1,3 +1,4 @@
+import { DAYS_PER_SEASON, MACRO_SEASONS, SEASONS_PER_YEAR } from '../constants/macro_world.constants.ts';
 import {
   CLOCK_PHASE_ICONS,
   DEFAULT_CLOCK_START_HOUR,
@@ -9,6 +10,7 @@ import {
   MINUTES_PER_HOUR,
   SECONDS_PER_MINUTE
 } from '../constants/world_clock.constants.ts';
+import type { MacroSeason } from '../types/macro_world.types.ts';
 import { getComponent } from '../core/ecs.ts';
 import { getRuleset } from '../rulesets/registry.ts';
 import type {
@@ -327,4 +329,39 @@ export function applyElapsedWorldHours(state: GameState, prevTurn: number, nextT
 
   const ruleset = getRuleset(state.campaign?.manifest?.rulesetId);
   return ruleset.onWorldHourElapsed ? ruleset.onWorldHourElapsed(state, hoursElapsed) : state;
+}
+
+/** Deterministic seasonal calendar reading projected from `readWorldClock(state, turnOffset).day`. */
+export interface SeasonalCalendarReading {
+  readonly year: number;
+  readonly season: MacroSeason;
+  readonly seasonIndex: number;
+  readonly dayOfSeason: number;
+  readonly dayOfYear: number;
+}
+
+/**
+ * Computes the current seasonal calendar reading (`year`, `season`, `dayOfSeason`, `dayOfYear`)
+ * deterministically from `state.globalTurn` via {@link readWorldClock}.
+ *
+ * @param state Current immutable GameState.
+ * @param turnOffset Optional non-negative turn offset.
+ * @returns Seasonal calendar reading.
+ */
+export function readSeasonalCalendar(state: GameState, turnOffset = 0): SeasonalCalendarReading {
+  const clockDay = Math.max(1, readWorldClock(state, turnOffset).day);
+  const daysPerYear = DAYS_PER_SEASON * SEASONS_PER_YEAR;
+  const zeroBasedDay = clockDay - 1;
+  const year = Math.floor(zeroBasedDay / daysPerYear) + 1;
+  const dayOfYear = (zeroBasedDay % daysPerYear) + 1;
+  const seasonIndex = Math.floor((dayOfYear - 1) / DAYS_PER_SEASON);
+  const dayOfSeason = ((dayOfYear - 1) % DAYS_PER_SEASON) + 1;
+  const season = MACRO_SEASONS[seasonIndex] ?? 'spring';
+  return {
+    year,
+    season,
+    seasonIndex,
+    dayOfSeason,
+    dayOfYear
+  };
 }

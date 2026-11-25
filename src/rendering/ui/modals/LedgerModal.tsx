@@ -1,9 +1,9 @@
 import type { JSX } from 'preact';
-import { createToggleLedgerAction } from '../../../actions/core.actions.ts';
+import { createToggleLedgerAction, createToggleLegendsAction } from '../../../actions/core.actions.ts';
 import { getComponent } from '../../../core/ecs.ts';
 import { queuePlayerIntent } from '../../../core/game-loop.ts';
 import { PresentationDomain } from '../../../core/presentation_queue.ts';
-import { getHighImportanceEvents } from '../../../systems/ledger_queries.ts';
+import { formatLedgerEventLabel, getHighImportanceEvents } from '../../../systems/ledger_queries.ts';
 import { ComponentType } from '../../../types/components.types.ts';
 import { UIMode } from '../../../types/game-state.types.ts';
 import { useUiSelector } from '../core/ui_store.ts';
@@ -40,9 +40,20 @@ export function LedgerModal(): JSX.Element | null {
       size="lg"
       onClose={handleClose}
       footer={
-        <Button variant="primary" size="sm" onClick={handleClose}>
-          Close
-        </Button>
+        <div style={{ display: 'flex', gap: 'var(--ui-space-2)' }}>
+          {state.macroWorld !== undefined ? (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={(): void => queuePlayerIntent(createToggleLegendsAction(playerId))}
+            >
+              🗺️ World Legends
+            </Button>
+          ) : null}
+          <Button variant="primary" size="sm" onClick={handleClose}>
+            Close
+          </Button>
+        </div>
       }
     >
       <div className="ui-card-stack">
@@ -52,12 +63,10 @@ export function LedgerModal(): JSX.Element | null {
           </div>
         ) : (
           sortedEvents.map((event) => {
-            const turn = event.id ? event.id.split('_')[1] : '?';
+            const label = formatLedgerEventLabel(event.id);
             return (
               <div key={event.id} className="ui-ledger-entry">
-                <strong style={{ fontSize: 'var(--ui-font-xs)', color: 'var(--ui-accent-secondary)' }}>
-                  {`Turn ${turn}`}
-                </strong>
+                <strong style={{ fontSize: 'var(--ui-font-xs)', color: 'var(--ui-accent-secondary)' }}>{label}</strong>
                 <span style={{ fontSize: 'var(--ui-font-sm)' }}>{event.summary || event.type}</span>
                 <span
                   style={{

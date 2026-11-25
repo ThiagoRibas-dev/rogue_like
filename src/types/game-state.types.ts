@@ -8,6 +8,7 @@ import type { Verb } from '../constants/verbs.constants.ts';
 import type { PendingKnowledgePropagation, PendingRumorPropagation } from './knowledge.types.ts';
 import type { RoomBounds } from './encounter.types.ts';
 import type { ColonySimulationState } from './colony.types.ts';
+import type { MacroWorldState } from './macro_world.types.ts';
 import type { ChunkedWorldGrid, SerializedStreamingWorldState } from './world-chunk.types.ts';
 
 /**
@@ -42,6 +43,7 @@ export const enum UIMode {
   Trade = 'trade',
   Services = 'services',
   Ledger = 'ledger',
+  Legends = 'legends',
   CartridgeModal = 'cartridge_modal'
 }
 
@@ -318,6 +320,7 @@ export interface GameState {
     | undefined;
   readonly telemetry: TelemetryMetrics;
   readonly colonyState?: ColonySimulationState | undefined;
+  readonly macroWorld?: MacroWorldState | undefined;
 }
 
 /**
@@ -407,4 +410,5 @@ export interface SerializedGameState {
   readonly telemetry?: TelemetryMetrics;
   readonly streamingState?: SerializedStreamingWorldState | undefined;
   readonly colonyState?: ColonySimulationState | undefined;
+  readonly macroWorld?: MacroWorldState | undefined;
 }

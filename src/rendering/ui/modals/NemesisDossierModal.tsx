@@ -1,15 +1,17 @@
 import type { JSX } from 'preact';
-import { createToggleDossierAction } from '../../../actions/core.actions.ts';
+import { createToggleDossierAction, createToggleLegendsAction } from '../../../actions/core.actions.ts';
 import { getComponent, resolveEntityDisplayName } from '../../../core/ecs.ts';
 import { queuePlayerIntent } from '../../../core/game-loop.ts';
 import { PresentationDomain } from '../../../core/presentation_queue.ts';
+import { formatLedgerEventLabel } from '../../../systems/ledger_queries.ts';
 import {
   ComponentType,
   type ChronicleComponent,
   type FighterComponent,
   type IdentityComponent,
   type MemoryComponent,
-  type NemesisComponent
+  type NemesisComponent,
+  type TagsComponent
 } from '../../../types/components.types.ts';
 import { type EntityId, UIMode } from '../../../types/game-state.types.ts';
 import { useUiSelector } from '../core/ui_store.ts';
@@ -71,12 +73,18 @@ export function NemesisDossierModal(): JSX.Element | null {
     const identity = record.components[ComponentType.Identity] as IdentityComponent | undefined;
     const fighter = record.components[ComponentType.Fighter] as FighterComponent | undefined;
     const memory = record.components[ComponentType.Memory] as MemoryComponent | undefined;
+    const tags = record.components[ComponentType.Tags] as TagsComponent | undefined;
+    const legendFigure =
+      fighter === undefined && tags?.tags.includes('historical_legend') && state.macroWorld
+        ? Object.values(state.macroWorld.legends.figures).find((fig) => fig.seededEntityId === entityId)
+        : undefined;
+    const isAlive = fighter ? fighter.hp > 0 : legendFigure ? legendFigure.isAlive : false;
     notableEntries.push({
       id: entityId,
       identity,
       chronicle,
       memory,
-      isAlive: fighter ? fighter.hp > 0 : false
+      isAlive
     });
   }
 
@@ -91,9 +99,20 @@ export function NemesisDossierModal(): JSX.Element | null {
       size="xl"
       onClose={handleClose}
       footer={
-        <Button variant="primary" size="sm" onClick={handleClose}>
-          Close
-        </Button>
+        <div style={{ display: 'flex', gap: 'var(--ui-space-2)' }}>
+          {state.macroWorld !== undefined ? (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={(): void => queuePlayerIntent(createToggleLegendsAction(playerId))}
+            >
+              🗺️ World Legends
+            </Button>
+          ) : null}
+          <Button variant="primary" size="sm" onClick={handleClose}>
+            Close
+          </Button>
+        </div>
       }
     >
       <div className="ui-card-stack">
@@ -240,8 +259,7 @@ export function NemesisDossierModal(): JSX.Element | null {
                           .map((evtId) => {
                             const e = state.historicalLedger.find((le) => le.id === evtId);
                             if (!e) return null;
-                            const turn = e.id ? e.id.split('_')[1] : '?';
-                            return `[Turn ${turn}] ${e.summary}`;
+                            return `[${formatLedgerEventLabel(e.id)}] ${e.summary}`;
                           })
                           .filter(Boolean)
                           .join(' · ')

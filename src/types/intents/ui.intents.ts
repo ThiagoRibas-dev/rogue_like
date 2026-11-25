@@ -91,6 +91,12 @@ export interface ToggleLedgerIntent extends BaseIntent {
   readonly isImmediate: true;
 }
 
+/** Intent to toggle the multi-century World Legends & Macro Map browser overlay. */
+export interface ToggleLegendsIntent extends BaseIntent {
+  readonly type: IntentType.ToggleLegends;
+  readonly isImmediate: true;
+}
+
 /** Intent to toggle a cartridge-contributed modal overlay by modal ID. */
 export interface ToggleCartridgeModalIntent extends BaseIntent {
   readonly type: IntentType.ToggleCartridgeModal;

@@ -45,5 +45,6 @@ export const enum IntentType {
   AskAbout = 'AskAbout',
   Gossip = 'Gossip',
   ToggleLedger = 'ToggleLedger',
+  ToggleLegends = 'ToggleLegends',
   ToggleCartridgeModal = 'ToggleCartridgeModal'
 }

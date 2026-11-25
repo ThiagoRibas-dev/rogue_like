@@ -200,3 +200,19 @@ export interface WorldEventFiredEvent extends BaseGameEvent {
   readonly type: GameEventType.WorldEventFired;
   readonly entityId?: EntityId;
 }
+
+/** Fired when a Ring 2 macro-world tick batch is synchronized onto GameState. */
+export interface MacroWorldTickSyncedEvent extends BaseGameEvent {
+  readonly type: GameEventType.MacroWorldTickSynced;
+  readonly fromTick: number;
+  readonly toTick: number;
+  readonly deltaCount: number;
+}
+
+/** Fired when Ring 2 site mutations or caravans materialize into active Ring 0 chunks or areas. */
+export interface SiteMaterializedEvent extends BaseGameEvent {
+  readonly type: GameEventType.SiteMaterialized;
+  readonly siteId: string;
+  readonly areaId: string;
+  readonly materializedCount: number;
+}

@@ -363,6 +363,16 @@ export const CONSOLE_COMMANDS: ReadonlyArray<CommandDefinition> = [
     source: 'console'
   },
   {
+    id: 'panel.legends',
+    label: 'World Legends',
+    description: 'Open or close the World Map & multi-century Legends browser.',
+    category: 'panels',
+    scopes: ['world_gameplay', 'active_modal'],
+    defaultBindings: [{ key: 'h', shift: true }],
+    preventDefault: true,
+    source: 'console'
+  },
+  {
     id: 'panel.debug',
     label: 'Debug Telemetry',
     description: 'Toggle the developer debug telemetry overlay.',

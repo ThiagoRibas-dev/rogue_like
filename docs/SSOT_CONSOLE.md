@@ -11,19 +11,20 @@
 - [Core Console: Constants & Dictionaries (17 files)](#core-console-constants-dictionaries)
 - [Core Console: Constants & World Chunk Layout (1 files)](#core-console-constants-world-chunk-layout)
 - [Core Console: ECS & State Management (1 files)](#core-console-ecs-state-management)
-- [Core Console: ECS Systems & Simulation (87 files)](#core-console-ecs-systems-simulation)
+- [Core Console: ECS Systems & Simulation (90 files)](#core-console-ecs-systems-simulation)
 - [Core Console: ECS, Loop, RNG & Loader (44 files)](#core-console-ecs-loop-rng-loader)
-- [Core Console: Engine Types & Schemas (40 files)](#core-console-engine-types-schemas)
+- [Core Console: Engine Types & Schemas (42 files)](#core-console-engine-types-schemas)
 - [Core Console: Map & Spatial Simulation (1 files)](#core-console-map-spatial-simulation)
 - [Core Console: Map Generation & Director (11 files)](#core-console-map-generation-director)
+- [Core Console: Map Generation & Spatial Math (2 files)](#core-console-map-generation-spatial-math)
 - [Core Console: Map Generation & Spatial Plane (7 files)](#core-console-map-generation-spatial-plane)
 - [Core Console: Persistence & Delta Storage (1 files)](#core-console-persistence-delta-storage)
-- [Core Console: Presentation & UI Views (31 files)](#core-console-presentation-ui-views)
+- [Core Console: Presentation & UI Views (32 files)](#core-console-presentation-ui-views)
 - [Core Console: Rendering & UI Views (77 files)](#core-console-rendering-ui-views)
 - [Core Console: Ruleset Cartridge Registry (1 files)](#core-console-ruleset-cartridge-registry)
 - [Core Console: Types & World Chunk Contracts (1 files)](#core-console-types-world-chunk-contracts)
 - [Core Console: Utility Helpers (11 files)](#core-console-utility-helpers)
-- [Core Console: Web Workers & Async Simulation (4 files)](#core-console-web-workers-async-simulation)
+- [Core Console: Web Workers & Async Simulation (6 files)](#core-console-web-workers-async-simulation)
 
 ---
 
@@ -146,7 +147,7 @@
 
 ## Core Console: ECS Systems & Simulation
 
-**Modules in this domain:** 87
+**Modules in this domain:** 90
 
 | File | Tier | Responsibility | Canonical Entry Points | Ownership Boundary (Includes / Excludes) | Anti-Patterns |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -186,6 +187,9 @@
 | `src/systems/ledger.system.ts` | `tier1_console` | Processes transient events generated during a tick, filtering out high/normal importance | `processLedgerSystem` | **Includes:** Pure implementation and exports for src/systems/ledger.system.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/systems/ledger.system.ts. |
 | `src/systems/lifecycle.system.ts` | `tier1_console` | Coordinates entity-agnostic turn-start, movement-step, intent energy cost, and action-availability lifecycle windows across ruleset cartridges. | `runActorTurnStart`, `runActorMovementStep`, `resolveActorActionEnergyCost`, `canActorPerformIntent`, `hasActorActedThisTurn`, `hasActorMovementInProgress` | **Includes:** Pure implementation and exports for src/systems/lifecycle.system.ts.<br>**Excludes:** Cartridge-specific rule evaluation or hardcoded ruleset checks. | • Do not branch on rulesetId inside Console lifecycle systems. |
 | `src/systems/light_emitter.system.ts` | `tier1_console` | Manages dynamic radial and directional cone LightEmitterComponent sources (carried by any actor or dropped), wall-blocked illumination checks, fuel countdown ticks, ignite, and oil refueling. | `DEFAULT_OIL_REFUEL_TURNS`, `isPointWithinEmitterCone`, `buildLightEmitterFromItem`, `getActiveLightEmitters`, `evaluateDynamicLightAtTile`, `isPositionIlluminatedByActiveLightEmitter`, `canIgniteLightEmitterItem`, `igniteLightEmitter`, `refuelLightEmitter`, `processActorLightEmittersTick` | **Includes:** Pure implementation and exports for src/systems/light_emitter.system.ts.<br>**Excludes:** Ruleset-specific magical darkness spell priority or Light Blindness reactions. | • Never treat light emitters as player-only; resolve carried emitters symmetrically across players, companions, and NPCs. |
+| `src/systems/macro/legends_simulator.ts` | `tier1_console` | Cooperative multi-century Legends historical simulator and Turn-1 ECS persistent legend/chronicle seeder. | `buildLegendsInputFromCampaign`, `simulateWorldLegendsAsync`, `generateLegendsWorldSync`, `seedGameStateFromLegends` | **Includes:** Dynasty, figure, artifact, era, ruin history simulation, and Turn-1 GameState seeding.<br>**Excludes:** Chunk-level terrain stamping or rendering. | • Do not hardcode faction or item IDs inside Legends historical simulation. |
+| `src/systems/macro/macro_world_sync.ts` | `tier1_console` | Turn-boundary synchronization and bulk time-skip catch-up between GameState and the Ring 2 macro worker. | `syncMacroWorldAtTurnBoundary`, `flushMacroWorldSyncForBulkTurns` | **Includes:** Cadence boundary dispatch and ordered delta drain onto GameState.<br>**Excludes:** Direct cellular weather or caravan math. | • Do not apply out-of-order Ring 2 batches mid-turn. |
+| `src/systems/macro/macro_world.system.ts` | `tier1_console` | Isolated seeded Ring 2 macro-world simulation kernel, outdoor weather lookup, and deterministic delta batch merger. | `buildMacroSimContext`, `advanceMacroWorldTicks`, `getActiveOutdoorWeatherAt`, `applyMacroTickBatchToGameState` | **Includes:** Settlement economy, caravan routing, faction warbands, weather front progression, and delta merging.<br>**Excludes:** Web Worker pooling or chunk tile stamping. | • Do not mutate global ROT.RNG or import worker_bridge from macro_world.system.ts. |
 | `src/systems/map.system.ts` | `tier1_console` | Evaluates the player's line of sight and marks newly visible tiles as explored. | `updateExploredTiles`, `getVisibleHostileEntityIds`, `processChangeAreaIntent` | **Includes:** Pure implementation and exports for src/systems/map.system.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/systems/map.system.ts. |
 | `src/systems/map/map_generation_spawner.ts` | `tier1_console` | Generates a new area floor, runs the Encounter Director, and populates portals, items, and actors. | `generateAndPopulateAreaFloor` | **Includes:** Pure implementation and exports for src/systems/map/map_generation_spawner.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/systems/map/map_generation_spawner.ts. |
 | `src/systems/map/map_wake_respawn.ts` | `tier1_console` | Builds Encounter Director context and wakes saved area floors with trickle-respawn logic. | `collectReservedTokensForArea`, `buildAreaDirectorContext`, `wakeSavedAreaFloor` | **Includes:** Pure implementation and exports for src/systems/map/map_wake_respawn.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/systems/map/map_wake_respawn.ts. |
@@ -291,10 +295,11 @@
 
 ## Core Console: Engine Types & Schemas
 
-**Modules in this domain:** 40
+**Modules in this domain:** 42
 
 | File | Tier | Responsibility | Canonical Entry Points | Ownership Boundary (Includes / Excludes) | Anti-Patterns |
 | :--- | :--- | :--- | :--- | :--- | :--- |
+| `src/constants/macro_world.constants.ts` | `tier1_console` | Named constants for continental worldgen, seasonal calendar, Ring 2 simulation limits, weather thermal deltas, and map glyphs. | `DEFAULT_MACRO_WORLD_WIDTH`, `DEFAULT_MACRO_WORLD_HEIGHT`, `DEFAULT_LEGENDS_HISTORY_YEARS`, `DEFAULT_MACRO_SITE_COUNT`, `DEFAULT_MACRO_TICK_INTERVAL_TURNS`, `DAYS_PER_SEASON`, `SEASONS_PER_YEAR`, `WEATHER_TEMP_DELTA_BY_KIND`, `MACRO_BIOME_GLYPHS`, `MACRO_SITE_STATUS_GLYPHS` | **Includes:** Macro-world dimensions, calendar periods, weather deltas, and cap constants.<br>**Excludes:** Runtime simulation logic. | • Do not duplicate macro-world magic numbers in workers, systems, or UI modals. |
 | `src/types/ai.types.ts` | `tier1_types` | A function that encapsulates a single AI behavior. | `AIBehaviorFn` | **Includes:** Pure implementation and exports for src/types/ai.types.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/types/ai.types.ts. |
 | `src/types/campaign.types.ts` | `tier1_types` | The root Zod schema for a full campaign JSON document. | `CampaignDataSchema`, `CampaignData`, `CampaignCategorySchemas` | **Includes:** Coordinating facade and primary orchestration exports declared directly in src/types/campaign.types.ts.<br>**Excludes:** Underlying primitive symbols re-exported from leaf modules (e.g. src/types/dialogue.types.ts). | • Do not duplicate or bypass exports from src/types/campaign.types.ts. |
 | `src/types/campaign/entity.ts` | `tier1_types` | Zod schema describing entity template configs. | `EntityTemplateSchema`, `EntityTemplate`, `StatusEffectDefinitionSchema`, `StatusEffectDefinition`, `AIBehaviorEntrySchema`, `AIBehaviorEntry`, `AIProfileSchema`, `AIProfile` | **Includes:** Pure implementation and exports for src/types/campaign/entity.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/types/campaign/entity.ts. |
@@ -330,6 +335,7 @@
 | `src/types/intents/ui.intents.ts` | `tier1_types` | Intent to toggle the visibility of the inventory screen overlay. | `ToggleInventoryIntent`, `ToggleFactionsIntent`, `ToggleSettingsIntent`, `StartDialogueIntent`, `SelectDialogueOptionIntent`, `CloseDialogueIntent`, `ToggleQuestsIntent`, `ToggleInvestigationIntent` | **Includes:** Pure implementation and exports for src/types/intents/ui.intents.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/types/intents/ui.intents.ts. |
 | `src/types/interaction_provenance.types.ts` | `tier1_types` | Types for first-class multi-hop interaction provenance chains, causal frames, and ruleset frame-hook evaluations. | `InteractionFrame`, `InteractionFrameKind`, `InteractionChain` | **Includes:** Pure implementation and exports for src/types/interaction_provenance.types.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/types/interaction_provenance.types.ts. |
 | `src/types/knowledge.types.ts` | `tier1_types` | A pending knowledge propagation item waiting for its delay to expire. | `PendingKnowledgePropagation`, `PendingRumorPropagation` | **Includes:** Pure implementation and exports for src/types/knowledge.types.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/types/knowledge.types.ts. |
+| `src/types/macro_world.types.ts` | `tier1_console` | Pure JSON-serializable Ring 2 macro-world and multi-century Legends archive data interfaces. | `MacroSeason`, `MacroBiomeKind`, `MacroSiteArchetype`, `MacroSiteStatus`, `MacroWeatherKind`, `MacroSiteDeltaKind`, `LegendsEventKind`, `MacroContinentCell`, `MacroContinentGrid`, `MacroSiteRecord`, `MacroCaravanRecord`, `MacroArmyRecord`, `MacroWeatherFront`, `MacroSiteDelta`, `MacroRumorPayload`, `HistoricalFigureRecord`, `HistoricalArtifactRecord`, `LegendsEraRecord`, `LegendsEventRecord`, `LegendsArchive`, `MacroWorldState`, `MacroSimCampaignContext`, `MacroTickDeltaBatch`, `LegendsWorldgenInput` | **Includes:** Pure serializable TypeScript interfaces for continental geography, Ring 2 entities, and Legends history.<br>**Excludes:** Runtime methods or Map/Set containers. | • Do not store Map or Set objects inside MacroWorldState. |
 | `src/types/quests.types.ts` | `tier1_types` | Zod schema for quest objective parameters. | `QuestObjectiveSchema`, `QuestObjective`, `QuestRewardSchema`, `QuestReward`, `QuestSchema`, `Quest` | **Includes:** Pure implementation and exports for src/types/quests.types.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/types/quests.types.ts. |
 | `src/types/rivalry.types.ts` | `tier1_types` | Structural shape representing brief nemesis status. | `NemesisInfo` | **Includes:** Pure implementation and exports for src/types/rivalry.types.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/types/rivalry.types.ts. |
 | `src/types/ruleset.types.ts` | `tier1_types` | Describes a campaign verification warning or error containing pathway keys and details. | `ValidationError`, `ValidationReport`, `ViewPanelType`, `TabDefinition`, `ViewGroup`, `RulesetBaseContentKey`, `RulesetBaseFileDescriptor`, `RulesetIdSchema`, `RulesetId`, `EffectiveStats` | **Includes:** Pure implementation and exports for src/types/ruleset.types.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/types/ruleset.types.ts. |
@@ -362,6 +368,15 @@
 | `src/map/static-parser.ts` | `tier1_console` | Parses a static ASCII map layout into a GameMap. | `ParsedStaticMap`, `parseStaticMap` | **Includes:** Pure implementation and exports for src/map/static-parser.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/map/static-parser.ts. |
 | `src/map/voronoi.ts` | `tier1_console` | Noise factor added to Euclidean distance calculations to create organic, non-linear Voronoi borders. | `applyVoronoiBiomes` | **Includes:** Pure implementation and exports for src/map/voronoi.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/map/voronoi.ts. |
 
+## Core Console: Map Generation & Spatial Math
+
+**Modules in this domain:** 2
+
+| File | Tier | Responsibility | Canonical Entry Points | Ownership Boundary (Includes / Excludes) | Anti-Patterns |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `src/map/worldgen_continent.ts` | `tier1_console` | Deterministic continental heightmap, climate, biome, river, road, and site placement synthesizer. | `createMacroRng`, `mapWorldCoordToContinentCell`, `generateContinentalMacroWorld` | **Includes:** Coarse continental world synthesis and chunk-to-continent projection.<br>**Excludes:** Multi-century historical event simulation or local ECS entity spawning. | • Do not mutate global ROT.RNG inside continental worldgen. |
+| `src/systems/map/site_materializer.ts` | `tier1_console` | Idempotent chunk-wake and finite-area materialization of Ring 2 sites, burned raids, artifacts, and passing caravans. | `hasUnmaterializedMacroActivityForGrid`, `materializeMacroSitesForChunk`, `materializeMacroSitesForArea` | **Includes:** Idempotent SoA chunk/area terrain stamping and survivor/artifact/caravan spawning.<br>**Excludes:** Ring 2 economic or warband progression. | • Do not duplicate spawned entities or artifacts when evicted chunks wake again. |
+
 ## Core Console: Map Generation & Spatial Plane
 
 **Modules in this domain:** 7
@@ -386,7 +401,7 @@
 
 ## Core Console: Presentation & UI Views
 
-**Modules in this domain:** 31
+**Modules in this domain:** 32
 
 | File | Tier | Responsibility | Canonical Entry Points | Ownership Boundary (Includes / Excludes) | Anti-Patterns |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -416,6 +431,7 @@
 | `src/rendering/ui/modals/InvestigationModal.tsx` | `tier1_console` | Investigation Board modal displaying known suspects and discovered clues filtered by declarative filter chips. | `InvestigationModal` | **Includes:** Pure implementation and exports for src/rendering/ui/modals/InvestigationModal.tsx.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rendering/ui/modals/InvestigationModal.tsx. |
 | `src/rendering/ui/modals/ItemInspectPopover.tsx` | `tier1_console` | Theme-aware Preact item examine popover anchored near cursor or keyboard-focused item. | `ItemInspectPopover`, `ItemInspectPopoverProps`, `ItemInspectAnchor` | **Includes:** Pure implementation and exports for src/rendering/ui/modals/ItemInspectPopover.tsx.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rendering/ui/modals/ItemInspectPopover.tsx. |
 | `src/rendering/ui/modals/LedgerModal.tsx` | `tier1_console` | World Historical Ledger modal displaying high-importance events in reverse chronological order. | `LedgerModal` | **Includes:** Pure implementation and exports for src/rendering/ui/modals/LedgerModal.tsx.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rendering/ui/modals/LedgerModal.tsx. |
+| `src/rendering/ui/modals/LegendsModal.tsx` | `tier1_console` | Accessible 5-tab Preact World Map, Historical Figures, Sites, Artifacts, and Chronicle browser modal. | `LegendsModal` | **Includes:** Read-only interactive presentation and filtering of MacroWorldState and LegendsArchive.<br>**Excludes:** Direct state mutation outside ToggleLegendsIntent. | • Do not use innerHTML or hardcoded dark colors inside LegendsModal.tsx. |
 | `src/rendering/ui/modals/NemesisDossierModal.tsx` | `tier1_console` | Nemesis Hierarchies, Player Chronicle Timeline, and Notable Entity Chronicles modal. | `NemesisDossierModal` | **Includes:** Pure implementation and exports for src/rendering/ui/modals/NemesisDossierModal.tsx.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rendering/ui/modals/NemesisDossierModal.tsx. |
 | `src/rendering/ui/modals/PaperDollWidget.tsx` | `tier1_console` | Keyboard-accessible anatomical equipment paper doll widget with Weapon Sets I-IV and extra limbs drawer. | `PaperDollWidget`, `PaperDollWidgetProps` | **Includes:** Pure implementation and exports for src/rendering/ui/modals/PaperDollWidget.tsx.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rendering/ui/modals/PaperDollWidget.tsx. |
 | `src/rendering/ui/modals/QuestsModal.tsx` | `tier1_console` | Filterable Quest Journal modal showing Active, Completed, and Failed quests, objectives, and rewards. | `QuestsModal` | **Includes:** Pure implementation and exports for src/rendering/ui/modals/QuestsModal.tsx.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rendering/ui/modals/QuestsModal.tsx. |
@@ -542,14 +558,16 @@
 
 ## Core Console: Web Workers & Async Simulation
 
-**Modules in this domain:** 4
+**Modules in this domain:** 6
 
 | File | Tier | Responsibility | Canonical Entry Points | Ownership Boundary (Includes / Excludes) | Anti-Patterns |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | `src/worker/fuzzer.worker.ts` | `tier1_console` | Module implementation for src/worker/fuzzer.worker.ts | *None (Internal / Leaf / Ambient)* | **Includes:** Pure implementation and exports for src/worker/fuzzer.worker.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/worker/fuzzer.worker.ts. |
+| `src/worker/legends_worldgen.worker.ts` | `tier1_console` | Offline multi-century Legends worldgen Web Worker streaming decade progress updates. | *None (Internal / Leaf / Ambient)* | **Includes:** Worker message handling and progress emission for legends_worldgen requests.<br>**Excludes:** DOM access or direct GameState mutation. | • Do not access window, DOM, or main-thread singletons inside legends_worldgen.worker.ts. |
 | `src/worker/map.worker.ts` | `tier1_console` | Module implementation for src/worker/map.worker.ts | *None (Internal / Leaf / Ambient)* | **Includes:** Pure implementation and exports for src/worker/map.worker.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/worker/map.worker.ts. |
 | `src/worker/worker_bridge.ts` | `tier1_console` | Checks whether Web Workers are supported in the current runtime environment. | `isWorkerAvailable` | **Includes:** Pure implementation and exports for src/worker/worker_bridge.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/worker/worker_bridge.ts. |
 | `src/worker/worker.types.ts` | `tier1_console` | Serializable director context for thread boundaries without Set/Map. | `SerializableDirectorContext`, `FuzzerWorkerRequest`, `MapWorkerRequest`, `WorkerRequest`, `WorkerProgressPayload`, `WorkerProgressMessage`, `WorkerSuccessMessage`, `WorkerErrorMessage` | **Includes:** Pure implementation and exports for src/worker/worker.types.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/worker/worker.types.ts. |
+| `src/worker/world_sim.worker.ts` | `tier1_console` | Persistent Ring 2 Web Worker executing isolated macro-world simulation tick batches off the main thread. | *None (Internal / Leaf / Ambient)* | **Includes:** Worker message handling for macro_world_tick requests.<br>**Excludes:** DOM access or direct GameState mutation. | • Do not access window, DOM, or main-thread singletons inside world_sim.worker.ts. |
 
 ---
 

@@ -180,12 +180,34 @@ export function startSelectedCampaign(campaignIdOverride?: string): void {
   if (!targetId || !boundDisplay) return;
   const display = boundDisplay;
   uiStore.updateMenuSelection({ isStartingCampaign: true });
+  uiStore.setLoadingOverlay({
+    visible: true,
+    title: 'Forging World...',
+    progress: 0.05,
+    message: 'Preparing world...'
+  });
   setTimeout(() => {
-    startNewGame(targetId, getGameState(), display, (newState) => {
-      setGameState(applyCartridgeNewGameHook(newState));
-      applySettingsToDOM();
-      markAllDomainsDirty();
-    }).finally(() => {
+    startNewGame(
+      targetId,
+      getGameState(),
+      display,
+      (newState) => {
+        setGameState(applyCartridgeNewGameHook(newState));
+        applySettingsToDOM();
+        markAllDomainsDirty();
+      },
+      undefined,
+      undefined,
+      (progress) => {
+        uiStore.setLoadingOverlay({
+          visible: true,
+          title: 'Forging World History...',
+          progress: progress.progress,
+          message: progress.message
+        });
+      }
+    ).finally(() => {
+      uiStore.setLoadingOverlay({ visible: false, progress: 0, message: '' });
       uiStore.updateMenuSelection({ isStartingCampaign: false });
     });
   }, 50);

@@ -10,6 +10,7 @@ import { processActorPsychologyTick } from '../systems/psychology/needs.system.t
 import { processNemesisSystem } from '../systems/nemesis.system.ts';
 import { processRivalries } from '../systems/rivalry.system.ts';
 import { processWorldEvents } from '../systems/world_events.system.ts';
+import { syncMacroWorldAtTurnBoundary } from '../systems/macro/macro_world_sync.ts';
 import {
   LOCAL_NARRATIVE_TICK_INTERVAL,
   NEMESIS_EVALUATION_INTERVAL,
@@ -96,6 +97,9 @@ export function processTier3GlobalCadence(state: GameState, didGlobalTurnAdvance
   if (globalTurn % WORLD_EVENT_TICK_INTERVAL === 0) {
     nextState = processWorldEvents(nextState);
   }
+
+  // Ring 2 parallel macro-world turn-boundary synchronization
+  nextState = syncMacroWorldAtTurnBoundary(nextState);
 
   return nextState;
 }

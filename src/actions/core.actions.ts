@@ -21,6 +21,7 @@ import {
   type ToggleDebugIntent,
   type ToggleDossierIntent,
   type ToggleLedgerIntent,
+  type ToggleLegendsIntent,
   type ToggleCartridgeModalIntent
 } from '../types/intents/ui.intents.ts';
 
@@ -206,6 +207,17 @@ export function createToggleDossierAction(entityId: EntityId): ToggleDossierInte
 export function createToggleLedgerAction(entityId: EntityId): ToggleLedgerIntent {
   return {
     type: IntentType.ToggleLedger,
+    entityId,
+    isImmediate: true
+  };
+}
+
+/**
+ * Creates a toggle World Legends browser intent.
+ */
+export function createToggleLegendsAction(entityId: EntityId): ToggleLegendsIntent {
+  return {
+    type: IntentType.ToggleLegends,
     entityId,
     isImmediate: true
   };

@@ -273,7 +273,8 @@ export const AreaDefinitionSchema = z.object({
   ),
   streamingConfig: StreamingAreaConfigSchema.optional().describe(
     'Declarative chunk streaming geometry, seed, ring radii, and biome palette for streaming_overworld areas.'
-  )
+  ),
+  macroSiteId: z.string().optional().describe('Optional linked MacroWorld site ID for Ring 2 mutation materialization')
 });
 /** Inferred type for an area definition. */
 export type AreaDefinition = z.infer<typeof AreaDefinitionSchema>;

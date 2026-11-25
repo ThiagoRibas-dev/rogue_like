@@ -2482,21 +2482,21 @@ Turn loaded chunks into a dynamic Dwarf Fortress / RimWorld simulation: dirty-fl
 
 ---
 
-# 🚀 Phase 48: Ring 2 Parallel Macro-World Simulation & Offline Legends Worldgen
+# ✅ Phase 48: Ring 2 Parallel Macro-World Simulation & Offline Legends Worldgen (Completed)
 
 Add Dwarf Fortress's continent-wide living history layer: an offline multi-century Worldgen / Legends generator plus a background Ring 2 Web Worker advancing factions, armies, caravans, weather, and rumors seamlessly alongside local gameplay.
 
-## ⚪ Milestone 184: Dedicated Ring 2 Macro-World Simulation Worker (Planned)
+## ✅ Milestone 184: Dedicated Ring 2 Macro-World Simulation Worker (Complete)
 
-- [ ] **Macro-World Worker & Deterministic Turn-Boundary Sync (`src/worker/world_sim.worker.ts`, `src/systems/macro/macro_world.system.ts`)**: Offload continent-scale simulation (settlement economies, caravan routes, faction troop movements, off-screen scheme progression, rumor travel, and seasonal weather fronts) to a persistent Web Worker emitting ordered deterministic site-mutation deltas synced cleanly at world-clock intervals.
+- [x] **Macro-World Worker & Deterministic Turn-Boundary Sync (`src/worker/world_sim.worker.ts`, `src/systems/macro/macro_world.system.ts`, `macro_world_sync.ts`)**: Offloaded continent-scale simulation (settlement economies, caravan routes, faction troop movements, off-screen scheme/rumor propagation, and seasonal weather fronts modulating outdoor ambient temperatures) to a persistent Web Worker (`world_sim.worker.ts`) using an isolated deterministic PRNG (`createMacroRng`) emitting ordered site-mutation delta batches synced cleanly at world-clock turn boundaries and bulk time skips.
 
-## ⚪ Milestone 185: Offline Multi-Century Legends Worldgen Worker (Planned)
+## ✅ Milestone 185: Offline Multi-Century Legends Worldgen Worker (Complete)
 
-- [ ] **Pre-Play Historical Simulator (`src/worker/legends_worldgen.worker.ts`, `src/map/worldgen_continent.ts`)**: Generate continental heightmaps/biomes/civilizations and simulate `N` centuries using the shared faction, scheme, rivalry, nemesis, lineage, and `ChronicleComponent` engines before Turn 1 to seed ruins, tomb artifacts, living dynasties, and historical grudges.
+- [x] **Pre-Play Historical Simulator (`src/worker/legends_worldgen.worker.ts`, `src/map/worldgen_continent.ts`, `src/systems/macro/legends_simulator.ts`)**: Generated continental heightmaps/biomes/rivers/roads/civilizations and simulated `N` years/centuries off-thread with live `LoadingOverlay` progress to forge Eras, dynasties, living & slain figures, forged artifacts, ruins, and historical grudges seeded onto Turn 1 via `seedGameStateFromLegends`.
 
-## ⚪ Milestone 186: Site Materialization on Chunk Wake, Legends Browser UI & Systemic Substrate Verification Sweep (Planned)
+## ✅ Milestone 186: Site Materialization on Chunk Wake, Legends Browser UI & Systemic Substrate Verification Sweep (Complete)
 
-- [ ] **Macro-Delta Site Materialization & Legends Modal (`src/systems/map/site_materializer.ts`, `src/rendering/ui/modals/LegendsModal.tsx`)**: Materialize Ring 2 world mutations (raided hamlets, burnt taverns, merchant caravans, scarred survivors) into Ring 0 chunks upon entry; add a Preact Legends / World Chronicle browser modal built on shared accessible primitives; and run full `./verify.sh` + SSOT parity sweep.
+- [x] **Macro-Delta Site Materialization & Legends Modal (`src/systems/map/site_materializer.ts`, `src/rendering/ui/modals/LegendsModal.tsx`)**: Materialized Ring 2 world mutations idempotently into Ring 0 streaming chunks and `macroSiteId`-bound finite areas (intact towns, smoldering burnt sites with embers/smoke/scarred traumatized survivors, ancient tombs with custom-named artifacts, and passing caravans with stocked `ShopComponent`s + rumors); built accessible 5-tab Preact `<LegendsModal />` (`UIMode.Legends`, `Shift+H`, Command Dock, Ledger/Dossier cross-links); and verified full 8-stage `./verify.sh` + SSOT parity sweep.
 
 
 

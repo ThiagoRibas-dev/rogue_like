@@ -39,7 +39,9 @@ import type {
   SchemeMutatedAreaEvent,
   SchemeNodeDisruptedEvent,
   TileEnteredEvent,
-  WorldEventFiredEvent
+  WorldEventFiredEvent,
+  MacroWorldTickSyncedEvent,
+  SiteMaterializedEvent
 } from './events/interaction_events.types.ts';
 import type { InteractionChain, InteractionFrame, InteractionFrameKind } from './interaction_provenance.types.ts';
 
@@ -89,7 +91,9 @@ export type {
   SchemeEscalatedEvent,
   AreaRespawnedEvent,
   InvestigationStalledEvent,
-  WorldEventFiredEvent
+  WorldEventFiredEvent,
+  MacroWorldTickSyncedEvent,
+  SiteMaterializedEvent
 } from './events/interaction_events.types.ts';
 
 /**
@@ -134,7 +138,9 @@ export enum GameEventType {
   SchemeEscalated = 'SchemeEscalated',
   AreaRespawned = 'AreaRespawned',
   InvestigationStalled = 'InvestigationStalled',
-  WorldEventFired = 'WorldEventFired'
+  WorldEventFired = 'WorldEventFired',
+  MacroWorldTickSynced = 'MacroWorldTickSynced',
+  SiteMaterialized = 'SiteMaterialized'
 }
 
 /** Base interface for all ledger events. */
@@ -188,4 +194,6 @@ export type GameEvent =
   | SchemeEscalatedEvent
   | AreaRespawnedEvent
   | InvestigationStalledEvent
-  | WorldEventFiredEvent;
+  | WorldEventFiredEvent
+  | MacroWorldTickSyncedEvent
+  | SiteMaterializedEvent;

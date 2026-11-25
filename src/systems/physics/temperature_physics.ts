@@ -1,6 +1,7 @@
 import {
   CHUNK_DIRTY_PERSIST,
   CHUNK_DIRTY_TEMP,
+  CHUNK_FLAG_OUTDOOR,
   COLD_FIELD_SOURCE_TEMP_C,
   DEFAULT_AMBIENT_TEMP_C,
   DEFAULT_THERMAL_CONDUCTIVITY,
@@ -12,6 +13,7 @@ import {
   TEMP_CONVERGENCE_EPSILON_C,
   TEMP_DIFFUSION_RATE
 } from '../../constants/world_chunk.constants.ts';
+import { getActiveOutdoorWeatherAt } from '../macro/macro_world.system.ts';
 import { getComponent } from '../../core/ecs.ts';
 import {
   collectDirtyPhysicsRegions,
@@ -102,13 +104,32 @@ export function processDirtyTemperatureChunks(state: GameState): GameState {
   const regions = collectDirtyPhysicsRegions(nextState.map, CHUNK_DIRTY_TEMP);
   if (regions.length === 0) return nextState;
 
-  const ambientTemp = DEFAULT_AMBIENT_TEMP_C;
+  const baseAmbientTemp = DEFAULT_AMBIENT_TEMP_C;
+  const isOutdoorArea = nextState.campaign.areas[nextState.currentAreaId]?.environmentType === 'outdoors';
   const multiZ = isMultiZMap(nextState.map);
   const zBounds = getMapZBounds(nextState.map);
   const fireFieldId = findThermalFireFieldId(nextState);
   let nextMap = nextState.map;
 
   for (const region of regions) {
+    const chunkRef =
+      region.kind === 'chunk' && region.chunkKey !== undefined
+        ? nextMap.chunkGrid?.chunks.get(region.chunkKey)
+        : undefined;
+    const regionAmbientTemp = ((): number => {
+      if (!nextState.macroWorld) return baseAmbientTemp;
+      const sampleX = region.minX + Math.floor(region.width / 2);
+      const sampleY = region.minY + Math.floor(region.height / 2);
+      const hasOutdoorCells =
+        isOutdoorArea ||
+        (chunkRef !== undefined && region.z >= 0 && chunkRef.flags.some((f) => (f & CHUNK_FLAG_OUTDOOR) !== 0));
+      if (!hasOutdoorCells) return baseAmbientTemp;
+      const weather = getActiveOutdoorWeatherAt(nextState, sampleX, sampleY);
+      return weather
+        ? Math.max(MIN_CELL_TEMP_C, Math.min(MAX_CELL_TEMP_C, baseAmbientTemp + weather.tempDeltaC))
+        : baseAmbientTemp;
+    })();
+    const ambientTemp = regionAmbientTemp;
     const updates: Array<{ readonly x: number; readonly y: number; readonly z: number; readonly temp: number }> = [];
     const ignitedTiles: Array<{
       readonly x: number;

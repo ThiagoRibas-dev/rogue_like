@@ -288,5 +288,15 @@
     "category": "item",
     "color": "#e74c3c",
     "description": "Equipped or usable armament."
+  },
+  "burnt": {
+    "category": "terrain",
+    "color": "#555555",
+    "description": "Charred floor or scorched terrain left by fire or raids."
+  },
+  "smoke": {
+    "category": "field",
+    "color": "#aaaaaa",
+    "description": "Obscuring smoke plume emitted from embers and fires."
   }
 }

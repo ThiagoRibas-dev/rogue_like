@@ -85,6 +85,18 @@
       "outputs": [{ "itemId": "stone_figurine", "count": 1 }]
     }
   },
+  "macroWorld": {
+    "enabled": true,
+    "worldWidth": 24,
+    "worldHeight": 24,
+    "historyYears": 120,
+    "siteCount": 10,
+    "macroTickIntervalTurns": 100,
+    "enableWeatherFronts": true,
+    "areaSiteBindings": {
+      "watchtower_overlook": "site_2"
+    }
+  },
   "spawning": {
     "maxMonstersPerRoom": 2,
     "maxItemsPerRoom": 2,

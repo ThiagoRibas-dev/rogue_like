@@ -494,6 +494,7 @@ export function resolveDnD35eActionEnergyCost(
     case IntentType.AskAbout:
     case IntentType.Gossip:
     case IntentType.ToggleLedger:
+    case IntentType.ToggleLegends:
     case IntentType.ToggleCartridgeModal:
       return hasAnyRoundActionsRemaining(currentBudget)
         ? { state, energyCost: 0 }
@@ -594,6 +595,7 @@ export function canDnD35eActorPerformIntent(state: GameState, intent: Intent): b
     case IntentType.AskAbout:
     case IntentType.Gossip:
     case IntentType.ToggleLedger:
+    case IntentType.ToggleLegends:
     case IntentType.ToggleCartridgeModal:
       return true;
     default:

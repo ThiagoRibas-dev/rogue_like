@@ -22,6 +22,10 @@ import { startRecording } from './replay.ts';
 import { clearChunkStoreScope, resolveDefaultChunkScopeKey } from './chunk_store.ts';
 import { deleteSave } from './save.ts';
 import { clearStreamingPrefetchCache, updateStreamingWorldWindow } from '../systems/map/chunk_streaming.ts';
+import { materializeMacroSitesForArea } from '../systems/map/site_materializer.ts';
+import { buildLegendsInputFromCampaign, seedGameStateFromLegends } from '../systems/macro/legends_simulator.ts';
+import { resetMacroWorldWorker, runLegendsWorldgenOffload } from '../worker/worker_bridge.ts';
+import type { WorkerProgressPayload } from '../worker/worker.types.ts';
 import { setTelemetryStore } from './telemetry.ts';
 import { addActor, clearScheduler, initEngine, startEngine } from './scheduler.ts';
 import { DEFAULT_GLOBAL_DRAMA_BUDGET } from '../constants/pacing.constants.ts';
@@ -46,10 +50,12 @@ export async function startNewGame(
   display: ROT.Display,
   setGlobalState: (s: GameState) => void,
   seed?: number,
-  spawnOverride?: SpawnOverride
+  spawnOverride?: SpawnOverride,
+  onProgress?: (progress: WorkerProgressPayload) => void
 ): Promise<void> {
   const finalSeed = initRNG(seed);
   startRecording(campaignId, finalSeed);
+  resetMacroWorldWorker();
 
   clearModals();
   resetAutoPauseTracking();
@@ -136,6 +142,12 @@ export async function startNewGame(
     }
   };
 
+  if (state.campaign.rules.macroWorld?.enabled === true) {
+    const legendsInput = buildLegendsInputFromCampaign(state.campaign, finalSeed);
+    const macroWorld = await runLegendsWorldgenOffload(legendsInput, onProgress);
+    state = seedGameStateFromLegends(state, macroWorld);
+  }
+
   const spawnX = spawnOverride?.x ?? startPos.x;
   const spawnY = spawnOverride?.y ?? startPos.y;
   const spawnZ = startPos.z ?? 0;
@@ -143,6 +155,8 @@ export async function startNewGame(
   state = stateAfterPlayerSpawn;
   if (state.map.chunkGrid !== undefined) {
     state = updateStreamingWorldWindow(state, spawnX, spawnY, { anchorZ: spawnZ });
+  } else {
+    state = materializeMacroSitesForArea(state, initialAreaId);
   }
 
   const mastermindId = state.nextEntityId as EntityId;

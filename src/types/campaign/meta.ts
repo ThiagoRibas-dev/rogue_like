@@ -174,6 +174,22 @@ export const PsychologyRulesConfigSchema = z.object({
 /** Inferred type for psychology configuration. */
 export type PsychologyRulesConfig = z.infer<typeof PsychologyRulesConfigSchema>;
 
+/** Zod schema for Ring 2 macro-world simulation and offline Legends worldgen configuration. */
+export const MacroWorldConfigSchema = z.object({
+  enabled: z.boolean().default(false),
+  worldSeed: z.number().int().optional(),
+  worldWidth: z.number().int().min(12).max(64).default(32),
+  worldHeight: z.number().int().min(12).max(64).default(32),
+  historyYears: z.number().int().min(10).max(500).default(150),
+  siteCount: z.number().int().min(4).max(32).default(12),
+  macroTickIntervalTurns: z.number().int().min(10).max(1000).default(100),
+  enableWeatherFronts: z.boolean().default(true),
+  raiderFactionTags: z.array(z.string()).optional(),
+  areaSiteBindings: z.record(z.string(), z.string()).optional()
+});
+/** Inferred type for Ring 2 macro-world configuration. */
+export type MacroWorldConfig = z.infer<typeof MacroWorldConfigSchema>;
+
 /** Zod schema for campaign engine configuration rules. */
 export const RulesConfigSchema = z.object({
   map: z.object({
@@ -210,6 +226,7 @@ export const RulesConfigSchema = z.object({
   blueprints: z.record(z.string(), ConstructionBlueprintSchema).optional(),
   craftingRecipes: z.record(z.string(), CraftingRecipeSchema).optional(),
   psychology: PsychologyRulesConfigSchema.optional(),
+  macroWorld: MacroWorldConfigSchema.optional(),
   spawning: z.object({
     maxMonstersPerRoom: z.number().int().nonnegative(),
     maxItemsPerRoom: z.number().int().nonnegative(),

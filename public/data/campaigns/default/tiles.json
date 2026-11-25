@@ -3,10 +3,20 @@
     "spriteId": "tile_floor_stone_1",
     "walkable": true,
     "transparent": true,
+    "burnedTileId": "burnt_floor",
     "glyph": ".",
     "fg": "#1a1d24",
     "bg": "#000000",
     "tags": ["terrain"]
+  },
+  "burnt_floor": {
+    "spriteId": "tile_blank_floor_dark_grey",
+    "walkable": true,
+    "transparent": true,
+    "glyph": ".",
+    "fg": "#555555",
+    "bg": "#000000",
+    "tags": ["terrain", "burnt"]
   },
   "stone_wall": {
     "spriteId": "tile_rough_stone_wall_top",

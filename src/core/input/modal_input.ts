@@ -10,6 +10,7 @@ import {
   createToggleFactionsAction,
   createToggleInvestigationAction,
   createToggleLedgerAction,
+  createToggleLegendsAction,
   createToggleQuestsAction,
   createToggleSettingsAction
 } from '../../actions/core.actions.ts';
@@ -29,6 +30,7 @@ interface ModalBinding {
   readonly mode: UIMode;
   readonly buildToggleIntent: (playerEntityId: EntityId) => Intent;
   readonly shortcut?: ActionType;
+  readonly commandId?: string;
 }
 
 /** Max digit shortcut key index supported in modal dialogue option selection (`1`-`9`). */
@@ -46,7 +48,8 @@ const MODAL_BINDINGS: ReadonlyArray<ModalBinding> = [
   { mode: UIMode.Quests, buildToggleIntent: createToggleQuestsAction, shortcut: 'quests' },
   { mode: UIMode.Investigation, buildToggleIntent: createToggleInvestigationAction, shortcut: 'investigation' },
   { mode: UIMode.Dossier, buildToggleIntent: createToggleDossierAction, shortcut: 'dossier' },
-  { mode: UIMode.Ledger, buildToggleIntent: createToggleLedgerAction, shortcut: 'ledger' }
+  { mode: UIMode.Ledger, buildToggleIntent: createToggleLedgerAction, shortcut: 'ledger' },
+  { mode: UIMode.Legends, buildToggleIntent: createToggleLegendsAction, commandId: 'panel.legends' }
 ];
 
 /**
@@ -161,10 +164,17 @@ export function handleModalKey(event: KeyboardEvent, state: GameState, playerEnt
       }
     }
 
-    if (!hasModifierKey) {
-      const nestedBinding = MODAL_BINDINGS.find(
-        (candidate) => candidate.shortcut !== undefined && isAction(event, candidate.shortcut)
-      );
+    const matchNestedModalShortcut = (candidate: ModalBinding): boolean => {
+      if (candidate.shortcut !== undefined && isAction(event, candidate.shortcut)) return true;
+      if (candidate.commandId !== undefined) {
+        const chords = commandRegistry.getEffectiveBindings(candidate.commandId, getCommandBindings());
+        return chords.some((chord) => matchesChord(event, chord));
+      }
+      return false;
+    };
+
+    if (!event.altKey && !event.ctrlKey && !event.metaKey) {
+      const nestedBinding = MODAL_BINDINGS.find(matchNestedModalShortcut);
       if (nestedBinding !== undefined) {
         event.preventDefault();
         queuePlayerIntent(nestedBinding.buildToggleIntent(playerEntityId));
@@ -189,9 +199,14 @@ export function handleModalKey(event: KeyboardEvent, state: GameState, playerEnt
 
   // Another modal's shortcut opens it on top of the current one, enabling true
   // LIFO nesting (e.g. Dossier opened from the Investigation board).
-  const nestedBinding = MODAL_BINDINGS.find(
-    (candidate) => candidate.shortcut !== undefined && isAction(event, candidate.shortcut)
-  );
+  const nestedBinding = MODAL_BINDINGS.find((candidate) => {
+    if (candidate.shortcut !== undefined && isAction(event, candidate.shortcut)) return true;
+    if (candidate.commandId !== undefined) {
+      const chords = commandRegistry.getEffectiveBindings(candidate.commandId, getCommandBindings());
+      return chords.some((chord) => matchesChord(event, chord));
+    }
+    return false;
+  });
   if (nestedBinding === undefined) return;
 
   event.preventDefault();

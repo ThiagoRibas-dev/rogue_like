@@ -1,4 +1,9 @@
-import { CHUNK_DIRTY_PERSIST, MAX_PREFETCH_CACHE_CHUNKS } from '../../constants/world_chunk.constants.ts';
+import {
+  CHUNK_DIRTY_PERSIST,
+  CHUNK_DIRTY_TEMP,
+  CHUNK_FLAG_OUTDOOR,
+  MAX_PREFETCH_CACHE_CHUNKS
+} from '../../constants/world_chunk.constants.ts';
 import {
   getCachedWorldChunkDeltaSync,
   putWorldChunkDeltaSync,
@@ -12,7 +17,9 @@ import {
   generateWorldChunkFromParams
 } from '../../map/chunk_generator.ts';
 import { releaseAllWorkerReservations } from '../labor/job_blackboard.ts';
+import { getActiveOutdoorWeatherAt } from '../macro/macro_world.system.ts';
 import { applyAnalyticalChunkCatchUp } from '../physics/chunk_catchup.ts';
+import { hasUnmaterializedMacroActivityForGrid, materializeMacroSitesForChunk } from './site_materializer.ts';
 import { ComponentType, type ControllerLinkComponent, type PositionComponent } from '../../types/components.types.ts';
 import type { EntityId, GameState } from '../../types/game-state.types.ts';
 import type {
@@ -352,7 +359,8 @@ export function updateStreamingWorldWindow(
     !missingRing0 &&
     grid.originChunkX === targetCx &&
     grid.originChunkY === targetCy &&
-    (grid.originChunkZ ?? 0) === targetCz
+    (grid.originChunkZ ?? 0) === targetCz &&
+    !hasUnmaterializedMacroActivityForGrid(state, grid)
   ) {
     return state;
   }
@@ -415,6 +423,58 @@ export function updateStreamingWorldWindow(
     evictedChunkEntities: nextEvictedEntities
   };
 
+  workingState = {
+    ...workingState,
+    map: {
+      ...workingState.map,
+      chunkGrid: nextGrid
+    }
+  };
+
+  if (workingState.macroWorld !== undefined) {
+    const isOutdoorArea = areaDef.environmentType === 'outdoors';
+    const wokenSet = new Set(wokenChunkKeys);
+    const surfaceChunks = Array.from(nextChunks.values()).filter((c) => c.cz === 0);
+    for (const surfaceChunk of surfaceChunks) {
+      let currentChunk = surfaceChunk;
+      const chunkKeyStr = formatChunkKey(currentChunk.cx, currentChunk.cy, currentChunk.cz);
+      if (wokenSet.has(chunkKeyStr)) {
+        const chunkIsOutdoor = isOutdoorArea || currentChunk.flags.some((f) => (f & CHUNK_FLAG_OUTDOOR) !== 0);
+        const centerWx = currentChunk.cx * currentChunk.size + Math.floor(currentChunk.size / 2);
+        const centerWy = currentChunk.cy * currentChunk.size + Math.floor(currentChunk.size / 2);
+        if (chunkIsOutdoor && getActiveOutdoorWeatherAt(workingState, centerWx, centerWy) !== undefined) {
+          const updatedGrid = workingState.map.chunkGrid;
+          if (updatedGrid) {
+            const packed = packWorldCoord3D(currentChunk.cx, currentChunk.cy, currentChunk.cz);
+            const dirtyChunk: WorldChunk = {
+              ...currentChunk,
+              dirtyFlags: currentChunk.dirtyFlags | CHUNK_DIRTY_TEMP
+            };
+            const patchedChunks = new Map(updatedGrid.chunks);
+            patchedChunks.set(packed, dirtyChunk);
+            const patchedDirtyKeys = new Set(updatedGrid.dirtyChunkKeys);
+            patchedDirtyKeys.add(packed);
+            workingState = {
+              ...workingState,
+              map: {
+                ...workingState.map,
+                chunkGrid: {
+                  ...updatedGrid,
+                  chunks: patchedChunks,
+                  dirtyChunkKeys: patchedDirtyKeys
+                }
+              }
+            };
+            currentChunk = dirtyChunk;
+          }
+        }
+      }
+      const matRes = materializeMacroSitesForChunk(workingState, currentChunk, grid.areaId);
+      workingState = matRes.state;
+    }
+  }
+
+  const finalChunks = workingState.map.chunkGrid?.chunks ?? nextChunks;
   if (options?.enablePrefetch !== false) {
     scheduleRing1Prefetch(
       scopeKey,
@@ -426,15 +486,9 @@ export function updateStreamingWorldWindow(
       grid.prefetchRadiusChunks,
       minLoadZ,
       maxLoadZ,
-      nextChunks
+      finalChunks
     );
   }
 
-  return {
-    ...workingState,
-    map: {
-      ...workingState.map,
-      chunkGrid: nextGrid
-    }
-  };
+  return workingState;
 }

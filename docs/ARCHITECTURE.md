@@ -1038,6 +1038,18 @@ Per `AGENTS.md` Rule 21 (Zero Content-ID or Bespoke-Property Branching) and [`do
    - `GameState.colonyState` persists spatial designations (`mine`, `chop`, `haul`, `build`, `craft`, `harvest`), tag-filtered stockpile zones, multi-step workshop crafting bills, and atomic entity/coord/item `JobReservationToken` leases (released automatically on entity death or floor eviction).
    - `laborBehavior` scores eligible tasks by actor `LaborProfileComponent` priority (`1..4`) and 3D proximity, emitting standard `ActionIntent` moves and `Apply` verbs (`mine`, `chop`, `build`, `craft`) over 3D HPA*.
 
+### 9.35 Ring 2 Parallel Macro-World Simulation & Offline Legends Worldgen (Phase 48, Milestones 184–186)
+
+1. **Isolated Ring 2 Macro-World Simulation & Persistent Worker (`src/systems/macro/{macro_world.system,macro_world_sync}.ts`, `src/worker/world_sim.worker.ts`, `worker_bridge.ts`)**:
+   - `advanceMacroWorldTicks` runs deterministically via `createMacroRng` (Mulberry32 isolated from main-thread `ROT.RNG`) across settlement economies, trade caravans, faction warbands/raids, rumor payloads, and moving seasonal weather fronts (`clear`, `rain`, `storm`, `blizzard`, `drought`, `heatwave`, `fog`).
+   - `syncMacroWorldAtTurnBoundary` dispatches Ring 2 intervals to persistent `world_sim.worker.ts` (falling back deterministically inline when `Worker` is unavailable) and applies ordered `MacroTickDeltaBatch`es monotonically at turn boundaries (`processTier3GlobalCadence`) or synchronously during bulk time skips (`flushMacroWorldSyncForBulkTurns`). `temperature_physics.ts` integrates active outdoor weather fronts via `getActiveOutdoorWeatherAt`.
+2. **Offline Multi-Century Legends Worldgen (`src/map/worldgen_continent.ts`, `src/systems/macro/legends_simulator.ts`, `src/worker/legends_worldgen.worker.ts`)**:
+   - Campaigns opting into `rules.macroWorld.enabled` synthesize a continental heightmap/climate/biome/river/road grid (`generateContinentalMacroWorld`) and execute `simulateWorldLegendsAsync` off-thread in `legends_worldgen.worker.ts` (streaming decade progress to `LoadingOverlay` during `startNewGame`), generating Eras, dynasties, scarred/slain figures, ruins, and forged relics (`LegendsArchive`).
+   - `seedGameStateFromLegends` promotes surviving living legends into `persistentEntities` (with `ChronicleComponent` scars & `MemoryComponent` history) and populates `historicalLedger`.
+3. **Idempotent Site Materialization & Preact Legends Modal (`src/systems/map/site_materializer.ts`, `src/rendering/ui/modals/LegendsModal.tsx`)**:
+   - `materializeMacroSitesForChunk` (`chunk_streaming.ts`) and `materializeMacroSitesForArea` (`map.system.ts`) stamp intact towns, smoldering raided/burnt hamlets (charred tiles, embers, `smoke` fields, scarred survivors with M182 trauma thoughts), ancient artifact tombs, and stocked caravan merchants idempotently using `materializedDeltaIds`.
+   - `LegendsModal` (`UIMode.Legends`, `panel.legends` bound to `Shift+H`, Command Dock `🗺️ Legends`, cross-linked from `LedgerModal` and `NemesisDossierModal`) renders searchable World Map, Figures, Sites, Artifacts, and Chronicle tabs on Phase 43 accessible primitives.
+
 ---
 
 ## 10. Key Design Decisions

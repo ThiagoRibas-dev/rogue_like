@@ -97,7 +97,7 @@ export function extractExportedNames(content: string, filePath?: string, visited
   }
 
   const exportRegex =
-    /export\s+(?:let|const|async\s+function|function|type|interface|enum|class)(?:\s+enum)?\s+([A-Za-z0-9_]+)/g;
+    /export\s+(?:let|const|async\s+function\*?|function\*?|type|interface|enum|class)(?:\s+enum)?\s+\*?([A-Za-z0-9_]+)/g;
 
   let match;
   while ((match = exportRegex.exec(content)) !== null) {

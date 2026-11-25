@@ -4,6 +4,12 @@ import type { FuzzerOptions, FuzzerReport } from '../types/fuzzer.types.ts';
 import type { GeneratedArea } from '../map/generator.ts';
 import type { ChunkSynthesisParams } from '../map/chunk_generator.ts';
 import type { MapGenStage } from '../constants/scheduler.constants.ts';
+import type {
+  LegendsWorldgenInput,
+  MacroSimCampaignContext,
+  MacroTickDeltaBatch,
+  MacroWorldState
+} from '../types/macro_world.types.ts';
 
 /** Serializable director context for thread boundaries without Set/Map. */
 export interface SerializableDirectorContext {
@@ -52,8 +58,29 @@ export interface GeneratedChunkTransferPayload {
   readonly buffers: ReadonlyArray<ArrayBuffer>;
 }
 
+/** Payload requesting Ring 2 macro-world tick advancement in persistent `world_sim.worker.ts`. */
+export interface MacroWorldTickWorkerRequest {
+  readonly id: string;
+  readonly type: 'macro_world_tick';
+  readonly macroWorld: MacroWorldState;
+  readonly targetTick: number;
+  readonly context: MacroSimCampaignContext;
+}
+
+/** Payload requesting offline multi-century continent and Legends worldgen. */
+export interface LegendsWorldgenWorkerRequest {
+  readonly id: string;
+  readonly type: 'legends_worldgen';
+  readonly input: LegendsWorldgenInput;
+}
+
 /** Union of all worker request message contracts. */
-export type WorkerRequest = FuzzerWorkerRequest | MapWorkerRequest | ChunkBatchWorkerRequest;
+export type WorkerRequest =
+  | FuzzerWorkerRequest
+  | MapWorkerRequest
+  | ChunkBatchWorkerRequest
+  | MacroWorldTickWorkerRequest
+  | LegendsWorldgenWorkerRequest;
 
 /** Progress payload reported by offloaded worker tasks. */
 export interface WorkerProgressPayload {
@@ -95,3 +122,9 @@ export type MapWorkerResponse = WorkerResponse<GeneratedArea>;
 
 /** Specific response type for narrative fuzzer workers. */
 export type FuzzerWorkerResponse = WorkerResponse<FuzzerReport>;
+
+/** Specific response type for Ring 2 macro-world simulation workers. */
+export type MacroWorldTickWorkerResponse = WorkerResponse<MacroTickDeltaBatch>;
+
+/** Specific response type for offline Legends worldgen workers. */
+export type LegendsWorldgenWorkerResponse = WorkerResponse<MacroWorldState>;

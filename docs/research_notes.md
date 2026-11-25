@@ -1,141 +1,114 @@
-# Phase 47 Research Notes — Active-Chunk Cellular Physics, Terrain Sculpting & RimWorld/DF Agent Substrate
+# Phase 48 Research Notes — Ring 2 Parallel Macro-World Simulation & Offline Legends Worldgen
 
-**Milestones Covered:** 180, 181, 182, 183 (`docs/MILESTONES.md` §Phase 47)  
-**Baseline Commit:** `7244b92ba` (`main`, Phase 46 complete — 441 tests passing, 8/8 `verify.sh` green)
+**Milestones Covered:** 184, 185, 186 (`docs/MILESTONES.md` §Phase 48)  
+**Baseline Commit:** `efe469d69` (`main`, Phase 47 complete — 457 tests passing across 67 files, 8/8 `./verify.sh` green)  
+**Roadmap Status Note:** Phase 48 is the final phase of the Dwarf Fortress / RimWorld systemic substrate roadmap (Phases 45–48). Across the full `docs/MILESTONES.md`, **Phase 44 (Milestones 169–172 — Campaign Editor Rewrite on Shared Preact Primitives, Scoped Input & Unified Themes)** also remains marked `⚪ Planned` (deferred when pivoting from Phase 43 to Phase 45).
 
 ---
 
 ## 1. Reiteration of Governing Rules & Architectural Constraints
 
-All Phase 47 designs strictly adhere to `AGENTS.md` and `docs/ARCHITECTURE.md`:
+All Phase 48 designs strictly adhere to `AGENTS.md` and `docs/ARCHITECTURE.md`:
 
-- **TypeScript Strictness (§3):** Zero `any`, zero magic gameplay values (all named constants or JSON config), explicit return types on every function, `exactOptionalPropertyTypes: true` compliance, exhaustive `switch` with `assertNever`, flat guard-clause control flow.
-- **ECS & Serialization Purity (§4):** Pure data component interfaces with no methods; **zero `Map` or `Set`** inside ECS components or serializable `GameState` sub-objects (`Record<string, T>` and `ReadonlyArray<T>` only) so `save.ts` / `JSON.stringify` stays deterministic and lossless.
+- **TypeScript Strictness (§3):** Zero `any`, zero magic gameplay values (all intervals, continental grid dimensions, weather bounds, and history simulation parameters must reside in named constants or Zod-validated JSON), explicit return types on every exported and internal function, `exactOptionalPropertyTypes: true` compliance, exhaustive `switch` statements guarded by `assertNever`, and flat guard-clause control flow.
+- **ECS & Serialization Purity (§4):** Pure data interfaces with no methods; **zero `Map` or `Set`** inside ECS components, `MacroWorldState`, `LegendsArchive`, or `SerializedGameState` sub-objects (`Record<string, T>` and `ReadonlyArray<T>` only) so `src/core/save.ts` / `JSON.stringify` serialization stays deterministic and lossless.
 - **Three-Tier Placement Heuristic (Rule 16):**
-  - **Tier 1 (Core Console Engine — `src/core/`, `src/map/`, `src/systems/`, `src/ai/`, `src/types/`):** Dirty-bitset cellular fluid & temperature simulation, analytical chunk sleep catch-up, voxel terrain sculpting & structural cave-in physics, universal Needs/Thoughts/Mood/Stress engine, spatial Designations, Stockpile zones, atomic Job Reservation Blackboard, Hauling/Labor AI behavior, and Workshop Crafting DAGs.
-  - **Tier 2 (Ruleset Cartridge — `src/rulesets/dnd35e/`):** Declarative `terrain_sculpt` and `fluid_spawn` spell effect unit handlers in `spell_cast_units.ts` / `spell_cast_resolver.ts`, optional morale/mood hooks on `RulesetContract`.
-  - **Tier 3 (System & Campaign Content — `public/data/`):** Spell JSONs (`stone_shape.json`, `passwall.json`, `transmute_rock_to_mud.json`, `create_water.json`), declarative tile/material/recipe/psychology properties, and `default` campaign showcase.
-- **Baseline Rules + Declarative Modifiers (Rule 17):** Numeric effects (mood morale bonuses, temperature resistance, work-speed multipliers) use `StatModifier` resolved via the stacking engine; qualitative behavioral switches (mental break overrides, fluid immunities) use tags / `RuleOverride`.
-- **Universal Actor Symmetry (Rule 18):** Adventure Mode NPCs (villagers, scouts, monsters) and Fortress Mode colonists share the exact same `NeedsComponent`, extended `MemoryComponent`, `LaborProfileComponent`, and `ActionIntent` execution pipeline — zero separate "Colonist" entity schema.
-- **Zero Content-ID Branching (Rule 21 — "New Content Mod" Litmus Test):** Engine and cartridge `.ts` code must never branch on specific spell, tile, item, or thought IDs (`if (spellId === 'passwall')`, `if (tileId === 'stone_wall')`, `if (itemId === 'pickaxe')`). All capabilities are expressed declaratively via Zod schema fields (`terrain_sculpt` / `fluid_spawn` spell units, `TileDefinition` mineability/yield/load-bearing/thermal fields, item/furniture tags, and configurable need/thought/recipe definitions).
-- **Default Campaign Feature Showcase (§5):** `public/data/campaigns/default/` must actively showcase all Phase 47 capabilities while keeping all 5 campaigns (`default`, `dnd35e-crypt`, `megacampaign`, `realms-of-shroudgarde`, `shroudgarde`) passing `run-validator.ts`.
+  - **Tier 1 (Core Console Engine):** `src/types/macro_world.types.ts`, `src/constants/macro_world.constants.ts`, `src/systems/macro/macro_world.system.ts`, `src/systems/macro/legends_simulator.ts`, `src/map/worldgen_continent.ts`, `src/systems/map/site_materializer.ts`, `src/worker/world_sim.worker.ts`, `src/worker/legends_worldgen.worker.ts`, `src/worker/worker_bridge.ts`, and `src/rendering/ui/modals/LegendsModal.tsx`. Zero ruleset-specific coupling.
+  - **Tier 2 (Ruleset Cartridges):** Unchanged / 100% compatible via `RulesetContract` — caravan merchants, scarred survivors, historical figures, and tomb artifacts hydrate cleanly through standard `spawnEntity` / `spawnItem` pipelines so both `dnd35e` and `classic` cartridges inherit full statblock hydration automatically.
+  - **Tier 3 (System & Campaign Content):** Optional declarative `macroWorld` config in `RulesConfigSchema` (`public/data/campaigns/*/rules.json`), with site, weather, and multi-century history showcased in `public/data/campaigns/default/` (`endless_frontier` + linked settlements/ruins) while preserving 0 errors / 0 warnings across all 5 campaigns (`default`, `dnd35e-crypt`, `megacampaign`, `realms-of-shroudgarde`, `shroudgarde`).
+- **Universal Actor Symmetry & Narrative Reuse (Rule 18):** Historical figures, caravan masters, and scarred raid survivors use the exact same `IdentityComponent`, `ChronicleComponent`, `MemoryComponent`, `NemesisComponent`, `ShopComponent`, `NeedsComponent`, and `historicalLedger` event schemas — zero parallel lore or NPC schemas.
+- **Zero Content-ID Branching (Rule 21 — "New Content Mod" Litmus Test):** Engine `.ts` files must never branch on specific faction IDs, site names, biome/tile IDs, item IDs, or entity template IDs (`if (factionId === 'bandits')`, `if (tileId === 'stone_wall')`, `if (itemId === 'longsword')`). Site archetypes, ruin/burn/caravan materialization stamps, faction role classification, and artifact templates must resolve declaratively from Zod schemas, `TileDefinition` properties (`burnedTileId`, `mineable`, `walkable`), and entity/item tags.
+- **Dependency Cruiser & Headless Purity (`.dependency-cruiser.cjs`):** `src/systems/macro/`, `src/map/worldgen_continent.ts`, `src/systems/map/site_materializer.ts`, and `src/worker/*.worker.ts` must never import from `src/rendering/`, `src/editor/`, or concrete `src/rulesets/(classic|dnd35e)/`. Every Web Worker offload in `src/worker/worker_bridge.ts` must preserve automatic main-thread cooperative fallback when `isWorkerAvailable()` is false, guaranteeing identical deterministic behavior in headless `bun test`.
 
 ---
 
 ## 2. Existing Codebase Inventory & Milestone Mapping
 
-### 2.1 Milestone 180 — Dirty-Bitset Cellular Physics & Analytical Sleep Catch-Up
+### 2.1 Milestone 184 — Dedicated Ring 2 Macro-World Simulation Worker
+
+**Target Files:** `src/worker/world_sim.worker.ts`, `src/systems/macro/macro_world.system.ts`, `src/types/macro_world.types.ts`, `src/constants/macro_world.constants.ts`
 
 **Existing Substrate Already in Place:**
-- `src/types/world-chunk.types.ts` (`WorldChunk`): Already contains all 6 SoA TypedArray planes (`tileType: Uint16Array`, `materialId: Uint16Array`, `fluid: Uint8Array`, `temperature: Int16Array`, `flags: Uint8Array`, `regionId: Uint16Array`) plus `dirtyFlags: number` and `lastSimulatedTurn: number`.
-- `src/constants/world_chunk.constants.ts`: Already defines `DEFAULT_AMBIENT_TEMP_C = 20`, `CHUNK_DIRTY_NONE`, `CHUNK_DIRTY_PERSIST`, `CHUNK_DIRTY_REGION`, `CHUNK_DIRTY_FLUID`, `CHUNK_DIRTY_TEMP`, `CHUNK_FLAG_OUTDOOR`, `CHUNK_FLAG_DIRTY_CELL`.
-- `src/map/world_chunk.ts`: Binary `RLCK` v1 codec (`serializeWorldChunkToBuffer` / `deserializeWorldChunkFromBuffer`) already persists all 6 planes + `dirtyFlags` + `lastSimulatedTurn` — **zero binary format breaking change required**.
-- `src/map/map_accessor.ts`: Canonical unified reader/writer across finite `GameMap.tiles`/`zSlices` and streaming `GameMap.chunkGrid`.
-- `src/systems/map/chunk_streaming.ts` (`updateStreamingWorldWindow`): Canonical wake/evict hook for Ring 0 chunks.
-- `src/core/loop/intent_cost_resolver.ts`: Canonical per-action world tick hook (runs `processFieldsTick` when `energyCost > 0`, then `updateStreamingWorldWindow` and `processTier2LocalCadence`).
-- `src/systems/world_time_skip.ts` (`advanceWorldTimeBulk`, `advanceWorldTimeBulkAsync`): Canonical bulk time advancement hook for rest/wait skips.
-- `src/systems/field.system.ts` & `src/systems/crossing.system.ts` & `src/systems/breath.system.ts`: Existing field chemistry (`fire`, `oil`, `steam_cloud`), ice crossings (`frozen_surface`), and submersion/drowning tracking.
+- `src/worker/worker_bridge.ts` & `src/worker/worker.types.ts`: Already implement the persistent pooled worker pattern (`pooledChunkWorker`), `isWorkerAvailable()` runtime detection, `WorkerRequest` / `WorkerResponse<T>` / `WorkerProgressPayload` contracts, and headless cooperative fallback.
+- `src/core/simulation_cadence.ts` (`processTier3GlobalCadence`) & `src/systems/lifecycle.system.ts` (`runActorTurnStart` lines 66–75): Canonical Player turn-start world-clock and Tier 3 macro cadence boundary (ticks once per world turn across Turn-Based and RTwP).
+- `src/systems/world_time_skip.ts` (`stepBulkMacroCadence`, `advanceWorldTimeBulk`, `advanceWorldTimeBulkAsync`): Canonical bulk rest/wait macro-simulation step loop.
+- `src/systems/world_clock.system.ts`: Diurnal `readWorldClock` (`day`, `hour`, `minute`, `phaseId`), cleanly extendable with deterministic seasonal calendar helpers (`season`, `dayOfSeason`, `year`).
+- `src/systems/world_events.system.ts`, `src/systems/scheme.system.ts`, `src/systems/rivalry.system.ts`, `src/systems/gossip.system.ts`, `src/systems/knowledge.system.ts`: Existing Tier 3 narrative, rumor, rivalry, and mastermind progression engines.
+- `src/systems/physics/temperature_physics.ts`: Ambient temperature baseline (`DEFAULT_AMBIENT_TEMP_C`) that seasonal weather fronts can modulate for outdoor cells.
 
-**Target Design & Interactions:**
-1. **Zero-Allocation `fluid: Uint8Array` Bit Layout:**
-   - Bits `0..2` (`0x07`): Depth `0..7` (`0/7` dry through `7/7` full).
-   - Bits `3..5` (`0x38`): Fluid kind enum (`0=none`, `1=water`, `2=magma`, `3=oil`, `4=mud`).
-   - Bits `6..7` (`0xC0`): Active/pressurized flags.
-2. **Unified Finite & Streaming Cell Access (`MapAccessor`):**
-   - Streaming maps read/write `chunk.fluid` and `chunk.temperature` directly.
-   - Finite static/digger maps (`watchtower_overlook`, `dungeon_1`, etc.) do not currently carry `chunkGrid`. A lazy, sparse `FinitePhysicsOverlay` (or lazy 16×16 `WorldChunk` backing instantiated on first fluid/temp write) allows `fluid_physics.ts` and `temperature_physics.ts` to run one canonical dirty-chunk loop across **both** finite and streaming maps at zero cost when dormant.
-3. **Dirty-Bitset Cellular Physics (`src/systems/physics/fluid_physics.ts`, `src/systems/physics/temperature_physics.ts`):**
-   - Iterate **strictly** over chunks with `(dirtyFlags & CHUNK_DIRTY_FLUID) !== 0` or `(dirtyFlags & CHUNK_DIRTY_TEMP) !== 0`.
-   - **Fluid Pass:** Vertical gravity spillover (`(x,y,z) -> (x,y,z-1)`) first, then 4-way horizontal hydrostatic equalization (magma spreads slower via viscosity step). Handles phase transitions (`water` + `magma` -> obsidian/basalt tile + `steam_cloud` field; `oil` + ignition temp / `fire` field -> `fire` field; `water` <= 0°C -> `frozen_surface` crossing; `water` >= 100°C -> `steam_cloud`). Flags neighbor chunks on cross-boundary flow and auto-clears `CHUNK_DIRTY_FLUID` on settled chunks.
-   - **Temperature Pass:** 3D discrete heat diffusion toward ambient baseline (`DEFAULT_AMBIENT_TEMP_C`) driven by thermal sources (`magma`, `fire` fields, cold fields) and tile `thermalConductivity`. Auto-clears `CHUNK_DIRTY_TEMP` once every cell in the chunk converges within `±1°C` of ambient with no active thermal emitter.
-4. **Closed-Form Analytical Sleep Catch-Up (`src/systems/physics/chunk_catchup.ts`):**
-   - Triggered on chunk wake (`chunk_streaming.ts`) and bulk time skips (`world_time_skip.ts`) when `deltaTurns = state.globalTurn - chunk.lastSimulatedTurn > 0`.
-   - Closed-form $O(N_{\text{cells}})$ math (no per-turn loop):
-     - Exponential temperature relaxation: $T(t) = T_{\text{amb}} + (T_0 - T_{\text{amb}})e^{-\lambda \Delta t}$.
-     - Fluid evaporation of shallow puddles (`depth === 1`) and drain equilibrium.
-     - Fire burnout, perishable item/corpse decay advancement, and crop/growth stage advancement.
-     - Stamps `chunk.lastSimulatedTurn = state.globalTurn`.
+**Target Design & Determinism Protocol:**
+1. **Isolated Seeded Pure Kernel (`advanceMacroWorldTicks`):**
+   - Pure function taking `(macroWorld: MacroWorldState, targetTick: number)` using its own isolated seeded PRNG derived deterministically from `(worldSeed, macroTick)` — **never touching the main-thread `ROT.RNG` singleton**. This guarantees bit-for-bit identical simulation whether run inside `world_sim.worker.ts` or via main-thread fallback in `bun test`.
+2. **Simulated Ring 2 Domains:**
+   - **Settlement Economies:** Sites track population, prosperity, food/goods stock, garrison strength, controlling faction ID, and status (`intact | besieged | raided | burned | ruined | abandoned`).
+   - **Caravan Routes:** Inter-site trade caravans advance along continental links carrying declarative `cargoTags` / `itemPoolTags`, escort strength, and local market arrival boosts (and can be ambushed along dangerous routes).
+   - **Faction Troop Movements:** Faction warbands/armies patrol or march between sites, resolving border skirmishes, sieges, and raids that emit ordered `MacroSiteDelta` records.
+   - **Off-Screen Scheme & Rumor Bridge:** Translates major Ring 2 outcomes into `historicalLedger` entries, `pendingRumors` propagations, and `DirectorBudget` / `TagsComponent` `areaMutation` adjustments when a Ring 2 event targets a registered campaign area.
+   - **Seasonal Weather Fronts:** Moving weather fronts (`clear | rain | storm | blizzard | drought | heatwave | fog`) sweep across continental grid cells and modulate ambient outdoor temperature (`weatherAmbientTempDeltaC`) and sky illumination hints.
+3. **Turn-Boundary Sync & Persistence:**
+   - Persistent `world_sim.worker.ts` receives monotonic `tickBatchId` dispatches at `MACRO_WORLD_TICK_INTERVAL` boundaries via `worker_bridge.ts`. Returned `MacroTickDeltaBatch`es buffer in an ordered worker queue and apply strictly at deterministic turn boundaries (`lifecycle.system.ts` / `simulation_cadence.ts`), while `world_time_skip.ts` and headless tests run synchronous catch-up cleanly via `advanceMacroWorldTicks`.
+   - `GameState.macroWorld?: MacroWorldState` (plain JSON records/arrays only) serializes cleanly inside `src/core/save.ts`.
 
 ---
 
-### 2.2 Milestone 181 — Dynamic Terrain Sculpting, Construction & Structural Support
+### 2.2 Milestone 185 — Offline Multi-Century Legends Worldgen Worker
+
+**Target Files:** `src/worker/legends_worldgen.worker.ts`, `src/map/worldgen_continent.ts`, `src/systems/macro/legends_simulator.ts`
 
 **Existing Substrate Already in Place:**
-- `src/map/map_accessor.ts` (`setTileIdAt`): Already mutates finite slices or clones `WorldChunk` and marks `CHUNK_DIRTY_PERSIST | CHUNK_DIRTY_REGION`.
-- `src/map/region_graph.ts` & `src/ai/flow_field.ts`: Automatically rebuild HPA* connectivity and invalidate flow fields when `CHUNK_DIRTY_REGION` is set.
-- `src/systems/gravity.system.ts`: Already drops unsupported actors/entities across Z-levels.
-- `src/constants/verbs.constants.ts` & `src/systems/apply.system.ts`: Unified `ApplyIntent` pipeline already supporting `TileTarget` with `{ type: 'tile', x, y, z? }` (currently missing `'mine'`, `'chop'`, `'build'`, `'craft'` verbs).
-- `src/rulesets/dnd35e/types/system/spell_system.types.ts`, `spell_cast_resolver.ts`, `spell_cast_units.ts`, `system_content_spell_ids.ts`:
-  - `stone_shape.json` exists (currently uses `spatial_field` only).
-  - `passwall.json`, `transmute_rock_to_mud.json`, and `create_water.json` do not yet exist on disk.
-  - **Multi-Z Gap Found:** `ApplySpellEffectsContext.targetPos` (`spell_cast_effects.ts:126`) and `applySpecialSpellUnit` (`spell_cast_units.ts:48`) currently type `targetPos` as `{ x, y }` without `z`, and `placementUnits` (`spell_cast_resolver.ts:297`) only filters `spatial_field | summon`. Both must be updated to carry `z` and include `terrain_sculpt | fluid_spawn`.
+- `src/map/chunk_generator.ts`: Already provides deterministic FNV/Murmur coordinate hashing and 3-octave value noise (`sampleFractalNoise`).
+- `src/core/bootstrap.ts` (`startNewGame`) & `src/core/bootstrap/world_entities_bootstrap.ts` (`initializeCampaignWorldEntities`): Canonical startup initialization of `factionEntityIds`, `areaEntityIds`, `persistentEntities`, and `ChronicleComponent`s.
+- `src/systems/chronicle.system.ts`, `src/systems/nemesis/`, `src/systems/rivalry.system.ts`, `src/systems/scheme.system.ts`, and `public/data/campaigns/default/identity_generation.json`: Shared identity, epithet, scar, hierarchy, and chronicle primitives ready for reuse.
+- `src/rendering/ui/menus/LoadingOverlay.tsx`: Streaming async progress overlay already bound to `WorkerProgressPayload`.
 
-**Target Design & Interactions:**
-1. **Declarative Tile & Material Metadata (`src/types/campaign/world.ts`, `TileDefinitionSchema`):**
-   - Optional declarative fields: `mineable?: boolean`, `minedTileId?: string`, `mineYieldItemId?: string`, `mineYieldCount?: number`, `mineWorkCost?: number`, `isLoadBearing?: boolean`, `thermalConductivity?: number`, `ignitionTempC?: number`.
-   - Deterministic `MaterialPaletteRegistry` (mirroring `src/map/tile_palette.ts`) encoding material IDs into `chunk.materialId: Uint16Array`.
-2. **Terrain Sculpting & Construction (`src/systems/construction.system.ts`):**
-   - `sculptTerrainVoxel`: Canonical voxel mutation updating `tileType` + `materialId`, dirtying `PERSIST | REGION | FLUID | TEMP` (including neighbor chunks when on boundary), setting `fovNeedsUpdate: true`, updating designations, and invoking structural support + gravity checks.
-   - `mineTerrainTile`: Validates reach, `tileDef.mineable`, optional `tool:mining` tag, carves tile to `minedTileId`, drops boulder/ore items, supports channeling down (`z` -> `open_air` + ramp/floor below).
-   - `constructTerrainTile`: Consumes material items from actor inventory or adjacent stockpile/floor, builds walls, floors, stairs, ramps, or bridges via declarative blueprints.
-   - Temporary spell-sculpted terrain tracking (e.g., *Passwall* tunnel reverting after duration expires) stored cleanly as serializable timed voxel-revert entries in `GameState` (or ticked in `world_time_skip.ts` + `intent_cost_resolver.ts`).
-3. **Connected Structural Support & Cave-Ins (`src/map/structural_support.ts`):**
-   - Bounded BFS (`MAX_SUPPORT_SPAN_TILES = 6`) from altered cells verifying a connected support path to a load-bearing pillar/wall (`isLoadBearing === true` or solid ground at `z - 1`).
-   - Unsupported overhangs collapse to `open_air`, drop rubble items, apply falling/crushing damage to entities underneath, and run `resolveGravityForEntity` for actors standing above.
-4. **D&D 3.5e Sculpting & Fluid Spells (Rule 21 Compliant):**
-   - Add two declarative `DnD35SpellEffectUnitSchema` variants:
-     - `terrain_sculpt` (`sculptMode: 'carve' | 'shape' | 'transmute' | 'fill'`, `requiredSourceTags`, `targetTileId`, `radiusTiles`, `durationTurnsScaling?`, `revertTileId?`, `spawnFluidKind?`, `spawnFluidDepth?`).
-     - `fluid_spawn` (`fluidKind`, `depth`, `radiusTiles`, `depthScaling?`).
-   - Upgrade `stone_shape.json` and add `passwall.json`, `transmute_rock_to_mud.json`, and `create_water.json` (plus register IDs in `system_content_spell_ids.ts`).
+**Target Design & Historical Simulation Loop:**
+1. **Continental Generator (`src/map/worldgen_continent.ts`):**
+   - Generates a coarse deterministic continental grid (configurable `worldWidth × worldHeight`, e.g., `32×32` regions mapped directly onto `streaming_overworld` chunk coordinates `(cx, cy)`) with elevation, rainfall, latitude temperature gradient, river networks, regional biomes, initial civilizations derived from campaign `factions.json` + declarative config, trade roads, settlements, and ancient dungeon/shrine sites.
+2. **Cooperative Pre-Play Historical Simulator (`src/systems/macro/legends_simulator.ts` & `src/worker/legends_worldgen.worker.ts`):**
+   - Generator-driven simulator stepping `N` years/centuries before Turn 1 while yielding `WorkerProgressPayload` updates per era/decade:
+     - **Civilizations & Dynasties:** Succession lines (`dynastyId`, lineages), wars, truces, and territorial expansion across regional sites.
+     - **Historical Figures (`HistoricalFigureRecord`):** Named actors forged with shared `identity_generation` pools who gain kills, scars, rivalries, scheme plots, and `ChronicleComponent` event IDs across their lifespans.
+     - **Forged Artifacts (`HistoricalArtifactRecord`):** Unique relics recording creator figure ID, year forged, provenance owner history, and current resting site/tomb ID.
+     - **Site Lifecycle:** Settlements founded -> prosper -> besieged -> raided/burned/razed into ancient ruins or rebuilt.
+     - **Indexed `LegendsEventRecord[]`:** Chronological multi-century event archive grouped into named **Eras** (e.g., *Age of Founding*, *Age of Ash*) for fast UI filtering.
+3. **Turn-1 World Seeding (`seedGameStateFromLegends`):**
+   - Injects generated `MacroWorldState` (including `legends: LegendsArchive`) onto initial `GameState` during `startNewGame` (only when `macroWorld.enabled` is active).
+   - Seeds surviving living historical figures into `persistentEntities` / `nemesisSlots` carrying authentic `ChronicleComponent` scars, core memories, and historical faction/personal grudges.
+   - Seeds high-importance historical events into `historicalLedger` and faction/area `ChronicleComponent.eventExcerpts`.
 
 ---
 
-### 2.3 Milestone 182 — Universal Needs, Thoughts, Mood & Stress Engine
+### 2.3 Milestone 186 — Site Materialization on Chunk Wake, Legends Browser UI & Systemic Verification Sweep
+
+**Target Files:** `src/systems/map/site_materializer.ts`, `src/rendering/ui/modals/LegendsModal.tsx`
 
 **Existing Substrate Already in Place:**
-- `src/types/components/actor_components.types.ts`:
-  - `MemoryComponent` (lines 190–213) is the **sole existing owner** of `facets`, `values`, `stress` (`0..100`), `thoughts: ReadonlyArray<Thought>`, `annoyedDuration`, `gratefulDuration`. (Note: there is **no** separate `PersonalityComponent` in `ComponentType`.)
-  - `HungerComponent` (lines 116–123) tracks `satiation` and `maxSatiation` via `src/systems/hunger.system.ts`.
-- `src/systems/personality.system.ts`: Runs inside `processTier2LocalCadence` (`src/core/simulation_cadence.ts`) and `stepBulkMacroCadence` (`src/systems/world_time_skip.ts`) every `LOCAL_NARRATIVE_TICK_INTERVAL` turns.
-- `src/constants/personality.constants.ts`: Defines `STRESS_CORE_MEMORY_THRESHOLD`, `MAX_TRANSIENT_THOUGHTS`, etc.
+- `src/systems/map/chunk_streaming.ts` (`updateStreamingWorldWindow`, lines 360–400): Exact Ring 0 chunk-wake hook (`wokenChunkKeys`) where newly hydrated chunks enter the active window before entities resume.
+- `src/systems/map/map_wake_respawn.ts` (`wakeSavedAreaFloor`): Area wake hook for finite areas optionally mapped to a `macroSiteId`.
+- `src/systems/construction.system.ts` & `src/map/map_accessor.ts`: Existing terrain mutation, fluid/temperature cell setters, and `CHUNK_DIRTY_PERSIST | CHUNK_DIRTY_REGION` cache invalidation.
+- `src/rendering/ui/primitives/` (`ModalShell`, `Tabs`, `SplitPane`, `ListBox`, `TextInput`, `Badge`, `Button`) & `src/rendering/ui/core/AppUiRoot.tsx`: Accessible Preact UI substrate.
+- **Complete `UIMode` Modal Wiring Map (verified against `UIMode.Ledger` across `src/`):**
+  - `src/types/game-state.types.ts` (`UIMode.Legends`)
+  - `src/types/intents/{intent.enum,ui.intents,intent.union}.ts` (`IntentType.ToggleLegends`, `ToggleLegendsIntent`)
+  - `src/actions/core.actions.ts` (`createToggleLegendsAction`) & `src/actions/action.registry.ts` (`toggleModal(state, UIMode.Legends)`)
+  - `src/core/input/{command_catalog,shortcut_input,modal_input,keybind_migration}.ts` (`panel.legends`, default chord `Shift+H` — verified free since only lowercase `h` is bound to Vi-key `move.west`)
+  - `src/rendering/ui/hud/HudRoot.tsx`, `src/rendering/ui/hud_dock.ui.ts` (`DOCK_COMMANDS`), and `src/rendering/ui/core/AppUiRoot.tsx` (`<LegendsModal />`)
 
-**Target Design & Interactions:**
-1. **`NeedsComponent` (`ComponentType.Needs`):**
-   - Plain serializable record `needs: Readonly<Record<string, NeedMeterState>>` covering the 6 canonical needs (`rest`, `nourishment`, `shelter`, `comfort`, `social`, `safety`) plus extensible campaign-defined need IDs.
-   - `nourishment` synchronizes directly with `HungerComponent.satiation / maxSatiation` when present (single source of truth).
-   - `src/systems/psychology/needs.system.ts` evaluates environmental satisfaction (indoor/roofed shelter via `CHUNK_FLAG_OUTDOOR`/ceiling check, thermal comfort from M180 temperature plane, nearby furniture tags like `furniture:bed`/`furniture:table`, social proximity to non-hostiles, safety vs threats/hazards) and ticks during both live cadence and bulk rest/time-skips.
-2. **Decaying/Stacking Thoughts, Mood Tiers, Inspirations & Mental Breaks (`src/systems/psychology/thoughts.system.ts`):**
-   - Extend `Thought` on `MemoryComponent` with optional backward-compatible fields: `thoughtId?: string`, `moodDelta?: number`, `expiresAtTurn?: number`, `stackCount?: number`, `maxStacks?: number`.
-   - Extend `MemoryComponent` with optional `mood?: number` (`0..100`), `moodTier?: MoodTier` (`'ecstatic' | 'happy' | 'content' | 'stressed' | 'breaking' | 'catatonic'`), `activeInspiration?: ActiveInspirationState`, `activeMentalBreak?: ActiveMentalBreakState`.
-   - Weighted mood aggregation (incorporating `facets`/`values`) triggers deterministic Inspirations (`work_frenzy`, `inspired_craft`, `inspired_valor`) at high mood and Mental Breaks (`daze_wander`, `hide_in_room`, `tantrum`, `berserk`) at critical low mood/high stress.
-   - `src/systems/ai.system.ts` checks `activeMentalBreak` before normal behavior scoring so breaking NPCs and colonists exhibit consistent emergent break behaviors.
-   - Optional `RulesetContract.evaluateMoodModifiers` / DAG projection emits Layer B morale `StatModifier`s in D&D 3.5e.
-
----
-
-### 2.4 Milestone 183 — Designation Layer, Job-Reservation Blackboard, Stockpiles, Hauling AI & Workshop Crafting DAGs
-
-**Existing Substrate Already in Place:**
-- `src/systems/ai.system.ts` (`BEHAVIOR_REGISTRY`) & `src/types/campaign/entity.ts` (`AIBehaviorEntrySchema`): Pluggable behavior architecture ready for a `'labor'` behavior entry.
-- `src/ai/pathfinding_hpa.ts` (`computeHierarchicalNextStep`): 3D HPA* + shared Dijkstra flow fields (SSOT_CONSOLE mandates routing all multi-Z AI navigation here, never raw `ROT.Path.AStar`).
-- `src/systems/inventory.system.ts`, `src/systems/apply.system.ts`, `src/actions/action.registry.ts`: Shared `ActionIntent` execution pipeline working identically in Turn-Based and RTwP modes.
-
-**Target Design & Interactions:**
-1. **Serializable `ColonySimulationState` on `GameState` & `SerializedGameState`:**
-   - Stored as optional `colonyState?: ColonySimulationState` (zero overhead when unused; serialized directly in `save.ts`):
-     - `designations: Readonly<Record<string, TileDesignation>>` (`mine | chop | haul | build | harvest | channel`, keyed by `"areaId:x,y,z"` or `"x,y,z"` per area).
-     - `stockpiles: Readonly<Record<string, StockpileZone>>` (cells, `allowedTags`, `deniedTags`, `allowedItemIds`, `priority`, `maxItemsPerCell`).
-     - `reservations: Readonly<Record<string, JobReservationToken>>` (atomic locks on `"tile:x,y,z"`, `"entity:<id>"`, `"workshop:<id>"` with `workerEntityId` + `expiresAtTurn`).
-     - `workshops: Readonly<Record<string, WorkshopState>>` (bill queues with `do_x_times | maintain_stock | forever`, progress, inputs).
-     - `timedTerrainReverts?: ReadonlyArray<TimedTerrainRevert>` (for temporary sculpting like *Passwall*).
-2. **Actor Labor Profile (`ComponentType.LaborProfile`):**
-   - Plain serializable `{ priorities: Readonly<Record<LaborKind, number>> }` (`0 = disabled`, `1 = highest` .. `4 = lowest`) + `activeJob?: ActiveLaborJobState`.
-3. **New Tier 1 Labor Subsystems:**
-   - `src/systems/labor/job_blackboard.ts`: Atomic `tryAcquireReservation`, `releaseReservation`, `releaseAllWorkerReservations`, `pruneExpiredReservations`. Hooked into `death.system.ts` and `chunk_streaming.ts` entity eviction so dead/sleeping workers never leave orphaned locks.
-   - `src/systems/labor/designation.system.ts`: Spatial designation CRUD, validation against tile/entity capabilities, auto-completion cleanup.
-   - `src/systems/labor/stockpile.system.ts`: Tag/item filter matching, priority-ranked destination cell lookup, unstocked haul candidate discovery.
-   - `src/systems/labor/workshop.system.ts`: Multi-step Crafting DAG resolver (`CraftingRecipe` with `requiredInputs`, `requiredToolTag?`, `workUnits`, `outputs`, `workshopTag`). Automatically generates input-hauling sub-jobs when ingredients are not yet at the workshop, ticks work progress, spawns outputs, and manages bill repeat counts.
-   - `src/ai/labor.behavior.ts`: Utility-scored labor selector registered as `'labor'` in `BEHAVIOR_REGISTRY`. Respects `LaborProfileComponent` priorities, urgent need overrides (eat/rest when critical), blackboard reservations, 3D `computeHierarchicalNextStep` routing, and emits standard `MoveIntent` / `PickUpIntent` / `DropIntent` / `ApplyIntent` actions.
+**Target Design:**
+1. **Idempotent Macro-Delta Site Materializer (`src/systems/map/site_materializer.ts`):**
+   - Maintains `materializedDeltaIds` and chunk site-stamp receipts in `MacroWorldState` so re-entering a chunk or reloading a saved chunk never duplicates terrain stamps, items, or actors.
+   - Materializes declarative site archetypes and Ring 2 mutation deltas upon chunk wake (`chunk_streaming.ts`) or area wake (`map_wake_respawn.ts`):
+     - **Intact / Prosperous Settlements:** Structural shelter footprints, campfires/hearths, friendly guards, and stocked containers.
+     - **Raided / Burnt Sites:** Mutates tiles declaratively via `burnedTileId` / rubble, leaves elevated residual heat (`temperature_physics`) and `smoke` fields (`field.system.ts`), and spawns scarred survivors carrying trauma `Thought` memories (M182).
+     - **Ancient Ruins & Tombs:** Cracked walls, subterranean/overgrown rubble, guardians, and materialized `HistoricalArtifactRecord` relics stamped with authentic artifact identity and chronicle provenance.
+     - **Passing Merchant Caravans:** Spawns neutral caravan merchant + guards with `ShopComponent` inventory stocked from regional `cargoTags` and Ring 2 rumors injected into `MemoryComponent.knowledge`.
+2. **Preact `LegendsModal.tsx`:**
+   - Built strictly on Phase 43 accessible shared primitives and `--ui-*` semantic theme tokens (`parchment`, `retro-crt`, `obsidian-brass`) across 5 searchable, cross-linked tabs:
+     1. **World Map & Eras:** Interactive ASCII/Unicode continental map showing biomes, site status markers, moving caravans, army markers, and active seasonal weather fronts.
+     2. **Historical Figures & Dynasties:** Searchable roster of living and slain historical legends, dynastic lineages, scars, rivalries, and linked chronicles.
+     3. **Sites & Civilizations:** Regional histories, current prosperity/garrison/status, control changes, and known rumors.
+     4. **Artifacts & Relics:** Forged artifact lineages, maker/year/holder history, and last rumored location.
+     5. **World Chronicle:** Filterable/searchable unified multi-century + live Ring 2 timeline feed grouped by Era.
 
 ---
 
@@ -143,10 +116,10 @@ All Phase 47 designs strictly adhere to `AGENTS.md` and `docs/ARCHITECTURE.md`:
 
 | Change | Upstream (Callers / Emitters / Producers / Authors) | Downstream (Consumers / Renderers / Serializers / Validators) | Lateral (Mirrors / Sibling Campaigns / Registries / Docs) |
 | :--- | :--- | :--- | :--- |
-| **M180: Dirty-Bitset Cellular Fluids & Temperature (`fluid_physics.ts`, `temperature_physics.ts`, `chunk_catchup.ts`)** | `intent_cost_resolver.ts` (per-action tick), `chunk_streaming.ts` (wake catch-up), `world_time_skip.ts` (bulk skip catch-up), `field.system.ts` (fire/cold coupling), `spell_cast_units.ts` (`fluid_spawn`) | `map_accessor.ts` (fluid/temp getters & setters), `viewport_snapshot.ts` & `inspect_tooltip.ts` (fluid `1/7..7/7` rendering + °C inspect), `movement.system.ts` & `breath.system.ts` (wading/submersion), `needs.system.ts` (thermal comfort), `chunk_store.ts` & `world_chunk.ts` (delta persistence), `save.ts` (finite physics overlay serialization) | `world_chunk.constants.ts` (fluid bitmasks, thermal constants), `default/tiles.json` (thermal fields), `docs/ssot/ssot_console.json`, `docs/SSOT_CONSOLE.md`, `docs/ARCHITECTURE.md` |
-| **M181: Voxel Sculpting, Construction & Cave-Ins (`construction.system.ts`, `structural_support.ts`)** | `verbs.constants.ts` & `apply.system.ts` (`mine`, `chop`, `build`, `craft`), `labor.behavior.ts`, `spell_cast_resolver.ts` (3D `targetPos.z` + `placementUnits`) | `map_accessor.ts` (`setTileIdAt` dirty flags), `region_graph.ts` & `flow_field.ts` (HPA* cache invalidation), `fov_3d.ts` (`fovNeedsUpdate`), `gravity.system.ts` (cave-in & floor removal drops), `designation.system.ts` (clears completed designations), `save.ts` (timed terrain reverts) | `TileDefinitionSchema` (`src/types/campaign/world.ts`), `DnD35SpellEffectUnitSchema` (`spell_system.types.ts`), `system_content_spell_ids.ts`, `public/data/rulesets/dnd35e/spells/{stone_shape,passwall,transmute_rock_to_mud,create_water}.json`, `default/tiles.json`, `default/items.json`, `docs/ssot/ssot_console.json`, `docs/ssot/ssot_dnd35e.json` |
-| **M182: Universal Needs, Thoughts, Mood & Stress (`needs.system.ts`, `thoughts.system.ts`)** | `simulation_cadence.ts` (`processTier2LocalCadence`), `world_time_skip.ts` (bulk time skip), `hunger.system.ts` (nourishment sync), `personality.system.ts` (`recordThought` compatibility), combat/social/labor events | `actor_components.types.ts` & `components.types.ts` (`NeedsComponent`, extended `Thought` / `MemoryComponent`), `ai.system.ts` (mental break overrides), `ruleset.types.ts` & D&D 3.5e DAG (morale modifiers), `inspect_tooltip.ts` & HUD (mood/needs readout), `save.ts` (component serialization) | `EntityTemplateSchema` (`entity.ts`), `RulesConfigSchema` (`meta.ts`), `personality.constants.ts`, `default/entities.json`, `editor/blank_slate_campaign.ts`, `docs/ssot/ssot_console.json` |
-| **M183: Designations, Blackboard, Stockpiles, Hauling AI & Workshops (`systems/labor/*`, `labor.behavior.ts`)** | `ai.system.ts` (`BEHAVIOR_REGISTRY['labor']`), `intent.enum.ts` / `action.registry.ts` (designation/stockpile/bill intents), `death.system.ts` & `chunk_streaming.ts` (worker reservation cleanup), `ecs_spawner.ts` (`LaborProfileComponent` hydration) | `game-state.types.ts` & `save.ts` (`colonyState` serialization), `viewport_snapshot.ts` & `tactical_snapshot.ts` (designation/stockpile visual overlays), `apply.system.ts`, `inventory.system.ts`, `construction.system.ts`, `pathfinding_hpa.ts` (3D routing) | `AIBehaviorEntrySchema` & `EntityTemplateSchema` (`entity.ts`), `CampaignDataSchema` / `RulesConfigSchema` (`campaign.types.ts` / `meta.ts`), `loader.ts`, `scripts/run-validator.ts`, `editor/blank_slate_campaign.ts`, `default/{areas,entities,items,rules}.json`, `docs/ssot/ssot_console.json` |
+| **M184: Ring 2 Macro-World Worker & Simulation (`world_sim.worker.ts`, `macro_world.system.ts`, `macro_world.types.ts`)** | `simulation_cadence.ts` & `lifecycle.system.ts` (periodic async dispatch + turn-boundary sync), `world_time_skip.ts` (`stepBulkMacroCadence` sync catch-up), `worker_bridge.ts` (`dispatchMacroWorldTickOffload` + fallback) | `game-state.types.ts` & `save.ts` (`MacroWorldState` serialization), `world_clock.system.ts` (seasonal date helpers), `temperature_physics.ts` (outdoor weather ambient delta), `scheme.system.ts` / `rivalry.system.ts` / `gossip.system.ts` (Ring 2 event & rumor feed) | `macro_world.constants.ts`, `RulesConfigSchema` (`src/types/campaign/meta.ts`), `worker.types.ts`, `default/rules.json`, `docs/ssot/ssot_console.json`, `docs/SSOT_CONSOLE.md`, `docs/ARCHITECTURE.md` |
+| **M185: Offline Multi-Century Legends Worldgen (`legends_worldgen.worker.ts`, `worldgen_continent.ts`, `legends_simulator.ts`)** | `bootstrap.ts` (`startNewGame` async offload + `LoadingOverlay` progress when enabled), `world_entities_bootstrap.ts` (faction & area `ChronicleComponent` initialization), `worker_bridge.ts` (`runLegendsWorldgenOffload` + fallback) | `game-state.types.ts` & `save.ts` (`LegendsArchive` inside `macroWorld`), `persistentEntities` & `nemesisSlots` (living legends seeded at Turn 1), `historicalLedger` (pre-play era events), `factions` standings | `identity_generation.json` & `nemesis_hierarchies.json` (shared name/scar pools), `RulesConfigSchema` (`macroWorld` config), `default/rules.json`, `docs/ssot/ssot_console.json`, `docs/SSOT_CONSOLE.md` |
+| **M186a: Chunk/Area Wake Site Materializer (`site_materializer.ts`)** | `chunk_streaming.ts` (`updateStreamingWorldWindow` on `wokenChunkKeys`), `map_wake_respawn.ts` (`wakeSavedAreaFloor` when area binds `macroSiteId`), `macro_world.system.ts` (`pendingSiteDeltas` queue) | `map_accessor.ts` (`setTileIdAt`, fluid/temperature writes), `construction.system.ts`, `field.system.ts` (smoke/fire fields), `ecs_spawner.ts` (`spawnEntity`/`spawnItem` via `RulesetContract`), `needs.system.ts` / `thoughts.system.ts` (survivor trauma), `save.ts` (`materializedDeltaIds`) | `TileDefinitionSchema` (`burnedTileId`, tags), `AreaDefinitionSchema` (optional `macroSiteId`), `default/{areas,entities,items,tiles,tag_registry}.json`, sibling campaigns' optional compatibility, `docs/ssot/ssot_console.json` |
+| **M186b: Preact Legends Browser UI & Modal Wiring (`LegendsModal.tsx`, `UIMode.Legends`, `panel.legends`)** | `actions/core.actions.ts` & `action.registry.ts` (`ToggleLegendsIntent`), `command_catalog.ts` / `shortcut_input.ts` / `modal_input.ts` / `keybind_migration.ts` (`Shift+H`), `hud_dock.ui.ts` (`DOCK_COMMANDS`), `LedgerModal.tsx` / `NemesisDossierModal.tsx` | `AppUiRoot.tsx`, `HudRoot.tsx`, Phase 43 shared primitives (`ModalShell`, `Tabs`, `SplitPane`, `ListBox`, `TextInput`, `Badge`, `Button`), `ui_store.ts`, `presentation_queue.ts`, `Rendering/Styles` 3-theme tokens | `tests/input_scope_and_keymap.test.ts` (command catalog assertions), `HelpModal.tsx` (`panel.legends` command auto-documented), `docs/ssot/ssot_console.json`, `docs/MILESTONES.md`, `docs/ARCHITECTURE.md` |
 
 ---
 
@@ -154,18 +127,18 @@ All Phase 47 designs strictly adhere to `AGENTS.md` and `docs/ARCHITECTURE.md`:
 
 Before drafting `./docs/implementation_plan.md` (Step 4), please confirm your preferred direction on these 4 design points:
 
-1. **Finite Map Cellular Physics Backing (M180/M181):**
-   - **Option A (Recommended):** Support cellular fluid depth (`1/7..7/7`), temperature (`Int16` °C), and material IDs uniformly on **both** `streaming_overworld` (`chunkGrid`) and finite maps (`watchtower_overlook`, `dungeon_1`, etc.) via a lazy sparse per-Z `FinitePhysicsOverlay` (or lazy 16×16 `WorldChunk` backing instantiated on first fluid/temp write), keeping zero memory/CPU overhead on untouched finite maps.
-   - **Option B:** Restrict cellular fluid/temperature simulation strictly to `streaming_overworld` (`chunkGrid`) maps.
+1. **Phase 48 UI Scope (Legends Browser vs. Phase 47 Deferred Colony Management HUD):**
+   - **Option A (Recommended):** Keep Phase 48 tightly scoped to `docs/MILESTONES.md` M184–M186 (Ring 2 Macro-World Worker, Offline Legends Worldgen Worker, Site Materializer, and Preact `LegendsModal`), leaving interactive Colony/Fortress management HUD modals (work-priority matrix UI, stockpile filter editor, workshop bill manager) for a dedicated follow-up milestone or alongside Phase 44 UI work.
+   - **Option B:** Build an interactive Colony/Fortress Management Preact modal inside Phase 48 alongside `LegendsModal`.
 
-2. **Psychology Component Ownership (M182):**
-   - **Option A (Recommended):** Add a dedicated `NeedsComponent` (`ComponentType.Needs`) for the 6 configurable need meters (syncing `nourishment` with `HungerComponent`), while keeping `MemoryComponent` as the single canonical owner of `facets`, `values`, `stress`, `thoughts` (extended with optional decay/stack/mood fields), and mood/inspiration/break state. Avoids breaking existing `personality.system.ts`, `gossip.system.ts`, `dialogue.actions.ts`, and `ai.system.ts` consumers.
-   - **Option B:** Create a separate `PersonalityComponent` and migrate `facets`/`values`/`stress`/`thoughts` off `MemoryComponent`.
+2. **Offline Legends Worldgen Trigger & Campaign Opt-In (`rules.json`):**
+   - **Option A (Recommended):** Add optional declarative `macroWorld` config inside `RulesConfigSchema` (`rules.json`: `enabled`, `worldWidth`, `worldHeight`, `historyYears`, `siteCount`, `macroTickIntervalTurns`, `enableWeatherFronts`, `siteMappings`). Enable it in `public/data/campaigns/default/rules.json` (showcasing `endless_frontier` + linked settlements/ruins) while keeping sibling campaigns (`dnd35e-crypt`, `megacampaign`, `realms-of-shroudgarde`, `shroudgarde`) opt-in with zero unintended startup latency or breaking changes, streaming progress via `LoadingOverlay` during `startNewGame`.
+   - **Option B:** Run multi-century Legends Worldgen globally on every campaign automatically at startup regardless of `rules.json`.
 
-3. **Crafting Recipes & Materials Registry Placement (M181/M183):**
-   - **Option A (Recommended):** Place optional `craftingRecipes`, `materials`, `blueprints`, and `psychology` config inside `RulesConfigSchema` (with sensible engine defaults and optional overrides in `rules.json`), avoiding mandatory new JSON files across all 5 sibling campaigns (`default`, `dnd35e-crypt`, `megacampaign`, `realms-of-shroudgarde`, `shroudgarde`) while remaining 100% Zod-validated and editor-compatible.
-   - **Option B:** Add new top-level optional JSON files (`materials.json`, `recipes.json`) wired into `CampaignDataSchema`, `loader.ts`, `CampaignCategorySchemas`, `blank_slate_campaign.ts`, and `scripts/run-validator.ts`.
+3. **Ring 2 Macro-World Worker Determinism & Turn-Boundary Sync Model:**
+   - **Option A (Recommended):** Run persistent `world_sim.worker.ts` using the exact same pure seeded kernel (`advanceMacroWorldTicks` with isolated per-tick PRNG, never mutating main-thread `ROT.RNG`) as the headless main-thread fallback; dispatch asynchronously at `MACRO_WORLD_TICK_INTERVAL` boundaries and apply returned deltas strictly at deterministic player turn boundaries (with synchronous catch-up during bulk rest/time-skip and headless `bun test`).
+   - **Option B:** Execute Ring 2 simulation purely synchronously inside `processTier3GlobalCadence` without a background Web Worker.
 
-4. **Phase 47 vs. Phase 48 UI & `default` Campaign Showcase Scope:**
-   - **Option A (Recommended):** In Phase 47, render cellular fluid depth (`1/7..7/7`), designation markers, and stockpile zone tints on the viewport canvas + expose fluid depth, °C temperature, mood/needs, and active job in `inspect_tooltip.ts`, wire player `mine`/`build` verbs via `ApplyIntent`, and showcase all 4 milestones in `default` (`watchtower_overlook` / `safe_hub` / `endless_frontier` with mineable stone, water/magma test basin, workshop + stockpile + autonomous laborer NPC, and D&D 3.5e sculpting spells). Reserve full Colony/Fortress Management HUD modals (work-priority matrix UI, interactive stockpile filter editor, bill manager panel) for **Phase 48 (M184–M186)**.
-   - **Option B:** Also build interactive Preact HUD panels for designations, stockpiles, work priorities, and workshop bills inside Phase 47.
+4. **Legends Browser Navigation & Keybind (`UIMode.Legends`):**
+   - **Option A (Recommended):** Add dedicated `UIMode.Legends` with `panel.legends` bound to `Shift+H` (verified collision-free; lowercase `h` remains Vi-key `move.west`), a Command Dock button (`🗺️ Legends`), and cross-links from `LedgerModal` / `NemesisDossierModal`.
+   - **Option B:** Fold Legends tabs inside the existing `LedgerModal` (`Shift+L`) rather than adding `UIMode.Legends`.

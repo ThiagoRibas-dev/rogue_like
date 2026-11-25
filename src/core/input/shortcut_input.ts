@@ -5,6 +5,7 @@ import {
   createToggleFactionsAction,
   createToggleInvestigationAction,
   createToggleLedgerAction,
+  createToggleLegendsAction,
   createToggleQuestsAction
 } from '../../actions/core.actions.ts';
 import {
@@ -85,6 +86,7 @@ const SHORTCUT_BINDINGS: ReadonlyArray<ShortcutBinding> = [
   { commandId: 'panel.investigation', legacyAction: 'investigation', buildIntent: createToggleInvestigationAction },
   { commandId: 'panel.dossier', legacyAction: 'dossier', buildIntent: createToggleDossierAction },
   { commandId: 'panel.ledger', legacyAction: 'ledger', buildIntent: createToggleLedgerAction },
+  { commandId: 'panel.legends', buildIntent: createToggleLegendsAction },
   { commandId: 'panel.debug', buildIntent: createToggleDebugAction }
 ];
 

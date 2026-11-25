@@ -24,6 +24,7 @@ import { deliverPendingKnowledgeToArea } from './knowledge.system.ts';
 import { wakeSavedAreaFloor } from './map/map_wake_respawn.ts';
 import { generateAndPopulateAreaFloor } from './map/map_generation_spawner.ts';
 import { updateStreamingWorldWindow } from './map/chunk_streaming.ts';
+import { materializeMacroSitesForArea } from './map/site_materializer.ts';
 import { flushDirtyChunksToStore } from '../core/chunk_store.ts';
 import { processQuestEvent } from './quest.system.ts';
 import { applyAnalyticalActiveGridCatchUp } from './physics/chunk_catchup.ts';
@@ -361,6 +362,8 @@ export function processChangeAreaIntent(
   nextState = tickTimedTerrainReverts(nextState);
   if (nextState.map.chunkGrid !== undefined) {
     nextState = updateStreamingWorldWindow(nextState, spawnX, spawnY, { anchorZ: spawnZ });
+  } else {
+    nextState = materializeMacroSitesForArea(nextState, targetAreaId);
   }
   nextState = deliverPendingKnowledgeToArea(nextState, targetAreaId);
 

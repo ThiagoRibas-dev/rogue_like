@@ -15,6 +15,7 @@ import { FactionsModal } from '../modals/FactionsModal.tsx';
 import { HelpModal } from '../modals/HelpModal.tsx';
 import { InvestigationModal } from '../modals/InvestigationModal.tsx';
 import { LedgerModal } from '../modals/LedgerModal.tsx';
+import { LegendsModal } from '../modals/LegendsModal.tsx';
 import { NemesisDossierModal } from '../modals/NemesisDossierModal.tsx';
 import { QuestsModal } from '../modals/QuestsModal.tsx';
 import { TradeModal } from '../modals/TradeModal.tsx';
@@ -48,6 +49,7 @@ export function AppUiRoot(): JSX.Element {
       <InvestigationModal />
       <NemesisDossierModal />
       <LedgerModal />
+      <LegendsModal />
       <DebugOverlay />
       <ConsoleModalHost />
       <HelpModal />

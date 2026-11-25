@@ -1,4 +1,5 @@
 import { DEFAULT_KNOWLEDGE_PROPAGATION_DELAY, MAX_PENDING_KNOWLEDGE_QUEUE } from '../constants/knowledge.constants.ts';
+import { MACRO_WORLD_RUMOR_RULE_ID } from '../constants/macro_world.constants.ts';
 import { addComponent, getComponent } from '../core/ecs.ts';
 import type { RumorPropagationRule } from '../types/campaign.types.ts';
 import {
@@ -216,21 +217,25 @@ export function deliverPendingRumorsToArea(state: GameState, areaId: string): Ga
     if (item.deliveredAreas.includes(areaId)) continue;
 
     const rule = rules.find((r) => r.id === item.ruleId);
-    if (!rule) continue;
+    const isMacroWorldRumor = item.ruleId === MACRO_WORLD_RUMOR_RULE_ID;
+    if (!rule && !isMacroWorldRumor) continue;
 
     if (areaId === nextState.currentAreaId) {
       for (const entityId of nextState.entities) {
         const comps = nextState.components.get(entityId);
         if (!comps) continue;
 
-        if (isNPCEligible(nextState, comps, rule, item.sourceAreaId, areaId)) {
+        const eligible = rule
+          ? isNPCEligible(nextState, comps, rule, item.sourceAreaId, areaId)
+          : comps[ComponentType.Player] === undefined && comps[ComponentType.Memory] !== undefined;
+        if (eligible) {
           const memory = comps[ComponentType.Memory] as MemoryComponent | undefined;
           if (memory) {
             const currentPool = memory.rumorPool || [];
             if (!currentPool.some((r) => r.id === item.rumorItem.id)) {
               const newRumor = {
                 ...item.rumorItem,
-                turnCreated: 0 // We don't have a global turn counter yet
+                turnCreated: nextState.globalTurn
               };
               nextState = addComponent(nextState, entityId, {
                 ...memory,

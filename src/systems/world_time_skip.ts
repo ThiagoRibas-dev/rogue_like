@@ -40,6 +40,7 @@ import { advanceAIAlertnessDecayByTurns } from './sound.system.ts';
 import { advanceActorStatusEffectsByTurns, hasPerTurnStatusActivity } from './status-effect.system.ts';
 import { applyElapsedWorldHours, resolveAreaRestPressure } from './world_clock.system.ts';
 import { processWorldEvents } from './world_events.system.ts';
+import { flushMacroWorldSyncForBulkTurns } from './macro/macro_world_sync.ts';
 
 /** Result returned after advancing world time in bulk (for rest or waiting). */
 export interface BulkTimeAdvanceResult {
@@ -271,6 +272,7 @@ export function advanceWorldTimeBulk(
 
   if (advanced > 0) {
     nextState = applyAnalyticalActiveGridCatchUp(nextState, advanced);
+    nextState = flushMacroWorldSyncForBulkTurns(nextState);
   }
   if (playerId !== undefined && advanced > 0) {
     nextState = processHungerTick(nextState, playerId, advanced * STANDARD_ENERGY_PER_TURN);
@@ -337,6 +339,7 @@ export async function advanceWorldTimeBulkAsync(
 
   if (completed > 0) {
     nextState = applyAnalyticalActiveGridCatchUp(nextState, completed);
+    nextState = flushMacroWorldSyncForBulkTurns(nextState);
   }
   if (playerId !== undefined && completed > 0) {
     nextState = processHungerTick(nextState, playerId, completed * STANDARD_ENERGY_PER_TURN);

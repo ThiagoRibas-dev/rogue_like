@@ -43,3 +43,18 @@ export function getHighImportanceEvents(state: Readonly<GameState>): ReadonlyArr
 export function getEventsByType(state: Readonly<GameState>, type: string): ReadonlyArray<BaseGameEvent> {
   return state.historicalLedger.filter((event) => event.type === type);
 }
+
+/**
+ * Formats a historical ledger or chronicle event ID into a human-readable turn/era label
+ * (e.g., `Legends`, `Macro Tick 5`, or `Turn 42`) without producing `Turn evt` / `Turn macro`.
+ */
+export function formatLedgerEventLabel(eventId: string | undefined): string {
+  if (!eventId) return 'Turn ?';
+  if (eventId.startsWith('legend_evt_')) return 'Legends';
+  if (eventId.startsWith('evt_macro_')) {
+    const parts = eventId.split('_');
+    return `Macro Tick ${parts[2] ?? '?'}`;
+  }
+  const token = eventId.split('_')[1];
+  return token && /^\d+$/.test(token) ? `Turn ${token}` : 'Chronicle';
+}

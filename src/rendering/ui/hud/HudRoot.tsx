@@ -82,6 +82,7 @@ export function HudRoot(): JSX.Element | null {
     gameState.uiMode === UIMode.Investigation ||
     gameState.uiMode === UIMode.Dossier ||
     gameState.uiMode === UIMode.Ledger ||
+    gameState.uiMode === UIMode.Legends ||
     gameState.uiMode === UIMode.Dialogue ||
     gameState.uiMode === UIMode.Trade ||
     gameState.uiMode === UIMode.Debug;

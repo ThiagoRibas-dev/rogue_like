@@ -9,6 +9,7 @@ import {
   createToggleFactionsAction,
   createToggleInvestigationAction,
   createToggleLedgerAction,
+  createToggleLegendsAction,
   createToggleQuestsAction,
   createToggleSettingsAction,
   createWaitAction
@@ -124,6 +125,15 @@ export const DOCK_COMMANDS: ReadonlyArray<DockCommandSpec> = [
     fallbackBadge: 'Shift+L',
     activeMode: UIMode.Ledger,
     onTrigger: (_s, pId) => queuePlayerIntent(createToggleLedgerAction(pId))
+  },
+  {
+    id: 'dock-btn-legends',
+    label: 'Legends',
+    icon: '🗺️',
+    commandId: 'panel.legends',
+    fallbackBadge: 'Shift+H',
+    activeMode: UIMode.Legends,
+    onTrigger: (_s, pId) => queuePlayerIntent(createToggleLegendsAction(pId))
   },
   {
     id: 'dock-btn-debug',
