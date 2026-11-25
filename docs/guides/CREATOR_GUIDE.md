@@ -11,7 +11,7 @@ Follow this workflow in order to prevent validation errors:
 - [ ] **Step 1: Manifest & Ruleset Configuration**
   - Create the folder structure under `public/data/campaigns/<campaign_id>/` (or click **✨ New** in the Campaign Editor).
   - Author `manifest.json` with the campaign ID, name, version, tags, and **`rulesetId`** (`"classic"` for standard roguelike or `"dnd35e"` for D&D 3.5e SRD).
-  - Set up starting rules (`rules.json`), color theme (`theme.json`), and XP progression (`advancement.json`). In `rules.json`, configure optional diurnal scheduling via `worldClock` (`secondsPerGlobalTurn`, `startHour`, `hoursPerDay`, `waitTargets`, `phases`) and per-turn hunger pacing via `hunger.satiationLossPerStandardTurn`. When creating via the Campaign Editor, Tier 2 System Content (archetypes/races, classes, conditions, skills, feats, spells) is hydrated automatically.
+  - Set up starting rules (`rules.json`), color theme (`theme.json`), and XP progression (`advancement.json`). In `rules.json`, configure optional diurnal scheduling via `worldClock` (`secondsPerGlobalTurn`, `startHour`, `hoursPerDay`, `waitTargets`, `phases`), hunger pacing via `hunger.satiationLossPerStandardTurn`, optional colony `materials`/`blueprints`/`craftingRecipes`/`psychology`, and optional Ring 2 `macroWorld` generation (`enabled`, `worldWidth`, `worldHeight`, `historyYears`, `siteCount`, `macroTickIntervalTurns`, `enableWeatherFronts`, `areaSiteBindings`). When creating via the Campaign Editor, Tier 2 System Content (archetypes/races, classes, conditions, skills, feats, spells) is hydrated automatically.
 
 - [ ] **Step 2: Base System Definitions**
   - Set up tag classifications in `tag_registry.json`. Any tag used in other files must be registered here.
@@ -21,15 +21,15 @@ Follow this workflow in order to prevent validation errors:
 - [ ] **Step 3: Component Blueprints**
   - Create item effects in `effects.json`.
   - Define equippable items, weapons, and tools in `items.json`.
-  - Establish creature profiles and stats in `entities.json` (for D&D 3.5e, link `archetypeId` / `raceId` to Tier 2 `races/*.json`, which also support multi-tile `footprint`, `footprintsBySize`, and `isCompletelyFillingSpace`).
+  - Establish creature profiles, workshops/furniture, and stats in `entities.json` (for D&D 3.5e, link `archetypeId` / `raceId` to Tier 2 `races/*.json`, which also support multi-tile `footprint`, `footprintsBySize`, and `isCompletelyFillingSpace`; optional colony props support `enablePsychology`, `needs`, and `laborPriorities`).
   - Set up monster behaviors and AI rules in `ai.json`.
 
 - [ ] **Step 4: Map & Encounter Setup**
-  - Define visual terrain types in `tiles.json`.
-  - Create environmental fields (like fire, water, or smoke) in `fields.json`.
+  - Define visual and physical terrain types in `tiles.json` (including optional multi-Z `isOpenAir` / `verticalLink` / `isClimbable`, sculpting `mineable` / `minedTileId` / `isLoadBearing`, and thermal `burnedTileId` / `ignitionTempC`).
+  - Create environmental fields (like fire, water, or `tags: ["smoke"]`) in `fields.json`.
   - Configure procedural room allocation ratios in `encounter_profiles.json`.
   - Fill candidate criteria in `spawn_pools.json`.
-  - Outline layout generators, stair connections, `environmentType` (`"outdoors" | "indoors" | "underground"`), optional `ambientIllumination`, and respawn scaling (`respawnEscalationPerCycle`, `maxRespawnEscalation`) in `areas.json`.
+  - Outline layout generators (`digger`, `cellular`, `dla`, `static`, `streaming_overworld`), optional multi-Z `staticMap.zLevels`, `streamingConfig`, `macroSiteId`, stair connections (`targetZ` / `placementZ`), `environmentType` (`"outdoors" | "indoors" | "underground"`), optional `ambientIllumination`, and respawn scaling (`respawnEscalationPerCycle`, `maxRespawnEscalation`) in `areas.json`.
 
 - [ ] **Step 5: Interaction & Scripting**
   - Author verb interactions in `reactions.json`.

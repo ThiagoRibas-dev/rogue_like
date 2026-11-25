@@ -2457,7 +2457,7 @@ Evolve the chunked ground plane into a true multi-Z voxel world (`(x, y, z)`) wi
 
 ---
 
-# 🚀 Phase 47: Active-Chunk Cellular Physics, Terrain Sculpting & RimWorld/DF Agent Substrate
+# ✅ Phase 47: Active-Chunk Cellular Physics, Terrain Sculpting & RimWorld/DF Agent Substrate (Completed)
 
 Turn loaded chunks into a dynamic Dwarf Fortress / RimWorld simulation: dirty-flagged cellular fluids and heat, digging and structural support, agent psychology/moods, and designation-driven autonomous labor.
 

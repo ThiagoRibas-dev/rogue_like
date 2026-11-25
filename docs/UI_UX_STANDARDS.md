@@ -15,7 +15,7 @@ This document serves as the canonical Source of Truth (SSOT) for UI and UX archi
 │  ├── primitives/ (ModalShell, SplitPane, Toolbar, ListBox, GridNav, Keycap, ...)  │
 │  ├── hud/        (HudRoot, VitalsCard, ChronosStrip, BottomActionDock, ...)       │
 │  ├── menus/      (MainMenu, RulesetSelectModal, CampaignSelectModal, HelpModal)   │
-│  ├── modals/     (ConsoleModalHost, ConsoleDossierView, Trade, Dialogue, ...)     │
+│  ├── modals/     (ConsoleModalHost, ConsoleDossierView, Trade, Dialogue, Legends, ..)│
 │  └── cartridge_ui_registry.ts (CartridgeUIDefinition & slot/command/help registry)│
 └───────────────────────────────┬───────────────────────────────────────────────────┘
                                 │ Implements & Binds
@@ -110,7 +110,7 @@ All gameplay UI views mount inside `#ui-root` (`<AppUiRoot />`) using shared sem
   5. `active_modal` (modal shortcuts, `Tab` focus trap, `Escape` LIFO close)
   6. `hud_focus` (`F6` / `Shift+F6` cycles the 6 HUD landmarks; `Escape` returns focus immediately to map)
   7. `world_gameplay` (movement, combat, targeting, verb menu, hotbar slots, bank cycling, panel toggles)
-- **Declarative Command Registry (`CommandRegistry`)**: All gameplay and cartridge bindings are registered as structured `KeyChord`s (`key`, `code`, `ctrl`, `alt`, `shift`, `meta`) with `preventDefault` handling for browser-reserved function keys (`F1`, `F6`, etc.) and conflict detection in Settings.
+- **Declarative Command Registry (`CommandRegistry`)**: All gameplay and cartridge bindings are registered as structured `KeyChord`s (`key`, `code`, `ctrl`, `alt`, `shift`, `meta`) with `preventDefault` handling for browser-reserved function keys (`F1`, `F6`, etc.) and conflict detection in Settings. Core Console defaults include Z-elevation traversal (`<` / `>`), non-moving camera Z-peeking (`PageUp`/`[`, `PageDown`/`]`, `Home`), and modal toggles including World Ledger (`Shift+L`) and the 5-tab World Legends browser (`panel.legends`, bound to `Shift+H` and accessible from the Command Dock `🗺️ Legends` button as well as Ledger/Dossier cross-links).
 - **`F1` Contextual Help & Reminder Chip**: `HelpModal.tsx` renders searchable, live-bound keybindings grouped by Console + active Cartridge `helpSections`. `HelpReminderChip.tsx` provides an unobtrusive `F1 Help` indicator in the bottom-right corner.
 
 ---

@@ -714,6 +714,87 @@ This document records architectural decisions whose rationale is **non-obvious o
   - Enforced strict 5-step relational precedence when evaluating `IdentityMaskComponent`: (1) never overwrite the subject's own faction with the subject's disguise mask; (2) personal grudges override the target's disguise; (3) actual `'friendly'` allies remain `'friendly'` even when the target wears a hostile faction disguise; (4) an unblown target disguise (`suspicion < maxSuspicion`) spoofs the target's faction to suppress baseline hostility; (5) baseline faction relation matrix.
   - *Rationale*: Prevents a disguised player from treating enemies of their disguised faction as non-hostile or being attacked by their own party companions.
 
+---
+
+### Preact UI Architecture, Semantic Tokens, Scoped Input & Active Effect Lifecycle (Phase 43, Milestones 157–168)
+
+- **Decision 1: Dual-Root `#game-canvas-wrapper` vs. Preact `#ui-root` Over Monolithic DOM Templates (`AppUiRoot.tsx`, `ui_store.ts`, `presenter.ts`)**:
+  - Separated the high-frequency Vanilla TS ROT.js Canvas2D stage (`renderer.ts`, `viewport_snapshot.ts`, `tactical_overlay.ui.ts`, `vfx_overlay.ui.ts`) inside `#game-canvas-wrapper` from all Preact gameplay UI (`#ui-root`), bridging them strictly via per-`PresentationDomain` monotonic counters in `UIStore` (`useUiSelector`) and evicting 49 imperative DOM `.ui.ts` views, 17 static modal HTML overlays, and all `.innerHTML` / native `alert()`/`confirm()`/`prompt()` calls.
+  - *Rationale*: Prevents VDOM reconciliation overhead from impacting 60Hz canvas blits while eliminating stale DOM listener leaks, modal backdrop desyncs, and duplicate HUD/sheet data projections.
+
+- **Decision 2: Unified `--ui-*` Token Layer & `InputScopeManager` Priority Chain (`tokens.css`, `input_scope_manager.ts`, `command_registry.ts`)**:
+  - Replaced scattered `--crpg-*` / `--console-*` skin stylesheets with a single `--ui-*` semantic token layer (`obsidian-brass`, `parchment`, `retro-crt`, `[data-ui-density="compact"]`), paired with one global `InputScopeManager` priority chain (`rebind_capture > dialog_overlay > help_overlay > text_input > active_modal > hud_focus > world_gameplay`) guarded by `TextInputGuard`.
+  - *Rationale*: Lets future Phase 44 Preact Campaign Editor workspaces reuse the identical primitive kit (`src/rendering/ui/primitives/`) at compact density and guarantees keybinds never hijack active text inputs or fight browser function keys (`F1`, `F6`).
+
+- **Decision 3: Provenance-Linked `ActiveStatusEffect` Timers & Ruleset-Parameterized Clock Formatting (`status-effect.system.ts`, `spell_duration.ts`, `world_clock.system.ts`)**:
+  - Attached optional `sourcePath`, `casterLevel`, `linkedConditionId`, `grantedTags`, `polarity`, and `isPermanent` metadata to `ActiveStatusEffect`, routed expiration through `RulesetContract.onStatusEffectExpired`, excluded `actionBudget`/`flankingRelations`/pure duration ticks from `campaignEntityDagCache` invalidation, and sourced turn units (`'r'`/`'round'` vs. `'t'`/`'turn'`) via `getEffectiveWorldClockConfig(state)`.
+  - *Rationale*: Keeps timed buffs, dispels, and status countdowns leak-free across both 6-second D&D 3.5e tactical rounds and ruleset-agnostic Console turns without stalling bulk rests (`advanceWorldTimeBulk`).
+
+---
+
+### High-Throughput ECS Hot-Path, SoA `WorldChunk` Plane & Streaming Overworld (Phase 45, Milestones 173–175)
+
+- **Decision 1: Footprint-Scoped Incremental `spatialIndex` & Opt-In `withEcsBatch` (`ecs_core.ts`, `ecs_batch.ts`)**:
+  - Replaced full-floor $O(N)$ `updateSpatialIndex` calls on every `Position` mutation, `removeEntity`, and `moveToLimbo` with incremental footprint-scoped bucket patching (`patchSpatialIndexForEntity` / `patchSpatialIndexInPlace`), alongside opt-in `withEcsBatch` transactions for bulk spawners and chunk transitions.
+  - *Rationale*: Preserves strict reference equality on untouched entity component records (critical for `PresentationEventQueue` and `campaignEntityDagCache`) while removing $O(N^2)$ `Map` cloning and index rebuild stalls across 2,000+ entities.
+
+- **Decision 2: Flyweight `WorldChunk` `TypedArray` SoA Buffers & `MapAccessor` Compatibility Facade (`world_chunk.ts`, `tile_palette.ts`, `map_accessor.ts`)**:
+  - Rather than forcing all legacy finite `digger`/`cellular`/`static` maps off `GameMap.tiles` immediately, unified both `GameMap.tiles` and chunked `WorldChunk` `TypedArray` SoA planes (`tileType: Uint16Array`, `materialId: Uint16Array`, `fluid: Uint8Array`, `temperature: Int16Array`, `flags: Uint8Array`, `regionId: Uint16Array`, `dirtyFlags`, `lastSimulatedTurn`) behind `MapAccessor` and signed 26-bit world packing (`packWorldCoord` / `unpackWorldCoord`).
+  - *Rationale*: Zero regressions across 46+ finite dungeon consumers, eliminates bounded `y * width + x` negative/streaming overflow, and establishes compact SoA memory layouts ready for multi-Z slabs and cellular physics.
+
+- **Decision 3: Delta-Only IndexedDB `WORLD_CHUNKS_STORE` Persistence & Batched Transferable Prefetching (`chunk_store.ts`, `chunk_streaming.ts`, `map.worker.ts`)**:
+  - Streamed Ring 0/1 procedural chunks deterministically (`streaming_overworld`), offloaded Ring 1 prefetching as single `generate_chunk_batch` transferable `ArrayBuffer` jobs in `map.worker.ts`, and saved **only** mutated (`CHUNK_DIRTY_PERSIST`) chunks in IndexedDB (`WORLD_CHUNKS_STORE`, with headless memory fallback) while leaving `localStorage` `SerializedGameState` free of bulk terrain blobs.
+  - *Rationale*: Avoids `localStorage` 5 MB quota exhaustion on unbounded worlds and keeps save/load latency proportional strictly to player-altered chunks.
+
+---
+
+### True Multi-Z Voxel Space, 3D Vision, HPA\* Pathfinding & Z-Aware Cartridges (Phase 46, Milestones 176–179)
+
+- **Decision 1: Optional `PositionComponent.z = 0` Default & Uniform `"x,y,z"` `spatialIndex` (`world_components.types.ts`, `ecs_core.ts`, `gravity.system.ts`)**:
+  - Extended `PositionComponent` with optional `z` (defaulting to `0` everywhere) and standardized `"x,y,z"` `spatialIndex` keys, packed 3D chunk coordinates (`packWorldCoord3D`), stacked static `zLevels`, ramp/stair transitions, and deterministic unsupported-tile gravity (`resolveGravityForEntity`).
+  - *Rationale*: Legacy 2D campaigns require zero schema migration while all actors, items, portals, lights, and multi-tile footprints inhabit one unified 3D coordinate space.
+
+- **Decision 2: Bounded 3D Shadowcasting (`computeFOV3D`) & Depth-Dimmed Z-Peeking (`fov_3d.ts`, `viewport_snapshot.ts`)**:
+  - Kept fast 2D Precise Shadowcasting when vertical spans are flat and traced multi-stratum `computeFOV3D` / `has3DLineOfSight` within `MAX_FOV_Z_RANGE` across `open_air` chasms/balconies (`blocksVerticalLoS: false`), rendering up to `MAX_RENDER_DEPTH_LAYERS = 3` depth-tinted lower Z strata alongside non-moving `AdjustCameraZIntent` camera peeking.
+  - *Rationale*: Preserves sub-millisecond 2D performance on flat floors while making overhangs, balconies, chasms, and flying actors tactically readable without moving the camera anchor away from the player.
+
+- **Decision 3: Per-Chunk `RegionGrid` HPA\*, Shared LRU Flow Fields & Z-Aware `RulesetContract` Hooks (`region_graph.ts`, `pathfinding_hpa.ts`, `flow_field.ts`, `dnd35e_spatial_3d.ts`)**:
+  - Flood-filled contiguous chunk pockets into `Uint16Array` `regionId`s connected via horizontal boundary and vertical `stairs`/`ramp`/`ladder` portals (`RegionGrid`) for $O(1)$ reachability checks and cross-Z HPA\* routing, cached shared multi-agent 3D Dijkstra flow fields (`DEFAULT_FLOW_FIELD_RADIUS = 24`) invalidated by `CHUNK_DIRTY_REGION`, and isolated tabletop 3D math (D&D 3.5e 3D `1-2-1-2` distance, `+1` High Ground, 3D cover, spherical `computeAoEAffectedSquares3D`, *Fly*, *Feather Fall*, *Climb*) behind optional `RulesetContract` hooks.
+  - *Rationale*: Eliminates cross-floor full-voxel A\* stalls on unreachable targets and keeps Console pathfinding/physics free of tabletop geometry rules (Rule 16).
+
+---
+
+### Active-Chunk Cellular Physics, Terrain Sculpting & Colony Labor Substrate (Phase 47, Milestones 180–183)
+
+- **Decision 1: Dirty-Bitset Cellular Fluids/Heat & Closed-Form Sleep Catch-Up Over Whole-Map Ticking (`fluid_physics.ts`, `temperature_physics.ts`, `chunk_catchup.ts`)**:
+  - Restricted cellular liquid equalization (water/magma/oil depths `1/7..7/7`, hydrostatic threshold `>= 2` to prevent infinite `1/7` sloshing) and ambient heat diffusion strictly to loaded chunks with active `CHUNK_DIRTY_FLUID` / `CHUNK_DIRTY_TEMP` bits (shared cleanly with finite maps via sparse `FinitePhysicsOverlay`), and replaced dormant chunk ticking with closed-form $O(N)$ `catchUpChunkPhysics` derived from `lastSimulatedTurn`.
+  - *Rationale*: Settled chunks cost zero per-turn CPU while skipped hours/days still burn out fires, equalize temperatures, and settle fluids consistently on wake.
+
+- **Decision 2: Voxel Terrain Sculpting + Bounded-Span Cave-In BFS (`construction.system.ts`, `structural_support.ts`)**:
+  - Unified runtime mining, chopping, smoothing, and material-consuming blueprint construction on live `tileId`/`materialIndex` mutations (`CHUNK_DIRTY_* | CHUNK_DIRTY_REGION`), triggering cave-in collapse BFS only up to `MAX_SUPPORT_SPAN_TILES = 6` tiles and adding declarative `terrain_sculpt`/`fluid_spawn` spell units (*Stone Shape*, *Passwall*, *Transmute Rock to Mud*, *Create Water*).
+  - *Rationale*: Bounded BFS keeps collapses local and fast in $O(1)$ chunk neighborhoods while letting both colony workers and Vancian spells reshape identical voxel physics layers.
+
+- **Decision 3: Universal `NeedsComponent` Psychology & Standard-Intent Colony Labor Blackboard (`needs.system.ts`, `thoughts.system.ts`, `job_blackboard.ts`, `labor.behavior.ts`)**:
+  - Built 6 universal needs (`nourishment`, `rest`, `shelter`, `comfort`, `social`, `safety`) bridged to `HungerComponent` and decaying `MemoryComponent` `Thought`s (feeding Layer B morale modifiers and `ai.system.ts` mental breaks), alongside spatial designations, tag-filtered stockpiles, workshop crafting bills, and atomic `JobReservationToken` leases (`GameState.colonyState`, auto-released on death/eviction) executed by `laborBehavior` via standard `ActionIntent` moves and `Apply` verbs.
+  - *Rationale*: Expressing colony labor through normal `ActionIntent` moves/verbs keeps Adventure Mode companions, NPC villages, and Fortress colonists running on one unified Turn-Based/RTwP scheduler instead of split-brain simulation loops.
+
+---
+
+### Ring 2 Parallel Macro-World Simulation, Offline Legends Worldgen & Site Materialization (Phase 48, Milestones 184–186)
+
+- **Decision 1: Isolated Mulberry32 `createMacroRng` & Monotonic Turn-Boundary Worker Sync (`worldgen_continent.ts`, `world_sim.worker.ts`, `macro_world_sync.ts`)**:
+  - Isolated Ring 2 macro-world ticks inside `advanceMacroWorldTicks` using stateless-call Mulberry32 (`createMacroRng`) rather than touching main-thread `ROT.RNG`, running asynchronously in persistent `world_sim.worker.ts` (with deterministic inline fallback when `Worker` is unavailable), deriving season/year from shared campaign `worldClock` settings (`MacroSimCampaignContext`), and committing `MacroTickDeltaBatch`es monotonically at turn boundaries and bulk time skips.
+  - *Rationale*: Ensures Ring 0 tactical combat determinism (`src/core/rng.ts`) is completely immune to async worker timing while keeping UI frame times unaffected by continental trade, raiding, weather fronts, and rumor generation.
+
+- **Decision 2: Off-Thread Multi-Century Legends Worldgen & Living Legend Hydration (`legends_worldgen.worker.ts`, `legends_simulator.ts`, `bootstrap.ts`)**:
+  - Generated continental heightmaps/climates/biomes/rivers/roads and simulated `historyYears` off-thread in `legends_worldgen.worker.ts` (streaming decade progress to `LoadingOverlay` during `startNewGame`), emitting eras, dynasties, living & slain figures, forged relics, and historical ledger chronicles seeded into `persistentEntities` (with `FactionComponent`, combatant hydration where available, `ChronicleComponent` scars, and `MemoryComponent` history) on Turn 1.
+  - *Rationale*: Heavy multi-century generation stays non-blocking at campaign startup, and living legends participate symmetrically in the same ECS/Nemesis/Gossip ecosystem rather than living in read-only lore text.
+
+- **Decision 3: Idempotent `materializedDeltaIds` Stamping Across Streaming Chunks & `macroSiteId` Finite Areas (`site_materializer.ts`, `LegendsModal.tsx`)**:
+  - Unified macro-delta materialization (`materializeMacroSitesForChunk` on chunk wake, `materializeMacroSitesForArea` on area load) using persistent `materializedDeltaIds` stamps, tag-based `smoke` field lookup (no hardcoded field IDs per Rule 21), priority-tiered survivor selection, and accessible 5-tab Preact observability (`<LegendsModal />`, `UIMode.Legends`, `Shift+H`, Command Dock `🗺️ Legends`, Ledger/Dossier cross-links).
+  - *Rationale*: Guarantees revisiting an area or re-streaming an evicted chunk never double-spawns ruins, fires, relics, or merchants, while honoring Principle #1 ("Prioritize Observability") with a full interactive browser into world history.
+
+
 
 
 

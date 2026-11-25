@@ -52,9 +52,14 @@ graph TD
         SysMove[Movement System]:::sys
         SysCombat[Combat / Lifecycle Systems]:::sys
         SysDeath[Death System]:::sys
-        SysAI[AI & Companion Orders]:::sys
-        SysScheme[Scheme / World Systems]:::sys
-        SysQuest[Quest System]:::sys
+        SysAI[AI, Flow Fields & Labor AI]:::sys
+        SysPhysics[Cellular Physics & Support]:::sys
+        SysMacro[Schemes, Legends & Macro Sync]:::sys
+        SysQuest[Quest & Psychology Systems]:::sys
+    end
+
+    subgraph Background Workers
+        Wrk[Map Chunks, Macro-World & Legends Workers]:::sys
     end
 
     subgraph Ruleset Cartridges
@@ -105,8 +110,10 @@ graph TD
 
     %% Scheduler loop
     ECS --> SCH
-    SCH --> |AI Turns| SysAI
-    SCH --> |Background Ticks| SysScheme
+    SCH --> |AI & Labor Turns| SysAI
+    SCH --> |Dirty Chunk Physics| SysPhysics
+    SCH --> |Background Ticks & Ring 2 Sync| SysMacro
+    SysMacro <-.-> |Async DTO Batches| Wrk
 
     %% JSON Validation
     JSON -.-> |Defines rules/stats| DND
@@ -148,7 +155,7 @@ Entity interactions funnel through a unified `ApplyIntent` carrying a `verb` (co
 
 ### 4.4 Determinism & RNG
 
-A single seeded `ROT.RNG` instance is exported from `src/core/rng.ts`. All gameplay randomness (map generation, combat rolls, AI choices) must use this instance to guarantee that any two players with the same seed and input sequence experience the exact same game state.
+A single seeded `ROT.RNG` instance is exported from `src/core/rng.ts`. All Ring 0/1 gameplay randomness (map generation, combat rolls, AI choices, physics) must use this instance to guarantee deterministic replay given the same seed and input sequence. Off-thread Ring 2 macro-world ticks and multi-century Legends synthesis (`src/map/worldgen_continent.ts`, `src/systems/macro/`, `src/worker/world_sim.worker.ts`) use an isolated Mulberry32 PRNG (`createMacroRng(seed, salt)`) so asynchronous macro ticks never perturb `src/core/rng.ts` state.
 
 ### 4.5 Save & Persistence
 
@@ -209,11 +216,14 @@ graph TD
 
     %% Dependency Arrows
     Rules -->|startingAreaId| Areas
+    Rules -->|materials/blueprints/recipes| Items
+    Rules -->|areaSiteBindings| Areas
     Rules -->|spawnWeights| Entities
     Rules -->|lootTable| Items
 
     Areas -->|connections.targetAreaId| Areas
     Areas -->|placedEntities.templateId| Entities
+    Areas -->|staticMap/streamingConfig| Tiles
     Areas -->|encounterProfileId| EncounterProfiles
     Areas -->|subBiomes / tags| Traits
 
@@ -255,11 +265,12 @@ This tree is directly mapped in `editor_config.ts`'s `VIEW_GROUPS` layout, guidi
 
 ### 4.7 Web Worker Offload & Background Simulation (`src/worker/`)
 
-Computationally intensive operations that risk blocking main thread 60Hz rendering (e.g., deep campaign narrative fuzzing, heavy multi-room procedural dungeon generation) are offloaded to dedicated Web Workers:
+Computationally intensive operations and persistent Ring 2 background worlds are offloaded to dedicated Web Workers:
 
-- **Worker Bridge (`src/worker/worker_bridge.ts`)**: Manages the lifecycle of background worker threads (`fuzzer.worker.ts`, `map.worker.ts`). It performs feature detection via `isWorkerAvailable()`, transparently falling back to main-thread asynchronous generator execution if Web Workers are not supported in the host environment.
-- **Serializable JSON DTO Boundary (`src/types/worker.types.ts`)**: All worker requests and responses use pure JSON-serializable DTOs (e.g., transforming `Set<string>` in `DirectorContext` into plain arrays).
-- **Non-Blocking Progress Streaming**: Workers emit `WorkerProgressPayload` messages during execution, updating DOM loading overlays (`#loading-overlay`) and UI progress bars at native browser frame rates without freezing UI animation.
+- **Worker Bridge (`src/worker/worker_bridge.ts`)**: Manages worker lifecycles (`fuzzer.worker.ts`, `map.worker.ts`, `world_sim.worker.ts`, and `legends_worldgen.worker.ts`). Performs `isWorkerAvailable()` feature detection and falls back deterministically inline on headless or non-Worker runtimes.
+- **Batched Chunk Prefetch & Legends Generation**: `map.worker.ts` handles both whole-dungeon async builds and batched `generate_chunk_batch` `streaming_overworld` Ring 1 prefetches via transferable `ArrayBuffer` slices; `legends_worldgen.worker.ts` runs pre-play continental synthesis and multi-century history simulation (`simulateWorldLegendsAsync`); `world_sim.worker.ts` stays persistent across turns to advance Ring 2 caravans, raids, economies, rumors, and weather fronts (`advanceMacroWorldTicks`).
+- **Serializable JSON DTO Boundary (`src/worker/worker.types.ts`)**: All worker requests and responses use pure JSON-serializable DTOs or zero-copy transferable `ArrayBuffer` payloads (with `Set<string>` fields flattened to arrays).
+- **Non-Blocking Progress Streaming**: Workers emit `WorkerProgressPayload` messages during execution, updating the Preact `LoadingOverlay` (`LoadingOverlay.tsx`) at native frame rates.
 
 ### 4.8 Performance Telemetry & Hot-Path Memoization Invariants (`src/core/performance.ts`)
 
@@ -279,25 +290,27 @@ To prevent frame budget overruns ($>16.6\text{ms}$ render or $>4\text{ms}$ turn 
 
 ## 5. World & Map Systems
 
-### 5.1 Map Generation & FOV
+*For detailed Phase 45–48 deep-dive architecture covering SoA `WorldChunk` buffers, Multi-Z voxel traversal, dirty-bitset cellular physics, and Ring 2 macro-world sync, see Sections **9.32**, **9.33**, **9.34**, and **9.35**.*
 
-- **Generators**: Supports structured dungeons (`ROT.Map.Digger`), organic cave networks (`ROT.Map.Cellular`), and Diffusion-Limited Aggregation (`dla`) wrapped in `src/map/generator.ts`. The tile grid is stored as a flat array (`Tile[]`) with index math (`y * width + x`) for faster JS engine performance and trivial serialization. Tiles reference string IDs (e.g., `"stone_wall"`) resolved from a shared `TILE_REGISTRY`, decoupling rendering and mechanical properties from map structure. The generator also supports Voronoi partitioning (`voronoiSubBiomes`) to overlay organic sub-biome zones onto generated maps, which are converted to RoomBounds with exact coordinate sets (`exactTiles`) for the Encounter Director.
-- **Modular Pipeline & Async Generation (`src/map/generator_stages.ts`, `src/map/generator_async.ts`)**: Procedural map generation is decomposed into discrete, testable pipeline stages (`resolvePalette`, `carveBaseGeometry`, `carveRoomsAndPortals`, `applyBiomesAndCull`, `computeHotPathDijkstra`). Synchronous `generateArea()` runs these stages sequentially. Asynchronous `generateAreaAsync()` executes as a generator yielding `GenerationProgress` payloads between stages, allowing the UI loading bar to stream progress smoothly while protecting seed determinism via `ROT.RNG.getState()` / `setState()` snapshots across yields.
-- **Entity & Portal Placement**: The generator guarantees topologically safe spawn logic by picking open floor tiles instead of hardcoded room centers, enabling seamless entity and portal placement even in wall-less cellular/DLA cave systems.
-- **FOV**: Shadowcasting is computed via `computeFOV` in `map.system.ts` only when `GameState.fovNeedsUpdate` is set (e.g., player moves, door opens). Results are cached in `GameState.cachedFov`.
-- **Spatial Rendering**: The renderer uses an `O(1)` spatial index (`GameState.spatialIndex`) combined with `cachedFov` to draw only entities within camera bounds and line-of-sight.
+### 5.1 Map Generation, SoA Chunk Substrate & 3D FOV
 
-### 5.2 Areas, Transitions & Sleep/Wake
+- **Generators & Unified `MapAccessor` (`src/map/map_accessor.ts`)**: Supports structured dungeons (`ROT.Map.Digger`), organic cave networks (`ROT.Map.Cellular`), Diffusion-Limited Aggregation (`dla`), stacked static multi-Z layouts (`staticMap.zLevels`), and unbounded Ring 0/1 `streaming_overworld` chunk streaming (`src/map/chunk_generator.ts`, `src/systems/map/chunk_streaming.ts`). All read/write terrain, bounds, exploration, cellular physics (`fluid`, `temperature`, `materialId`), and dirty-flag queries route through `MapAccessor`, transparently bridging finite `GameMap.tiles` (with `FinitePhysicsOverlay`) and multi-Z `WorldChunk` `TypedArray` SoA planes indexed via signed coordinate packing (`packWorldCoord` / `packWorldCoord3D`). Tiles resolve from `tiles.json` and `TilePaletteRegistry` without hardcoding terrain IDs.
+- **Modular Pipeline & Async Generation (`src/map/generator_stages.ts`, `src/map/generator_async.ts`)**: Finite procedural dungeon generation is decomposed into discrete stages (`resolvePalette`, `carveBaseGeometry`, `carveRoomsAndPortals`, `applyBiomesAndCull`, `computeHotPathDijkstra`), streaming `GenerationProgress` payloads between yields while snapshotting `ROT.RNG` state.
+- **Entity & Portal Placement**: Picks topologically open navigable cells rather than hardcoded room centers, and validates stacked multi-Z stairwell alignment across `zLevels`.
+- **3D Shadowcasting FOV & HPA\* Routing (`src/map/fov_3d.ts`, `src/map/region_graph.ts`, `src/ai/pathfinding_hpa.ts`)**: Shadowcasting (`computeFOV` / `computeFOV3D`) runs when `GameState.fovNeedsUpdate` is set, tracing horizontal slices fast and vertical openings (`open_air`, `blocksVerticalLoS: false`) across up to `MAX_FOV_Z_RANGE`. Navigable chunks flood-fill into `Uint16Array` `regionId` components connected across boundary and vertical ramp/stair portals (`RegionGrid`) for $O(1)$ reachability detection and shared LRU 3D Dijkstra flow fields (`src/ai/flow_field.ts`).
+- **Spatial Rendering**: The renderer queries the incremental $O(k)$ `spatialIndex` (`"x,y,z"` buckets) and `cachedFov` across visible depth strata (`MAX_RENDER_DEPTH_LAYERS = 3`).
 
-The game world is divided into distinct "Areas" — procedural dungeons or static hand-crafted hubs. Areas themselves are modeled as standard ECS Global Entities with a `TagsComponent` and `ChronicleComponent` to record world events. `GameState` tracks `currentAreaId`; inactive areas are serialized into an `areas` map. Transitions use generic `PortalComponent`s and a `ChangeAreaIntent`, packing the current ECS into cold storage and unpacking (or generating) the target area.
+### 5.2 Areas, Streaming Chunks, Transitions & Sleep/Wake
 
-**Persistent Entities & Limbo (Sleep/Wake):** Entities with a `PersistentComponent` are saved into a global `persistentEntities` pool (rather than area-local storage) when unloading. To prevent orphaned references (e.g., leaving a sword on the floor when its owner teleports out), the `moveToLimbo` utility recursively packages the entity and all of its foreign key children (inventory, equipped items) together into Limbo. They are then re-injected into the active ECS when their target area loads. This ensures named NPCs maintain state and belongings across transitions and off-screen scheme missions.
+The game world spans both discrete "Areas" (dungeons, static hubs, multi-Z towers) and continuous `streaming_overworld` worlds, alongside an optional Ring 2 continental macro-world (`state.macroWorld`) synced via `site_materializer.ts`. Areas are ECS Global Entities carrying `TagsComponent` and `ChronicleComponent`; inactive finite areas pack into `state.areas`, while evicted `streaming_overworld` chunks pack local entities into `evictedChunkEntities` and save mutated (`CHUNK_DIRTY_PERSIST`) SoA chunks as compact binary buffers in IndexedDB (`WORLD_CHUNKS_STORE`, `src/core/chunk_store.ts`).
 
-**Area Respawn Timers & Delta Catch-Up:** Areas define a `respawnTimerTurns` threshold and track `lastVisitedTurn` on `AreaData`. When transitioning into a sleeping area:
+**Persistent Entities & Limbo (Sleep/Wake):** Entities with a `PersistentComponent` (including Turn-1 seeded Legends figures) live in `persistentEntities`; `moveToLimbo` recursively packages owned foreign-key children (inventory, equipped items, mounts/links) so named NPCs retain equipment and history across area transitions.
 
-1. **Delta Calculation**: The map system evaluates `deltaTurns = Math.max(0, (state.globalTurn || 0) - lastVisited)`.
-2. **Entity Respawning**: If `deltaTurns` exceeds `respawnTimerTurns`, the `EncounterDirector` re-runs, repopulating the area's active rooms with new non-persistent entities and emitting an `AreaRespawned` event.
-3. **Simulation Catch-Up**: Off-screen spawn timers advance, minion contracts and agreements decay or mature, and dormant timers progress proportionally to `deltaTurns` without incurring the computational cost of running full tile-level pathfinding or FOV for dormant areas.
+**Area Respawn Timers, Analytical Physics Catch-Up & Macro Materialization:**
+
+1. **Delta Calculation**: On transition or chunk wake, the engine compares elapsed world turns against `lastVisitedTurn` / `lastSimulatedTurn`.
+2. **Entity Respawning**: If `deltaTurns` exceeds `respawnTimerTurns`, the `EncounterDirector` re-populates non-persistent entities and emits `AreaRespawned` (`map_wake_respawn.ts`).
+3. **Analytical Catch-Up & Macro Site Sync**: `catchUpChunkPhysics` (`src/systems/physics/chunk_catchup.ts`) computes closed-form thermal/fluid/burnout settlement over elapsed dormant turns, while `materializeMacroSitesForChunk` and `materializeMacroSitesForArea` (`src/systems/map/site_materializer.ts`) idempotently stamp pending Ring 2 settlement raids, burnt tiles/smoke, tombs/relics, and passing caravans.
 
 ### 5.3 Encounter Director
 
@@ -393,14 +406,11 @@ The Nemesis Surfacing system makes hierarchy events, rivalries, and combat encou
 
 - **Decoupled 60Hz Presentation Loop & Presenter**: Simulation step loops do not invoke DOM panel updates or canvas draws directly. Instead, `startGlobalPresenterLoop()` in `src/core/session_controller.ts` runs on `requestAnimationFrame` at 60Hz, consuming dirty domains flagged in `src/core/presentation_queue.ts` via `markDirtyFromStateDiff()`. Frame updates dispatch selectively to affected UI panels and canvas passes through `renderPresenterFrame()` in `src/rendering/presenter.ts`. Transient visual effects (VFX) expire at 60Hz in the presentation loop and tag `PresentationDomain.VFX` without triggering state persistence cascades.
 - **Presentational Viewport Projector (`src/rendering/viewport_snapshot.ts`)**: Projects the simulation state into an immutable `ViewportSnapshot` DTO (`buildViewportSnapshot(state, viewportW, viewportH)`). Isolates all reads of `GameState`, `spatialIndex`, `cachedFov`, entity component queries, z-ordering, crosshairs, tooltips, and fog metrics, keeping the rendering layer purely presentational.
-- **Pure Dumb Canvas Renderer (`src/rendering/renderer.ts`)**: Translates presentational `ViewportSnapshot` cells into characters/colors on `ROT.Display`. Features zero imports from `src/core/ecs.ts`, `src/types/components.types.ts`, or `src/types/game-state.types.ts`. Implements cell-level dirty diffing against the previous frame snapshot (`prevSnapshot`), redrawing only modified cells via `drawCell()` to avoid wasteful full-screen `display.clear()` sweeps. Full redraws are triggered via `invalidateViewportSnapshot()` only during area transitions, campaign switches, and zoom changes.
-- **Unified Console UI Host & Views (`src/rendering/ui/`)**: Specialized presentational views consume pre-computed DTOs from `ViewportSnapshot` and `ICartridgeUIAdapter` (`src/rendering/ui/cartridge_ui_registry.ts`, registered by `dnd35e_ui_registration.ts` and `classic_ui_registration.ts`):
-  - `console_dossier.ui.ts`: 4-tab Master Character Dossier projected from live ruleset adapters.
-  - `console_inventory.ui.ts` & `equipment.ui.ts`: Symmetrical Paper Doll + 12-slot stash & ground loot grids.
-  - `console_hotbar.ui.ts` & `hud_bottom_dock.ui.ts`: Tactical stance toggles, variable dial steppers, hotbar quickslots (`Digit1`–`Digit0`, isolated from numpad movement), action budget pips, `[END TURN]` control, and dynamically gated dock buttons.
-  - `console_inspect_card.ui.ts` & `inspect_view.ui.ts`: Floating inspect cards/panels with viewport boundary clamping and optional ruleset Monster Lore lines.
-  - `console_theme.ts`: Runtime dark-fantasy skin switching and font scaling.
-  - `vfx_overlay.ui.ts`: Manages `#effects-overlay` floating combat text and `#fog-overlay` 2D canvas fog.
+- **Pure Dumb Canvas Renderer (`src/rendering/renderer.ts`)**: Translates presentational `ViewportSnapshot` cells (including up to `MAX_RENDER_DEPTH_LAYERS = 3` depth-dimmed lower Z strata beneath `open_air` tiles and non-moving `cameraZOffset` peeking) into characters/sprites on `ROT.Display`. Features zero imports from `src/core/ecs.ts`, `src/types/components.types.ts`, or `src/types/game-state.types.ts`, and implements cell-level dirty diffing (`drawCell()`) with full invalidation on area switches, theme shifts, or zoom changes.
+- **Unified Preact Gameplay UI Host (`src/rendering/ui/`, see Section 9.30)**: All gameplay HUD cards, menus, and modals mount inside `#ui-root` (`<AppUiRoot />`) driven by per-domain `uiStore` selectors and shared semantic primitives (`src/rendering/ui/primitives/*`) across `--ui-*` tokens (`obsidian-brass`, `parchment`, `retro-crt`):
+  - **HUD Landmarks (`src/rendering/ui/hud/`)**: `ChronosStrip.tsx` (TB/RTwP, zoom, camera Z-peek, Settings), `VitalsCard.tsx`, `CommandDockCard.tsx` (live `<Keycap>` badges & `🗺️ Legends`), `TacticalScannerCard.tsx`, `ChronicleLogCard.tsx`, `BottomActionDock.tsx` (10 banks, stance dials, action budget pips, End Turn), `AlertsStack.tsx`, and `VerbMenuPopover.tsx`.
+  - **Console & Cartridge Modals (`src/rendering/ui/modals/`, `cartridges/`)**: `ConsoleModalHost.tsx`, `ConsoleDossierView.tsx` (4 tabs + `PaperDollWidget` + `CompactStashWidget`), `TradeModal.tsx`, `DialogueModal.tsx`, `QuestsModal.tsx`, `InvestigationModal.tsx`, `FactionsModal.tsx`, `NemesisDossierModal.tsx`, `LedgerModal.tsx`, `LegendsModal.tsx` (`Shift+H`, 5-tab Ring 2/Legends browser), `HelpModal.tsx` (`F1`), plus Cartridge adapters (`DnD35eCharBuilderModal`, `DnD35eLevelUpModal`, `DnD35eSheetModal`, `DnD35eSpellbookModal`, `DnD35eQuickcastOverlay`).
+  - **Canvas Overlays (`vfx_overlay.ui.ts`, `tactical_overlay.ui.ts`)**: Pure Canvas/DOM overlays inside `#game-canvas-wrapper` for floating combat text, fog dimming, and tactical reach/AoE highlights. *(Legacy imperative DOM Campaign Editor views in `src/rendering/editor_ui.ts` remain scoped to `#editor-layout` pending Phase 44.)*
 - **Fog of War**: Uses a transparent overlay `<canvas>` in sprite mode to dim out-of-sight tiles, while in ASCII mode it falls back to native foreground color dimming.
 - **Camera**: Handles viewport offsets, keeping the player centered on maps larger than the screen.
 - **Styling**: CSS modularized by domain in `src/styles/`, aggregated via `@import` in `index.css`.
@@ -512,7 +522,7 @@ Every ruleset follows a strict **3-Tier Separation** between mechanical laws, ru
    - Contains **zero** hardcoded classes, creature statblocks, feat tables, skill lists, or spell definitions in `.ts` files.
 2. **Tier 2 — System Content ("Core Rulebooks" — `public/data/rulesets/<rulesetId>/`)**:
    - Declarative JSON registries shared across all campaigns that use `<rulesetId>`:
-     - For `dnd35e`: **768** modular JSON files shallow-merged into `campaign.systemContent` across `classes/` (26 core, NPC, and prestige classes), `races/` (75 playable races, monster chassis, True Dragon & Elemental ladders), `domains/` (22 Cleric domains), `skills/` (50 SRD skills), `feats/` (125 feats), `spells/` (254 modular spells across levels 0–9), `items/` (149 mundane/magic items), `conditions/` (19 declarative SRD conditions), `templates/` (13 templates), `creature_types/` (15 creature type engines), and `subtypes/` (20 subtypes), plus `item_enhancements.json` (16 first-class enhancements) and root barrel indexes.
+     - For `dnd35e`: **888** modular JSON files shallow-merged into `campaign.systemContent` across `classes/` (26 core, NPC, and prestige classes), `races/` (87 playable races, monster chassis, True Dragon & Elemental ladders), `domains/` (22 Cleric domains), `skills/` (50 SRD skills), `feats/` (125 feats), `spells/` (257 modular spells across levels 0–9), `items/` (242 mundane/magic items), `conditions/` (31 declarative SRD conditions), `templates/` (13 templates), `creature_types/` (15 creature type engines), and `subtypes/` (20 subtypes), plus root registries (`effects.json`, `status.json`, and `item_enhancements.json` with 16 first-class enhancements) = **891** total JSON files.
      - For other cartridges (e.g. `classic`): Cartridge-specific registries declared via `RulesetContract.getSystemContentFiles()` without fabricating dummy files for foreign concepts like feats or spells (`classic` returns `[]`).
      - Optional base `items.json`, `entities.json`, `status.json`, and `effects.json` shared across all campaigns of that ruleset.
 3. **Tier 3 — Campaign Content ("Adventure Modules" — `public/data/campaigns/<campaignId>/`)**:

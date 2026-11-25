@@ -156,6 +156,50 @@ Blueprints for monsters, NPCs, and interactive props.
 
 For `rulesetId: "dnd35e"`, canonical conditions live in `public/data/rulesets/dnd35e/conditions/<id>.json` (`DnD35ConditionDefinitionSchema`), supplying `grantedTags`, `modifiers`, `ruleOverrides`, and non-stacking `abilityPenalties` without TypeScript hardcoding.
 
+### 4.2.3 Multi-Z Maps, Streaming Overworld, Physics & Terrain Sculpting (`tiles.json`, `areas.json`, `rules.json`, `fields.json`)
+
+- **Tile Physical & Vertical Properties (`tiles.json`)**:
+  - **Multi-Z & Traversal**: `isOpenAir`, `blocksVerticalLoS`, `hasFloorSupport`, `verticalLink` (`"ramp" | "stairs_up" | "stairs_down" | "stairs_both" | "ladder"`), `isClimbable`, `isSolidObstacle`.
+  - **Sculpting & Structural Support**: `mineable`, `minedTileId`, `mineYieldItemId`, `mineYieldCount`, `mineWorkCost`, `requiredToolTag`, `isLoadBearing`, `collapseDropItemId`.
+  - **Cellular Heat & Burning**: `thermalConductivity` (`0..1`), `ignitionTempC`, and `burnedTileId` (applied both by local fire and Ring 2 burnt site materialization).
+- **Stacked Static Maps & `streaming_overworld` (`areas.json`)**:
+  - `staticMap.zLevels`: Optional record keyed by Z-stratum string (e.g., `"-1"`, `"1"`) alongside base Z=`0` `layout`. `placedEntities[]` supports optional `z`, and `connections[]` supports `targetZ`, `placementZ`, and `preserveCoords`.
+  - `generatorType: "streaming_overworld"` + `streamingConfig`: Configures `chunkSize` (default `16`, range `8..64`), `activeRadiusChunks`, `prefetchRadiusChunks`, `evictRadiusChunks`, `minZ`, `maxZ`, `activeRadiusZ`, `worldSeed`, `spawnClearingRadius`, and `biomePalette` (`water`, `shore`, `plains`, `forest`, `ridge`, `road`, `openAir`, `underground`, `ramp`).
+  - `macroSiteId` (optional): Binds a finite area directly to a Ring 2 site ID for idempotent ruin/raid/caravan/relic materialization upon entry.
+- **Materials & Construction (`rules.json`)**:
+  - `map.feetPerZLevel` (optional, defaults to ruleset elevation spacing).
+  - `materials` (optional): Map of material definitions (`hardness`, `thermalConductivity`, `meltTempC`, `flammable`, `boulderItemId`, `obsidianTileId`).
+  - `blueprints` (optional): Constructible tile recipes (`targetTileId`, `materialId`, `requiredInputs`, `workUnits`, `requiredToolTag`, `allowOverOpenAir`).
+- **Smoke Field Convention (`fields.json`)**:
+  - Give ambient smoke fields `"tags": ["smoke"]` (and register `"smoke"` / `"burnt"` in `tag_registry.json`) so burnt macro-world sites resolve smoke fields declaratively without hardcoded field IDs.
+
+### 4.2.4 Colony Labor, Psychology & Ring 2 Macro-World (`rules.json`, `entities.json`)
+
+- **Entity Psychology & Labor (`entities.json`)**:
+  - `enablePsychology` (boolean): Enables 6-need decay (`nourishment`, `rest`, `shelter`, `comfort`, `social`, `safety`) and `Thought` memories driving mood thresholds and mental breaks.
+  - `needs` (optional record `0..100`): Overrides starting need values (e.g., `{ "rest": 85, "comfort": 80 }`).
+  - `laborPriorities` (optional `{ mining, chopping, hauling, building, harvesting, crafting }` `0..4`): Controls autonomous `laborBehavior` task selection (paired with furniture/workshop tags like `"furniture:bed"` or `"workshop:masonry"`).
+- **Crafting & Psychology Rules (`rules.json`)**:
+  - `craftingRecipes` (optional): Multi-step bills bound to `workshopTag`, consuming `requiredInputs`, taking `workUnits`, and producing `outputs`.
+  - `psychology` (optional): Tune `needDecayMultipliers`, `moodBreakingThreshold`, and `moodInspirationThreshold`.
+- **Macro-World & Offline Legends (`rules.json` → `macroWorld`)**:
+  - Opt into Ring 2 continental simulation & multi-century pre-play Legends worldgen via `macroWorld`:
+    ```json
+    "macroWorld": {
+      "enabled": true,
+      "worldWidth": 24,
+      "worldHeight": 24,
+      "historyYears": 120,
+      "siteCount": 10,
+      "macroTickIntervalTurns": 100,
+      "enableWeatherFronts": true,
+      "areaSiteBindings": {
+        "watchtower_overlook": "site_2"
+      }
+    }
+    ```
+  - Optional fields: `worldSeed` (defaults to run seed) and `raiderFactionTags` (semantic faction tags eligible to spawn Ring 2 raids).
+
 ### 4.3 Interactive Scripting Conditions & Consequences
 
 Both dialogue options and triggers use a shared set of condition predicates and consequence actions.

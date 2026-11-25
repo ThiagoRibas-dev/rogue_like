@@ -207,14 +207,14 @@ Generate these first. They depend on nothing.
 | `manifest.json` | Campaign metadata (ID, name, version) |
 | `theme.json` | Color palette, glyphs, UI config |
 | `advancement.json` | XP-to-level table |
-| `tiles.json` | Tile type definitions (wall, floor, water, etc.) |
+| `tiles.json` | Tile type definitions (wall, floor, water, ramps/stairs, mineable walls, `burnedTileId`, etc.) |
 | `factions.json` | 2D faction hostility matrix |
 | `status.json` | Status effect definitions (poison, haste, etc.) |
 | `tag_registry.json` | Central registry of ALL tags used in the campaign |
-| `fields.json` | Field type definitions (fire, smoke, etc.) |
+| `fields.json` | Field type definitions (fire, `smoke`-tagged fields, etc.) |
 | `trait_registry.json` | Dynamic trait definitions (elite, regenerating) |
 | `encounter_profiles.json` | Budget allocation profiles (protein/appetizer/side/dessert) |
-| `rules.json` | Game rules (map size, hunger, spawn weights) — references tile/area IDs |
+| `rules.json` | Game rules (map size, hunger, worldClock, spawn weights, optional materials/blueprints/crafting/psychology/`macroWorld`) — references tile/area IDs |
 
 ### Phase 1: Entity Definitions (Depend on Phase 0)
 These reference Phase 0 IDs.
@@ -230,7 +230,7 @@ These reference Phase 0 IDs.
 | File | Dependencies |
 |------|-------------|
 | `items.json` | `effects.json` (effectId), `status.json` (onHit.statusId), `tag_registry.json` (tags) |
-| `areas.json` | `tiles.json` (tile IDs), `entities.json` (entity IDs), `encounter_profiles.json` (profileId), `tag_registry.json` (tags/sub-biomes) |
+| `areas.json` | `tiles.json` (tile IDs, optional `zLevels` & `streamingConfig`), `entities.json` (entity IDs), `encounter_profiles.json` (profileId), `tag_registry.json` (tags/sub-biomes), optional `macroSiteId` |
 | `schemes.json` | `villains.json` (villainArchetypeId) |
 | `villains.json` | `factions.json` (faction standing) |
 | `agreements.json` | `tag_registry.json` (clue templates) |
@@ -427,4 +427,4 @@ bun scripts/run-validator.ts --campaign-dir ./my-campaign --json
 
 ---
 
-*Last updated: 2026-06-22*
+*Last updated: 2026-11-25*
