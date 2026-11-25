@@ -1,6 +1,7 @@
 import type { ComponentType } from '../components.types.ts';
 import type { EntityId } from '../game-state.types.ts';
 import type { InteractionChain } from '../interaction_provenance.types.ts';
+import type { LaborKind, VoxelCoord } from '../colony.types.ts';
 
 /**
  * Tag component indicating that the entity is the player.
@@ -161,6 +162,32 @@ export interface Thought {
   readonly eventSummary: string;
   readonly stressDelta: number;
   readonly relatedEntityId?: EntityId | undefined;
+  readonly thoughtId?: string | undefined;
+  readonly moodDelta?: number | undefined;
+  readonly expiresAtTurn?: number | undefined;
+  readonly stackCount?: number | undefined;
+  readonly maxStacks?: number | undefined;
+}
+
+/** Mood tier classifications derived from aggregated actor mood (`0..100`). */
+export type MoodTier = 'ecstatic' | 'happy' | 'content' | 'stressed' | 'breaking' | 'catatonic';
+
+/** Positive behavioral/statistical inspiration states triggered at high mood. */
+export type InspirationKind = 'work_frenzy' | 'inspired_craft' | 'inspired_valor';
+
+/** Emergent mental break states triggered when mood collapses under sustained stress. */
+export type MentalBreakKind = 'daze_wander' | 'hide_in_room' | 'tantrum' | 'berserk';
+
+/** Active temporary inspiration timer stored on `MemoryComponent`. */
+export interface ActiveInspirationState {
+  readonly kind: InspirationKind;
+  readonly expiresAtTurn: number;
+}
+
+/** Active temporary mental break timer stored on `MemoryComponent`. */
+export interface ActiveMentalBreakState {
+  readonly kind: MentalBreakKind;
+  readonly expiresAtTurn: number;
 }
 
 /**
@@ -210,6 +237,10 @@ export interface MemoryComponent {
   readonly rumorPool?: ReadonlyArray<RumorItem> | undefined;
   readonly compromiseScore?: number | undefined;
   readonly relationshipAxes?: Readonly<Record<string, number>> | undefined;
+  readonly mood?: number | undefined;
+  readonly moodTier?: MoodTier | undefined;
+  readonly activeInspiration?: ActiveInspirationState | undefined;
+  readonly activeMentalBreak?: ActiveMentalBreakState | undefined;
 }
 
 /**
@@ -356,4 +387,42 @@ export interface TacticalDoctrineComponent {
   readonly reactionPolicies?: Readonly<Record<string, ImmediateReactionPolicy>> | undefined;
   /** Symmetric manual Stealth stance and 6-second check cadence state. */
   readonly stealth?: StealthStanceState | undefined;
+}
+
+/** Canonical universal need identifier shared across Adventure NPCs and Fortress colonists. */
+export type CanonicalNeedId = 'rest' | 'nourishment' | 'shelter' | 'comfort' | 'social' | 'safety';
+
+/** Serializable current/max/decay state for one actor need meter. */
+export interface NeedMeterState {
+  readonly current: number;
+  readonly max: number;
+  readonly decayPerInterval: number;
+}
+
+/** Universal actor physiological and psychological need meters component. */
+export interface NeedsComponent {
+  readonly type: ComponentType.Needs;
+  readonly needs: Readonly<Record<string, NeedMeterState>>;
+}
+
+/** Multi-step active colony labor task state tracked on `LaborProfileComponent`. */
+export interface ActiveLaborJobState {
+  readonly jobId: string;
+  readonly kind: LaborKind;
+  readonly phase: 'fetch_item' | 'move_to_target' | 'execute' | 'deliver_item';
+  readonly targetCoord: VoxelCoord;
+  readonly targetEntityId?: EntityId | undefined;
+  readonly carriedItemEntityId?: EntityId | undefined;
+  readonly destinationCoord?: VoxelCoord | undefined;
+  readonly workshopEntityId?: EntityId | undefined;
+  readonly billId?: string | undefined;
+  readonly blueprintId?: string | undefined;
+  readonly reservedResourceKeys: ReadonlyArray<string>;
+}
+
+/** Priority-driven autonomous labor assignment profile component. */
+export interface LaborProfileComponent {
+  readonly type: ComponentType.LaborProfile;
+  readonly priorities: Readonly<Record<LaborKind, number>>;
+  readonly activeJob?: ActiveLaborJobState | undefined;
 }

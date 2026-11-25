@@ -2461,24 +2461,24 @@ Evolve the chunked ground plane into a true multi-Z voxel world (`(x, y, z)`) wi
 
 Turn loaded chunks into a dynamic Dwarf Fortress / RimWorld simulation: dirty-flagged cellular fluids and heat, digging and structural support, agent psychology/moods, and designation-driven autonomous labor.
 
-## ⚪ Milestone 180: Dirty-Bitset Cellular Physics & Analytical Sleep Catch-Up (Planned)
+## ✅ Milestone 180: Dirty-Bitset Cellular Physics & Analytical Sleep Catch-Up (Complete)
 
-- [ ] **Dirty-Chunk Cellular Fluids & Temperature Diffusion (`src/systems/physics/fluid_physics.ts`, `temperature_physics.ts`)**: Simulate liquid depth `1/7..7/7` (water/magma/oil) with vertical spillover, hydrostatic flow, obsidian/steam phase transitions, and ambient heat diffusion **only** across chunks holding active `dirtyFlags` bits (auto-sleeping settled chunks at zero CPU cost).
-- [ ] **Analytical Chunk Sleep Catch-Up (`src/systems/physics/chunk_catchup.ts`)**: Track `lastSimulatedTurn` per chunk and compute closed-form catch-up on wake (fire burnout, equilibrium fluid drainage, temperature normalization, crop/growth progression, spoilage) without per-turn ticking while dormant.
+- [x] **Dirty-Chunk Cellular Fluids & Temperature Diffusion (`src/systems/physics/fluid_physics.ts`, `temperature_physics.ts`)**: Simulate liquid depth `1/7..7/7` (water/magma/oil) with vertical spillover, hydrostatic flow, obsidian/steam phase transitions, and ambient heat diffusion **only** across chunks holding active `dirtyFlags` bits (auto-sleeping settled chunks at zero CPU cost).
+- [x] **Analytical Chunk Sleep Catch-Up (`src/systems/physics/chunk_catchup.ts`)**: Track `lastSimulatedTurn` per chunk and compute closed-form catch-up on wake (fire burnout, equilibrium fluid drainage, temperature normalization, crop/growth progression, spoilage) without per-turn ticking while dormant.
 
-## ⚪ Milestone 181: Dynamic Terrain Sculpting, Construction & Structural Support (Planned)
+## ✅ Milestone 181: Dynamic Terrain Sculpting, Construction & Structural Support (Complete)
 
-- [ ] **Mining, Channeling, Smoothing & Building (`src/systems/construction.system.ts`, `src/map/structural_support.ts`)**: Support runtime terrain voxel mutation (`tileType` + `materialId` updates flagging `dirtyFlags`), item/boulder drops from mined rock, floor/wall/bridge construction consuming materials, and connected-support cave-in checks.
-- [ ] **Cartridge Spell & Ability Terrain Hooks (`src/rulesets/dnd35e/**`)**: Integrate D&D 3.5e earth/stone sculpting spells (*Passwall*, *Stone Shape*, *Transmute Rock to Mud*) and *Create Water* directly with live voxel terrain and fluid layers.
+- [x] **Mining, Channeling, Smoothing & Building (`src/systems/construction.system.ts`, `src/map/structural_support.ts`)**: Support runtime terrain voxel mutation (`tileType` + `materialId` updates flagging `dirtyFlags`), item/boulder drops from mined rock, floor/wall/bridge construction consuming materials, and connected-support cave-in checks.
+- [x] **Cartridge Spell & Ability Terrain Hooks (`src/rulesets/dnd35e/**`)**: Integrate D&D 3.5e earth/stone sculpting spells (*Passwall*, *Stone Shape*, *Transmute Rock to Mud*) and *Create Water* directly with live voxel terrain and fluid layers.
 
-## ⚪ Milestone 182: Universal Needs, Thoughts, Mood & Stress Engine (Planned)
+## ✅ Milestone 182: Universal Needs, Thoughts, Mood & Stress Engine (Complete)
 
-- [ ] **Needs & Thought Memory Pipeline (`src/systems/psychology/needs.system.ts`, `thoughts.system.ts`)**: Extend Tier 1 `PersonalityComponent`, `HungerComponent`, and `MemoryComponent` with configurable needs (rest, nourishment, shelter, comfort, social, safety) and decaying/stacking situational thoughts driving mood thresholds, inspiration, and mental breaks across both Adventure Mode NPCs and Fortress colonists.
+- [x] **Needs & Thought Memory Pipeline (`src/systems/psychology/needs.system.ts`, `thoughts.system.ts`)**: Extend Tier 1 `PersonalityComponent`, `HungerComponent`, and `MemoryComponent` with configurable needs (rest, nourishment, shelter, comfort, social, safety) and decaying/stacking situational thoughts driving mood thresholds, inspiration, and mental breaks across both Adventure Mode NPCs and Fortress colonists.
 
-## ⚪ Milestone 183: Designation Layer, Job-Reservation Blackboard, Stockpiles, Hauling AI & Workshop Crafting DAGs (Planned)
+## ✅ Milestone 183: Designation Layer, Job-Reservation Blackboard, Stockpiles, Hauling AI & Workshop Crafting DAGs (Complete)
 
-- [ ] **Spatial Designations, Stockpiles & Atomic Job Reservations (`src/systems/labor/designation.system.ts`, `job_blackboard.ts`, `stockpile.system.ts`)**: Add player/AI designation overlays (mine, chop, haul, build, harvest), typed item-filter stockpile zones, and conflict-free atomic job/item/tool reservation tokens.
-- [ ] **Autonomous Hauling, Work Orders & Workshop Crafting DAG (`src/ai/labor.behavior.ts`, `src/systems/labor/workshop.system.ts`)**: Implement priority-based labor utility scoring and multi-step recipe/bill queues inside the shared `ActionIntent` pipeline so both autonomous villages and player-controlled strongholds run deterministically in RTwP or Turn-Based mode.
+- [x] **Spatial Designations, Stockpiles & Atomic Job Reservations (`src/systems/labor/designation.system.ts`, `job_blackboard.ts`, `stockpile.system.ts`)**: Add player/AI designation overlays (mine, chop, haul, build, harvest), typed item-filter stockpile zones, and conflict-free atomic job/item/tool reservation tokens.
+- [x] **Autonomous Hauling, Work Orders & Workshop Crafting DAG (`src/ai/labor.behavior.ts`, `src/systems/labor/workshop.system.ts`)**: Implement priority-based labor utility scoring and multi-step recipe/bill queues inside the shared `ActionIntent` pipeline so both autonomous villages and player-controlled strongholds run deterministically in RTwP or Turn-Based mode.
 
 ---
 

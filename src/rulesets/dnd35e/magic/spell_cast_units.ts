@@ -4,6 +4,9 @@
  */
 
 import { addComponent, createEntity, getComponent, removeComponent, spawnEntity } from '../../../core/ecs.ts';
+import { getTileDefAt, getTileIdAt, isInMapBounds } from '../../../map/map_accessor.ts';
+import { scheduleTimedTerrainRevert, sculptTerrainVoxel } from '../../../systems/construction.system.ts';
+import { applyFluidToVoxel, processDirtyFluidChunks } from '../../../systems/physics/fluid_physics.ts';
 import { addMessage, MessageLogCategory } from '../../../systems/message.system.ts';
 import {
   ComponentType,
@@ -45,7 +48,7 @@ export function applySpecialSpellUnit(params: {
   readonly state: GameState;
   readonly casterId: EntityId;
   readonly targetId: EntityId;
-  readonly targetPos: { readonly x: number; readonly y: number };
+  readonly targetPos: { readonly x: number; readonly y: number; readonly z?: number | undefined };
   readonly spell: DnD35SpellDefinition;
   readonly unit: DnD35SpellEffectUnit;
   readonly saved: boolean;
@@ -295,6 +298,91 @@ export function applySpecialSpellUnit(params: {
         ...targetDnd,
         negativeLevels: (targetDnd.negativeLevels ?? 0) + levels
       });
+    }
+
+    case 'terrain_sculpt': {
+      const casterPos = getComponent(runningState, casterId, ComponentType.Position) as PositionComponent | undefined;
+      const targetZ = targetPos.z ?? casterPos?.z ?? 0;
+      const radius = unit.radiusTiles * (metamagic.widen ? 2 : 1);
+      const revertDuration = unit.durationTurnsScaling
+        ? Math.max(1, evaluateSpellScalingRule(unit.durationTurnsScaling, casterLevel)) * (metamagic.extend ? 2 : 1)
+        : undefined;
+      let nextState = runningState;
+      let sculptedCount = 0;
+
+      for (let dy = -radius; dy <= radius; dy++) {
+        for (let dx = -radius; dx <= radius; dx++) {
+          if (dx * dx + dy * dy > radius * radius) continue;
+          const vx = targetPos.x + dx;
+          const vy = targetPos.y + dy;
+          if (!isInMapBounds(nextState.map, vx, vy, targetZ)) continue;
+
+          const curTileId = getTileIdAt(nextState.map, vx, vy, targetZ);
+          const curDef = getTileDefAt(nextState, vx, vy, targetZ);
+          if (!curTileId || !curDef) continue;
+
+          if (unit.requiredSourceTags.length > 0) {
+            const tileTags = new Set(curDef.tags ?? []);
+            if (curDef.isSolidObstacle || !curDef.walkable) tileTags.add('solid');
+            if (!unit.requiredSourceTags.some((req) => tileTags.has(req))) continue;
+          }
+
+          if (nextState.campaign.tiles[unit.targetTileId]) {
+            nextState = sculptTerrainVoxel(nextState, vx, vy, targetZ, unit.targetTileId, { dropYield: false });
+            sculptedCount += 1;
+            if (revertDuration !== undefined) {
+              nextState = scheduleTimedTerrainRevert(nextState, {
+                areaId: nextState.currentAreaId,
+                x: vx,
+                y: vy,
+                z: targetZ,
+                revertTileId: unit.revertTileId ?? curTileId,
+                revertTurn: (nextState.globalTurn ?? 0) + revertDuration,
+                sourceId: `spell:${spell.id}:${castId}`
+              });
+            }
+          }
+          if (unit.spawnFluidKind && unit.spawnFluidKind !== 'none' && unit.spawnFluidDepth !== undefined) {
+            nextState = applyFluidToVoxel(nextState, vx, vy, targetZ, unit.spawnFluidKind, unit.spawnFluidDepth);
+          }
+        }
+      }
+
+      if (unit.spawnFluidKind && unit.spawnFluidKind !== 'none') {
+        nextState = processDirtyFluidChunks(nextState);
+      }
+      if (sculptedCount > 0) {
+        nextState = addMessage(
+          nextState,
+          `${spell.name} reshapes ${sculptedCount} terrain section(s)!`,
+          MessageLogCategory.System
+        );
+      }
+      return nextState;
+    }
+
+    case 'fluid_spawn': {
+      const casterPos = getComponent(runningState, casterId, ComponentType.Position) as PositionComponent | undefined;
+      const targetZ = targetPos.z ?? casterPos?.z ?? 0;
+      const radius = unit.radiusTiles * (metamagic.widen ? 2 : 1);
+      const rawDepth = unit.depthScaling ? evaluateSpellScalingRule(unit.depthScaling, casterLevel) : unit.depth;
+      const depth = Math.max(1, Math.min(7, rawDepth));
+      let nextState = runningState;
+
+      for (let dy = -radius; dy <= radius; dy++) {
+        for (let dx = -radius; dx <= radius; dx++) {
+          if (dx * dx + dy * dy > radius * radius) continue;
+          const vx = targetPos.x + dx;
+          const vy = targetPos.y + dy;
+          if (!isInMapBounds(nextState.map, vx, vy, targetZ)) continue;
+          const curDef = getTileDefAt(nextState, vx, vy, targetZ);
+          if (!curDef || curDef.isSolidObstacle === true || !curDef.walkable) continue;
+          nextState = applyFluidToVoxel(nextState, vx, vy, targetZ, unit.fluidKind, depth);
+        }
+      }
+
+      nextState = processDirtyFluidChunks(nextState);
+      return addMessage(nextState, `${spell.name} pours ${unit.fluidKind} across the area!`, MessageLogCategory.System);
     }
 
     default:

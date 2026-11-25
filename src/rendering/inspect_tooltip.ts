@@ -10,8 +10,10 @@ import {
   type FieldComponent,
   type FighterComponent,
   type ItemComponent,
+  type LaborProfileComponent,
   type LockComponent,
   type MemoryComponent,
+  type NeedsComponent,
   type NemesisComponent,
   type PortalComponent,
   type ShopComponent,
@@ -21,7 +23,12 @@ import {
 import type { ActiveEffectDisplayDTO } from '../types/ruleset.types.ts';
 import { type EntityId, type GameState, UIMode } from '../types/game-state.types.ts';
 import { formatTurnDurationCompact } from '../utils/duration.ts';
-import { getTileAt, isMultiZMap } from '../map/map_accessor.ts';
+import { getFluidByteAt, getTemperatureAt, getTileAt, isMultiZMap } from '../map/map_accessor.ts';
+import { unpackFluidCell } from '../systems/physics/fluid_codec.ts';
+import { formatDesignationKey } from '../systems/labor/designation.system.ts';
+import { findStockpileAtCoord } from '../systems/labor/stockpile.system.ts';
+import { DEFAULT_AMBIENT_TEMP_C } from '../constants/world_chunk.constants.ts';
+import { NEED_LOW_THRESHOLD } from '../constants/personality.constants.ts';
 import { getEffectiveStats } from '../utils/stats.ts';
 import { resolveActiveViewZ, resolveRenderedCellZAt } from './camera.ts';
 import { FACET_DOMINANT_HIGH_THRESHOLD, FACET_DOMINANT_LOW_THRESHOLD } from '../constants/personality.constants.ts';
@@ -190,6 +197,50 @@ function appendEntityComponentSections(state: GameState, entityId: EntityId, sec
     if (knowledgeKeys.length > 0) {
       sections.push({ type: 'desc', value: 'Knowledge: ' + knowledgeKeys.join(', '), color: '#55ff55' });
     }
+    if (memory.mood !== undefined && memory.moodTier !== undefined) {
+      const tierColor =
+        memory.moodTier === 'ecstatic' || memory.moodTier === 'happy'
+          ? '#2ed573'
+          : memory.moodTier === 'breaking' || memory.moodTier === 'catatonic'
+            ? '#ff4757'
+            : '#f1c40f';
+      const label = memory.moodTier.charAt(0).toUpperCase() + memory.moodTier.slice(1);
+      sections.push({ type: 'stat', label: 'Mood', value: `${label} (${memory.mood})`, color: tierColor });
+    }
+    if (memory.activeInspiration) {
+      sections.push({
+        type: 'desc',
+        value: `Inspired: ${memory.activeInspiration.kind.replace(/_/g, ' ')}`,
+        color: '#38bdf8'
+      });
+    }
+    if (memory.activeMentalBreak) {
+      sections.push({
+        type: 'desc',
+        value: `Mental Break: ${memory.activeMentalBreak.kind.replace(/_/g, ' ')}`,
+        color: '#ff4757'
+      });
+    }
+  }
+
+  const needs = getComponent(state, entityId, ComponentType.Needs) as NeedsComponent | undefined;
+  if (needs) {
+    const lowNeeds = Object.entries(needs.needs)
+      .filter(([, m]) => m.current <= NEED_LOW_THRESHOLD)
+      .map(([k, m]) => `${k} ${m.current}%`);
+    if (lowNeeds.length > 0) {
+      sections.push({ type: 'stat', label: 'Low Needs', value: lowNeeds.join(', '), color: '#fb923c' });
+    }
+  }
+
+  const laborProfile = getComponent(state, entityId, ComponentType.LaborProfile) as LaborProfileComponent | undefined;
+  if (laborProfile?.activeJob) {
+    sections.push({
+      type: 'stat',
+      label: 'Task',
+      value: `${laborProfile.activeJob.kind} (${laborProfile.activeJob.targetCoord.x},${laborProfile.activeJob.targetCoord.y})`,
+      color: '#a3e635'
+    });
   }
 
   const nemesis = getComponent(state, entityId, ComponentType.Nemesis) as NemesisComponent | undefined;
@@ -328,6 +379,33 @@ export function buildInspectTooltip(
           : `${tileDef.glyph} ${formattedName}`
       });
     }
+  }
+
+  const fluid = unpackFluidCell(getFluidByteAt(state.map, ix, iy, viewZ));
+  if (fluid.depth > 0 && fluid.kind !== 'none') {
+    sections.push({
+      type: 'stat',
+      label: 'Fluid',
+      value: `${fluid.depth}/7 ${fluid.kind}`,
+      color: fluid.kind === 'magma' ? '#fb923c' : '#38bdf8'
+    });
+  }
+  const cellTemp = getTemperatureAt(state.map, ix, iy, viewZ);
+  if (cellTemp !== DEFAULT_AMBIENT_TEMP_C) {
+    sections.push({
+      type: 'stat',
+      label: 'Temp',
+      value: `${cellTemp}°C`,
+      color: cellTemp > 40 ? '#fb923c' : cellTemp <= 0 ? '#7dd3fc' : '#cbd5e1'
+    });
+  }
+  const desig = state.colonyState?.designations[formatDesignationKey(state.currentAreaId, ix, iy, viewZ)];
+  if (desig) {
+    sections.push({ type: 'stat', label: 'Designation', value: desig.kind, color: '#facc15' });
+  }
+  const zone = findStockpileAtCoord(state, ix, iy, viewZ);
+  if (zone) {
+    sections.push({ type: 'stat', label: 'Stockpile', value: zone.name, color: '#94a3b8' });
   }
 
   if (sections.length === 0) {

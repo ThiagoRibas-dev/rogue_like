@@ -243,5 +243,50 @@
     "category": "magic",
     "color": "#f1c40f",
     "description": "Consecrated to Pelor, deity of light and the sun."
+  },
+  "workshop:masonry": {
+    "category": "terrain",
+    "color": "#95a5a6",
+    "description": "A stoneworking station capable of processing masonry recipes."
+  },
+  "furniture:bed": {
+    "category": "terrain",
+    "color": "#a0522d",
+    "description": "Comfortable bedding that restores rest need nearby."
+  },
+  "colonist": {
+    "category": "entity",
+    "color": "#f1c40f",
+    "description": "A settlement laborer executing designated work orders."
+  },
+  "material:stone": {
+    "category": "item",
+    "color": "#7f8c8d",
+    "description": "Raw stone usable for masonry and construction."
+  },
+  "material:stone_block": {
+    "category": "item",
+    "color": "#bdc3c7",
+    "description": "Cut ashlar stone block for advanced stoneworking."
+  },
+  "haulable": {
+    "category": "item",
+    "color": "#95a5a6",
+    "description": "Loose item eligible for autonomous stockpile hauling."
+  },
+  "valuable": {
+    "category": "item",
+    "color": "#f39c12",
+    "description": "High-value crafted or artistic item."
+  },
+  "tool:mining": {
+    "category": "item",
+    "color": "#d35400",
+    "description": "Excavation tool suited for carving stone walls."
+  },
+  "weapon": {
+    "category": "item",
+    "color": "#e74c3c",
+    "description": "Equipped or usable armament."
   }
 }

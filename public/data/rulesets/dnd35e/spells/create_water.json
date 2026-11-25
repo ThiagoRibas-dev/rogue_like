@@ -1,0 +1,63 @@
+{
+  "create_water": {
+    "id": "create_water",
+    "name": "Create Water",
+    "description": "Conjures wholesome, drinkable water that spills across nearby terrain.",
+    "level": 0,
+    "levelByClass": {
+      "cleric": 0,
+      "druid": 0,
+      "paladin": 1
+    },
+    "levelByDomain": {
+      "water": 1
+    },
+    "levelByAccessTag": {},
+    "school": "conjuration",
+    "subschool": "creation",
+    "descriptors": [
+      "water"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "close",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "burst",
+    "aoeRadiusFt": 5,
+    "effectUnits": [
+      {
+        "unitId": "create_water_spawn",
+        "targetRole": "area_occupant",
+        "type": "fluid_spawn",
+        "fluidKind": "water",
+        "depth": 3,
+        "radiusTiles": 1,
+        "depthScaling": {
+          "baseValue": 2,
+          "perCL": 1,
+          "clStepInterval": 1,
+          "startAboveCL": 0,
+          "minCap": 2,
+          "maxCap": 7
+        }
+      }
+    ],
+    "tags": [
+      "divine",
+      "conjuration",
+      "water",
+      "utility"
+    ]
+  }
+}

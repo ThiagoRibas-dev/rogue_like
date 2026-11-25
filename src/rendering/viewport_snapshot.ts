@@ -14,7 +14,17 @@ import {
 import { getAvailableSpriteKeys } from './sprite_keys.ts';
 import { recordMissingSprite } from './render_debug.ts';
 import type { GameState } from '../types/game-state.types.ts';
-import { getMapZBounds, getTileAt, isInMapBounds, isMultiZMap, toMapTileKey } from '../map/map_accessor.ts';
+import {
+  getFluidByteAt,
+  getMapZBounds,
+  getTileAt,
+  isInMapBounds,
+  isMultiZMap,
+  toMapTileKey
+} from '../map/map_accessor.ts';
+import { unpackFluidCell } from '../systems/physics/fluid_codec.ts';
+import { formatDesignationKey } from '../systems/labor/designation.system.ts';
+import type { FluidKind } from '../constants/world_chunk.constants.ts';
 import { resolveThemeSpriteSheets } from '../utils/sprite_pack.ts';
 import { getCameraOffset, resolveActiveViewZ } from './camera.ts';
 import { buildTacticalViewportData } from './tactical_snapshot.ts';
@@ -74,6 +84,15 @@ export function buildViewportSnapshot(state: GameState, viewportW: number, viewp
   const cells: ViewportCellDTO[] = [];
   const fogCells: FogOverlayCellDTO[] = [];
   const glyphOverlays: GlyphOverlayDTO[] = [];
+  const stockpileCoordKeys = new Set<string>();
+  if (state.colonyState?.stockpiles) {
+    for (const zone of Object.values(state.colonyState.stockpiles)) {
+      if (zone.areaId !== state.currentAreaId) continue;
+      for (const cell of zone.cells) {
+        stockpileCoordKeys.add(`${cell.x},${cell.y},${cell.z}`);
+      }
+    }
+  }
 
   for (let vy = 0; vy < viewportH; vy++) {
     for (let vx = 0; vx < viewportW; vx++) {
@@ -140,6 +159,47 @@ export function buildViewportSnapshot(state: GameState, viewportW: number, viewp
             fg = fgColor;
             bg = depthOffset > 0 ? '#0c111d' : tileDef.bg;
             spriteId = tileDef.spriteId;
+
+            // Cellular fluid depth overlay (1/7..7/7)
+            const fluidInfo = unpackFluidCell(getFluidByteAt(state.map, mapX, mapY, renderZ));
+            if (fluidInfo.depth > 0 && fluidInfo.kind !== 'none') {
+              const fluidFgByKind: Readonly<Record<Exclude<FluidKind, 'none'>, string>> = {
+                water: '#38bdf8',
+                magma: '#fb923c',
+                oil: '#d97706',
+                mud: '#a16207'
+              };
+              const fluidBgByKind: Readonly<Record<Exclude<FluidKind, 'none'>, string>> = {
+                water: '#0c4a6e',
+                magma: '#7c2d12',
+                oil: '#451a03',
+                mud: '#422006'
+              };
+              fg = fluidFgByKind[fluidInfo.kind];
+              bg = fluidBgByKind[fluidInfo.kind];
+              glyph = fluidInfo.depth >= 6 ? '≈' : String(fluidInfo.depth);
+            }
+
+            // Stockpile zone background tint
+            if (
+              fluidInfo.depth === 0 &&
+              stockpileCoordKeys.has(`${mapX},${mapY},${renderZ}`) &&
+              (bg === '#000000' || bg === 'transparent' || bg === '')
+            ) {
+              bg = '#1e293b';
+            }
+
+            // Spatial designation marker
+            const desig =
+              state.colonyState?.designations[formatDesignationKey(state.currentAreaId, mapX, mapY, renderZ)];
+            if (desig) {
+              glyph = desig.kind === 'mine' || desig.kind === 'channel' ? '%' : desig.kind === 'build' ? '□' : glyph;
+              fg = '#facc15';
+            }
+
+            if (availableSpriteKeys !== undefined && (fluidInfo.depth > 0 || desig !== undefined)) {
+              glyphOverlays.push({ vx, vy, glyph, fg, bg });
+            }
 
             if (availableSpriteKeys !== undefined) {
               if (spriteId === undefined) {

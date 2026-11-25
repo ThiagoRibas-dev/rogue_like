@@ -165,6 +165,18 @@ export const EntityTemplateSchema = z.object({
       maxAmount: z.number().int().nonnegative(),
       chance: z.number().min(0).max(1).default(1)
     })
+    .optional(),
+  needs: z.record(z.string(), z.number().min(0).max(100)).optional(),
+  enablePsychology: z.boolean().optional(),
+  laborPriorities: z
+    .object({
+      mining: z.number().int().min(0).max(4).optional(),
+      chopping: z.number().int().min(0).max(4).optional(),
+      hauling: z.number().int().min(0).max(4).optional(),
+      building: z.number().int().min(0).max(4).optional(),
+      harvesting: z.number().int().min(0).max(4).optional(),
+      crafting: z.number().int().min(0).max(4).optional()
+    })
     .optional()
 });
 /** Inferred type for an entity template definition. */
@@ -242,7 +254,12 @@ export const AIBehaviorEntrySchema = z.discriminatedUnion('behaviorId', [
     leashRadius: z.number().int().positive().optional(),
     weightModifiers: z.record(z.string(), z.number()).optional()
   }),
-  z.object({ behaviorId: z.literal('wander'), weightModifiers: z.record(z.string(), z.number()).optional() })
+  z.object({ behaviorId: z.literal('wander'), weightModifiers: z.record(z.string(), z.number()).optional() }),
+  z.object({
+    behaviorId: z.literal('labor'),
+    searchRadius: z.number().int().positive().optional(),
+    weightModifiers: z.record(z.string(), z.number()).optional()
+  })
 ]);
 /** Inferred type for an AI behavior entry. */
 export type AIBehaviorEntry = z.infer<typeof AIBehaviorEntrySchema>;

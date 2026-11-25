@@ -1,0 +1,56 @@
+{
+  "transmute_rock_to_mud": {
+    "id": "transmute_rock_to_mud",
+    "name": "Transmute Rock to Mud",
+    "description": "Turns natural unworked stone and rock walls into deep, thick mud.",
+    "level": 5,
+    "levelByClass": {
+      "druid": 5,
+      "wizard": 5,
+      "sorcerer": 5
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "transmutation",
+    "descriptors": [
+      "earth",
+      "water"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "medium",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "burst",
+    "aoeRadiusFt": 10,
+    "effectUnits": [
+      {
+        "unitId": "rock_to_mud_sculpt",
+        "targetRole": "area_occupant",
+        "type": "terrain_sculpt",
+        "sculptMode": "transmute",
+        "requiredSourceTags": ["solid", "terrain"],
+        "targetTileId": "stone_floor",
+        "radiusTiles": 1,
+        "spawnFluidKind": "mud",
+        "spawnFluidDepth": 5
+      }
+    ],
+    "tags": [
+      "transmutation",
+      "earth",
+      "water",
+      "terrain"
+    ]
+  }
+}

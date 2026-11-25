@@ -1022,6 +1022,22 @@ Per `AGENTS.md` Rule 21 (Zero Content-ID or Bespoke-Property Branching) and [`do
 4. **Z-Aware `RulesetContract` & D&D 3.5e 3D Spatial Mechanics (`src/types/ruleset.types.ts`, `src/rulesets/dnd35e/spatial/{grid_geometry,cover_senses,dnd35e_spatial_3d}.ts`, `src/rulesets/dnd35e/magic/aoe_rest.ts`)**:
    - `RulesetContract` exposes optional 3D hooks (`measureDistance3DFt`, `evaluateElevationCombatModifiers`, `onEntityFallLanded`, `canActorAdjustAltitude`), implemented by D&D 3.5e for 3D `1-2-1-2` distances, 3D cover edge-grazing, spherical `computeAoEAffectedSquares3D`, `+1` High Ground melee advantage, *Fly* DAG hovering (`can_fly`), *Feather Fall* immunity (`immune_falling_damage`) / `1d6` per 10 ft falling damage, and *Climb* skill scaling (`watchtower_overlook` and vertical `endless_frontier` showcased in `default`).
 
+### 9.34 Active-Chunk Cellular Physics, Terrain Sculpting & Colony Labor Substrate (Phase 47, Milestones 180–183)
+
+1. **Dirty-Bitset Cellular Fluids, Thermal Diffusion & Analytical Catch-Up (`src/systems/physics/{fluid_codec,fluid_physics,temperature_physics,chunk_catchup}.ts`, `src/map/{material_palette,map_accessor}.ts`)**:
+   - Both streaming `WorldChunk` slices and sparse lazy `FinitePhysicsOverlay` slices expose identical fluid (`fluidBytes`: 3-bit kind + 3-bit `0..7` depth), temperature (`temperatureBytes`), material (`materialIndices`), and dirty-bitset flags (`CHUNK_DIRTY_FLUID`, `CHUNK_DIRTY_TEMP`).
+   - Active fluid ticks simulate Z spillover, gravity falling, hydrostatic horizontal equalization (only on depth `>= 2` or gradient `>= 2`), and phase transitions (water+magma -> `obsidian_wall`/steam, freezing water -> ice, superheated oil -> fire field), clearing dirty bits automatically when settled.
+   - Dormant chunks record `lastSimulatedTurn` and apply closed-form $O(N)$ analytical sleep catch-up (`catchUpChunkPhysics` / `catchUpLoadedChunks`) on wake or world time skip.
+2. **Terrain Sculpting, Bounded Structural Support & D&D 3.5e Earth/Water Spells (`src/systems/construction.system.ts`, `src/map/structural_support.ts`, `src/rulesets/dnd35e/magic/spell_cast_units.ts`)**:
+   - Runtime voxel mining, chopping, smoothing, and blueprint construction mutate `tileId`, `materialIndex`, and `CHUNK_DIRTY_* | CHUNK_DIRTY_REGION` flags, spawn yields, and run BFS bounded-span (`MAX_SUPPORT_SPAN_TILES = 6`) structural support checks triggering crush damage and debris drops on cave-ins.
+   - Timed terrain reverts restore temporary passages (*Passwall*), and declarative `terrain_sculpt` / `fluid_spawn` spell units power *Stone Shape*, *Passwall*, *Transmute Rock to Mud*, and *Create Water*.
+3. **Universal Needs, Thoughts, Mood & Mental Breaks (`src/systems/psychology/{needs,thoughts}.system.ts`, `src/rulesets/dnd35e/cartridge/dnd35e_dag_adapter.ts`)**:
+   - `NeedsComponent` tracks 6 universal needs (`nourishment`, `rest`, `shelter`, `comfort`, `social`, `safety`) synchronized bi-directionally with `HungerComponent`, feeding into decaying/stacking `Thought` memories on `MemoryComponent`, facet-weighted mood tiers, Inspirations, and Mental Breaks.
+   - D&D 3.5e DAG evaluation injects Layer B morale modifiers (`+1` ecstatic / `-2` breaking or catatonic) while `ai.system.ts` intercepts active mental breaks.
+4. **Colony Designations, Job Blackboard, Stockpiles & Workshop Labor AI (`src/systems/labor/{job_blackboard,designation,stockpile,workshop}.ts`, `src/ai/labor.behavior.ts`, `src/types/colony.types.ts`)**:
+   - `GameState.colonyState` persists spatial designations (`mine`, `chop`, `haul`, `build`, `craft`, `harvest`), tag-filtered stockpile zones, multi-step workshop crafting bills, and atomic entity/coord/item `JobReservationToken` leases (released automatically on entity death or floor eviction).
+   - `laborBehavior` scores eligible tasks by actor `LaborProfileComponent` priority (`1..4`) and 3D proximity, emitting standard `ActionIntent` moves and `Apply` verbs (`mine`, `chop`, `build`, `craft`) over 3D HPA*.
+
 ---
 
 ## 10. Key Design Decisions

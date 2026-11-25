@@ -1,9 +1,11 @@
+import type { EntityId } from '../game-state.types.ts';
 import type { IntentType } from './intent.enum.ts';
 import type { BaseIntent } from './core.intents.ts';
 
 /** Intent to pick up an item at the actor's current grid position. */
 export interface PickUpIntent extends BaseIntent {
   readonly type: IntentType.PickUp;
+  readonly itemEntityId?: EntityId | undefined;
 }
 
 /** Intent to drop an item from inventory onto the map. */

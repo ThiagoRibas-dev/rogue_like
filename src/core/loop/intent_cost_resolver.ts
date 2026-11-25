@@ -17,6 +17,10 @@ import { updateStreamingWorldWindow } from '../../systems/map/chunk_streaming.ts
 import { resolveStateStabilization } from '../state_stabilizer.ts';
 import { processInvestigationEvents } from '../../systems/investigation.system.ts';
 import { processFieldsTick } from '../../systems/field.system.ts';
+import { processDirtyFluidChunks } from '../../systems/physics/fluid_physics.ts';
+import { processDirtyTemperatureChunks } from '../../systems/physics/temperature_physics.ts';
+import { tickTimedTerrainReverts } from '../../systems/construction.system.ts';
+import { pruneExpiredReservations } from '../../systems/labor/job_blackboard.ts';
 import { processTier2LocalCadence } from '../simulation_cadence.ts';
 
 /**
@@ -97,6 +101,10 @@ export function applyIntentWithCost(state: GameState, intent: Intent): ActionRes
 
   if (energyCost > 0) {
     nextState = processFieldsTick(nextState);
+    nextState = processDirtyFluidChunks(nextState);
+    nextState = processDirtyTemperatureChunks(nextState);
+    nextState = tickTimedTerrainReverts(nextState);
+    nextState = pruneExpiredReservations(nextState);
   }
   nextState = processInvestigationEvents(nextState);
   const tAfterFields = performance.now();

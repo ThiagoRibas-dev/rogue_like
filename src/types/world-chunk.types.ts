@@ -11,6 +11,15 @@ export interface TilePaletteRegistry {
 }
 
 /**
+ * Deterministic flyweight lookup translating string material IDs to compact Uint16Array indices
+ * (`0` reserved for default/unspecified material; `1..N` ordered deterministically by material ID).
+ */
+export interface MaterialPaletteRegistry {
+  readonly indexToMaterialId: ReadonlyArray<string>;
+  readonly materialIdToIndex: Readonly<Record<string, number>>;
+}
+
+/**
  * Structure-of-Arrays (SoA) TypedArray chunk container holding dense terrain, material, fluid,
  * thermal, flag, and region connectivity planes (~10 bytes per tile).
  */

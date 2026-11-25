@@ -2,7 +2,7 @@
   "stone_shape": {
     "id": "stone_shape",
     "name": "Stone Shape",
-    "description": "Sculpts existing stone into any shape (10 cu ft + 1 cu ft/level).",
+    "description": "Sculpts existing stone into a passable opening or shaped aperture.",
     "level": 3,
     "levelByClass": {
       "cleric": 3,
@@ -34,6 +34,15 @@
     "aoeShape": "single",
     "aoeRadiusFt": 0,
     "effectUnits": [
+      {
+        "unitId": "stone_shape_sculpt",
+        "targetRole": "area_occupant",
+        "type": "terrain_sculpt",
+        "sculptMode": "carve",
+        "requiredSourceTags": ["solid"],
+        "targetTileId": "stone_floor",
+        "radiusTiles": 0
+      },
       {
         "unitId": "stone_shape_field",
         "targetRole": "area_occupant",

@@ -44,6 +44,47 @@
     "respawnRateMultiplier": 1,
     "alarmDecayTurns": 50
   },
+  "materials": {
+    "stone": { "id": "stone", "name": "Stone", "hardness": 8, "thermalConductivity": 0.35, "boulderItemId": "stone_boulder" },
+    "obsidian": { "id": "obsidian", "name": "Obsidian", "hardness": 12, "thermalConductivity": 0.25, "obsidianTileId": "obsidian_wall" }
+  },
+  "blueprints": {
+    "stone_wall_blueprint": {
+      "id": "stone_wall_blueprint",
+      "name": "Stone Wall",
+      "targetTileId": "stone_wall",
+      "materialId": "stone",
+      "requiredInputs": [{ "tag": "material:stone", "count": 1 }],
+      "workUnits": 1
+    },
+    "stone_floor_blueprint": {
+      "id": "stone_floor_blueprint",
+      "name": "Stone Floor",
+      "targetTileId": "stone_floor",
+      "materialId": "stone",
+      "requiredInputs": [{ "tag": "material:stone", "count": 1 }],
+      "workUnits": 1,
+      "allowOverOpenAir": true
+    }
+  },
+  "craftingRecipes": {
+    "cut_stone_blocks": {
+      "id": "cut_stone_blocks",
+      "name": "Cut Stone Blocks",
+      "workshopTag": "workshop:masonry",
+      "requiredInputs": [{ "tag": "material:stone", "count": 1 }],
+      "workUnits": 2,
+      "outputs": [{ "itemId": "cut_stone_block", "count": 1 }]
+    },
+    "carve_stone_figurine": {
+      "id": "carve_stone_figurine",
+      "name": "Carve Stone Figurine",
+      "workshopTag": "workshop:masonry",
+      "requiredInputs": [{ "tag": "material:stone_block", "count": 1 }],
+      "workUnits": 2,
+      "outputs": [{ "itemId": "stone_figurine", "count": 1 }]
+    }
+  },
   "spawning": {
     "maxMonstersPerRoom": 2,
     "maxItemsPerRoom": 2,

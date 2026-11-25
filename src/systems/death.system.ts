@@ -33,6 +33,7 @@ import { rng } from '../core/rng.ts';
 import { getEntityBarks } from './nemesis.system.ts';
 import { getActiveRuleset } from '../rulesets/registry.ts';
 import { spawnCorpseForSlainEntity } from './corpse.system.ts';
+import { releaseAllWorkerReservations } from './labor/job_blackboard.ts';
 
 /**
  * Removes non-positioned inventory orphans and unpositioned merchant stock entities when an entity dies.
@@ -377,6 +378,7 @@ export function processDeathSystem(state: GameState): GameState {
       }
 
       // Clean up orphaned non-dropped items and dead shopkeeper stock entities before stripping entity
+      nextState = releaseAllWorkerReservations(nextState, entityId);
       nextState = cleanupDeadEntityOrphans(nextState, entityId);
 
       // Strip the dead entity from the world

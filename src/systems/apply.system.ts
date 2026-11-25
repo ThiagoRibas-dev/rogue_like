@@ -37,6 +37,11 @@ import { canIgniteLightEmitterItem, igniteLightEmitter, refuelLightEmitter } fro
 import { canHarvestCorpseEntity, harvestCorpseEntity } from './corpse.system.ts';
 import { isAltarOrShrineEntity, prayAtAltarOrShrine } from './religion.system.ts';
 import { applyDisguiseFromTool, isDisguiseToolItem } from './disguise.system.ts';
+import { constructTerrainTile, mineTerrainTile } from './construction.system.ts';
+import { formatDesignationKey } from './labor/designation.system.ts';
+import { advanceWorkshopBillWork } from './labor/workshop.system.ts';
+import { getTileDefAt } from '../map/map_accessor.ts';
+import type { LaborProfileComponent } from '../types/components.types.ts';
 /** Physical and touch-based interaction verbs that require target proximity within actor reach. */
 export const TOUCH_INTERACTION_VERBS: ReadonlySet<Verb> = new Set<Verb>([
   'open',
@@ -54,7 +59,11 @@ export const TOUCH_INTERACTION_VERBS: ReadonlySet<Verb> = new Set<Verb>([
   'eat',
   'drink',
   'heal',
-  'feint'
+  'feint',
+  'mine',
+  'chop',
+  'build',
+  'craft'
 ]);
 
 const REACH_PROBE_VERBS: ReadonlySet<Verb> = new Set<Verb>(['search', 'disarm']);
@@ -294,6 +303,75 @@ export function processApplyIntent(
     return { state: prayRes.state, success: false };
   }
 
+  if ((intent.verb === 'mine' || intent.verb === 'chop') && intent.target.type === 'tile') {
+    const mineRes = mineTerrainTile(
+      state,
+      intent.entityId,
+      intent.target.x,
+      intent.target.y,
+      intent.target.z ?? 0,
+      intent.toolEntityId
+    );
+    if (mineRes.success) {
+      const resolvedEvent: ApplyResolvedEvent = {
+        type: GameEventType.ApplyResolved,
+        entityId: intent.entityId,
+        verb: intent.verb,
+        target: intent.target,
+        toolEntityId: intent.toolEntityId
+      };
+      return { state: mineRes.state, success: true, events: [resolvedEvent] };
+    }
+    return { state: mineRes.state, success: false };
+  }
+
+  if (intent.verb === 'build' && intent.target.type === 'tile') {
+    const targetZ = intent.target.z ?? 0;
+    const desig =
+      state.colonyState?.designations[
+        formatDesignationKey(state.currentAreaId, intent.target.x, intent.target.y, targetZ)
+      ];
+    const buildRes = constructTerrainTile(
+      state,
+      intent.entityId,
+      intent.target.x,
+      intent.target.y,
+      targetZ,
+      desig?.blueprintId,
+      intent.toolEntityId
+    );
+    if (buildRes.success) {
+      const resolvedEvent: ApplyResolvedEvent = {
+        type: GameEventType.ApplyResolved,
+        entityId: intent.entityId,
+        verb: intent.verb,
+        target: intent.target,
+        toolEntityId: intent.toolEntityId
+      };
+      return { state: buildRes.state, success: true, events: [resolvedEvent] };
+    }
+    return { state: buildRes.state, success: false };
+  }
+
+  if (intent.verb === 'craft' && intent.target.type === 'entity') {
+    const profile = getComponent(state, intent.entityId, ComponentType.LaborProfile) as
+      LaborProfileComponent | undefined;
+    const reservedBillId =
+      profile?.activeJob?.workshopEntityId === intent.target.entityId ? profile.activeJob.billId : undefined;
+    const craftRes = advanceWorkshopBillWork(state, intent.entityId, intent.target.entityId, reservedBillId);
+    if (craftRes.progressed) {
+      const resolvedEvent: ApplyResolvedEvent = {
+        type: GameEventType.ApplyResolved,
+        entityId: intent.entityId,
+        verb: intent.verb,
+        target: intent.target,
+        toolEntityId: intent.toolEntityId
+      };
+      return { state: craftRes.state, success: true, events: [resolvedEvent] };
+    }
+    return { state: craftRes.state, success: false };
+  }
+
   if (intent.verb === 'apply') {
     const candidateToolId =
       intent.toolEntityId !== undefined
@@ -516,6 +594,17 @@ function collectRawValidVerbsForTarget(
     }
     if (isAltarOrShrineEntity(state, target.entityId)) {
       validVerbs.add('pray');
+    }
+    if (state.colonyState?.workshops[String(target.entityId)] !== undefined) {
+      validVerbs.add('craft');
+    }
+  } else if (target.type === 'tile') {
+    const tileDef = getTileDefAt(state, target.x, target.y, target.z ?? 0);
+    if (tileDef && (tileDef.mineable === true || tileDef.tags?.includes('mineable'))) {
+      validVerbs.add('mine');
+    }
+    if (tileDef && (tileDef.tags?.includes('tree') || tileDef.tags?.includes('chop'))) {
+      validVerbs.add('chop');
     }
   }
 

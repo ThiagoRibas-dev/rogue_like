@@ -6486,5 +6486,286 @@
     "antiPatterns": [
       "Do not call raw unbounded ROT.Path.AStar across huge/multi-Z maps; route through computeHierarchicalNextStep()."
     ]
+  },
+  "src/ai/labor.behavior.ts": {
+    "domain": "Core Console: AI Behavior Trees & Tactics",
+    "tier": "tier1_console",
+    "responsibility": "Priority-scored autonomous colonist/NPC labor & hauling AI emitting standard ActionIntents over 3D HPA* pathfinding.",
+    "canonicalEntryPoints": [
+      "selectAndReserveLaborAction",
+      "laborBehavior"
+    ],
+    "ownershipBoundary": {
+      "includes": "Utility scoring across designations, workshop crafting DAGs, stockpiles, and atomic reservation tracking.",
+      "excludes": "Direct tile/inventory mutation outside ActionIntent execution."
+    },
+    "antiPatterns": [
+      "Do not mutate map tiles or inventories directly inside labor.behavior.ts; emit standard Move/PickUp/Drop/Apply intents."
+    ]
+  },
+  "src/map/material_palette.ts": {
+    "domain": "Core Console: Map Generation & Spatial Plane",
+    "tier": "tier1_console",
+    "responsibility": "Deterministic flyweight MaterialPaletteRegistry encoding string material IDs to compact Uint16Array indices.",
+    "canonicalEntryPoints": [
+      "buildMaterialPaletteRegistry",
+      "getMaterialIdFromPaletteIndex",
+      "getPaletteIndexForMaterialId"
+    ],
+    "ownershipBoundary": {
+      "includes": "Material palette indexing across saves and threads.",
+      "excludes": "Voxel sculpting or thermal math."
+    },
+    "antiPatterns": [
+      "Do not hardcode numeric material indices; always resolve through buildMaterialPaletteRegistry()."
+    ]
+  },
+  "src/map/structural_support.ts": {
+    "domain": "Core Console: Map Generation & Spatial Plane",
+    "tier": "tier1_console",
+    "responsibility": "Bounded connected-support BFS and structural cave-in collapse physics for excavated multi-Z voxels.",
+    "canonicalEntryPoints": [
+      "evaluateStructuralSupport",
+      "resolveCaveInAroundVoxel"
+    ],
+    "ownershipBoundary": {
+      "includes": "Overhang support reachability checks, cave-in collapse drops, and crushing damage.",
+      "excludes": "Mining tool checks or workshop crafting."
+    },
+    "antiPatterns": [
+      "Do not bypass resolveCaveInAroundVoxel() when sculpting multi-Z structural supports."
+    ]
+  },
+  "src/systems/construction.system.ts": {
+    "domain": "Core Console: ECS Systems & Simulation",
+    "tier": "tier1_console",
+    "responsibility": "Dynamic voxel sculpting, mining, blueprint construction, and temporary spell terrain reversion.",
+    "canonicalEntryPoints": [
+      "DEFAULT_CONSTRUCTION_BLUEPRINTS",
+      "sculptTerrainVoxel",
+      "mineTerrainTile",
+      "constructTerrainTile",
+      "scheduleTimedTerrainRevert",
+      "tickTimedTerrainReverts"
+    ],
+    "ownershipBoundary": {
+      "includes": "Runtime tile/material mutation, mining yields, material consumption, and timed terrain reverts.",
+      "excludes": "D&D spell slot accounting or AI planning."
+    },
+    "antiPatterns": [
+      "Do not hardcode spell IDs or rock IDs in construction.system.ts; read declarative TileDefinition and blueprint fields."
+    ]
+  },
+  "src/systems/physics/fluid_codec.ts": {
+    "domain": "Core Console: ECS Systems & Simulation",
+    "tier": "tier1_console",
+    "responsibility": "Pure bit-packing helpers for 0..7 liquid depth and FluidKind inside WorldChunk.fluid.",
+    "canonicalEntryPoints": [
+      "FluidCellInfo",
+      "packFluidCell",
+      "unpackFluidCell",
+      "unpackFluidKindCode"
+    ],
+    "ownershipBoundary": {
+      "includes": "Zero-allocation 8-bit fluid packing and decoding.",
+      "excludes": "Map iteration or phase transition side effects."
+    },
+    "antiPatterns": [
+      "Do not bit-shift raw chunk.fluid bytes manually outside fluid_codec.ts."
+    ]
+  },
+  "src/systems/physics/fluid_physics.ts": {
+    "domain": "Core Console: ECS Systems & Simulation",
+    "tier": "tier1_console",
+    "responsibility": "Dirty-bitset cellular fluid automaton (vertical spillover, hydrostatic flow, obsidian/steam/ice/oil transitions).",
+    "canonicalEntryPoints": [
+      "applyFluidToVoxel",
+      "processDirtyFluidChunks",
+      "isFluidKindAtCell"
+    ],
+    "ownershipBoundary": {
+      "includes": "Active fluid chunk processing, auto-sleep flag clearing, and submersion sync.",
+      "excludes": "Temperature diffusion or viewport rendering."
+    },
+    "antiPatterns": [
+      "Do not scan settled clean chunks inside processDirtyFluidChunks()."
+    ]
+  },
+  "src/systems/physics/temperature_physics.ts": {
+    "domain": "Core Console: ECS Systems & Simulation",
+    "tier": "tier1_console",
+    "responsibility": "Dirty-bitset 3D thermal diffusion and ambient convergence toward ambient temperature.",
+    "canonicalEntryPoints": [
+      "applyHeatDeltaToVoxel",
+      "processDirtyTemperatureChunks"
+    ],
+    "ownershipBoundary": {
+      "includes": "Heat propagation from thermal fields/magma and auto-sleep clearing.",
+      "excludes": "Fluid flow or actor need evaluation."
+    },
+    "antiPatterns": [
+      "Do not scan settled chunks without CHUNK_DIRTY_TEMP."
+    ]
+  },
+  "src/systems/physics/chunk_catchup.ts": {
+    "domain": "Core Console: ECS Systems & Simulation",
+    "tier": "tier1_console",
+    "responsibility": "Closed-form O(N) analytical sleep catch-up on dormant chunk wake, area wake, and bulk time skips.",
+    "canonicalEntryPoints": [
+      "applyAnalyticalChunkCatchUp",
+      "applyAnalyticalActiveGridCatchUp"
+    ],
+    "ownershipBoundary": {
+      "includes": "Closed-form exponential temperature relaxation and shallow fluid evaporation on wake.",
+      "excludes": "Per-turn iterative simulation across dormant elapsed turns."
+    },
+    "antiPatterns": [
+      "Do not tick cellular automata in a loop over deltaTurns during chunk wake."
+    ]
+  },
+  "src/systems/psychology/needs.system.ts": {
+    "domain": "Core Console: ECS Systems & Simulation",
+    "tier": "tier1_console",
+    "responsibility": "Universal actor needs (rest, nourishment, shelter, comfort, social, safety) and environmental satisfaction ticks.",
+    "canonicalEntryPoints": [
+      "createDefaultNeedsComponent",
+      "satisfyActorNeed",
+      "processActorNeedsTick",
+      "processActorPsychologyTick"
+    ],
+    "ownershipBoundary": {
+      "includes": "Need meter evaluation, HungerComponent sync, and need-driven thoughts.",
+      "excludes": "D&D morale math or dialogue trees."
+    },
+    "antiPatterns": [
+      "Do not duplicate hunger satiety outside HungerComponent synchronization."
+    ]
+  },
+  "src/systems/psychology/thoughts.system.ts": {
+    "domain": "Core Console: ECS Systems & Simulation",
+    "tier": "tier1_console",
+    "responsibility": "Decaying/stacking situational thoughts, facet-weighted mood tiers, Inspirations, and Mental Breaks.",
+    "canonicalEntryPoints": [
+      "AddThoughtInput",
+      "classifyMoodTier",
+      "addTimedThought",
+      "recalculateActorMood",
+      "evaluateEntityPsychologyMood"
+    ],
+    "ownershipBoundary": {
+      "includes": "Mood calculation, thought expiration/stacking, inspiration and mental break triggers.",
+      "excludes": "Ruleset-specific StatModifier emission."
+    },
+    "antiPatterns": [
+      "Do not import D&D 3.5e cartridge types inside thoughts.system.ts."
+    ]
+  },
+  "src/systems/labor/job_blackboard.ts": {
+    "domain": "Core Console: ECS Systems & Simulation",
+    "tier": "tier1_console",
+    "responsibility": "Conflict-free atomic reservation leases for voxels, items, and workshops with death/eviction cleanup.",
+    "canonicalEntryPoints": [
+      "DEFAULT_RESERVATION_TTL_TURNS",
+      "ensureColonyState",
+      "tileResourceKey",
+      "entityResourceKey",
+      "workshopResourceKey",
+      "isResourceReservedByOther",
+      "tryAcquireReservation",
+      "releaseReservation",
+      "releaseAllWorkerReservations",
+      "pruneExpiredReservations"
+    ],
+    "ownershipBoundary": {
+      "includes": "Atomic resource locking, TTL expiry pruning, and worker cleanup.",
+      "excludes": "Job scoring or pathfinding."
+    },
+    "antiPatterns": [
+      "Never leave partial locks when tryAcquireReservation fails."
+    ]
+  },
+  "src/systems/labor/designation.system.ts": {
+    "domain": "Core Console: ECS Systems & Simulation",
+    "tier": "tier1_console",
+    "responsibility": "Spatial voxel designation CRUD (mine, chop, haul, build, harvest, channel) and completion cleanup.",
+    "canonicalEntryPoints": [
+      "formatDesignationKey",
+      "addTileDesignation",
+      "addRectDesignation",
+      "removeTileDesignation",
+      "completeDesignationAt",
+      "getActiveDesignationsForArea"
+    ],
+    "ownershipBoundary": {
+      "includes": "Designation placement validation and area queries.",
+      "excludes": "Worker AI selection."
+    },
+    "antiPatterns": [
+      "Do not hardcode terrain IDs inside designation validation."
+    ]
+  },
+  "src/systems/labor/stockpile.system.ts": {
+    "domain": "Core Console: ECS Systems & Simulation",
+    "tier": "tier1_console",
+    "responsibility": "Typed item-filter stockpile zones, priority cell matching, and unstocked haul candidate queries.",
+    "canonicalEntryPoints": [
+      "doesItemMatchStockpile",
+      "createStockpileZone",
+      "findStockpileAtCoord",
+      "findBestStockpileCellForItem",
+      "findUnstockedHaulItems"
+    ],
+    "ownershipBoundary": {
+      "includes": "Tag/item filtering and priority cell discovery.",
+      "excludes": "Inventory pickup/drop execution."
+    },
+    "antiPatterns": [
+      "Do not filter items by hardcoded item IDs inside stockpile.system.ts."
+    ]
+  },
+  "src/systems/labor/workshop.system.ts": {
+    "domain": "Core Console: ECS Systems & Simulation",
+    "tier": "tier1_console",
+    "responsibility": "Multi-step Crafting DAG bill queues, ingredient-haul resolution, progress ticking, and item spawning.",
+    "canonicalEntryPoints": [
+      "DEFAULT_CRAFTING_RECIPES",
+      "registerWorkshop",
+      "enqueueCraftingBill",
+      "RunnableWorkshopResolution",
+      "resolveNextRunnableBill",
+      "advanceWorkshopBillWork"
+    ],
+    "ownershipBoundary": {
+      "includes": "Bill queues, recipe input verification, and output creation.",
+      "excludes": "Worker movement routing."
+    },
+    "antiPatterns": [
+      "Do not hardcode crafting recipes outside campaign.rules.craftingRecipes and DEFAULT_CRAFTING_RECIPES."
+    ]
+  },
+  "src/types/colony.types.ts": {
+    "domain": "Core Console: Engine Types & Schemas",
+    "tier": "tier1_console",
+    "responsibility": "Pure JSON-serializable types for ColonySimulationState (designations, stockpiles, reservations, workshops, timed terrain reverts).",
+    "canonicalEntryPoints": [
+      "DesignationKind",
+      "LaborKind",
+      "BillRepeatMode",
+      "VoxelCoord",
+      "TileDesignation",
+      "StockpileZone",
+      "JobReservationToken",
+      "CraftingBill",
+      "WorkshopState",
+      "TimedTerrainRevert",
+      "ColonySimulationState"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure serializable TypeScript interfaces for colony simulation state.",
+      "excludes": "Runtime logic or Map/Set containers."
+    },
+    "antiPatterns": [
+      "Do not store Map or Set objects inside ColonySimulationState."
+    ]
   }
 }

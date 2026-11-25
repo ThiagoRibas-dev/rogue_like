@@ -1,0 +1,57 @@
+{
+  "passwall": {
+    "id": "passwall",
+    "name": "Passwall",
+    "description": "Creates a temporary passage through stone, wood, or plaster walls (1 hour/level).",
+    "level": 5,
+    "levelByClass": {
+      "wizard": 5,
+      "sorcerer": 5
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "transmutation",
+    "descriptors": [
+      "earth"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "1 hour/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "unitId": "passwall_tunnel",
+        "targetRole": "area_occupant",
+        "type": "terrain_sculpt",
+        "sculptMode": "carve",
+        "requiredSourceTags": ["solid"],
+        "targetTileId": "stone_floor",
+        "radiusTiles": 0,
+        "durationTurnsScaling": {
+          "baseValue": 0,
+          "perCL": 600,
+          "clStepInterval": 1,
+          "startAboveCL": 0
+        }
+      }
+    ],
+    "tags": [
+      "arcane",
+      "transmutation",
+      "utility"
+    ]
+  }
+}

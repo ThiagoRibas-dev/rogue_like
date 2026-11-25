@@ -243,6 +243,24 @@ export const DnD35SpellEffectUnitSchema = z.discriminatedUnion('type', [
     grantsExAbilities: z.boolean().default(false),
     grantsSuAbilities: z.boolean().default(false),
     freeActionFormShift: z.boolean().default(false)
+  }),
+  SpellEffectUnitBaseSchema.extend({
+    type: z.literal('terrain_sculpt'),
+    sculptMode: z.enum(['carve', 'shape', 'transmute', 'fill']).default('carve'),
+    requiredSourceTags: z.array(z.string()).default([]),
+    targetTileId: z.string(),
+    radiusTiles: z.number().int().nonnegative().default(0),
+    durationTurnsScaling: DnD35SpellScalingRuleSchema.optional(),
+    revertTileId: z.string().optional(),
+    spawnFluidKind: z.enum(['none', 'water', 'magma', 'oil', 'mud']).optional(),
+    spawnFluidDepth: z.number().int().min(1).max(7).optional()
+  }),
+  SpellEffectUnitBaseSchema.extend({
+    type: z.literal('fluid_spawn'),
+    fluidKind: z.enum(['water', 'magma', 'oil', 'mud']).default('water'),
+    depth: z.number().int().min(1).max(7).default(4),
+    radiusTiles: z.number().int().nonnegative().default(1),
+    depthScaling: DnD35SpellScalingRuleSchema.optional()
   })
 ]);
 export type DnD35SpellEffectUnit = z.infer<typeof DnD35SpellEffectUnitSchema>;

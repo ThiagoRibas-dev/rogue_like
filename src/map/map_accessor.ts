@@ -1,11 +1,16 @@
 import {
+  CHUNK_DIRTY_FLUID,
   CHUNK_DIRTY_PERSIST,
   CHUNK_DIRTY_REGION,
+  CHUNK_DIRTY_TEMP,
   CHUNK_FLAG_EXPLORED,
-  DEFAULT_RANDOM_WALKABLE_ATTEMPTS
+  DEFAULT_AMBIENT_TEMP_C,
+  DEFAULT_RANDOM_WALKABLE_ATTEMPTS,
+  MAX_CELL_TEMP_C,
+  MIN_CELL_TEMP_C
 } from '../constants/world_chunk.constants.ts';
 import type { TileDefinition } from '../types/campaign/world.ts';
-import type { GameMap, GameState, Tile } from '../types/game-state.types.ts';
+import type { FinitePhysicsSlice, GameMap, GameState, Tile } from '../types/game-state.types.ts';
 import type { TileSnapshot, WorldChunk } from '../types/world-chunk.types.ts';
 import {
   coordToIndex,
@@ -221,13 +226,42 @@ export function setTileIdAt(map: Readonly<GameMap>, x: number, y: number, tileId
     cloned.tileType[localIdx] = nextIdx;
     const nextChunk: WorldChunk = {
       ...cloned,
-      dirtyFlags: existingChunk.dirtyFlags | CHUNK_DIRTY_PERSIST | CHUNK_DIRTY_REGION
+      dirtyFlags:
+        existingChunk.dirtyFlags | CHUNK_DIRTY_PERSIST | CHUNK_DIRTY_REGION | CHUNK_DIRTY_FLUID | CHUNK_DIRTY_TEMP
     };
 
     const nextChunks = new Map(grid.chunks);
     nextChunks.set(chunkKey, nextChunk);
     const nextDirtyKeys = new Set(grid.dirtyChunkKeys);
     nextDirtyKeys.add(chunkKey);
+
+    const lx = ((x % grid.chunkSize) + grid.chunkSize) % grid.chunkSize;
+    const ly = ((y % grid.chunkSize) + grid.chunkSize) % grid.chunkSize;
+    const borderOffsets: Array<readonly [number, number]> = [];
+    if (lx === 0) borderOffsets.push([-1, 0]);
+    if (lx === grid.chunkSize - 1) borderOffsets.push([1, 0]);
+    if (ly === 0) borderOffsets.push([0, -1]);
+    if (ly === grid.chunkSize - 1) borderOffsets.push([0, 1]);
+    for (const [dcx, dcy] of borderOffsets) {
+      const nKey = packWorldCoord3D(cx + dcx, cy + dcy, z);
+      const neighbor = nextChunks.get(nKey);
+      if (neighbor) {
+        nextChunks.set(nKey, {
+          ...neighbor,
+          dirtyFlags: neighbor.dirtyFlags | CHUNK_DIRTY_FLUID | CHUNK_DIRTY_TEMP
+        });
+      }
+    }
+    for (const dz of [-1, 1]) {
+      const vKey = packWorldCoord3D(cx, cy, z + dz);
+      const vNeighbor = nextChunks.get(vKey);
+      if (vNeighbor) {
+        nextChunks.set(vKey, {
+          ...vNeighbor,
+          dirtyFlags: vNeighbor.dirtyFlags | CHUNK_DIRTY_FLUID | CHUNK_DIRTY_TEMP
+        });
+      }
+    }
 
     return {
       ...map,
@@ -241,19 +275,43 @@ export function setTileIdAt(map: Readonly<GameMap>, x: number, y: number, tileId
 
   if (!isInBounds(x, y, map.width, map.height)) return map;
   const idx = coordToIndex(x, y, map.width);
+  const flagFiniteDirty = (sourceMap: GameMap): GameMap => {
+    const existingSlices = sourceMap.physicsOverlay?.slices;
+    if (!existingSlices) return sourceMap;
+    let nextSlices: Record<number, FinitePhysicsSlice> | undefined;
+    for (const targetZ of [z, z + 1, z - 1]) {
+      const existingSlice = existingSlices[targetZ];
+      if (!existingSlice) continue;
+      const neededFlags = existingSlice.dirtyFlags | CHUNK_DIRTY_FLUID | CHUNK_DIRTY_TEMP;
+      if (neededFlags === existingSlice.dirtyFlags) continue;
+      if (!nextSlices) nextSlices = { ...existingSlices };
+      nextSlices[targetZ] = {
+        ...existingSlice,
+        dirtyFlags: neededFlags
+      };
+    }
+    if (!nextSlices) return sourceMap;
+    return {
+      ...sourceMap,
+      physicsOverlay: {
+        slices: nextSlices
+      }
+    };
+  };
+
   if (z === 0) {
     const existingTile = map.tiles[idx];
     if (!existingTile || existingTile.tileId === tileId) return map;
     const nextTiles = [...map.tiles];
     nextTiles[idx] = { ...existingTile, tileId };
     if (map.zSlices !== undefined) {
-      return {
+      return flagFiniteDirty({
         ...map,
         tiles: nextTiles,
         zSlices: { ...map.zSlices, '0': nextTiles }
-      };
+      });
     }
-    return { ...map, tiles: nextTiles };
+    return flagFiniteDirty({ ...map, tiles: nextTiles });
   }
 
   const slice = map.zSlices?.[z];
@@ -262,10 +320,10 @@ export function setTileIdAt(map: Readonly<GameMap>, x: number, y: number, tileId
   if (!existingTile || existingTile.tileId === tileId) return map;
   const nextSlice = [...slice];
   nextSlice[idx] = { ...existingTile, tileId };
-  return {
+  return flagFiniteDirty({
     ...map,
     zSlices: { ...map.zSlices, [z]: nextSlice }
-  };
+  });
 }
 
 /**
@@ -481,5 +539,396 @@ export function getMapCenterFallbackCoord(map: Readonly<GameMap>): {
     x: Math.floor(map.width / 2),
     y: Math.floor(map.height / 2),
     z: 0
+  };
+}
+
+/** Descriptor for an active dirty chunk or finite Z-slice processed by cellular physics passes. */
+export interface PhysicsRegionBounds {
+  readonly kind: 'chunk' | 'finite';
+  readonly z: number;
+  readonly minX: number;
+  readonly minY: number;
+  readonly width: number;
+  readonly height: number;
+  readonly chunkKey?: number | undefined;
+  readonly dirtyFlags: number;
+  readonly lastSimulatedTurn: number;
+}
+
+function createEmptyFinitePhysicsSlice(width: number, height: number, currentTurn: number): FinitePhysicsSlice {
+  const cellCount = Math.max(0, width * height);
+  return {
+    fluid: new Array<number>(cellCount).fill(0),
+    temperature: new Array<number>(cellCount).fill(DEFAULT_AMBIENT_TEMP_C),
+    materialId: new Array<number>(cellCount).fill(0),
+    dirtyFlags: 0,
+    lastSimulatedTurn: currentTurn
+  };
+}
+
+function getOrCreateFinitePhysicsSlice(map: Readonly<GameMap>, z: number, currentTurn: number): FinitePhysicsSlice {
+  return map.physicsOverlay?.slices[z] ?? createEmptyFinitePhysicsSlice(map.width, map.height, currentTurn);
+}
+
+/** Reads the packed 8-bit fluid value at `(x, y, z)` across chunked or finite maps (`0` when dry/unloaded). */
+export function getFluidByteAt(map: Readonly<GameMap>, x: number, y: number, z = 0): number {
+  const grid = map.chunkGrid;
+  if (grid !== undefined) {
+    const cx = worldToChunkCoord(x, grid.chunkSize);
+    const cy = worldToChunkCoord(y, grid.chunkSize);
+    const chunk = grid.chunks.get(packWorldCoord3D(cx, cy, z));
+    if (!chunk) return 0;
+    return chunk.fluid[worldToLocalIndex(x, y, grid.chunkSize)] ?? 0;
+  }
+  if (!isInMapBounds(map, x, y, z)) return 0;
+  const slice = map.physicsOverlay?.slices[z];
+  if (!slice) return 0;
+  return slice.fluid[coordToIndex(x, y, map.width)] ?? 0;
+}
+
+/** Immutably writes the packed 8-bit fluid value at `(x, y, z)`, flagging dirty fluid & neighbor chunks. */
+export function setFluidByteAt(
+  map: Readonly<GameMap>,
+  x: number,
+  y: number,
+  fluidByte: number,
+  z = 0,
+  currentTurn = 0
+): GameMap {
+  const clampedByte = Math.max(0, Math.min(255, Math.round(fluidByte)));
+  const grid = map.chunkGrid;
+  if (grid !== undefined) {
+    const cx = worldToChunkCoord(x, grid.chunkSize);
+    const cy = worldToChunkCoord(y, grid.chunkSize);
+    const chunkKey = packWorldCoord3D(cx, cy, z);
+    const existing = grid.chunks.get(chunkKey);
+    if (!existing) return map;
+    const localIdx = worldToLocalIndex(x, y, grid.chunkSize);
+    if (existing.fluid[localIdx] === clampedByte) return map;
+
+    const cloned = cloneWorldChunk(existing);
+    cloned.fluid[localIdx] = clampedByte;
+    const nextChunk: WorldChunk = {
+      ...cloned,
+      dirtyFlags: existing.dirtyFlags | CHUNK_DIRTY_FLUID | CHUNK_DIRTY_TEMP | CHUNK_DIRTY_PERSIST
+    };
+    const nextChunks = new Map(grid.chunks);
+    nextChunks.set(chunkKey, nextChunk);
+    const nextDirtyKeys = new Set(grid.dirtyChunkKeys);
+    nextDirtyKeys.add(chunkKey);
+
+    const lx = ((x % grid.chunkSize) + grid.chunkSize) % grid.chunkSize;
+    const ly = ((y % grid.chunkSize) + grid.chunkSize) % grid.chunkSize;
+    const neighbors: Array<readonly [number, number]> = [];
+    if (lx === 0) neighbors.push([-1, 0]);
+    if (lx === grid.chunkSize - 1) neighbors.push([1, 0]);
+    if (ly === 0) neighbors.push([0, -1]);
+    if (ly === grid.chunkSize - 1) neighbors.push([0, 1]);
+    for (const [dcx, dcy] of neighbors) {
+      const nKey = packWorldCoord3D(cx + dcx, cy + dcy, z);
+      const nChunk = nextChunks.get(nKey);
+      if (nChunk) {
+        nextChunks.set(nKey, { ...nChunk, dirtyFlags: nChunk.dirtyFlags | CHUNK_DIRTY_FLUID | CHUNK_DIRTY_TEMP });
+      }
+    }
+
+    return {
+      ...map,
+      chunkGrid: { ...grid, chunks: nextChunks, dirtyChunkKeys: nextDirtyKeys }
+    };
+  }
+
+  if (!isInMapBounds(map, x, y, z)) return map;
+  const idx = coordToIndex(x, y, map.width);
+  const existing = getOrCreateFinitePhysicsSlice(map, z, currentTurn);
+  if ((existing.fluid[idx] ?? 0) === clampedByte && map.physicsOverlay?.slices[z] !== undefined) {
+    return map;
+  }
+  const nextFluid = [...existing.fluid];
+  nextFluid[idx] = clampedByte;
+  return {
+    ...map,
+    physicsOverlay: {
+      slices: {
+        ...(map.physicsOverlay?.slices ?? {}),
+        [z]: {
+          ...existing,
+          fluid: nextFluid,
+          dirtyFlags: existing.dirtyFlags | CHUNK_DIRTY_FLUID | CHUNK_DIRTY_TEMP
+        }
+      }
+    }
+  };
+}
+
+/** Reads the cellular temperature in °C at `(x, y, z)`, defaulting to `DEFAULT_AMBIENT_TEMP_C`. */
+export function getTemperatureAt(map: Readonly<GameMap>, x: number, y: number, z = 0): number {
+  const grid = map.chunkGrid;
+  if (grid !== undefined) {
+    const cx = worldToChunkCoord(x, grid.chunkSize);
+    const cy = worldToChunkCoord(y, grid.chunkSize);
+    const chunk = grid.chunks.get(packWorldCoord3D(cx, cy, z));
+    if (!chunk) return DEFAULT_AMBIENT_TEMP_C;
+    return chunk.temperature[worldToLocalIndex(x, y, grid.chunkSize)] ?? DEFAULT_AMBIENT_TEMP_C;
+  }
+  if (!isInMapBounds(map, x, y, z)) return DEFAULT_AMBIENT_TEMP_C;
+  const slice = map.physicsOverlay?.slices[z];
+  if (!slice) return DEFAULT_AMBIENT_TEMP_C;
+  return slice.temperature[coordToIndex(x, y, map.width)] ?? DEFAULT_AMBIENT_TEMP_C;
+}
+
+/** Immutably updates cell temperature in °C at `(x, y, z)`, setting `CHUNK_DIRTY_TEMP`. */
+export function setTemperatureAt(
+  map: Readonly<GameMap>,
+  x: number,
+  y: number,
+  tempC: number,
+  z = 0,
+  currentTurn = 0
+): GameMap {
+  const clampedTemp = Math.max(MIN_CELL_TEMP_C, Math.min(MAX_CELL_TEMP_C, Math.round(tempC)));
+  const grid = map.chunkGrid;
+  if (grid !== undefined) {
+    const cx = worldToChunkCoord(x, grid.chunkSize);
+    const cy = worldToChunkCoord(y, grid.chunkSize);
+    const chunkKey = packWorldCoord3D(cx, cy, z);
+    const existing = grid.chunks.get(chunkKey);
+    if (!existing) return map;
+    const localIdx = worldToLocalIndex(x, y, grid.chunkSize);
+    if (existing.temperature[localIdx] === clampedTemp) return map;
+
+    const cloned = cloneWorldChunk(existing);
+    cloned.temperature[localIdx] = clampedTemp;
+    const nextChunk: WorldChunk = {
+      ...cloned,
+      dirtyFlags: existing.dirtyFlags | CHUNK_DIRTY_TEMP | CHUNK_DIRTY_PERSIST
+    };
+    const nextChunks = new Map(grid.chunks);
+    nextChunks.set(chunkKey, nextChunk);
+    const nextDirtyKeys = new Set(grid.dirtyChunkKeys);
+    nextDirtyKeys.add(chunkKey);
+    return {
+      ...map,
+      chunkGrid: { ...grid, chunks: nextChunks, dirtyChunkKeys: nextDirtyKeys }
+    };
+  }
+
+  if (!isInMapBounds(map, x, y, z)) return map;
+  const idx = coordToIndex(x, y, map.width);
+  const existing = getOrCreateFinitePhysicsSlice(map, z, currentTurn);
+  if ((existing.temperature[idx] ?? DEFAULT_AMBIENT_TEMP_C) === clampedTemp && map.physicsOverlay?.slices[z]) {
+    return map;
+  }
+  const nextTemps = [...existing.temperature];
+  nextTemps[idx] = clampedTemp;
+  return {
+    ...map,
+    physicsOverlay: {
+      slices: {
+        ...(map.physicsOverlay?.slices ?? {}),
+        [z]: {
+          ...existing,
+          temperature: nextTemps,
+          dirtyFlags: existing.dirtyFlags | CHUNK_DIRTY_TEMP
+        }
+      }
+    }
+  };
+}
+
+/** Reads the `MaterialPaletteRegistry` index at `(x, y, z)`. */
+export function getMaterialIndexAt(map: Readonly<GameMap>, x: number, y: number, z = 0): number {
+  const grid = map.chunkGrid;
+  if (grid !== undefined) {
+    const cx = worldToChunkCoord(x, grid.chunkSize);
+    const cy = worldToChunkCoord(y, grid.chunkSize);
+    const chunk = grid.chunks.get(packWorldCoord3D(cx, cy, z));
+    if (!chunk) return 0;
+    return chunk.materialId[worldToLocalIndex(x, y, grid.chunkSize)] ?? 0;
+  }
+  if (!isInMapBounds(map, x, y, z)) return 0;
+  return map.physicsOverlay?.slices[z]?.materialId[coordToIndex(x, y, map.width)] ?? 0;
+}
+
+/** Immutably updates the `MaterialPaletteRegistry` index at `(x, y, z)`. */
+export function setMaterialIndexAt(
+  map: Readonly<GameMap>,
+  x: number,
+  y: number,
+  materialIdx: number,
+  z = 0,
+  currentTurn = 0
+): GameMap {
+  const clamped = Math.max(0, Math.min(65535, Math.round(materialIdx)));
+  const grid = map.chunkGrid;
+  if (grid !== undefined) {
+    const cx = worldToChunkCoord(x, grid.chunkSize);
+    const cy = worldToChunkCoord(y, grid.chunkSize);
+    const chunkKey = packWorldCoord3D(cx, cy, z);
+    const existing = grid.chunks.get(chunkKey);
+    if (!existing) return map;
+    const localIdx = worldToLocalIndex(x, y, grid.chunkSize);
+    if (existing.materialId[localIdx] === clamped) return map;
+
+    const cloned = cloneWorldChunk(existing);
+    cloned.materialId[localIdx] = clamped;
+    const nextChunks = new Map(grid.chunks);
+    nextChunks.set(chunkKey, { ...cloned, dirtyFlags: existing.dirtyFlags | CHUNK_DIRTY_PERSIST });
+    const nextDirtyKeys = new Set(grid.dirtyChunkKeys);
+    nextDirtyKeys.add(chunkKey);
+    return {
+      ...map,
+      chunkGrid: { ...grid, chunks: nextChunks, dirtyChunkKeys: nextDirtyKeys }
+    };
+  }
+
+  if (!isInMapBounds(map, x, y, z)) return map;
+  const idx = coordToIndex(x, y, map.width);
+  const existing = getOrCreateFinitePhysicsSlice(map, z, currentTurn);
+  const nextMats = [...existing.materialId];
+  nextMats[idx] = clamped;
+  return {
+    ...map,
+    physicsOverlay: {
+      slices: {
+        ...(map.physicsOverlay?.slices ?? {}),
+        [z]: { ...existing, materialId: nextMats }
+      }
+    }
+  };
+}
+
+/** Marks cellular dirty flags (`CHUNK_DIRTY_FLUID` / `CHUNK_DIRTY_TEMP`) on the chunk or slice owning `(x, y, z)`. */
+export function markMapPhysicsDirtyAt(
+  map: Readonly<GameMap>,
+  x: number,
+  y: number,
+  z = 0,
+  flags: number = CHUNK_DIRTY_FLUID | CHUNK_DIRTY_TEMP,
+  currentTurn = 0
+): GameMap {
+  const grid = map.chunkGrid;
+  if (grid !== undefined) {
+    const cx = worldToChunkCoord(x, grid.chunkSize);
+    const cy = worldToChunkCoord(y, grid.chunkSize);
+    const chunkKey = packWorldCoord3D(cx, cy, z);
+    const existing = grid.chunks.get(chunkKey);
+    if (
+      !existing ||
+      ((existing.dirtyFlags & flags) === flags &&
+        ((flags & CHUNK_DIRTY_PERSIST) === 0 || grid.dirtyChunkKeys.has(chunkKey)))
+    ) {
+      return map;
+    }
+    const nextFlags = existing.dirtyFlags | flags;
+    const nextChunks = new Map(grid.chunks);
+    nextChunks.set(chunkKey, { ...existing, dirtyFlags: nextFlags });
+    let nextDirtyKeys: ReadonlySet<number> = grid.dirtyChunkKeys;
+    if ((nextFlags & CHUNK_DIRTY_PERSIST) !== 0 && !grid.dirtyChunkKeys.has(chunkKey)) {
+      const mutableDirty = new Set(grid.dirtyChunkKeys);
+      mutableDirty.add(chunkKey);
+      nextDirtyKeys = mutableDirty;
+    }
+    return { ...map, chunkGrid: { ...grid, chunks: nextChunks, dirtyChunkKeys: nextDirtyKeys } };
+  }
+  if (!isInMapBounds(map, x, y, z)) return map;
+  const existing = getOrCreateFinitePhysicsSlice(map, z, currentTurn);
+  if ((existing.dirtyFlags & flags) === flags && map.physicsOverlay?.slices[z] !== undefined) return map;
+  return {
+    ...map,
+    physicsOverlay: {
+      slices: {
+        ...(map.physicsOverlay?.slices ?? {}),
+        [z]: { ...existing, dirtyFlags: existing.dirtyFlags | flags }
+      }
+    }
+  };
+}
+
+/** Collects only chunks or finite slices whose `dirtyFlags` match `requiredDirtyMask`. */
+export function collectDirtyPhysicsRegions(
+  map: Readonly<GameMap>,
+  requiredDirtyMask: number
+): ReadonlyArray<PhysicsRegionBounds> {
+  const regions: PhysicsRegionBounds[] = [];
+  const grid = map.chunkGrid;
+  if (grid !== undefined) {
+    for (const [chunkKey, chunk] of grid.chunks.entries()) {
+      if ((chunk.dirtyFlags & requiredDirtyMask) === 0) continue;
+      regions.push({
+        kind: 'chunk',
+        z: chunk.cz,
+        minX: chunk.cx * chunk.size,
+        minY: chunk.cy * chunk.size,
+        width: chunk.size,
+        height: chunk.size,
+        chunkKey,
+        dirtyFlags: chunk.dirtyFlags,
+        lastSimulatedTurn: chunk.lastSimulatedTurn
+      });
+    }
+    return regions;
+  }
+
+  const slices = map.physicsOverlay?.slices;
+  if (!slices) return regions;
+  for (const [zStr, slice] of Object.entries(slices)) {
+    if ((slice.dirtyFlags & requiredDirtyMask) === 0) continue;
+    regions.push({
+      kind: 'finite',
+      z: Number(zStr),
+      minX: 0,
+      minY: 0,
+      width: map.width,
+      height: map.height,
+      dirtyFlags: slice.dirtyFlags,
+      lastSimulatedTurn: slice.lastSimulatedTurn
+    });
+  }
+  return regions;
+}
+
+/** Updates `dirtyFlags` and `lastSimulatedTurn` on a processed chunk or finite physics slice. */
+export function updatePhysicsRegionStatus(
+  map: Readonly<GameMap>,
+  region: PhysicsRegionBounds,
+  nextDirtyFlags: number,
+  currentTurn: number
+): GameMap {
+  if (region.kind === 'chunk' && region.chunkKey !== undefined && map.chunkGrid !== undefined) {
+    const existing = map.chunkGrid.chunks.get(region.chunkKey);
+    if (!existing) return map;
+    const nextChunks = new Map(map.chunkGrid.chunks);
+    nextChunks.set(region.chunkKey, {
+      ...existing,
+      dirtyFlags: nextDirtyFlags,
+      lastSimulatedTurn: currentTurn
+    });
+    let nextDirtyKeys: ReadonlySet<number> = map.chunkGrid.dirtyChunkKeys;
+    if ((nextDirtyFlags & CHUNK_DIRTY_PERSIST) !== 0 && !map.chunkGrid.dirtyChunkKeys.has(region.chunkKey)) {
+      const mutableDirty = new Set(map.chunkGrid.dirtyChunkKeys);
+      mutableDirty.add(region.chunkKey);
+      nextDirtyKeys = mutableDirty;
+    }
+    return {
+      ...map,
+      chunkGrid: { ...map.chunkGrid, chunks: nextChunks, dirtyChunkKeys: nextDirtyKeys }
+    };
+  }
+
+  const existingSlice = map.physicsOverlay?.slices[region.z];
+  if (!existingSlice) return map;
+  return {
+    ...map,
+    physicsOverlay: {
+      slices: {
+        ...map.physicsOverlay!.slices,
+        [region.z]: {
+          ...existingSlice,
+          dirtyFlags: nextDirtyFlags,
+          lastSimulatedTurn: currentTurn
+        }
+      }
+    }
   };
 }

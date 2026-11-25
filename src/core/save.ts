@@ -114,7 +114,11 @@ function stripRuntimeChunkGrid(map: GameMap): GameMap {
     width: map.width,
     height: map.height,
     tiles: [],
-    ...(map.isFullyExplored !== undefined ? { isFullyExplored: map.isFullyExplored } : {})
+    ...(map.zSlices !== undefined ? { zSlices: map.zSlices } : {}),
+    ...(map.minZ !== undefined ? { minZ: map.minZ } : {}),
+    ...(map.maxZ !== undefined ? { maxZ: map.maxZ } : {}),
+    ...(map.isFullyExplored !== undefined ? { isFullyExplored: map.isFullyExplored } : {}),
+    ...(map.physicsOverlay !== undefined ? { physicsOverlay: map.physicsOverlay } : {})
   };
 }
 
@@ -153,6 +157,7 @@ function hydrateStreamingMapSync(
     ...(finalGrid.minZ !== undefined ? { minZ: finalGrid.minZ } : {}),
     ...(finalGrid.maxZ !== undefined ? { maxZ: finalGrid.maxZ } : {}),
     ...(rawMap.isFullyExplored !== undefined ? { isFullyExplored: rawMap.isFullyExplored } : {}),
+    ...(rawMap.physicsOverlay !== undefined ? { physicsOverlay: rawMap.physicsOverlay } : {}),
     chunkGrid: finalGrid
   };
 }
@@ -299,7 +304,8 @@ export function serializeGameState(state: GameState): SerializedGameState {
     pendingRumors: sanitized.pendingRumors,
     pendingRivalries: sanitized.pendingRivalries,
     dramaTracker: sanitized.dramaTracker,
-    telemetry: getTelemetryStore()
+    telemetry: getTelemetryStore(),
+    ...(sanitized.colonyState !== undefined ? { colonyState: sanitized.colonyState } : {})
   };
 }
 
@@ -505,7 +511,8 @@ export function deserializeGameState(
       damageTaken: 0,
       resourcesConsumed: 0,
       questsCompleted: 0
-    }
+    },
+    ...(sState.colonyState !== undefined ? { colonyState: sState.colonyState } : {})
   };
 
   setTelemetryStore(stateWithoutIndex.telemetry);

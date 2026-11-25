@@ -1,626 +1,596 @@
-# Phase 46 Implementation Plan: True Multi-Z Voxel Space, 3D Vision, HPA* Pathfinding & Z-Aware Cartridges
+# Phase 47 Implementation Plan — Active-Chunk Cellular Physics, Terrain Sculpting & RimWorld/DF Agent Substrate
 
-**Scope:** Milestones 176, 177, 178, and 179 (`docs/MILESTONES.md` lines 2435–2457)  
-**Research Foundation:** Confirmed [docs/research_notes.md](./research_notes.md)  
-**Governing Standards:** `AGENTS.md` Rules 10–21, `docs/ARCHITECTURE.md`, `docs/SSOT_CONSOLE.md`, `docs/SSOT_DND35E.md`
-
----
-
-## 1. Confirmed Architectural Decisions
-
-1. **Vertical Scale (`FEET_PER_Z_LEVEL`):** Default `5 ft` per Z-level (isotropic 5×5×5 ft voxels), configurable per campaign via `campaign.rules.map.feetPerZLevel` (default `5`).
-2. **`spatialIndex` Key Format:** Uniform `"x,y,z"` everywhere via canonical `toSpatialKey(x, y, z = 0)` and `getEntitiesAtPosition(state, x, y, z = 0)` helpers, migrating all ~45 `src/` callers and the 6 test files reading `spatialIndex` directly.
-3. **Conflict-Free Keybindings (`command_catalog.ts`):**
-   - `move.up_z` (`<`) and `move.down_z` (`>`): Ascend/descend stairs, ladders, flight, climb, or up/down portals; inside Inspect (`x`) or Targeting (`f`) mode, shifts cursor Z up/down.
-   - `action.interact` (`,` and `.`): Smart interact with tile, entity, or portal.
-   - `camera.peek_z_up` (`PageUp`, `[`), `camera.peek_z_down` (`PageDown`, `]`), `camera.peek_z_reset` (`Home`): Ephemeral Z-slice camera peeking (`GameState.cameraZOffset`) without moving the player.
-4. **Default Campaign Multi-Z Showcase & Vertical Alignment Validator:**
-   - Add declarative tiles (`open_air`, `stone_ramp`, `wooden_stairs_up`, `wooden_stairs_down`, `climbable_wall`) in `public/data/campaigns/default/tiles.json`.
-   - Add a 3-level static showcase area `watchtower_overlook` (`z = -1, 0, 1`) connected from `outer_crossroads`, enable multi-Z strata (`minZ: -2, maxZ: 2`) on `endless_frontier` in `public/data/campaigns/default/areas.json`, and add the Multi-Z Vertical Alignment Validator in `src/editor/validator/area.validator.ts`.
+**Milestones:** 180, 181, 182, 183 (`docs/MILESTONES.md` §Phase 47)  
+**Confirmed Research Basis:** `docs/research_notes.md` (Option A confirmed across all 4 architectural decisions)  
+**Baseline Commit:** `7244b92ba` (`main`, Phase 46 complete — 441 tests passing, 8/8 `verify.sh` green)
 
 ---
 
-## 2. SSOT Ownership & Old-Brain Eviction Table
+## 0. Architectural Decisions Locked In
 
-| Responsibility | Canonical Owner (SSOT) | Tier | Evicted / Replaced Old Pattern |
+1. **Unified Finite & Streaming Physics Backing (Option A):** Support cellular fluid depth (`1/7..7/7`), cell temperature (`Int16` °C), and material IDs across **both** `streaming_overworld` (`WorldChunk` SoA planes) and finite maps (`GameMap.tiles`/`zSlices`) via a lazy, sparse `FinitePhysicsOverlay` stored on `GameMap` (only instantiated when a finite map receives fluid/thermal writes, keeping untouched maps at 0 bytes and 0 CPU overhead).
+2. **Psychology Component Ownership (Option A):** Add `NeedsComponent` (`ComponentType.Needs`, syncing `nourishment` with `HungerComponent`) and extend `MemoryComponent` + `Thought` in-place with mood tiers, decaying/stacking thoughts, inspirations, and mental breaks — preserving 100% compatibility with `personality.system.ts`, `gossip.system.ts`, `dialogue.actions.ts`, and `ai.system.ts`.
+3. **Declarative Rules Registries (Option A):** Add optional `materials`, `blueprints`, `craftingRecipes`, and `psychology` sections inside `RulesConfigSchema` (`src/types/campaign/meta.ts`) with sensible engine defaults so all 5 sibling campaigns validate cleanly without mandatory new JSON files.
+4. **Phase 47 vs. Phase 48 UI Scope (Option A):** Render cellular fluid depth (`1/7..7/7`), designation markers, and stockpile tints on the canvas (`viewport_snapshot.ts`), expose fluid/°C/mood/needs/job details in `inspect_tooltip.ts`, wire player `mine`/`chop`/`build`/`craft` verbs via `ApplyIntent`, and showcase M180–M183 in `default`. Reserve full Colony/Fortress interactive management HUD modals for **Phase 48**.
+
+---
+
+## 1. SSOT Ownership & New Module Registry Table
+
+All new TypeScript modules will be registered in `docs/ssot/ssot_console.json` (Tier 1) or `docs/ssot/ssot_dnd35e.json` (Tier 2), followed by `bun scripts/map-codebase.ts` so `scripts/run-validator.ts` `[8/8]` achieves 100% SSOT parity.
+
+| New / Extended Module | Tier | Canonical Ownership (Includes / Excludes) | Canonical Entry Points |
 | :--- | :--- | :--- | :--- |
-| 3D Integer Coord Packing (`20+20+12 = 52 bits`) & Spatial Key Formatting | `src/utils/grid.ts` (`packWorldCoord3D`, `unpackWorldCoord3D`, `toSpatialKey`, `getBresenhamLine3D`) | `tier1_console` | Ad-hoc `` `${x},${y}` `` string literals and 2D-only `packWorldCoord` on multi-Z chunk maps |
-| 3D Spatial Occupancy Query & Incremental Patching | `src/core/ecs/ecs_core.ts` (`getEntitiesAtPosition`, `patchSpatialIndexForEntity`, `patchSpatialIndexInPlace`) | `tier1_console` | ~45 direct `state.spatialIndex.get(\`${x},${y}\`)` calls across `src/` |
-| Unified 2D/3D Tile Read/Write (`GameMap.tiles`, `zSlices`, `chunkGrid`) | `src/map/map_accessor.ts` (`getTileAt`, `getTileIdAt`, `getTileDefAt`, `setTileIdAt`, `isInMapBounds`, `isMultiZMap`, `getMapZBounds`) | `tier1_console` | 2D-only `(x, y)` `MapAccessor` lookups assuming `cz === 0` |
-| Floor Support Detection, Gravity Scan & Fall Resolution | `src/systems/gravity.system.ts` (`isEntitySupportedAt`, `resolveGravityForEntity`) | `tier1_console` | Ad-hoc pit-only fall handling disconnected from Z elevation |
-| 3D Line-of-Sight & Multi-Z Shadowcasting | `src/map/fov_3d.ts` (`has3DLineOfSight`, `computeFOV3D`) invoked from `src/map/fov.ts` when `isMultiZMap(map)` | `tier1_console` | Single-plane 2D FOV blind to balconies, chasms, and skylights |
-| Chunk Connectivity `RegionGrid` & HPA\* 3D Portal Graph | `src/map/region_graph.ts` & `src/ai/pathfinding_hpa.ts` | `tier1_console` | Unbounded per-step 2D `new ROT.Path.AStar` on large/multi-Z maps |
-| Shared Multi-Agent 3D Dijkstra Flow Fields | `src/ai/flow_field.ts` (`getOrComputeFlowField3D`, `sampleFlowFieldStep3D`) | `tier1_console` | Independent redundant A\* runs for multiple actors pursuing the same target |
-| Ruleset 3D Spatial & Elevation Mechanics (Distance, High Ground, Flight, Climb, Falling) | `src/rulesets/dnd35e/spatial/dnd35e_spatial_3d.ts` + `grid_geometry.ts` + `cover_senses.ts` + `aoe_rest.ts` | `tier2_cartridge` | Static `dndData.movementModes` ignoring DAG `can_fly` ruleOverride; 2D-only AoE & fall math |
+| `src/map/material_palette.ts` *(NEW)* | `tier1_console` | Deterministic flyweight `MaterialPaletteRegistry` (`Uint16Array` index <-> `materialId`). Excludes terrain mutation. | `buildMaterialPaletteRegistry`, `getMaterialIdFromPaletteIndex`, `getPaletteIndexForMaterialId` |
+| `src/map/structural_support.ts` *(NEW)* | `tier1_console` | Bounded-span connected support BFS (`MAX_SUPPORT_SPAN_TILES`) and cave-in collapse resolution. Excludes crafting/mining verbs. | `evaluateStructuralSupport`, `resolveCaveInAroundVoxel` |
+| `src/systems/physics/fluid_physics.ts` *(NEW)* | `tier1_console` | Bit-packed `fluid: Uint8Array` helpers (`depth 0..7`, `FluidKind`), dirty-chunk fluid cellular automaton (vertical spillover, horizontal equalization, obsidian/steam/ice/oil phase transitions). Excludes rendering. | `packFluidCell`, `unpackFluidCell`, `processDirtyFluidChunks`, `applyFluidToVoxel` |
+| `src/systems/physics/temperature_physics.ts` *(NEW)* | `tier1_console` | Dirty-chunk 3D heat diffusion toward ambient °C, thermal coupling with `magma` and `FieldComponent` heat/cold sources, auto-sleep clearing. Excludes rendering. | `processDirtyTemperatureChunks`, `applyHeatDeltaToVoxel` |
+| `src/systems/physics/chunk_catchup.ts` *(NEW)* | `tier1_console` | Closed-form $O(N)$ analytical sleep catch-up on chunk wake / area wake / bulk time skip (temperature relaxation, shallow evaporation, burnout, spoilage/growth). Excludes per-turn loops. | `applyAnalyticalChunkCatchUp`, `applyAnalyticalActiveGridCatchUp` |
+| `src/systems/construction.system.ts` *(NEW)* | `tier1_console` | Runtime voxel sculpting (`sculptTerrainVoxel`), mining (`mineTerrainTile`), material-consuming construction (`constructTerrainTile`), and timed spell terrain reverts (`tickTimedTerrainReverts`). Excludes AI planning. | `sculptTerrainVoxel`, `mineTerrainTile`, `constructTerrainTile`, `scheduleTimedTerrainRevert`, `tickTimedTerrainReverts` |
+| `src/systems/psychology/needs.system.ts` *(NEW)* | `tier1_console` | Universal actor need meters (`rest`, `nourishment`, `shelter`, `comfort`, `social`, `safety`), environmental satisfaction evaluation, `HungerComponent` sync, and threshold thought emission. Excludes combat math. | `createDefaultNeedsComponent`, `processActorNeedsTick`, `satisfyActorNeed` |
+| `src/systems/psychology/thoughts.system.ts` *(NEW)* | `tier1_console` | Decaying/stacking thought management, facet-weighted mood aggregation, `MoodTier` classification, Inspiration & Mental Break triggering/expiration. Excludes dialogue trees. | `addTimedThought`, `recalculateActorMood`, `processActorPsychologyTick`, `resolveActorMoodModifiers` |
+| `src/types/colony.types.ts` *(NEW)* | `tier1_console` | Pure JSON-serializable data shapes for `ColonySimulationState` (designations, stockpiles, reservations, workshops, timed terrain reverts, labor profiles). Excludes runtime logic. | `ColonySimulationState`, `TileDesignation`, `StockpileZone`, `JobReservationToken`, `WorkshopState`, `CraftingBill`, `LaborKind` |
+| `src/systems/labor/job_blackboard.ts` *(NEW)* | `tier1_console` | Conflict-free atomic reservation tokens (`tile:*`, `entity:*`, `workshop:*`), worker release on death/eviction, TTL pruning. Excludes pathfinding. | `tryAcquireReservation`, `releaseReservation`, `releaseAllWorkerReservations`, `pruneExpiredReservations`, `isResourceReservedByOther` |
+| `src/systems/labor/designation.system.ts` *(NEW)* | `tier1_console` | Spatial designation CRUD (`mine`, `chop`, `haul`, `build`, `harvest`, `channel`), legality checks, auto-cleanup on completion. Excludes AI scheduling. | `addTileDesignation`, `removeTileDesignation`, `addRectDesignation`, `completeDesignationAt`, `getActiveDesignationsForArea` |
+| `src/systems/labor/stockpile.system.ts` *(NEW)* | `tier1_console` | Typed tag/item filter stockpiles, priority-ordered destination cell matching, unstocked haul item discovery. Excludes inventory mutation. | `createStockpileZone`, `doesItemMatchStockpile`, `findBestStockpileCellForItem`, `findUnstockedHaulItems` |
+| `src/systems/labor/workshop.system.ts` *(NEW)* | `tier1_console` | Multi-step Crafting DAG bill queues (`do_x_times`, `maintain_stock`, `forever`), ingredient hauling sub-job generation, work progress, output spawning. Excludes UI modals. | `registerWorkshop`, `enqueueCraftingBill`, `resolveNextRunnableBill`, `advanceWorkshopBillWork` |
+| `src/ai/labor.behavior.ts` *(NEW)* | `tier1_console` | Priority-based labor & hauling utility AI emitting standard `ActionIntent`s via `computeHierarchicalNextStep`. Registered as `'labor'` in `BEHAVIOR_REGISTRY`. Excludes direct map mutation. | `laborBehavior` |
 
 ---
 
-## 3. Declarative Purity & Anti-Hardcoding Audit Table (Rule 21)
+## 2. Declarative Purity & Anti-Hardcoding Audit Table (Rule 21)
 
 | Behavior | Rejected Imperative Shortcut | Chosen Declarative Schema / JSON Mechanism | Passes "New Content Mod" Litmus Test? |
 | :--- | :--- | :--- | :--- |
-| Sky / Chasm / Balcony Transparency & Gravity Drop | `if (tileId === 'open_air' \|\| tileId === 'chasm')` | `TileDefinitionSchema.isOpenAir?: boolean`, `hasFloorSupport?: boolean`, `blocksVerticalLoS?: boolean` | **Yes** — any mod tile with `isOpenAir: true` automatically transmits 3D FOV/light, renders depth dimming, and drops unsupported actors. |
-| Ramp & Stair / Ladder Elevation Transitions | `if (tileId === 'stairs_up' \|\| tileId === 'stone_ramp')` | `TileDefinitionSchema.verticalLink?: 'ramp' \| 'stairs_up' \| 'stairs_down' \| 'stairs_both' \| 'ladder'` | **Yes** — any mod tile declaring `verticalLink` participates in movement, HPA\* vertical portals, flow fields, and the alignment validator. |
-| Climbable Walls / Cliffs | `if (tileId === 'cliff_wall')` | `TileDefinitionSchema.isClimbable?: boolean` (plus fallback to adjacent `isSolidObstacle === true` when actor has climb capability) | **Yes** — mods control climbability per tile definition in JSON. |
-| *Fly* Spell / Buff Altitude & Speed | `if (hasStatus(entity, 'fly'))` | Read DAG `ruleOverrides` (`ruleKey === 'can_fly'`) + `StatModifier` (`fly_speed`) + `flight:*` tags in `resolveDnD35eEntityMovementModes` | **Yes** — any custom flight spell, item, or racial trait emitting `ruleKey: 'can_fly'` works identically. |
-| *Feather Fall* / Slow Fall Mitigation | `if (hasSpellEffect(entity, 'feather_fall') \|\| hasClass('monk'))` | Read DAG `ruleOverrides` (`ruleKey === 'immune_falling_damage'`, already in `feather_fall.json`) + `StatModifier` (`targetStat: 'fall_damage_reduction_ft'`) | **Yes** — any custom item/spell/class feature emitting `immune_falling_damage` or `fall_damage_reduction_ft` works automatically. |
-| Vertical Feet Scale per Z-Level | Hardcoded `10` or `5` inside combat/spell resolvers | `campaign.rules.map.feetPerZLevel` (Zod optional default `DEFAULT_FEET_PER_Z_LEVEL = 5`) | **Yes** — campaigns can tune vertical scale (5 ft vs 10 ft) purely in `rules.json`. |
+| **D&D 3.5e Earth/Stone/Water Spells** (*Passwall*, *Stone Shape*, *Transmute Rock to Mud*, *Create Water*) | `if (spell.id === 'passwall') ... else if (spell.id === 'create_water') ...` | New discriminated variants `terrain_sculpt` and `fluid_spawn` in `DnD35SpellEffectUnitSchema` (`spell_system.types.ts`) authored in `spells/*.json` | **Yes** — any new campaign spell JSON using `terrain_sculpt` or `fluid_spawn` works with zero `.ts` edits. |
+| **Mineable Walls & Rock Drops** | `if (tileId === 'stone_wall') drop('stone_boulder')` | Optional `mineable`, `minedTileId`, `mineYieldItemId`, `mineYieldCount`, `mineWorkCost`, `requiredToolTag` on `TileDefinitionSchema` (`world.ts`) | **Yes** — new ore/crystal/ice wall tiles authored in `tiles.json` drop custom items automatically. |
+| **Structural Load-Bearing & Cave-Ins** | `if (tileId.includes('wall') || tileId === 'pillar')` | Optional `isLoadBearing?: boolean` & `collapseDropItemId?: string` on `TileDefinitionSchema` (defaulting solid non-open-air walls to load-bearing) | **Yes** — new structural tile types declare support capability in JSON. |
+| **Thermal Conductivity & Ignition** | `if (tileId === 'wooden_floor') burn()` | Optional `thermalConductivity`, `ignitionTempC`, `burnedTileId` on `TileDefinitionSchema` and `MaterialsConfig` | **Yes** — new flammable or insulating materials/tiles configure thermal properties in JSON. |
+| **Mining / Chopping / Crafting Tools** | `if (itemId === 'pickaxe' || itemId === 'axe')` | Item `tags` (`tool:mining`, `tool:chopping`, `tool:masonry`) matched against `tileDef.requiredToolTag` / `recipe.requiredToolTag` | **Yes** — any modded dwarven drill or adamantine pick with tag `tool:mining` works immediately. |
+| **Stockpile Item Filtering** | `if (item.category === 'boulder')` | `StockpileZone` `{ allowedTags, deniedTags, allowedItemIds }` matched against `ItemDefinition.tags` + `TagsComponent.tags` | **Yes** — custom item tags filter cleanly into stockpiles with zero `.ts` edits. |
+| **Needs, Comfort Furniture & Thoughts** | `if (entity.templateId === 'bed') comfort += 20` | Declarative `psychology` config in `RulesConfigSchema` + entity/item tags (`furniture:bed`, `furniture:table`, `edible`, `workshop:masonry`) | **Yes** — custom furniture, rooms, needs, and thoughts are data-driven in JSON. |
+| **Multi-Step Workshop Recipes** | Hardcoded `switch (recipeId)` crafting logic | Declarative `CraftingRecipeSchema` (`workshopTag`, `requiredInputs: [{ tag/itemId, count }]`, `workUnits`, `outputs: [{ itemId, count }]`) in `RulesConfigSchema.craftingRecipes` | **Yes** — campaign authors add arbitrary multi-step crafting chains in `rules.json`. |
 
 ---
 
-## 4. Cascading Effects Matrix (Rule 15)
+## 3. Cascading Effects Matrix (AGENTS.md Rule 15)
 
-| Change | Upstream (Callers, Emitters, Authors, Tests) | Downstream (Consumers, Renderers, Validators, Saves) | Lateral (Siblings, Campaigns, Docs, Registries) |
+| Task / Change | Upstream (Callers / Emitters / Producers / Authors) | Downstream (Consumers / Renderers / Serializers / Validators) | Lateral (Mirrors / Sibling Campaigns / Registries / Docs) |
 | :--- | :--- | :--- | :--- |
-| **M176.1:** `PositionComponent.z`, `toSpatialKey`, `getEntitiesAtPosition` | `ecs_core.ts`, `ecs_batch.ts`, `ecs_lifecycle.ts`, `ecs_spawner.ts`, ~45 `src/` callers, 6 existing tests (`floor_transition_entity_id_and_loader`, `input_scope_and_keymap`, `m156`, `dnd35e_size_footprint_movement`, `m173`, `m175`) | `viewport_snapshot.ts`, `tactical_snapshot.ts`, `inspect_tooltip.ts`, `fov.ts`, `fov_3d.ts`, `crossing.system.ts`, `field.system.ts`, `sound.system.ts`, `projectile.system.ts`, `zap.system.ts`, `save.ts` | `fuzzer_invariants.ts`, `DebugOverlay.tsx`, `SSOT_CONSOLE.md` |
-| **M176.2:** `packWorldCoord3D`, Multi-Z `WorldChunk` slabs, `GameMap.zSlices`, `MapAccessor` 3D | `grid.ts`, `world_chunk.constants.ts`, `map_accessor.ts`, `static-parser.ts`, `chunk_generator.ts`, `chunk_streaming.ts`, `worker_bridge.ts`, `map.worker.ts` | `chunk_store.ts` (`unpackWorldCoord3D`), `save.ts` (`SerializedStreamingWorldState`), `fov_3d.ts`, `area.validator.ts` | `world.ts`, `meta.ts`, `ai-prompt-kit/`, `default/{tiles,areas}.json` |
-| **M176.3:** `MoveIntent.dz`, Ramps/Stairs, `gravity.system.ts`, Vertical Alignment Validator | `movement.system.ts`, `movement_displacement.ts`, `movement_footprint.ts`, `crossing.system.ts`, `status-effect.system.ts`, `gameplay_input.ts` | `lifecycle.system.ts`, `intent_cost_resolver.ts`, `RulesetContract.onEntityFallLanded`, `canActorAdjustAltitude`, `area.validator.ts` | `dnd35e_turn_budget.ts`, `dnd35e_lifecycle_adapter.ts`, `follow.behavior.ts` |
-| **M177:** `fov_3d.ts`, 3D `light_emitter.system.ts`, Depth-Dimmed Renderer, `cameraZOffset` Peeking | `map.system.ts`, `camera.ts`, `command_catalog.ts`, `gameplay_input.ts`, `shortcut_input.ts`, `action.registry.ts`, `presentation_queue.ts` | `viewport_snapshot.ts`, `viewport_snapshot.types.ts`, `renderer.ts`, `vfx_overlay.ui.ts`, `tactical_snapshot.ts`, `inspect_tooltip.ts`, `ChronosStrip.tsx` | `input_scope_and_keymap.test.ts`, `cover_senses.ts` (`resolveTileLightReading`) |
-| **M178:** `region_graph.ts`, `pathfinding_hpa.ts`, `flow_field.ts` | `map_accessor.ts` (`CHUNK_DIRTY_REGION`), `chunk_streaming.ts`, `durability.system.ts` (door toggle) | `follow.behavior.ts`, `hunt.behavior.ts`, `flee.behavior.ts`, `companion_targeting.ts` | `SSOT_CONSOLE.md`, `ssot_console.json` |
-| **M179:** Z-Aware `RulesetContract` & D&D 3.5e 3D Mechanics | `ruleset.types.ts`, `dnd35e_ruleset.ts`, `dnd35e_spatial_3d.ts`, `grid_geometry.ts`, `cover_senses.ts`, `aoe_rest.ts`, `target_category_filter.ts`, `spell_cast_resolver.ts`, `combat_exchange_phases.ts`, `terrain_traversal_resolver.ts` | `classic_ruleset.ts` (optional hooks), `dnd35e_combat_adapter.ts`, `flanking_graph.ts`, `charge_resolver.ts`, `spell.behavior.ts` | `SSOT_DND35E.md`, `ssot_dnd35e.json`, `ARCHITECTURE.md` (§9.33), `MILESTONES.md` |
+| **M180: Cellular Physics & Analytical Catch-Up** | `intent_cost_resolver.ts` (ticks dirty fluid/temp chunks when `energyCost > 0`), `chunk_streaming.ts` (chunk wake catch-up), `map_wake_respawn.ts` (finite area wake catch-up), `world_time_skip.ts` (bulk rest catch-up), `field.system.ts` (fire/cold heat coupling), `spell_cast_units.ts` (`fluid_spawn`) | `map_accessor.ts` (`getFluidAt`/`setFluidAt`/`getTemperatureAt`/`setTemperatureAt`), `viewport_snapshot.ts` & `inspect_tooltip.ts` (render depth `1/7..7/7` + °C readout), `movement_displacement.ts` & `breath.system.ts` (deep fluid wading/submersion), `needs.system.ts` (thermal comfort), `save.ts` (serializes `FinitePhysicsOverlay` & `WorldChunk` deltas) | `world_chunk.constants.ts`, `default/tiles.json`, `docs/ssot/ssot_console.json`, `docs/SSOT_CONSOLE.md`, `docs/ARCHITECTURE.md` |
+| **M181: Voxel Sculpting, Construction & D&D 3.5e Spells** | `verbs.constants.ts` & `apply.system.ts` (`mine`, `chop`, `build`, `craft`), `labor.behavior.ts`, `spell_cast_resolver.ts` (3D `targetPos.z` + `placementUnits` including `terrain_sculpt`/`fluid_spawn`), `world_time_skip.ts` & `intent_cost_resolver.ts` (`tickTimedTerrainReverts`) | `map_accessor.ts` (`setTileIdAt` sets `PERSIST|REGION|FLUID|TEMP`), `region_graph.ts` & `flow_field.ts` (HPA* invalidation), `fov_3d.ts` (`fovNeedsUpdate: true`), `gravity.system.ts` (cave-ins & floor cuts drop entities), `designation.system.ts` (auto-completes designations), `save.ts` (`timedTerrainReverts`) | `TileDefinitionSchema` (`world.ts`), `RulesConfigSchema` (`meta.ts`), `DnD35SpellEffectUnitSchema` (`spell_system.types.ts`), `system_content_spell_ids.ts`, `public/data/rulesets/dnd35e/spells/{stone_shape,passwall,transmute_rock_to_mud,create_water}.json`, `default/{tiles,items,rules}.json`, `ssot_console.json`, `ssot_dnd35e.json` |
+| **M182: Universal Needs, Thoughts, Mood & Stress** | `simulation_cadence.ts` (`processTier2LocalCadence`), `world_time_skip.ts` (bulk advance needs & thought decay), `hunger.system.ts` (nourishment sync), `personality.system.ts` (`recordThought` preserved), `ecs_spawner.ts` (`NeedsComponent` hydration) | `actor_components.types.ts` & `components.types.ts` (`ComponentType.Needs`, extended `MemoryComponent`/`Thought`), `ai.system.ts` (mental break behavior override), `ruleset.types.ts` & `dnd35e_dag_adapter.ts` (optional morale `StatModifier`s from mood tier), `inspect_tooltip.ts` (mood/needs/thoughts lines), `save.ts` (serializes new component cleanly) | `EntityTemplateSchema` (`entity.ts`), `RulesConfigSchema` (`meta.ts`), `personality.constants.ts`, `default/entities.json`, `ssot_console.json` |
+| **M183: Designations, Blackboard, Stockpiles, Hauling AI & Workshops** | `ai.system.ts` (`BEHAVIOR_REGISTRY['labor']`), `death.system.ts` & `chunk_streaming.ts` (worker reservation cleanup on death/eviction), `ecs_spawner.ts` (`LaborProfileComponent` hydration), `apply.system.ts` (`craft`/`build`/`mine`/`chop`) | `game-state.types.ts` & `save.ts` (`colonyState` serialization), `viewport_snapshot.ts` & `inspect_tooltip.ts` (designation & stockpile overlays), `pathfinding_hpa.ts` (3D labor routing), `inventory.system.ts` (pickup/drop intents) | `AIBehaviorEntrySchema` & `EntityTemplateSchema` (`entity.ts`), `RulesConfigSchema` (`meta.ts`), `default/{areas,entities,items,ai,rules}.json`, `ssot_console.json`, `docs/MILESTONES.md` |
 
 ---
 
-## 5. Step-by-Step Implementation Plan (with Code Snippets & Diffs)
+## 4. Detailed Step-by-Step Implementation Plan & Code Integration Blueprint
 
----
+### Milestone 180 — Dirty-Bitset Cellular Physics & Analytical Sleep Catch-Up
 
-### Milestone 176: 3D Coordinates (`PositionComponent.z`), Multi-Z Chunks, Ramps/Stairs & Gravity/Falling
-
-#### Step 176.1 — Constants, 3D Packing, Spatial Keys & 3D Line Traversal
-- **Files:** `src/constants/world_chunk.constants.ts`, `src/utils/grid.ts`
-- **Changes:**
-  - Add 3D coordinate packing constants (`20-bit X + 20-bit Y + 12-bit Z = 52 bits`, strictly safe in IEEE-754 integers), vertical scale default (`DEFAULT_FEET_PER_Z_LEVEL = 5`), fall/gravity constants (`MAX_FALL_DISTANCE_Z = 32`, `DEFAULT_FALL_DAMAGE_PER_Z = 5`), multi-Z streaming defaults (`DEFAULT_ACTIVE_RADIUS_Z = 2`, `MIN_ACTIVE_RADIUS_Z = 0`, `MAX_ACTIVE_RADIUS_Z = 8`), and depth rendering layers (`MAX_RENDER_DEPTH_LAYERS = 3`).
-  - Add `packWorldCoord3D(x, y, z = 0)`, `unpackWorldCoord3D(key)`, `toSpatialKey(x, y, z = 0)`, and `getBresenhamLine3D(x0, y0, z0, x1, y1, z1)` in `src/utils/grid.ts`.
-
-```ts
-// src/constants/world_chunk.constants.ts (additions)
-/** Bias applied to signed X/Y coordinates for 20-bit 3D packing (+/- 524,287). */
-export const COORD3D_XY_BIAS = 524_288 as const;
-/** Radix span for 20-bit signed X/Y coordinates (2^20). */
-export const COORD3D_XY_SPAN = 1_048_576 as const;
-/** Bias applied to signed Z coordinates for 12-bit 3D packing (+/- 2,047 Z-levels). */
-export const COORD3D_Z_BIAS = 2_048 as const;
-/** Radix span for 12-bit signed Z coordinates (2^12). */
-export const COORD3D_Z_SPAN = 4_096 as const;
-/** Multiplier shifting Y above 20-bit X (2^20). */
-export const COORD3D_Y_MULT = 1_048_576 as const;
-/** Multiplier shifting Z above 40-bit (X, Y) (2^40). */
-export const COORD3D_Z_MULT = 1_099_511_627_776 as const;
-
-/** Default vertical elevation height per Z-level in feet (isotropic 5-ft voxel). */
-export const DEFAULT_FEET_PER_Z_LEVEL = 5 as const;
-/** Safety cap for vertical fall scans when resolving gravity over unbounded open air. */
-export const MAX_FALL_DISTANCE_Z = 32 as const;
-/** Fallback Console fall damage per Z-level fallen beyond a 1-Z safe hop when no ruleset hook handles falls. */
-export const DEFAULT_FALL_DAMAGE_PER_Z = 5 as const;
-/** Default vertical chunk streaming radius around originChunkZ when multi-Z streaming is active. */
-export const DEFAULT_ACTIVE_RADIUS_Z = 2 as const;
-/** Maximum lower Z-slices inspected beneath `open_air` during multi-Z viewport rendering. */
-export const MAX_RENDER_DEPTH_LAYERS = 3 as const;
-```
-
-```ts
-// src/utils/grid.ts (additions)
-/**
- * Packs signed 3D coordinates (20-bit X, 20-bit Y, 12-bit Z = 52 bits) into a safe JS integer.
- */
-export function packWorldCoord3D(x: number, y: number, z = 0): number {
-  return (
-    (z + COORD3D_Z_BIAS) * COORD3D_Z_MULT +
-    (y + COORD3D_XY_BIAS) * COORD3D_Y_MULT +
-    (x + COORD3D_XY_BIAS)
-  );
-}
-
-/**
- * Unpacks a 52-bit key produced by {@link packWorldCoord3D} back into signed `(x, y, z)`.
- */
-export function unpackWorldCoord3D(key: number): { readonly x: number; readonly y: number; readonly z: number } {
-  const adjustedX = key % COORD3D_Y_MULT;
-  const withoutX = Math.floor(key / COORD3D_Y_MULT);
-  const adjustedY = withoutX % COORD3D_XY_SPAN;
-  const adjustedZ = Math.floor(withoutX / COORD3D_XY_SPAN);
-  return {
-    x: adjustedX - COORD3D_XY_BIAS,
-    y: adjustedY - COORD3D_XY_BIAS,
-    z: adjustedZ - COORD3D_Z_BIAS
-  };
-}
-
-/**
- * Formats the canonical uniform 3D spatialIndex lookup key `"x,y,z"`.
- */
-export function toSpatialKey(x: number, y: number, z = 0): string {
-  return `${x},${y},${z}`;
-}
-
-/**
- * Returns all integer voxel coordinates along a 3D Bresenham line from `(x0, y0, z0)` to `(x1, y1, z1)`.
- */
-export function getBresenhamLine3D(
-  x0: number,
-  y0: number,
-  z0: number,
-  x1: number,
-  y1: number,
-  z1: number
-): ReadonlyArray<{ readonly x: number; readonly y: number; readonly z: number }> {
-  const points: Array<{ readonly x: number; readonly y: number; readonly z: number }> = [];
-  let x = x0;
-  let y = y0;
-  let z = z0;
-  const dx = Math.abs(x1 - x0);
-  const dy = Math.abs(y1 - y0);
-  const dz = Math.abs(z1 - z0);
-  const xs = x1 > x0 ? 1 : x1 < x0 ? -1 : 0;
-  const ys = y1 > y0 ? 1 : y1 < y0 ? -1 : 0;
-  const zs = z1 > z0 ? 1 : z1 < z0 ? -1 : 0;
-  points.push({ x, y, z });
-
-  if (dx >= dy && dx >= dz) {
-    let p1 = 2 * dy - dx;
-    let p2 = 2 * dz - dx;
-    while (x !== x1) {
-      x += xs;
-      if (p1 >= 0) { y += ys; p1 -= 2 * dx; }
-      if (p2 >= 0) { z += zs; p2 -= 2 * dx; }
-      p1 += 2 * dy;
-      p2 += 2 * dz;
-      points.push({ x, y, z });
-    }
-  } else if (dy >= dx && dy >= dz) {
-    let p1 = 2 * dx - dy;
-    let p2 = 2 * dz - dy;
-    while (y !== y1) {
-      y += ys;
-      if (p1 >= 0) { x += xs; p1 -= 2 * dy; }
-      if (p2 >= 0) { z += zs; p2 -= 2 * dy; }
-      p1 += 2 * dx;
-      p2 += 2 * dz;
-      points.push({ x, y, z });
-    }
-  } else {
-    let p1 = 2 * dy - dz;
-    let p2 = 2 * dx - dz;
-    while (z !== z1) {
-      z += zs;
-      if (p1 >= 0) { y += ys; p1 -= 2 * dz; }
-      if (p2 >= 0) { x += xs; p2 -= 2 * dz; }
-      p1 += 2 * dy;
-      p2 += 2 * dx;
-      points.push({ x, y, z });
-    }
-  }
-  return points;
-}
-```
-
-#### Step 176.2 — Schemas, ECS `PositionComponent.z`, `GameMap.zSlices` & `WorldChunk` 3D Metadata
+#### Step 180.1: Constants, Fluid Bit-Packing & Finite Map Physics Overlay Types
 - **Files:**
-  - `src/types/components/world_components.types.ts`: Add `readonly z?: number | undefined;` and `readonly footprintDepth?: number | undefined;` to `PositionComponent`; add `readonly targetZ?: number | undefined;` to `PortalComponent`.
-  - `src/types/campaign/world.ts`:
-    - Extend `TileDefinitionSchema` with `isOpenAir`, `blocksVerticalLoS`, `hasFloorSupport`, `verticalLink: z.enum(['ramp', 'stairs_up', 'stairs_down', 'stairs_both', 'ladder']).optional()`, `isClimbable`.
-    - Extend `StreamingBiomePaletteSchema` with optional `openAir`, `underground`, `ramp`.
-    - Extend `StreamingAreaConfigSchema` with optional `minZ` (default `0`), `maxZ` (default `0`), `activeRadiusZ` (default `DEFAULT_ACTIVE_RADIUS_Z`).
-    - Extend `StaticMapLayoutSchema` with `zLevels: z.record(z.string(), z.array(z.string())).optional()` (keyed by signed integer string e.g. `"-1"`, `"1"`).
-    - Extend `AreaConnectionSchema` with `targetZ?: number`, `placementZ?: number`, `preserveCoords?: boolean`.
-    - Extend `AreaDefinitionSchema.placedEntities` items with `z?: number`.
-  - `src/types/campaign/meta.ts`: Add `feetPerZLevel: z.number().int().positive().optional()` to `RulesConfigSchema.map`.
-  - `src/types/game-state.types.ts`:
-    - Add `readonly zSlices?: Readonly<Record<number, ReadonlyArray<Tile>>> | undefined;`, `readonly minZ?: number | undefined;`, `readonly maxZ?: number | undefined;` to `GameMap`.
-    - Add `readonly cameraZOffset?: number | undefined;` to `GameState`, and optional `readonly z?: number | undefined;` to `targetingMode` and `inspectMode`.
-  - `src/types/world-chunk.types.ts`:
-    - Add `originChunkZ`, `activeRadiusZ`, `minZ`, `maxZ` (all `readonly number`) to `ChunkedWorldGrid` and optional counterparts to `SerializedStreamingWorldState` (backwards compatible with existing saves!).
-    - Add `readonly z?: number | undefined;` to `TileSnapshot`.
+  - `src/constants/world_chunk.constants.ts`
+  - `src/types/world-chunk.types.ts`
+  - `src/types/game-state.types.ts`
+- **Exact Additions (`src/constants/world_chunk.constants.ts`):**
+  ```ts
+  /** Bitmask for fluid depth (`0..7`, representing `0/7` through `7/7`) in `WorldChunk.fluid`. */
+  export const FLUID_DEPTH_MASK = 0x07;
+  /** Bit shift for `FluidKind` (`0..7`) stored in bits `3..5` of `WorldChunk.fluid`. */
+  export const FLUID_KIND_SHIFT = 3;
+  /** Bitmask for `FluidKind` in `WorldChunk.fluid`. */
+  export const FLUID_KIND_MASK = 0x38;
+  /** Maximum fluid depth level (`7/7`, fully submerged). */
+  export const MAX_FLUID_DEPTH = 7;
+  /** Depth threshold (`6/7`) at which non-aquatic actors become submerged and lose breath. */
+  export const FLUID_SUBMERSION_DEPTH = 6;
+  /** Depth threshold (`3/7`) at which wading incurs difficult-terrain movement penalty. */
+  export const FLUID_WADING_DEPTH = 3;
 
-#### Step 176.3 — Uniform `"x,y,z"` `spatialIndex` & Canonical `getEntitiesAtPosition` Migration
-- **Files:** `src/core/ecs/ecs_core.ts`, `src/core/ecs.ts`, `src/core/ecs/ecs_spawner.ts`, and all ~45 `src/` direct `spatialIndex.get` call sites + 6 test files.
-- **Snippet (`src/core/ecs/ecs_core.ts`):**
-
-```ts
-function getPositionFootprintKeys(pos: PositionComponent | undefined): ReadonlyArray<string> {
-  if (pos === undefined) return [];
-  const z = pos.z ?? 0;
-  const footprintWidth = Math.max(1, pos.footprintWidth ?? 1);
-  const footprintHeight = Math.max(1, pos.footprintHeight ?? 1);
-  const footprintDepth = Math.max(1, pos.footprintDepth ?? 1);
-  if (footprintWidth === 1 && footprintHeight === 1 && footprintDepth === 1) {
-    return [toSpatialKey(pos.x, pos.y, z)];
-  }
-  const keys: string[] = [];
-  for (let dz = 0; dz < footprintDepth; dz++) {
-    for (let dy = 0; dy < footprintHeight; dy++) {
-      for (let dx = 0; dx < footprintWidth; dx++) {
-        keys.push(toSpatialKey(pos.x + dx, pos.y + dy, z + dz));
-      }
-    }
-  }
-  return keys;
-}
-
-/**
- * Canonical O(1) lookup of entities occupying voxel `(x, y, z)` in `state.spatialIndex`.
- */
-export function getEntitiesAtPosition(
-  state: Readonly<GameState>,
-  x: number,
-  y: number,
-  z = 0
-): ReadonlyArray<EntityId> {
-  return state.spatialIndex.get(toSpatialKey(x, y, z)) ?? [];
-}
-```
-- Update `sameSpatialFootprint` to compare `(a.z ?? 0) === (b.z ?? 0)` and `footprintDepth`, update `updateSpatialIndex` to use `getPositionFootprintKeys(pos)`, and export `getEntitiesAtPosition` from `src/core/ecs.ts`.
-- Update `spawnEntity(state, templateId, x, y, ..., z = 0)` so placed entities at non-zero `z` receive `...(z !== 0 ? { z } : {})`.
-- Migrate all ~45 `state.spatialIndex.get(...)` call sites in `src/` and the 6 test files (`floor_transition_entity_id_and_loader.test.ts`, `input_scope_and_keymap.test.ts`, `m156_durability_spellbooks_ecology.test.ts`, `dnd35e_size_footprint_movement.test.ts`, `m173_ecs_spatial_batch.test.ts`, `m175_chunk_streaming.test.ts`) to `getEntitiesAtPosition` / `toSpatialKey`.
-
-#### Step 176.4 — 3D `MapAccessor`, Multi-Z `static-parser.ts`, 3D `chunk_generator.ts`, `chunk_streaming.ts`, `chunk_store.ts` & `save.ts`
-- **Files:** `src/map/map_accessor.ts`, `src/map/static-parser.ts`, `src/map/chunk_generator.ts`, `src/systems/map/chunk_streaming.ts`, `src/core/chunk_store.ts`, `src/core/save.ts`, `src/systems/map/map_generation_spawner.ts`, `src/systems/map.system.ts`
-- **Key Integration Details:**
-  - `isMultiZMap(map: Readonly<GameMap>): boolean`: returns `true` when `(map.chunkGrid !== undefined && (map.chunkGrid.minZ !== 0 || map.chunkGrid.maxZ !== 0))` OR `(map.zSlices !== undefined && Object.keys(map.zSlices).length > 0)`.
-  - `getMapZBounds(map: Readonly<GameMap>): { readonly minZ: number; readonly maxZ: number }`: reads `chunkGrid.minZ/maxZ` or `map.minZ/maxZ` (default `{ minZ: 0, maxZ: 0 }`).
-  - `toMapTileKey(map, x, y, z = 0)`:
-    - Returns `packWorldCoord3D(x, y, z)` when `map.chunkGrid !== undefined || isMultiZMap(map)`.
-    - Returns `coordToIndex(x, y, map.width)` on pure 2D finite maps (100% unchanged!).
-  - `getTileAt(map, x, y, z = 0)`, `getTileIdAt(map, x, y, z = 0)`, `getTileDefAt(state, x, y, z = 0)`, `isTileExploredAt(map, x, y, z = 0)`, `setTileIdAt(map, x, y, tileId, z = 0)`, `isInMapBounds(map, x, y, z = 0)`:
-    - On `chunkGrid`: indexes `grid.chunks.get(packWorldCoord3D(cx, cy, z))`.
-    - On `setTileIdAt`: sets `CHUNK_DIRTY_PERSIST | CHUNK_DIRTY_REGION` on mutated `WorldChunk` so HPA\* regions & Flow Fields auto-invalidate!
-    - On finite maps: reads `z === 0 ? map.tiles : map.zSlices?.[z]`.
-  - `parseStaticMap` parses `staticMap.layout` into `z = 0` (`map.tiles`) and every entry in `staticMap.zLevels` (`parseInt(zKey, 10)`) into `zSlices[z]`, computing `minZ` / `maxZ` and extracting `parsedEntities` with `{ templateId, x, y, z }`.
-  - `chunk_generator.ts`:
-    - When `params.minZ < 0 || params.maxZ > 0`: computes a deterministic integer `surfaceZ(wx, wy)` clamped to `[minZ, maxZ]` (with `0` inside the spawn clearing).
-      - `cz < surfaceZ`: fills with `biomeIndices.underground` (`stone_wall`) + `CHUNK_FLAG_NATURAL`.
-      - `cz === surfaceZ`: if any orthogonal neighbor has `neighborSurfaceZ === surfaceZ + 1`, emits `biomeIndices.ramp` (so hills/terraces are naturally climbable via aligned ramps!); otherwise emits standard biome (`water`, `shore`, `plains`, `forest`, `road`).
-      - `cz > surfaceZ`: fills with `biomeIndices.openAir` + `CHUNK_FLAG_OUTDOOR`.
-    - When `minZ === 0 && maxZ === 0`: preserves exact Phase 45 2D synthesis!
-  - `chunk_streaming.ts`:
-    - `updateStreamingWorldWindow(state, anchorX, anchorY, options?)` reads `anchorZ` (from `options?.anchorZ` or player's `pos.z ?? 0`), iterates `cz` across `[Math.max(grid.minZ, anchorZ - grid.activeRadiusZ), Math.min(grid.maxZ, anchorZ + grid.activeRadiusZ)]`, keys chunks via `packWorldCoord3D(cx, cy, cz)`, and packs/wakes dormant entities using `formatChunkKey(cx, cy, pos.z ?? 0)`.
-  - `chunk_store.ts`:
-    - `overlayPersistedDeltasOnGrid` uses `unpackWorldCoord3D(packed)` so `loadWorldChunkDelta(scopeKey, grid.areaId, coords.x, coords.y, coords.z)` hydrates every persisted Z-slice on cold reload!
-
-#### Step 176.5 — Vertical Movement (`MoveIntent.dz`, Ramps/Stairs) & `src/systems/gravity.system.ts`
-- **Files:** `src/types/intents/movement.intents.ts`, `src/actions/core.actions.ts`, `src/systems/gravity.system.ts` *(New)*, `src/systems/movement.system.ts`, `src/systems/movement_displacement.ts`, `src/systems/movement_footprint.ts`, `src/systems/crossing.system.ts`, `src/systems/status-effect.system.ts`
-- **Core Gravity API (`src/systems/gravity.system.ts`):**
-
-```ts
-export interface EntityFallContext {
-  readonly fromZ: number;
-  readonly toZ: number;
-  readonly fallenLevels: number;
-  readonly fallenFeet: number;
-  readonly landingTileId: string | undefined;
-  readonly isIntentionalJump?: boolean | undefined;
-}
-
-/**
- * Checks whether an entity's footprint at `(x, y, z)` has physical or locomotion support
- * (floor support, live crossing, solid load-bearing tile at `z - 1`, active flight, or climbable wall hold).
- */
-export function isEntitySupportedAt(
-  state: Readonly<GameState>,
-  entityId: EntityId,
-  x: number,
-  y: number,
-  z: number
-): boolean {
-  if (!isMultiZMap(state.map)) return true;
-  const modes = getEntityMovementModes(state as GameState, entityId);
-  if (modes?.fly !== undefined && modes.fly > 0) return true;
-
-  const pos = getComponent(state, entityId, ComponentType.Position) as PositionComponent | undefined;
-  const fw = Math.max(1, pos?.footprintWidth ?? 1);
-  const fh = Math.max(1, pos?.footprintHeight ?? 1);
-
-  for (let dy = 0; dy < fh; dy++) {
-    for (let dx = 0; dx < fw; dx++) {
-      const tx = x + dx;
-      const ty = y + dy;
-      const tileDef = getTileDefAt(state, tx, ty, z);
-      const hasFloor = tileDef !== undefined && (tileDef.hasFloorSupport ?? (tileDef.walkable && tileDef.isOpenAir !== true));
-      if (hasFloor) return true;
-      if (queryCrossingAtPosition(state, tx, ty, z) !== undefined) return true;
-      const belowDef = getTileDefAt(state, tx, ty, z - 1);
-      if (belowDef !== undefined && (belowDef.isSolidObstacle === true || (!belowDef.walkable && belowDef.isOpenAir !== true))) {
-        return true;
-      }
-    }
-  }
-  return false;
-}
-
-/**
- * Resolves vertical falling when an entity stands over unsupported open air,
- * displacing atomically to the first supported Z-level below and delegating fall impact to RulesetContract.
- */
-export function resolveGravityForEntity(
-  state: GameState,
-  entityId: EntityId,
-  options?: { readonly isIntentionalJump?: boolean | undefined }
-): GameState {
-  if (!isMultiZMap(state.map)) return state;
-  const pos = getComponent(state, entityId, ComponentType.Position) as PositionComponent | undefined;
-  if (!pos) return state;
-  const startZ = pos.z ?? 0;
-  if (isEntitySupportedAt(state, entityId, pos.x, pos.y, startZ)) return state;
-
-  const { minZ } = getMapZBounds(state.map);
-  const floorLimit = Math.max(minZ, startZ - MAX_FALL_DISTANCE_Z);
-  let landingZ = startZ;
-  for (let cz = startZ - 1; cz >= floorLimit; cz--) {
-    if (!isInMapBounds(state.map, pos.x, pos.y, cz)) break;
-    landingZ = cz;
-    if (isEntitySupportedAt(state, entityId, pos.x, pos.y, cz)) break;
-  }
-  if (landingZ === startZ) return state;
-
-  const nextPos: PositionComponent = { ...pos, z: landingZ };
-  let nextState = addComponent(state, entityId, nextPos);
-  if (getComponent(nextState, entityId, ComponentType.Player) !== undefined) {
-    nextState = { ...nextState, fovNeedsUpdate: true };
+  /** Numeric fluid kind codes packed into `WorldChunk.fluid` bits `3..5`. */
+  export const enum FluidKindCode {
+    None = 0,
+    Water = 1,
+    Magma = 2,
+    Oil = 3,
+    Mud = 4
   }
 
-  const fallenLevels = startZ - landingZ;
-  const feetPerZ = nextState.campaign.rules.map.feetPerZLevel ?? DEFAULT_FEET_PER_Z_LEVEL;
-  const fallenFeet = fallenLevels * feetPerZ;
-  const landingTileId = getTileIdAt(nextState.map, pos.x, pos.y, landingZ);
-  const activeRuleset = getActiveRuleset(nextState);
-  const fallContext: EntityFallContext = {
-    fromZ: startZ,
-    toZ: landingZ,
-    fallenLevels,
-    fallenFeet,
-    landingTileId,
-    ...(options?.isIntentionalJump !== undefined ? { isIntentionalJump: options.isIntentionalJump } : {})
-  };
+  /** Named string fluid kinds used in declarative schemas and spell units. */
+  export type FluidKind = 'none' | 'water' | 'magma' | 'oil' | 'mud';
 
-  if (activeRuleset.onEntityFallLanded) {
-    return activeRuleset.onEntityFallLanded(nextState, entityId, fallContext);
+  /** Temperature constants (°C) for cellular heat diffusion and phase transitions. */
+  export const WATER_FREEZE_TEMP_C = 0;
+  export const WATER_BOIL_TEMP_C = 100;
+  export const OIL_IGNITION_TEMP_C = 220;
+  export const MAGMA_SOURCE_TEMP_C = 1000;
+  export const FIRE_FIELD_SOURCE_TEMP_C = 420;
+  export const COLD_FIELD_SOURCE_TEMP_C = -25;
+  export const TEMP_CONVERGENCE_EPSILON_C = 1;
+  export const TEMP_DIFFUSION_RATE = 0.2;
+  export const TEMP_AMBIENT_RELAXATION_LAMBDA = 0.08;
+  export const SHALLOW_EVAPORATION_TURNS = 25;
+  export const MIN_CELL_TEMP_C = -100;
+  export const MAX_CELL_TEMP_C = 2000;
+  ```
+- **Exact Addition (`src/types/game-state.types.ts` on `GameMap`):**
+  ```ts
+  /** Lazy, JSON-serializable sparse physics planes for finite (non-chunked) maps. */
+  export interface FinitePhysicsSlice {
+    /** Packed fluid byte per cell (`0..width*height-1`), matching `WorldChunk.fluid`. */
+    readonly fluid: ReadonlyArray<number>;
+    /** Cell temperature in °C per cell, matching `WorldChunk.temperature`. */
+    readonly temperature: ReadonlyArray<number>;
+    /** Material palette index per cell, matching `WorldChunk.materialId`. */
+    readonly materialId: ReadonlyArray<number>;
+    /** Bitmask of active dirty flags (`CHUNK_DIRTY_FLUID | CHUNK_DIRTY_TEMP`). */
+    readonly dirtyFlags: number;
+    /** Last `globalTurn` at which this slice was simulated or caught up. */
+    readonly lastSimulatedTurn: number;
   }
-  return applyDefaultConsoleFallDamage(nextState, entityId, fallContext);
-}
-```
-- **Ramp & Stair Traversal in `movement.system.ts` & `movement_displacement.ts`:**
-  - Horizontal `(dx, dy)` step from `(x, y, z)`:
-    1. If origin tile `(x, y, z)` has `verticalLink === 'ramp'` and destination `(nx, ny, z)` is blocked/solid while `(nx, ny, z + 1)` is traversable & supported -> resolve step to `(nx, ny, z + 1)`!
-    2. If destination `(nx, ny, z)` has `isOpenAir === true` and `(nx, ny, z - 1)` has `verticalLink === 'ramp'` (and is traversable) -> resolve step smoothly down to `(nx, ny, z - 1)` without falling!
-    3. Otherwise resolve normally at `z`, then invoke `resolveGravityForEntity` after displacement completes.
-  - Vertical `(dx = 0, dy = 0, dz = ±1)` step from `(x, y, z)`:
-    1. Check for a `PortalComponent` at `(x, y, z)` if no intra-area vertical link/flight/climb applies -> preserve seamless `<`/`>` portal usage!
-    2. Check declarative `verticalLink` (`dz > 0`: origin is `stairs_up`/`stairs_both`/`ladder` or target is `stairs_down`/`stairs_both`/`ladder`; `dz < 0`: origin is `stairs_down`/`stairs_both`/`ladder` or target is `stairs_up`/`stairs_both`/`ladder`).
-    3. Check flight (`movementModes.fly > 0`) when destination `(x, y, z + dz)` is `isOpenAir` or walkable.
-    4. Delegate to `RulesetContract.canActorAdjustAltitude(state, entityId, dz)` (enabling D&D 3.5e *Climb* wall scaling).
-    5. Commit displacement to `(x, y, z + dz)` cleanly via `displaceEntityStep` (with `targetZ`).
 
-#### Step 176.6 — Multi-Z Vertical Alignment Validator
-- **File:** `src/editor/validator/area.validator.ts`
-- Validate `staticMap.zLevels` row lengths, legends, and `placedEntities` with `z`.
-- For every cell `(x, y, z)` across `layout` + `zLevels` whose `TileDefinition.verticalLink` is defined:
-  - `stairs_up` / `stairs_both` / `ladder`: verify `(x, y, z + 1)` exists and is traversable (`walkable || isOpenAir`); emit a warning if `(x, y, z + 1)` lacks a return link (`stairs_down`/`stairs_both`/`ladder`/`isOpenAir`).
-  - `stairs_down`: verify `(x, y, z - 1)` exists and is traversable.
-  - `ramp`: verify `(x, y, z + 1)` has `isOpenAir === true` (headroom) and at least one 8-way neighbor at `z + 1` is walkable/supported.
+  export interface FinitePhysicsOverlay {
+    readonly slices: Readonly<Record<number, FinitePhysicsSlice>>;
+  }
+  ```
+  Add `readonly physicsOverlay?: FinitePhysicsOverlay | undefined;` to `GameMap` (automatically JSON-serializable in `save.ts` because it uses plain arrays + records!).
+
+#### Step 180.2: Material Palette & Unified Fluid/Temp Accessors
+- **New File:** `src/map/material_palette.ts` — mirrors `src/map/tile_palette.ts` (`buildMaterialPaletteRegistry`, `getMaterialIdFromPaletteIndex`, `getPaletteIndexForMaterialId`).
+- **Edited File:** `src/map/map_accessor.ts`:
+  - Add pure unified helpers working identically on `map.chunkGrid` AND `map.physicsOverlay`:
+    - `getFluidByteAt(map, x, y, z = 0): number`
+    - `setFluidByteAt(map, x, y, fluidByte, z = 0, currentTurn = 0): GameMap` (automatically clones chunk / lazy-initializes finite slice, sets `CHUNK_DIRTY_FLUID | CHUNK_DIRTY_PERSIST`, and flags neighbor chunks if `(x, y)` sits on a chunk border!)
+    - `getTemperatureAt(map, x, y, z = 0): number` (defaults to `DEFAULT_AMBIENT_TEMP_C`)
+    - `setTemperatureAt(map, x, y, tempC, z = 0, currentTurn = 0): GameMap` (clamped `[MIN_CELL_TEMP_C, MAX_CELL_TEMP_C]`, sets `CHUNK_DIRTY_TEMP | CHUNK_DIRTY_PERSIST`)
+    - `getMaterialIndexAt(map, x, y, z = 0): number`
+    - `setMaterialIndexAt(map, x, y, materialIdx, z = 0): GameMap`
+  - Update `setTileIdAt` to also flag `CHUNK_DIRTY_FLUID | CHUNK_DIRTY_TEMP` on touched chunks/slices (and orthogonal neighbor chunks if on a boundary) whenever a tile transitions between solid and open, so adjacent fluids immediately spill into newly carved tunnels!
+
+#### Step 180.3: Dirty-Bitset Cellular Fluid Physics (`src/systems/physics/fluid_physics.ts`)
+- **Pure bit helpers:**
+  ```ts
+  export interface FluidCellInfo {
+    readonly kind: FluidKind;
+    readonly depth: number;
+  }
+  export function packFluidCell(kind: FluidKind, depth: number): number;
+  export function unpackFluidCell(byte: number): FluidCellInfo;
+  export function applyFluidToVoxel(
+    state: GameState,
+    x: number,
+    y: number,
+    z: number,
+    kind: FluidKind,
+    depthDelta: number
+  ): GameState;
+  ```
+- **Dirty-Chunk Tick (`processDirtyFluidChunks(state: GameState): GameState`):**
+  1. Fast-path $O(1)$ exit if zero chunks (and zero finite slices) hold `(dirtyFlags & CHUNK_DIRTY_FLUID) !== 0`.
+  2. For each dirty chunk (or dirty finite slice), run one deterministic pass:
+     - **Pass A — Vertical Gravity Spillover:** If a cell `(x, y, z)` has `depth > 0` and `(x, y, z - 1)` is in bounds, non-solid (`tileDef.isSolidObstacle !== true && (tileDef.walkable || tileDef.isOpenAir || tileDef.verticalLink !== undefined)`), and the current cell has `hasFloorSupport === false || tileDef.isOpenAir === true || tileDef.verticalLink !== undefined`, transfer up to `min(depth, MAX_FLUID_DEPTH - belowDepth)` downward.
+     - **Pass B — Horizontal Hydrostatic Equalization:** For each cell with `depth >= 2` (or `depth >= 1` spilling onto lower-depth open neighbor), compare 4 orthogonal neighbors `(±1, 0), (0, ±1)` that are non-solid. Magma spreads only on even turns (`globalTurn % 2 === 0`) for higher viscosity. Transfer `1` depth unit toward the lowest-depth neighbor with `neighborDepth <= depth - 2` (or `neighborDepth === 0 && depth >= 2`).
+     - **Pass C — Phase Transitions & Chemistry:**
+       - `water` adjacent/contacting `magma`: convert contact cell into declarative obsidian/basalt tile (from `rules.materials?.obsidianTileId ?? 'stone_wall'`), clear fluid at that cell, spawn `steam_cloud` field via `spawnField` (`field.system.ts`), and raise temperature (`+150°C`).
+       - `oil` at cell with `temp >= OIL_IGNITION_TEMP_C` or overlapping `fire` field: consume oil depth, spawn `fire` field, raise temperature.
+       - `water` at cell with `temp <= WATER_FREEZE_TEMP_C`: spawn `frozen_surface` crossing (`crossing.system.ts`).
+       - `water` at cell with `temp >= WATER_BOIL_TEMP_C`: decrement depth by 1 and spawn `steam_cloud` field.
+     - **Auto-Sleep:** If zero cells changed in the chunk and no unstable gradient remains, clear `CHUNK_DIRTY_FLUID` on that chunk (preserving `CHUNK_DIRTY_PERSIST` if modified). Stamp `lastSimulatedTurn = state.globalTurn`.
+  3. **Actor Submersion Sync:** For entities standing on modified fluid cells, if `depth >= FLUID_SUBMERSION_DEPTH`, call `setActorSubmersionState(state, entityId, true)` (`breath.system.ts`); if `kind === 'magma' && depth >= 1`, queue fire/magma damage on non-flying occupants.
+
+#### Step 180.4: Dirty-Bitset 3D Heat Diffusion (`src/systems/physics/temperature_physics.ts`)
+- **`processDirtyTemperatureChunks(state: GameState): GameState`:**
+  1. First inject thermal emitter deltas from active `FieldComponent`s (`fire` -> `FIRE_FIELD_SOURCE_TEMP_C`, `cold`/`ice` -> `COLD_FIELD_SOURCE_TEMP_C`) and `magma` fluid cells (`MAGMA_SOURCE_TEMP_C`), marking enclosing chunks `CHUNK_DIRTY_TEMP`.
+  2. Fast-path $O(1)$ exit if zero chunks/slices have `(dirtyFlags & CHUNK_DIRTY_TEMP) !== 0`.
+  3. For each dirty chunk/slice, compute discrete 6-neighbor (4 horizontal + optional ±Z when multi-Z) diffusion:
+     ```ts
+     const conductivity = tileDef?.thermalConductivity ?? DEFAULT_THERMAL_CONDUCTIVITY;
+     const nextTemp = Math.round(
+       curTemp +
+         conductivity * TEMP_DIFFUSION_RATE * (neighborAvg - curTemp) +
+         TEMP_AMBIENT_RELAXATION_LAMBDA * (ambientTemp - curTemp)
+     );
+     ```
+     Flag neighbor chunk `CHUNK_DIRTY_TEMP` whenever boundary flux `>= 2°C`.
+  4. **Auto-Sleep:** If every cell in the chunk is within `TEMP_CONVERGENCE_EPSILON_C` of ambient and no cell changed temperature, snap residual `±1°C` cells to `ambientTemp` and clear `CHUNK_DIRTY_TEMP`. Stamp `lastSimulatedTurn = state.globalTurn`.
+
+#### Step 180.5: Closed-Form Analytical Sleep Catch-Up (`src/systems/physics/chunk_catchup.ts`)
+- **`applyAnalyticalChunkCatchUp(chunk: WorldChunk, currentTurn: number, ambientTempC?: number): WorldChunk`:**
+  - Computes `deltaTurns = currentTurn - chunk.lastSimulatedTurn`. If `deltaTurns <= 0`, returns `chunk` unchanged.
+  - Closed-form pass over `0..chunk.size * chunk.size - 1` (zero loop over `deltaTurns`!):
+    - **Temperature relaxation:** `factor = Math.exp(-TEMP_AMBIENT_RELAXATION_LAMBDA * deltaTurns)`; `nextT = Math.round(ambient + (t - ambient) * factor)`; snap to `ambient` if `Math.abs(nextT - ambient) <= TEMP_CONVERGENCE_EPSILON_C`.
+    - **Fluid evaporation & equilibrium:** For `water`/`oil` with `depth === 1` and `deltaTurns >= SHALLOW_EVAPORATION_TURNS`, evaporate to `0`.
+    - Clear `CHUNK_DIRTY_TEMP` if all cells settled at ambient; clear `CHUNK_DIRTY_FLUID` if all fluid cells are uniform/settled; set `lastSimulatedTurn = currentTurn`.
+- **`applyAnalyticalActiveGridCatchUp(state: GameState, deltaTurns: number): GameState`:**
+  - Runs analytical catch-up across loaded chunks / finite physics slices during bulk rest/time-skips (`world_time_skip.ts`) and area wakes (`map_wake_respawn.ts`), also advancing timed terrain reverts and corpse/perishable spoilage analytically.
+
+#### Step 180.6: Wiring Into Loop, Streaming, Movement, Save & Rendering
+- `src/core/loop/intent_cost_resolver.ts`: After `processFieldsTick`, when `energyCost > 0`, invoke `processDirtyFluidChunks` -> `processDirtyTemperatureChunks` -> `tickTimedTerrainReverts`.
+- `src/systems/map/chunk_streaming.ts`: When loading a cached/delta chunk inside `updateStreamingWorldWindow`, call `applyAnalyticalChunkCatchUp(deltaChunk, state.globalTurn)` before inserting into `nextChunks`.
+- `src/systems/map/map_wake_respawn.ts`: When waking a saved finite area with `deltaTurns = state.globalTurn - savedArea.lastVisitedTurn > 0`, run `applyAnalyticalActiveGridCatchUp`.
+- `src/systems/world_time_skip.ts`: In `advanceLocalElapsedTimeByTurns`, call `applyAnalyticalActiveGridCatchUp(nextState, turnsElapsed)` and `tickTimedTerrainReverts(nextState)`.
+- `src/systems/movement_displacement.ts`: Add wading movement cost penalty when `fluid.depth >= FLUID_WADING_DEPTH` and non-flying/non-swimming.
+- `src/rendering/viewport_snapshot.ts` & `src/rendering/inspect_tooltip.ts`:
+  - Render cellular fluids (`depth 1..7`) over explored/visible floor tiles with depth-digit or `≈`/`~` glyph & fluid-kind color tint (blue water, orange-red magma, amber oil, brown mud), plus fluid depth (`4/7 Water`) and temperature (`42°C`) lines in `inspect_tooltip.ts`.
 
 ---
 
-### Milestone 177: Multi-Z Viewport Peeking, 3D Line-of-Sight & Vertical Lighting Propagation
+### Milestone 181 — Dynamic Terrain Sculpting, Construction, Structural Support & D&D 3.5e Spells
 
-#### Step 177.1 — 3D Shadowcasting (`src/map/fov_3d.ts`) & Vertical Lighting (`src/systems/light_emitter.system.ts`)
-- **New File:** `src/map/fov_3d.ts`
-- **Modified Files:** `src/map/fov.ts`, `src/systems/map.system.ts`, `src/systems/light_emitter.system.ts`
+#### Step 181.1: Declarative Schemas & New Verbs
+- **`src/types/campaign/world.ts` (`TileDefinitionSchema`):**
+  ```ts
+  mineable: z.boolean().optional(),
+  minedTileId: z.string().optional(),
+  mineYieldItemId: z.string().optional(),
+  mineYieldCount: z.number().int().positive().optional(),
+  mineWorkCost: z.number().int().positive().optional(),
+  requiredToolTag: z.string().optional(),
+  isLoadBearing: z.boolean().optional(),
+  collapseDropItemId: z.string().optional(),
+  thermalConductivity: z.number().min(0).max(1).optional(),
+  ignitionTempC: z.number().int().optional(),
+  burnedTileId: z.string().optional()
+  ```
+- **`src/types/campaign/meta.ts` (`RulesConfigSchema`):**
+  Add optional declarative blocks:
+  - `materials?: Record<string, MaterialDefinition>` (`id`, `name`, `hardness`, `thermalConductivity`, `meltTempC?`, `flammable?`, `boulderItemId?`)
+  - `blueprints?: Record<string, ConstructionBlueprint>` (`id`, `name`, `targetTileId`, `materialId?`, `requiredInputs: Array<{ itemId?: string; tag?: string; count: number }>`, `workUnits`, `requiredToolTag?`, `allowOverOpenAir?`)
+  - `craftingRecipes?: Record<string, CraftingRecipe>` (`id`, `name`, `workshopTag`, `requiredInputs`, `requiredToolTag?`, `workUnits`, `outputs: Array<{ itemId: string; count: number }>`, `skillId?`)
+  - `psychology?: PsychologyRulesConfig` (optional need decay rates, mood thresholds, thought overrides)
+- **`src/constants/verbs.constants.ts`:** Add `'mine'`, `'chop'`, `'build'`, `'craft'` to `Verb` union and `VERBS` array (and add them to `TOUCH_INTERACTION_VERBS` in `src/systems/apply.system.ts`).
 
-```ts
-// src/map/fov_3d.ts
-export function isTileVerticallyTransparent(state: Readonly<GameState>, x: number, y: number, z: number): boolean {
-  const tileDef = getTileDefAt(state, x, y, z);
-  if (!tileDef) return false;
-  if (tileDef.blocksVerticalLoS !== undefined) return !tileDef.blocksVerticalLoS;
-  return tileDef.isOpenAir === true || tileDef.transparent;
-}
+#### Step 181.2: Connected Structural Support & Cave-In Physics (`src/map/structural_support.ts`)
+- **Named Constants:** `MAX_SUPPORT_SPAN_TILES = 6`, `CAVE_IN_CRUSH_DAMAGE = 12`.
+- **`evaluateStructuralSupport(state: Readonly<GameState>, x: number, y: number, z: number): boolean`:**
+  - Returns `true` immediately if tile at `(x, y, z)` is `open_air`, or `isLoadBearing` (explicit `tileDef.isLoadBearing === true` or natural solid wall), or tile directly below `(x, y, z - 1)` is solid/load-bearing, or `z === minZ` (bedrock).
+  - Otherwise runs bounded 4-neighbor BFS up to `MAX_SUPPORT_SPAN_TILES` across solid/floor tiles at Z-level `z`; returns `true` iff any reachable cell is load-bearing or supported directly from `z - 1`.
+- **`resolveCaveInAroundVoxel(state: GameState, x: number, y: number, z: number): GameState`:**
+  - Only runs on multi-Z maps (`isMultiZMap(state.map)`).
+  - Inspects `(x, y, z + 1)` and its 4 orthogonal neighbors whenever support is removed at `(x, y, z)`.
+  - For any cell where `evaluateStructuralSupport` returns `false`:
+    1. Converts that cell to `'open_air'` via `setTileIdAt`.
+    2. Spawns rubble drop (`tileDef.collapseDropItemId ?? tileDef.mineYieldItemId`) at the first solid floor below `(x, y, zLand)`.
+    3. Queues `CAVE_IN_CRUSH_DAMAGE` on any `Fighter` entity at `(x, y, zLand)` and logs a cave-in message.
+    4. Runs `resolveGravityForEntity` for all entities standing at the collapsed `(x, y, z + 1)` cell.
 
-export function has3DLineOfSight(
-  state: Readonly<GameState>,
-  x0: number,
-  y0: number,
-  z0: number,
-  x1: number,
-  y1: number,
-  z1: number
-): boolean {
-  const line = getBresenhamLine3D(x0, y0, z0, x1, y1, z1);
-  for (let i = 1; i < line.length - 1; i++) {
-    const pt = line[i]!;
-    const prev = line[i - 1]!;
-    const tileDef = getTileDefAt(state, pt.x, pt.y, pt.z);
-    if (!tileDef) return false;
-    const verticalStep = pt.z !== prev.z;
-    if (verticalStep) {
-      if (!isTileVerticallyTransparent(state, pt.x, pt.y, pt.z)) return false;
-    } else if (!tileDef.transparent) {
-      return false;
+#### Step 181.3: Voxel Sculpting, Mining, Construction & Timed Reverts (`src/systems/construction.system.ts`)
+- **`sculptTerrainVoxel(state, x, y, z, targetTileId, options?): GameState`:**
+  - Validates bounds & tile registry.
+  - Updates tile via `setTileIdAt(state.map, x, y, targetTileId, z)` and optional `materialId` via `setMaterialIndexAt`.
+  - Sets `fovNeedsUpdate: true`.
+  - Clears matching spatial designation (`completeDesignationAt`).
+  - If `options?.dropYield !== false` and previous tile had `mineYieldItemId`, spawns yield item(s) at `(x, y, z)` (or at actor's position if `targetTileId` is `open_air`).
+  - Runs `resolveCaveInAroundVoxel(nextState, x, y, z)` and checks gravity for entities standing on `(x, y, z)` if `targetTileId` became `open_air`.
+- **`mineTerrainTile(state, actorId, x, y, z, toolEntityId?): { state: GameState; success: boolean }`:**
+  - Checks tile `mineable === true` (or `tags?.includes('mineable')`), optional `requiredToolTag` in actor inventory/equipment/tool, calls `sculptTerrainVoxel(..., tileDef.minedTileId ?? 'stone_floor', { dropYield: true })`, emits sound & message.
+- **`constructTerrainTile(state, actorId, x, y, z, blueprintId): { state: GameState; success: boolean }`:**
+  - Looks up blueprint from `state.campaign.rules.blueprints?.[blueprintId] ?? DEFAULT_CONSTRUCTION_BLUEPRINTS[blueprintId]`.
+  - Finds & consumes `requiredInputs` from actor inventory or ground at `(x, y, z)` / adjacent tiles; calls `sculptTerrainVoxel(..., blueprint.targetTileId, { dropYield: false })`.
+- **`scheduleTimedTerrainRevert` & `tickTimedTerrainReverts`:**
+  - Stores `{ areaId, x, y, z, revertTileId, revertTurn, sourceId }` in `state.colonyState.timedTerrainReverts`. When `state.globalTurn >= revertTurn` (and area matches), reverts tile cleanly via `sculptTerrainVoxel` (ejecting any occupant to nearest open neighbor if reverting to solid wall!).
+- **Wire into `src/systems/apply.system.ts`:** Dispatch `'mine'`, `'chop'`, `'build'`, and `'craft'` verbs cleanly on `TileTarget` / `EntityTarget`.
+
+#### Step 181.4: D&D 3.5e Earth/Stone/Water Sculpting Spells (Rule 21 Compliant)
+- **Schema (`src/rulesets/dnd35e/types/system/spell_system.types.ts`):**
+  Add two variants to `DnD35SpellEffectUnitSchema`:
+  ```ts
+  SpellEffectUnitBaseSchema.extend({
+    type: z.literal('terrain_sculpt'),
+    sculptMode: z.enum(['carve', 'shape', 'transmute', 'fill']),
+    requiredSourceTags: z.array(z.string()).default([]),
+    targetTileId: z.string(),
+    radiusTiles: z.number().int().nonnegative().default(0),
+    durationTurnsScaling: DnD35SpellScalingRuleSchema.optional(),
+    revertTileId: z.string().optional(),
+    spawnFluidKind: z.enum(['none', 'water', 'magma', 'oil', 'mud']).optional(),
+    spawnFluidDepth: z.number().int().min(1).max(7).optional()
+  }),
+  SpellEffectUnitBaseSchema.extend({
+    type: z.literal('fluid_spawn'),
+    fluidKind: z.enum(['water', 'magma', 'oil', 'mud']).default('water'),
+    depth: z.number().int().min(1).max(7).default(4),
+    radiusTiles: z.number().int().nonnegative().default(1),
+    depthScaling: DnD35SpellScalingRuleSchema.optional()
+  })
+  ```
+- **Multi-Z Propagation (`spell_cast_resolver.ts`, `spell_cast_effects.ts`, `spell_cast_units.ts`):**
+  - Update `targetPos` type in `ApplySpellEffectsContext` and `applySpecialSpellUnit` to `{ readonly x: number; readonly y: number; readonly z?: number | undefined }`.
+  - Include `u.type === 'terrain_sculpt' || u.type === 'fluid_spawn'` in `placementUnits` (`spell_cast_resolver.ts:297`) and exclude them from per-creature target loop (`spell_cast_resolver.ts:387`).
+  - Handle `case 'terrain_sculpt'` and `case 'fluid_spawn'` in `applySpecialSpellUnit` (`spell_cast_units.ts`): iterate disk of `radiusTiles` around `(targetPos.x, targetPos.y, targetPos.z ?? casterZ)`, filter by `requiredSourceTags`, invoke Tier 1 `sculptTerrainVoxel`, `scheduleTimedTerrainRevert` (when `durationTurnsScaling` is present), and `applyFluidToVoxel`!
+- **Tier 3 Spell JSONs + Registry (`src/rulesets/dnd35e/system_content_spell_ids.ts`):**
+  - Update `public/data/rulesets/dnd35e/spells/stone_shape.json` to emit a `terrain_sculpt` unit (`sculptMode: 'carve'`, `requiredSourceTags: ['solid']`, `targetTileId: 'stone_floor'`, `radiusTiles: 0`).
+  - Create `public/data/rulesets/dnd35e/spells/passwall.json` (`terrain_sculpt`, `sculptMode: 'carve'`, `requiredSourceTags: ['solid']`, `targetTileId: 'stone_floor'`, `durationTurnsScaling: { baseValue: 0, perCL: 600 }` [1 hr/CL = 600 rounds/CL], reverts to original wall tile on expiration).
+  - Create `public/data/rulesets/dnd35e/spells/transmute_rock_to_mud.json` (`terrain_sculpt`, `sculptMode: 'transmute'`, `requiredSourceTags: ['solid']`, `targetTileId: 'stone_floor'`, `radiusTiles: 1`, `spawnFluidKind: 'mud'`, `spawnFluidDepth: 5`).
+  - Create `public/data/rulesets/dnd35e/spells/create_water.json` (`fluid_spawn`, `fluidKind: 'water'`, `depth: 3`, `radiusTiles: 1`, `depthScaling: { baseValue: 2, perCL: 1, maxCap: 7 }`).
+  - Add `'create_water'`, `'passwall'`, and `'transmute_rock_to_mud'` in alphabetical order to `SPELL_IDS` in `src/rulesets/dnd35e/system_content_spell_ids.ts`.
+
+---
+
+### Milestone 182 — Universal Needs, Thoughts, Mood & Stress Engine
+
+#### Step 182.1: Component Shapes, Constants & Spawner Hydration
+- **`src/constants/personality.constants.ts`:**
+  Add named constants: `DEFAULT_NEED_VALUE = 80`, `MAX_NEED_VALUE = 100`, `MIN_NEED_VALUE = 0`, `NEED_CRITICAL_THRESHOLD = 20`, `NEED_LOW_THRESHOLD = 40`, `NEED_HIGH_THRESHOLD = 80`, `BASELINE_MOOD = 50`, `MOOD_ECSTATIC_THRESHOLD = 85`, `MOOD_HAPPY_THRESHOLD = 65`, `MOOD_STRESSED_THRESHOLD = 35`, `MOOD_BREAKING_THRESHOLD = 20`, `MOOD_CATATONIC_THRESHOLD = 8`, `DEFAULT_INSPIRATION_DURATION_TURNS = 100`, `DEFAULT_MENTAL_BREAK_DURATION_TURNS = 30`.
+- **`src/types/components/actor_components.types.ts` & `src/types/components.types.ts`:**
+  - Add `ComponentType.Needs = 'Needs'` to `ComponentType` enum and `NeedsComponent` to `Component` union:
+    ```ts
+    export type CanonicalNeedId = 'rest' | 'nourishment' | 'shelter' | 'comfort' | 'social' | 'safety';
+    export type MoodTier = 'ecstatic' | 'happy' | 'content' | 'stressed' | 'breaking' | 'catatonic';
+    export type InspirationKind = 'work_frenzy' | 'inspired_craft' | 'inspired_valor';
+    export type MentalBreakKind = 'daze_wander' | 'hide_in_room' | 'tantrum' | 'berserk';
+
+    export interface NeedMeterState {
+      readonly current: number;
+      readonly max: number;
+      readonly decayPerInterval: number;
     }
-    for (const eId of getEntitiesAtPosition(state, pt.x, pt.y, pt.z)) {
-      const tags = getComponent(state, eId, ComponentType.Tags) as TagsComponent | undefined;
-      if (tags?.tags.includes('opaque')) return false;
-      const field = getComponent(state, eId, ComponentType.Field) as FieldComponent | undefined;
-      if (field && (field.blocksLoS === true || state.campaign.fields[field.fieldType]?.blocksSight === true)) {
-        return false;
-      }
+
+    export interface NeedsComponent {
+      readonly type: ComponentType.Needs;
+      readonly needs: Readonly<Record<string, NeedMeterState>>;
     }
+    ```
+  - Extend `Thought` (100% backward compatible — all new fields optional):
+    ```ts
+    export interface Thought {
+      readonly turn: number;
+      readonly eventSummary: string;
+      readonly stressDelta: number;
+      readonly relatedEntityId?: EntityId | undefined;
+      readonly thoughtId?: string | undefined;
+      readonly moodDelta?: number | undefined;
+      readonly expiresAtTurn?: number | undefined;
+      readonly stackCount?: number | undefined;
+      readonly maxStacks?: number | undefined;
+    }
+    ```
+  - Extend `MemoryComponent` with optional `mood?: number`, `moodTier?: MoodTier`, `activeInspiration?: { readonly kind: InspirationKind; readonly expiresAtTurn: number }`, `activeMentalBreak?: { readonly kind: MentalBreakKind; readonly expiresAtTurn: number }`.
+- **`src/types/campaign/entity.ts` & `src/core/ecs/ecs_spawner.ts`:**
+  - Add optional `needs?: Record<string, number>` and `enablePsychology?: boolean` to `EntityTemplateSchema`, hydrating `NeedsComponent` in `spawnEntity`.
+
+#### Step 182.2: Needs Evaluation & Hunger Sync (`src/systems/psychology/needs.system.ts`)
+- `createDefaultNeedsComponent(initialOverrides?, config?)`: Initializes all 6 canonical needs (`rest`, `nourishment`, `shelter`, `comfort`, `social`, `safety`).
+- `processActorNeedsTick(state, entityId, elapsedIntervals = 1)`:
+  - **Nourishment:** If `HungerComponent` exists, computes `Math.round((hunger.satiation / hunger.maxSatiation) * 100)` directly (zero split-brain!); otherwise decays by `decayPerInterval * elapsedIntervals`.
+  - **Rest:** Decays while awake; recovers if entity is adjacent to/on a `furniture:bed` entity or during rest skips (`satisfyActorNeed(state, entityId, 'rest', delta)`).
+  - **Shelter:** Checks `area.environmentType !== 'outdoors'` OR solid roof at `z + 1` OR `(chunkFlag & CHUNK_FLAG_OUTDOOR) === 0`; recovers indoors, decays outdoors.
+  - **Comfort:** Evaluates cell temperature from M180 (`getTemperatureAt(state.map, pos.x, pos.y, pos.z ?? 0)`): `12°C..28°C` boosts comfort, `< 0°C` or `> 40°C` drains comfort and adds a temperature thought; nearby `furniture:*` tagged entities also boost comfort.
+  - **Social:** Recovers if non-hostile actor is within 4 tiles; gently decays if isolated.
+  - **Safety:** Drains if hostile actor is within 6 tiles or HP < 50% or standing in hazard/extreme temp; recovers in `'safe'` tagged areas or unthreatened rooms.
+  - Emits stacking/refreshing thoughts via `addTimedThought` when any need crosses `NEED_CRITICAL_THRESHOLD`, `NEED_LOW_THRESHOLD`, or `NEED_HIGH_THRESHOLD`.
+
+#### Step 182.3: Thoughts, Mood Tiers, Inspirations & Mental Breaks (`src/systems/psychology/thoughts.system.ts`)
+- `addTimedThought(state, entityId, input)`:
+  - If an active thought with matching `thoughtId` exists, increments `stackCount` up to `maxStacks ?? 1` and refreshes `expiresAtTurn` (preventing duplicate spam).
+  - Otherwise appends new `Thought`, keeping array capped at `MAX_TRANSIENT_THOUGHTS`.
+- `recalculateActorMood(memory, currentTurn)`:
+  - Filters out expired thoughts (`expiresAtTurn !== undefined && currentTurn >= expiresAtTurn`).
+  - Sums `moodDelta * (stackCount ?? 1)` (falling back to `-stressDelta` for legacy thoughts), weighted by `facets['resilience']` / `facets['neuroticism']` if present.
+  - Clamps `mood` to `[0, 100]`, derives `moodTier`, checks Inspiration trigger (`mood >= MOOD_ECSTATIC_THRESHOLD` and no active inspiration/break) and Mental Break trigger (`mood <= MOOD_BREAKING_THRESHOLD` and no active break, choosing `berserk`/`tantrum`/`hide_in_room`/`daze_wander` deterministically from `facets['aggression']` / `facets['bravery']`).
+- `processActorPsychologyTick(state, elapsedIntervals = 1)`:
+  - Iterates actors with `NeedsComponent` or `MemoryComponent`, runs `processActorNeedsTick` + `recalculateActorMood`, and keeps `processPersonalitySystem` core-memory promotion working seamlessly.
+
+#### Step 182.4: Cadence, AI Break Override, D&D 3.5e Morale DAG & Tooltip
+- `src/core/simulation_cadence.ts` & `src/systems/world_time_skip.ts`: Call `processActorPsychologyTick(stepped, 1)` on `LOCAL_NARRATIVE_TICK_INTERVAL` right alongside `processPersonalitySystem`.
+- `src/systems/ai.system.ts`: Before scoring normal AI behaviors, check `memory?.activeMentalBreak`:
+  - `'daze_wander'` -> returns `wanderBehavior(state, entityId, ...)`
+  - `'hide_in_room'` -> returns `fleeBehavior` / wait
+  - `'berserk'` -> returns `huntBehavior` targeting nearest actor
+  - `'tantrum'` -> returns `wanderBehavior` / emote bark
+- `src/rulesets/dnd35e/cartridge/dnd35e_dag_adapter.ts`: Project Layer B `morale` `StatModifier`s from `memory.moodTier` (`'ecstatic'` -> `+1 morale` on attack/saves/skills; `'breaking'` / `'catatonic'` -> `-2 morale` penalty), adhering strictly to Rule 17 (`StatModifier`, never boolean flags!).
+- `src/rendering/inspect_tooltip.ts`: Display `Mood: Happy (74)` (and active Inspiration/Break badge + lowest critical Need if `< NEED_LOW_THRESHOLD`).
+
+---
+
+### Milestone 183 — Designation Layer, Job-Reservation Blackboard, Stockpiles, Hauling AI & Workshop Crafting DAGs
+
+#### Step 183.1: `ColonySimulationState`, `LaborProfileComponent` & Persistence
+- **New File (`src/types/colony.types.ts`):**
+  ```ts
+  export type DesignationKind = 'mine' | 'chop' | 'haul' | 'build' | 'harvest' | 'channel';
+  export type LaborKind = 'mining' | 'chopping' | 'hauling' | 'building' | 'harvesting' | 'crafting';
+  export type BillRepeatMode = 'do_x_times' | 'maintain_stock' | 'forever';
+
+  export interface VoxelCoord {
+    readonly x: number;
+    readonly y: number;
+    readonly z: number;
   }
-  return true;
-}
 
-export function computeFOV3D(
-  state: GameState,
-  px: number,
-  py: number,
-  pz: number,
-  radius: number
-): Set<number> {
-  // 1. Compute fast O(r^2) 2D shadowcasting on observer's active Z-slice `pz`
-  // 2. For every visible cell (x, y, pz) that is vertically transparent (or observer's column),
-  //    cast vertical sight columns down (`pz - 1 .. minZ`) and up (`pz + 1 .. maxZ`),
-  //    validating oblique rays via `has3DLineOfSight` and emitting `toMapTileKey(state.map, tx, ty, tz)`.
-}
-```
-- `computeFOV(state, px, py, radius?, pz = 0)` in `src/map/fov.ts`: if `isMultiZMap(state.map)` returns `computeFOV3D(state, px, py, pz, fovRadius)`; otherwise runs the exact existing 2D `ROT.FOV.PreciseShadowcasting`!
-- `light_emitter.system.ts`: add `readonly z: number` to `ResolvedActiveLightEmitter`; `evaluateDynamicLightAtTile(state, x, y, z = 0)` computes 3D Euclidean distance using `feetPerZLevel` and validates LoS via `has3DLineOfSight` when `z !== emitter.z`.
+  export interface TileDesignation {
+    readonly id: string;
+    readonly kind: DesignationKind;
+    readonly areaId: string;
+    readonly x: number;
+    readonly y: number;
+    readonly z: number;
+    readonly priority: number;
+    readonly blueprintId?: string | undefined;
+    readonly targetEntityId?: EntityId | undefined;
+    readonly createdTurn: number;
+  }
 
-#### Step 177.2 — Multi-Z Depth-Dimmed Rendering, `cameraZOffset` Peeking & Conflict-Free Keybinds
-- **Files:**
-  - `src/types/intents/intent.enum.ts`, `src/types/intents/camera.intents.ts`, `src/actions/core.actions.ts`, `src/actions/action.registry.ts`: Add `IntentType.AdjustCameraZ` (`dz: number`, `reset?: boolean`, `isImmediate: true`). Clamps `cameraZOffset` cleanly within `[minZ - playerZ, maxZ - playerZ]`.
-  - `src/core/input/command_catalog.ts`, `src/core/input/gameplay_input.ts`, `src/core/input/shortcut_input.ts`:
-    - Update `action.interact` defaultBindings to `[{ key: ',' }, { key: '.' }]`.
-    - Register `move.up_z` (`[{ key: '<' }]`), `move.down_z` (`[{ key: '>' }]`), `camera.peek_z_up` (`[{ code: 'PageUp' }, { key: '[' }]`), `camera.peek_z_down` (`[{ code: 'PageDown' }, { key: ']' }]`), `camera.peek_z_reset` (`[{ code: 'Home' }]`).
-    - In `gameplay_input.ts`: when `isTargeting` or `isInspecting`, `move.up_z` / `move.down_z` shifts cursor Z (`MoveTargetIntent.dz` / `MoveInspectIntent.dz`); in normal gameplay, queues `createMoveAction(playerEntityId, 0, 0, +1 | -1)`.
-  - `src/core/presentation_queue.ts`: mark `PresentationDomain.Map`, `PresentationDomain.Entities`, and `PresentationDomain.HUD` dirty when `prev.cameraZOffset !== next.cameraZOffset`.
-  - `src/rendering/viewport_snapshot.types.ts`, `src/rendering/viewport_snapshot.ts`, `src/rendering/renderer.ts`, `src/rendering/ui/vfx_overlay.ui.ts`, `src/rendering/tactical_snapshot.ts`, `src/rendering/inspect_tooltip.ts`, `src/rendering/ui/hud/ChronosStrip.tsx`:
-    - Add `readonly depthDelta?: number | undefined;` to `ViewportCellDTO` and `readonly tint?: string | undefined;` to `FogOverlayCellDTO` (plus `readonly viewZ: number;` on `ViewportSnapshot`).
-    - In `buildViewportSnapshot`: compute `viewZ = (playerPos?.z ?? 0) + (state.cameraZOffset ?? 0)`. When tile at `(mapX, mapY, viewZ)` has `isOpenAir === true`, scan `dz = 1..MAX_RENDER_DEPTH_LAYERS` to pick the first non-open-air floor/solid tile (and entities at that depth!), applying deterministic atmospheric depth dimming (`dimHexColorByDepth(hex, depthDelta)`) for ASCII and emitting cool blue-slate `tint` (`rgba(15, 28, 52, 0.25 * depthDelta)`) in `fogOverlay` for sprites.
-    - Update `renderFogOverlayCanvas` in `src/rendering/ui/vfx_overlay.ui.ts` to paint `cell.tint ?? \`rgba(0, 0, 0, ${cell.alpha})\`` so custom depth tints render faithfully!
-    - Update `cellEquals` in `src/rendering/renderer.ts` to compare `a.depthDelta !== b.depthDelta`.
-    - Filter `tactical_snapshot.ts` unit badges and `inspect_tooltip.ts` by `viewZ` (or visible depth beneath `open_air`), and display compact `Z: <viewZ>` + `▲/▼` peek buttons in `ChronosStrip.tsx` whenever `isMultiZMap(state.map)` is true.
+  export interface StockpileZone {
+    readonly id: string;
+    readonly name: string;
+    readonly areaId: string;
+    readonly cells: ReadonlyArray<VoxelCoord>;
+    readonly allowedTags: ReadonlyArray<string>;
+    readonly deniedTags: ReadonlyArray<string>;
+    readonly allowedItemIds?: ReadonlyArray<string> | undefined;
+    readonly priority: number;
+    readonly maxItemsPerCell: number;
+  }
 
----
+  export interface JobReservationToken {
+    readonly tokenId: string;
+    readonly resourceKey: string;
+    readonly jobId: string;
+    readonly workerEntityId: EntityId;
+    readonly acquiredTurn: number;
+    readonly expiresAtTurn: number;
+  }
 
-### Milestone 178: Hierarchical 3D Region Pathfinding (`RegionGrid` / HPA\*) & Shared Dijkstra Flow Fields
+  export interface CraftingBill {
+    readonly billId: string;
+    readonly recipeId: string;
+    readonly repeatMode: BillRepeatMode;
+    readonly targetCount: number;
+    readonly completedCount: number;
+    readonly workProgress: number;
+    readonly paused: boolean;
+  }
 
-#### Step 178.1 — Chunk Connectivity `RegionGrid` & HPA\* Portal Graph
-- **New Files:** `src/map/region_graph.ts`, `src/ai/pathfinding_hpa.ts`
-- **Design Details:**
-  - `rebuildChunkRegions(chunk, palette, tilesRegistry)`: 8-way BFS flood-fill over walkable cells in `chunk`, assigning contiguous pocket IDs `1..K` into `chunk.regionId` (`Uint16Array`, `0` = blocked) and clearing `CHUNK_DIRTY_REGION`.
-  - `RegionPortalGraph`:
-    - Nodes: `regionKey = "${cx},${cy},${cz}:${localRegionId}"` mapped to `componentId` (Disjoint-Set Union for **$O(1)$ reachability rejection**).
-    - Edges:
-      - **Horizontal Border Portals:** contiguous walkable spans along shared edges of `(cx, cy, cz)` and `(cx±1, cy±1, cz)` (midpoint waypoint).
-      - **Vertical Portals:** `verticalLink` tiles (`ramp`, `stairs_up`, `stairs_down`, `stairs_both`, `ladder`) connecting `(cx, cy, cz, regionA)` and `(cx, cy, cz±1, regionB)`.
-    - **Finite Map Parity:** Finite maps partition cleanly into virtual `16×16` sectors per Z-slice using the exact same `RegionPortalGraph` structure, cached in a WeakMap/LRU keyed by `(mapRef, areaId)` — zero ECS state bloat!
-  - `findHierarchicalPath3D(state, entityId, start, goal, options?)`:
-    1. Queries `areCoordinatesConnected3D(graph, start, goal)` -> returns `null` immediately in $O(1)$ if disconnected (unless mover has flight/burrow!).
-    2. Runs abstract A\* over `RegionPortalGraph` to locate the next portal exit if `start` and `goal` live in different chunks/regions.
-    3. Refines the local segment using bounded 3D A\* (supporting horizontal 8-way + ramp ascent/descent + stair `dz = ±1`, hard-corner checks, and multi-tile footprint clearance).
+  export interface WorkshopState {
+    readonly workshopEntityId: EntityId;
+    readonly areaId: string;
+    readonly workshopTag: string;
+    readonly bills: ReadonlyArray<CraftingBill>;
+  }
 
-#### Step 178.2 — Shared Multi-Agent Dijkstra Flow Fields (`src/ai/flow_field.ts`)
-- **New File:** `src/ai/flow_field.ts`
-- **Modified Files:** `src/ai/follow.behavior.ts`, `src/ai/hunt.behavior.ts`, `src/ai/companion_targeting.ts`, `src/ai/flee.behavior.ts`
+  export interface TimedTerrainRevert {
+    readonly areaId: string;
+    readonly x: number;
+    readonly y: number;
+    readonly z: number;
+    readonly revertTileId: string;
+    readonly revertTurn: number;
+    readonly sourceId: string;
+  }
 
-```ts
-// src/ai/flow_field.ts
-export interface FlowField3D {
-  readonly areaId: string;
-  readonly goalX: number;
-  readonly goalY: number;
-  readonly goalZ: number;
-  readonly maxRadius: number;
-  readonly distances: ReadonlyMap<number, number>; // packWorldCoord3D -> cost
-}
+  export interface ColonySimulationState {
+    readonly designations: Readonly<Record<string, TileDesignation>>;
+    readonly stockpiles: Readonly<Record<string, StockpileZone>>;
+    readonly reservations: Readonly<Record<string, JobReservationToken>>;
+    readonly workshops: Readonly<Record<string, WorkshopState>>;
+    readonly timedTerrainReverts: ReadonlyArray<TimedTerrainRevert>;
+  }
+  ```
+- **Component (`src/types/components/actor_components.types.ts` & `src/types/components.types.ts`):**
+  Add `ComponentType.LaborProfile = 'LaborProfile'` and `LaborProfileComponent`:
+  ```ts
+  export interface ActiveLaborJobState {
+    readonly jobId: string;
+    readonly kind: LaborKind;
+    readonly phase: 'fetch_item' | 'move_to_target' | 'execute' | 'deliver_item';
+    readonly targetCoord: VoxelCoord;
+    readonly targetEntityId?: EntityId | undefined;
+    readonly carriedItemEntityId?: EntityId | undefined;
+    readonly destinationCoord?: VoxelCoord | undefined;
+    readonly workshopEntityId?: EntityId | undefined;
+    readonly billId?: string | undefined;
+    readonly blueprintId?: string | undefined;
+    readonly reservedResourceKeys: ReadonlyArray<string>;
+  }
 
-/**
- * Computes or retrieves a cached bounded 3D Dijkstra Flow Field radiating outward from `(goalX, goalY, goalZ)`.
- * Cache invalidates automatically when `state.map` reference changes or any covered chunk carries `CHUNK_DIRTY_REGION`.
- */
-export function getOrComputeFlowField3D(
-  state: Readonly<GameState>,
-  goalX: number,
-  goalY: number,
-  goalZ: number,
-  maxRadius?: number
-): FlowField3D;
+  export interface LaborProfileComponent {
+    readonly type: ComponentType.LaborProfile;
+    readonly priorities: Readonly<Record<LaborKind, number>>;
+    readonly activeJob?: ActiveLaborJobState | undefined;
+  }
+  ```
+- **Wire into `GameState`, `SerializedGameState`, `save.ts`, `EntityTemplateSchema`, `ecs_spawner.ts`:**
+  - Add optional `readonly colonyState?: ColonySimulationState | undefined;` to `GameState` and `SerializedGameState`, persisted directly in `serializeGameState` / `deserializeGameState`.
+  - Add optional `laborPriorities` to `EntityTemplateSchema` and hydrate `LaborProfileComponent` in `spawnEntity`.
 
-/**
- * Samples the optimal O(1) descending step `{ dx, dy, dz }` from `(fromX, fromY, fromZ)` using `field`,
- * verifying dynamic actor occupancy and multi-tile footprint clearance.
- */
-export function sampleFlowFieldStep3D(
-  state: GameState,
-  field: FlowField3D,
-  entityId: EntityId,
-  fromX: number,
-  fromY: number,
-  fromZ: number
-): { readonly dx: number; readonly dy: number; readonly dz: number } | null;
-```
-- Update `computeNextStepToward(state, entityId, fromX, fromY, goalX, goalY, fromZ = 0, goalZ = 0)` in `src/ai/follow.behavior.ts`:
-  - Returns `{ dx, dy, dz }` (with `dz = 0` on 2D steps).
-  - For normal walkers, samples `getOrComputeFlowField3D` in $O(1)$ when within flow radius (so 50 chasing monsters share 1 single Dijkstra expansion!); falls back to `findHierarchicalPath3D` across distant chunks/Z-levels or for flyers/burrowers/custom movement modes!
-  - Updates `huntBehavior`, `followBehavior`, and `companion_targeting.ts` to compute 3D distance and emit `MoveIntent` with `dz` when traversing stairs/ramps/flight!
+#### Step 183.2: Conflict-Free Atomic Job-Reservation Blackboard (`src/systems/labor/job_blackboard.ts`)
+- Resource key helpers: `tileResourceKey(areaId, x, y, z)`, `entityResourceKey(entityId)`, `workshopResourceKey(workshopEntityId)`.
+- `tryAcquireReservation(state, resourceKeys, jobId, workerEntityId, ttlTurns = 40)`:
+  - Atomically checks that **every** requested `resourceKey` is either unreserved, expired (`globalTurn >= expiresAtTurn`), or already held by `workerEntityId`.
+  - If any key conflicts with another worker, returns `{ state, acquired: false }` with zero partial locks!
+  - Otherwise records all tokens in `state.colonyState.reservations` and returns `{ state: nextState, acquired: true }`.
+- `releaseReservation`, `releaseAllWorkerReservations(state, workerEntityId)`, `pruneExpiredReservations(state)`.
+- **Lifecycle Hygiene:** Invoke `releaseAllWorkerReservations` in `src/systems/death.system.ts` when an actor dies and in `src/systems/map/chunk_streaming.ts` when an entity is evicted to dormant storage.
 
----
+#### Step 183.3: Spatial Designation Layer (`src/systems/labor/designation.system.ts`)
+- `addTileDesignation(state, { kind, x, y, z, priority?, blueprintId?, targetEntityId? })`:
+  - Validates legality (`mine`/`channel` requires `tileDef.mineable === true`; `build` requires valid blueprint & non-solid target cell; `harvest` requires harvestable target).
+  - Writes to `colonyState.designations["areaId:x,y,z"]`.
+- `addRectDesignation`, `removeTileDesignation`, `completeDesignationAt(state, areaId, x, y, z)`, `getActiveDesignationsForArea(state, areaId)`.
 
-### Milestone 179: Z-Aware `RulesetContract` Hooks & D&D 3.5e 3D Mechanics
+#### Step 183.4: Typed Item-Filter Stockpile Zones (`src/systems/labor/stockpile.system.ts`)
+- `createStockpileZone(state, zoneInput)` & `updateStockpileFilter(state, stockpileId, filter)`.
+- `doesItemMatchStockpile(state, itemEntityId, zone)`:
+  - Collects tags from `ItemDefinition.tags` + `TagsComponent.tags`.
+  - Rejects if any tag matches `zone.deniedTags`.
+  - Accepts if `zone.allowedItemIds` includes `item.itemId`, OR (`zone.allowedTags.length === 0` || any item tag matches `zone.allowedTags`).
+- `findBestStockpileCellForItem(state, itemEntityId, workerEntityId, originCoord)`:
+  - Evaluates all `stockpiles` in `state.currentAreaId` sorted by descending `priority`, then nearest 3D Manhattan distance.
+  - Skips cells that are non-walkable, at `maxItemsPerCell` capacity, or reserved by another worker in `job_blackboard.ts`.
+- `findUnstockedHaulItems(state, areaId, workerEntityId)`:
+  - Finds positioned `ItemComponent` entities in `areaId` not already resting in a matching highest-priority stockpile cell and not reserved by another worker.
 
-#### Step 179.1 — Extend `RulesetContract` (`src/types/ruleset.types.ts`)
-Add 4 optional 3D hooks (preserving 100% backwards compatibility with `classic` and any third-party cartridge):
-```ts
-export interface Coord3D {
-  readonly x: number;
-  readonly y: number;
-  readonly z: number;
-}
+#### Step 183.5: Multi-Step Workshop Crafting DAGs (`src/systems/labor/workshop.system.ts`)
+- `registerWorkshop(state, workshopEntityId, workshopTag)` & `enqueueCraftingBill(state, workshopEntityId, billInput)`.
+- `resolveNextRunnableBill(state, workshopEntityId, workerEntityId)`:
+  - Iterates non-paused bills in queue order; checks repeat condition (`completedCount < targetCount` for `do_x_times`, existing stocked output count `< targetCount` for `maintain_stock`, always true for `forever`).
+  - Checks `recipe.requiredInputs` on the workshop tile (or within 1 tile):
+    - If all inputs are present -> returns `{ mode: 'craft', bill, recipe }`.
+    - If an input is missing locally -> searches area ground/stockpiles for an unreserved matching item -> returns `{ mode: 'haul_input', bill, recipe, sourceItemEntityId, workshopCoord }`!
+    - If an input is missing globally -> checks if another bill/recipe produces that input (enabling true multi-step DAG chains like *Boulder -> Cut Stone Blocks -> Masonry Door/Wall*!).
+- `advanceWorkshopBillWork(state, actorId, workshopEntityId, billId)`:
+  - Increments `bill.workProgress` by work step (scaled by actor Inspiration `work_frenzy` / `inspired_craft` or skill if present).
+  - When `workProgress >= recipe.workUnits`: consumes `requiredInputs` entities at the workshop, spawns `recipe.outputs` items at the workshop position, increments `completedCount`, resets `workProgress = 0`, and emits a positive crafting thought via `addTimedThought`!
 
-export interface ElevationCombatModifiers {
-  readonly attackBonus: number;
-  readonly coverAcBonus: number;
-  readonly label?: string | undefined;
-}
+#### Step 183.6: Priority-Based Labor & Hauling AI (`src/ai/labor.behavior.ts`)
+- Registered in `src/systems/ai.system.ts` (`BEHAVIOR_REGISTRY['labor'] = laborBehavior`) and added to `AIBehaviorEntrySchema` (`src/types/campaign/entity.ts`: `z.object({ behaviorId: z.literal('labor'), searchRadius: z.number().int().positive().optional(), weightModifiers: z.record(z.string(), z.number()).optional() })`).
+- **Decision Pipeline (Deterministic, Pure Intent Emission):**
+  1. **Need Urgency Guard:** If actor has `NeedsComponent` with `nourishment <= NEED_CRITICAL_THRESHOLD` and carries an `edible` item, emit `ApplyIntent('eat', item)`.
+  2. **Continue or Select Job:**
+     - Inspects `LaborProfileComponent.priorities` (levels `1..4`, skipping `0`).
+     - Scores candidate jobs across active area designations (`mine`, `chop`, `build`, `harvest`), runnable workshop bills (`craft` + `haul_input`), and unstocked haul items (`haul`), weighted by `(5 - priorityLevel) * 100 - distance3D`.
+     - Ignores resources reserved by other workers (`isResourceReservedByOther`).
+  3. **Execute Step via Shared `ActionIntent` Pipeline:**
+     - **Haul / Fetch Phase:** If not standing on `sourceItem`, route via `computeHierarchicalNextStep(state, entityId, srcX, srcY, srcZ)` -> emit `MoveIntent`. When standing on `sourceItem`, emit `PickUpIntent`. Once carrying item, route to `destinationCoord` (stockpile cell or workshop tile) -> emit `DropIntent`.
+     - **Mine / Chop / Build / Craft / Harvest Phase:** If distance > 1 tile (or different Z), route via `computeHierarchicalNextStep` -> emit `MoveIntent`. When adjacent (or on workshop), emit `ApplyIntent` with verb `'mine' | 'chop' | 'build' | 'craft' | 'harvest'` targeting the tile or workshop entity!
+  - Works identically in **Turn-Based** and **RTwP** modes because it only emits standard `Intent`s!
 
-export interface AltitudeAdjustmentCheck {
-  readonly allowed: boolean;
-  readonly mode: 'fly' | 'climb' | 'stairs' | 'none';
-  readonly skillCheck?: { readonly skillId: string; readonly dc: number } | undefined;
-  readonly reason?: string | undefined;
-}
-
-// Optional hooks added to RulesetContract:
-measureDistance3DFt?(from: Coord3D, to: Coord3D, feetPerZLevel?: number): number;
-evaluateElevationCombatModifiers?(
-  state: Readonly<GameState>,
-  attackerId: EntityId,
-  defenderId: EntityId,
-  attackKind: 'melee' | 'ranged'
-): ElevationCombatModifiers;
-onEntityFallLanded?(state: GameState, entityId: EntityId, fallContext: EntityFallContext): GameState;
-canActorAdjustAltitude?(state: Readonly<GameState>, entityId: EntityId, dz: number): AltitudeAdjustmentCheck;
-```
-
-#### Step 179.2 — D&D 3.5e 3D Geometry, Cover, Spherical AoE, High Ground, *Fly*, *Climb* & *Feather Fall*
-- **Files:**
-  - `src/rulesets/dnd35e/spatial/grid_geometry.ts`:
-    - Add `measureDnD35Distance3DFt(x1, y1, z1, x2, y2, z2, feetPerZLevel = 5)`: converts `dz` to 5-ft square units (`dzSq = Math.round((Math.abs(z2 - z1) * feetPerZLevel) / FEET_PER_GRID_SQUARE)`), sorts `[dx, dy, dzSq]` as `a >= b >= c`, and applies the exact SRD `1-2-1-2` diagonal rule (`(a + floor(0.5 * (b + c))) * 5`, collapsing identically to `measureDnD35DistanceFt` when `z1 === z2`!).
-  - `src/rulesets/dnd35e/spatial/cover_senses.ts`:
-    - Add `evaluateCover3D(attackerPos, targetPos, isSolidAt3D, hasInterveningCreatureAt3D, isRangedAttack)` tracing `getBresenhamLine3D` across `(x, y, z)`, detecting floor/ceiling Total Cover (`blocksLineOfEffect: true`) and parapet/cliff-lip grazing Standard Cover (`+4` AC, `+2` Reflex).
-    - Update `resolveTileLightReading` / `resolveEffectiveTileIllumination` to accept optional `z = 0` and forward `z` to `evaluateDynamicLightAtTile` & `queryActiveFieldsAtPosition`.
-  - `src/rulesets/dnd35e/magic/aoe_rest.ts`, `target_category_filter.ts`, `spell_cast_resolver.ts`:
-    - Add `computeAoEAffectedSquares3D(shape, origin3D, target3D, radiusFt, isBlockedAt3D, feetPerZLevel = 5)` supporting true 3D spherical `burst` / `spread` (*Fireball* 20-ft radius sphere!), 3D `cone`, 3D `line`, and vertical `cylinder` while respecting `evaluateCover3D`.
-    - Update `enumerateSpellTargets` to collect targets across affected `(x, y, z)` voxels whenever `isMultiZMap(state.map)` is true (preserving fast 2D path when single-Z).
-  - `src/rulesets/dnd35e/spatial/dnd35e_spatial_3d.ts` *(New Tier 2 Module)*:
-    - `resolveDnD35eEntityMovementModes(state, entityId)`: merges static `dndData.movementModes` with dynamic DAG `ruleOverrides` (`can_fly` -> `60 ft`, or `40 ft` in medium/heavy armor/load) and `fly_speed` / `climb_speed` StatModifiers — zero spell-ID checks!
-    - `evaluateDnD35eElevationCombatModifiers(state, attackerId, defenderId, attackKind)`: grants SRD `+1` High Ground melee attack bonus (`HIGH_GROUND_MELEE_ATTACK_BONUS = 1`, `[High Ground +1]`) when `attackerZ > defenderZ` within 3D melee reach.
-    - `onDnD35eEntityFallLanded(state, entityId, fallContext)`:
-      1. Inspects DAG `ruleOverrides` for `immune_falling_damage === true` (*Feather Fall*!) -> `0` damage, safe upright landing!
-      2. Subtracts `fall_damage_reduction_ft` StatModifiers (Monk Slow Fall) and `10 ft` on intentional jump or passing `Tumble DC 15` (and halves/mitigates deep water landings).
-      3. Rolls `Math.min(20, Math.floor(effectiveFallFt / 10))` × `1d6` bludgeoning damage + applies `'prone'` condition when damage > 0!
-    - `canDnD35eActorAdjustAltitude(state, entityId, dz)`: allows `fly` anywhere open, or `climb` when adjacent to `isClimbable` / solid obstacle (auto-succeeding with natural `climb > 0`, otherwise requiring a D&D 3.5e `Climb` check with `+2` for `climbing_kit` tag).
-  - `src/rulesets/dnd35e/combat/combat_exchange_phases.ts` & `src/rulesets/dnd35e/dnd35e_ruleset.ts`:
-    - Wire `evaluateDnD35eElevationCombatModifiers` into `resolveStrikePreAttackContext`.
-    - Wire all 4 new hooks + `resolveDnD35eEntityMovementModes` on `dnd35eRulesetContract`.
+#### Step 183.7: Viewport Overlay Rendering & Inspect Readouts
+- `src/rendering/viewport_snapshot.ts`:
+  - Render subtle stockpile zone background tint on explored cells belonging to a `StockpileZone`.
+  - Render tile designation indicator glyphs/highlights (e.g., amber `%` / highlight border on designated `mine`/`build` tiles).
+- `src/rendering/inspect_tooltip.ts`:
+  - Show active tile designation kind, stockpile zone name, workshop active bill progress, and actor active labor job.
 
 ---
 
-### Default Campaign Multi-Z Showcase, Verification Suite & SSOT Synchronization
+## 5. Default Campaign Feature Showcase, Regression Tests & SSOT Sync
 
-#### Step 46.Final — Content Showcase, Tests, Docs & 8-Stage Verification
-1. **Default Campaign Showcase (`public/data/campaigns/default/tiles.json`, `areas.json`):**
-   - Add `open_air`, `stone_ramp`, `wooden_stairs_up`, `wooden_stairs_down`, `climbable_wall` tiles.
-   - Add 3-level static area `watchtower_overlook` (`z = -1` cellar/pit, `z = 0` courtyard + ramp + stairs, `z = 1` battlement overlooking `open_air` courtyard) connected from `outer_crossroads`.
-   - Enable `minZ: -2, maxZ: 2` + `openAir: "open_air"`, `underground: "stone_wall"`, `ramp: "stone_ramp"` on `endless_frontier`.
-2. **Comprehensive Unit & Regression Tests:**
-   - `tests/m176_voxel_z_gravity.test.ts`: 3D `packWorldCoord3D` round-trips, `spatialIndex` uniform `"x,y,z"` parity, multi-Z static `zSlices` + streaming `cz` delta reload, ramp ascent/descent, stairs/ladder traversal, gravity falling & crossing collapse, Vertical Alignment Validator error/warning cases.
-   - `tests/m177_fov3d_light_peeking.test.ts`: 3D shadowcasting down through `open_air` & blocking across solid ceilings, 3D dynamic light attenuation across Z, depth-dimmed `ViewportSnapshot` (`depthDelta` + `fogOverlay.tint`), `cameraZOffset` peeking & zero keybind conflicts.
-   - `tests/m178_hpa_region_flow_field.test.ts`: `rebuildChunkRegions`, $O(1)$ disconnected-target rejection, HPA\* 3D routing across chunk borders/ramps/stairs, shared 3D Dijkstra Flow Field multi-agent reuse & `CHUNK_DIRTY_REGION` invalidation.
-   - `tests/m179_dnd35e_3d_mechanics.test.ts`: 3D `1-2-1-2` distance, *Fireball* 20-ft 3D sphere hitting elevated/flying foes while blocked by solid ceiling, High-Ground `+1` melee bonus, dynamic *Fly* altitude control, *Feather Fall* (`immune_falling_damage`) & `1d6`/10 ft falling damage, *Climb* wall scaling.
-3. **Documentation, Prompt Kit & SSOT Parity:**
-   - Update `docs/ssot/ssot_console.json` & `docs/ssot/ssot_dnd35e.json` for all new `.ts` files (`gravity.system.ts`, `fov_3d.ts`, `region_graph.ts`, `pathfinding_hpa.ts`, `flow_field.ts`, `dnd35e_spatial_3d.ts`).
-   - Run `bun scripts/map-codebase.ts` and `bun scripts/generate-ai-prompt-kit.ts`.
-   - Update `docs/ARCHITECTURE.md` (§9.33) and `docs/MILESTONES.md` (marking Phase 46 / Milestones 176–179 `[x]`).
-   - Run `./verify.sh` and confirm all 8 stages pass with 0 errors!
+1. **`public/data/campaigns/default/` Showcase (Rule 5):**
+   - `tiles.json`: Add declarative `mineable: true`, `minedTileId: "stone_floor"`, `mineYieldItemId: "stone_boulder"`, `mineYieldCount: 1`, `isLoadBearing: true` to `stone_wall`, plus add `obsidian_wall` (`isLoadBearing: true`, `mineable: true`) and `constructed_stone_wall`.
+   - `items.json`: Add `stone_boulder` (`tags: ["material:stone", "haulable"]`), `cut_stone_block` (`tags: ["material:stone_block", "haulable"]`), `iron_pickaxe` (`tags: ["tool:mining", "weapon"]`).
+   - `rules.json`: Add showcase `materials`, `blueprints` (`stone_wall_blueprint`, `stone_floor_blueprint`), and multi-step `craftingRecipes` (`cut_stone_blocks`: `stone_boulder` -> `cut_stone_block`; `carve_stone_figurine`: `cut_stone_block` -> `stone_figurine`).
+   - `ai.json` & `entities.json`: Add `colony_laborer` AI profile (`[{ behaviorId: "labor", searchRadius: 24 }, { behaviorId: "wander" }]`), `masonry_workshop` interactable entity (`tags: ["workshop:masonry"]`), `camp_bed` (`tags: ["furniture:bed"]`), and `quarry_mason` NPC template (`needs`, `laborPriorities`, `ai: "colony_laborer"`).
+   - `areas.json`: Place `quarry_mason`, `masonry_workshop`, `camp_bed`, `iron_pickaxe`, and loose `stone_boulder` in `watchtower_overlook` (alongside its multi-Z basement `z = -1` mineable walls) so players can immediately observe live needs/mood, hauling, workshop crafting, mining, and fluids!
+2. **Automated Regression Test Suites (`tests/`):**
+   - `tests/cellular_physics.test.ts` (M180)
+   - `tests/terrain_sculpting.test.ts` (M181 — including D&D 3.5e *Passwall*, *Stone Shape*, *Transmute Rock to Mud*, *Create Water*)
+   - `tests/psychology_engine.test.ts` (M182)
+   - `tests/colony_labor.test.ts` (M183 — including save/load round-trip and RTwP/Turn-Based determinism)
+3. **Documentation & SSOT Sync:**
+   - Register all new files in `docs/ssot/ssot_console.json` and `docs/ssot/ssot_dnd35e.json`.
+   - Run `bun scripts/map-codebase.ts` to regenerate `docs/SSOT_CONSOLE.md` and `docs/SSOT_DND35E.md`.
+   - Update `docs/ARCHITECTURE.md` (§9.34) and `docs/MILESTONES.md` (mark M180–M183 complete).
+4. **Full 8-Stage Verification (`./verify.sh`):**
+   - `[1/8]` `bun x tsc --noEmit`
+   - `[2/8]` `bun run format`
+   - `[3/8]` `bun run lint --fix`
+   - `[4/8]` `bun run lint:arch`
+   - `[5/8]` `bun run lint:deadcode`
+   - `[6/8]` `bun test`
+   - `[7/8]` `bun run build`
+   - `[8/8]` `bun run scripts/run-validator.ts`
+
+---
+
+## 6. Key Pitfalls & Risk Mitigations
+
+1. **`exactOptionalPropertyTypes: true`:** Never assign `prop: undefined` on optional properties in object literals; always use conditional spread `...(val !== undefined ? { prop: val } : {})`.
+2. **Dead-Code Check (`[5/8] lint:deadcode`):** Every exported function/type in new modules must be imported and exercised by runtime integration or tests, or kept module-private if helper-only.
+3. **Architectural Dependency Boundaries (`[4/8] lint:arch`):** Tier 1 Console modules (`src/systems/`, `src/map/`, `src/ai/`) must **never** import from `src/rulesets/dnd35e/`. All cartridge interactions flow exclusively from Tier 2 -> Tier 1 or through `RulesetContract`.
+4. **Infinite Fluid/Temp Oscillation:** Ensure fluid equalization transfers only when `sourceDepth - targetDepth >= 2` (preventing 1-unit ping-pong oscillation that would keep chunks permanently dirty) and temperature snaps residual `±1°C` deltas to ambient so chunks reliably auto-sleep!
+5. **Reservation Lock Leaks:** Always prune expired reservations and release all locks held by an entity on death (`death.system.ts`) or streaming chunk eviction (`chunk_streaming.ts`).
+6. **Disk Spell Parity (`[8/8] run-validator.ts`):** Every new `.json` file added under `public/data/rulesets/dnd35e/spells/` MUST have its exact stem listed in `SPELL_IDS` inside `src/rulesets/dnd35e/system_content_spell_ids.ts`.
+7. **Sprite Validator Parity (`[8/8] run-validator.ts`):** Any new tiles, items, or entities added to `public/data/campaigns/default/` MUST reference existing valid `spriteId` keys from the campaign's loaded sprite sheets so `collectMissingSpriteMappings` reports 0 missing sprites.

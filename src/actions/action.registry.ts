@@ -93,7 +93,7 @@ export function dispatchAction(
       return processMoveInspectIntent(state, intent);
 
     case IntentType.PickUp:
-      return processPickUpIntent(state, intent.entityId);
+      return processPickUpIntent(state, intent.entityId, intent.itemEntityId);
     case IntentType.Drop:
       return processDropIntent(state, intent.entityId, intent.itemIndex);
     case IntentType.UseAbility:

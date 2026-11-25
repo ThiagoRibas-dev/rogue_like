@@ -76,5 +76,17 @@
         "leashRadius": 8
       }
     ]
+  },
+  "colony_laborer": {
+    "id": "colony_laborer",
+    "behaviors": [
+      {
+        "behaviorId": "labor",
+        "searchRadius": 24
+      },
+      {
+        "behaviorId": "wander"
+      }
+    ]
   }
 }

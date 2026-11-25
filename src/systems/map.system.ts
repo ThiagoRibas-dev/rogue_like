@@ -26,6 +26,8 @@ import { generateAndPopulateAreaFloor } from './map/map_generation_spawner.ts';
 import { updateStreamingWorldWindow } from './map/chunk_streaming.ts';
 import { flushDirtyChunksToStore } from '../core/chunk_store.ts';
 import { processQuestEvent } from './quest.system.ts';
+import { applyAnalyticalActiveGridCatchUp } from './physics/chunk_catchup.ts';
+import { tickTimedTerrainReverts } from './construction.system.ts';
 
 /**
  * Evaluates the player's line of sight and marks newly visible tiles as explored.
@@ -353,6 +355,10 @@ export function processChangeAreaIntent(
   };
 
   nextState = updateSpatialIndex(nextState);
+  if (savedTargetArea?.lastVisitedTurn !== undefined && nextState.globalTurn > savedTargetArea.lastVisitedTurn) {
+    nextState = applyAnalyticalActiveGridCatchUp(nextState, nextState.globalTurn - savedTargetArea.lastVisitedTurn);
+  }
+  nextState = tickTimedTerrainReverts(nextState);
   if (nextState.map.chunkGrid !== undefined) {
     nextState = updateStreamingWorldWindow(nextState, spawnX, spawnY, { anchorZ: spawnZ });
   }

@@ -31,6 +31,9 @@ import { processKnowledgePropagationEvents, tickPendingKnowledge } from './knowl
 import { advanceActorLightEmittersByTurns } from './light_emitter.system.ts';
 import { processNemesisSystem } from './nemesis.system.ts';
 import { processPersonalitySystem } from './personality.system.ts';
+import { processActorPsychologyTick } from './psychology/needs.system.ts';
+import { applyAnalyticalActiveGridCatchUp } from './physics/chunk_catchup.ts';
+import { tickTimedTerrainReverts } from './construction.system.ts';
 import { processRivalries } from './rivalry.system.ts';
 import { processSchemeTurn } from './scheme.system.ts';
 import { advanceAIAlertnessDecayByTurns } from './sound.system.ts';
@@ -79,7 +82,11 @@ function hasActivePerTurnLocalHazard(state: GameState): boolean {
  * @param turnsElapsed Number of turns elapsed in this step.
  * @returns Updated GameState.
  */
-export function advanceLocalElapsedTimeByTurns(state: GameState, turnsElapsed: number): GameState {
+export function advanceLocalElapsedTimeByTurns(
+  state: GameState,
+  turnsElapsed: number,
+  options?: { readonly skipAnalyticalGridCatchUp?: boolean | undefined }
+): GameState {
   if (turnsElapsed <= 0) return state;
   let nextState = state;
   const entitySnapshot = [...nextState.entities];
@@ -117,6 +124,10 @@ export function advanceLocalElapsedTimeByTurns(state: GameState, turnsElapsed: n
 
   nextState = advanceCrossingsByTurns(nextState, turnsElapsed);
   nextState = advanceFieldsByTurns(nextState, turnsElapsed);
+  if (!options?.skipAnalyticalGridCatchUp) {
+    nextState = applyAnalyticalActiveGridCatchUp(nextState, turnsElapsed);
+  }
+  nextState = tickTimedTerrainReverts(nextState);
   nextState = tickCorpseDecay(nextState);
   nextState = tickControllerLinksAndOverlays(nextState, turnsElapsed);
 
@@ -175,6 +186,7 @@ function stepBulkMacroCadence(
       stepped = tickPendingRumors(stepped);
       stepped = cullStaleAndConfirmedRumors(stepped);
       stepped = processPersonalitySystem(stepped);
+      stepped = processActorPsychologyTick(stepped, 1);
     }
     if (t % NEMESIS_EVALUATION_INTERVAL === 0) {
       stepped = processNemesisSystem(stepped);
@@ -240,7 +252,7 @@ export function advanceWorldTimeBulk(
     const stepCap = hasActivePerTurnLocalHazard(nextState) ? 1 : BULK_CADENCE_STEP_SIZE;
     const step = Math.min(stepCap, remaining);
     nextState = stepBulkMacroCadence(nextState, step, summaryEvents, seenEventIds);
-    nextState = advanceLocalElapsedTimeByTurns(nextState, step);
+    nextState = advanceLocalElapsedTimeByTurns(nextState, step, { skipAnalyticalGridCatchUp: true });
     remaining -= step;
     advanced += step;
 
@@ -257,6 +269,9 @@ export function advanceWorldTimeBulk(
     }
   }
 
+  if (advanced > 0) {
+    nextState = applyAnalyticalActiveGridCatchUp(nextState, advanced);
+  }
   if (playerId !== undefined && advanced > 0) {
     nextState = processHungerTick(nextState, playerId, advanced * STANDARD_ENERGY_PER_TURN);
   }
@@ -298,7 +313,7 @@ export async function advanceWorldTimeBulkAsync(
       const stepCap = hasActivePerTurnLocalHazard(nextState) ? 1 : BULK_CADENCE_STEP_SIZE;
       const step = Math.min(stepCap, chunkRemaining);
       nextState = stepBulkMacroCadence(nextState, step, summaryEvents, seenEventIds);
-      nextState = advanceLocalElapsedTimeByTurns(nextState, step);
+      nextState = advanceLocalElapsedTimeByTurns(nextState, step, { skipAnalyticalGridCatchUp: true });
       chunkRemaining -= step;
       completed += step;
 
@@ -320,6 +335,9 @@ export async function advanceWorldTimeBulkAsync(
     }
   }
 
+  if (completed > 0) {
+    nextState = applyAnalyticalActiveGridCatchUp(nextState, completed);
+  }
   if (playerId !== undefined && completed > 0) {
     nextState = processHungerTick(nextState, playerId, completed * STANDARD_ENERGY_PER_TURN);
   }

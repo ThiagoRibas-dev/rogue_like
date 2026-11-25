@@ -715,5 +715,53 @@
       "facts": [],
       "knowledge": {}
     }
+  },
+  "masonry_workshop": {
+    "spriteId": "tile_pressure_plate_up",
+    "id": "masonry_workshop",
+    "name": "Masonry Bench",
+    "glyph": "&",
+    "fg": "#cbd5e1",
+    "bg": "transparent",
+    "isActor": false,
+    "tags": ["workshop:masonry"]
+  },
+  "camp_bed": {
+    "spriteId": "tile_chest_closed",
+    "id": "camp_bed",
+    "name": "Straw Bedroll",
+    "glyph": "=",
+    "fg": "#d97706",
+    "bg": "transparent",
+    "isActor": false,
+    "tags": ["furniture:bed"]
+  },
+  "quarry_mason": {
+    "spriteId": "actor_shopkeep",
+    "id": "quarry_mason",
+    "name": "Quarry Mason",
+    "glyph": "m",
+    "fg": "#93c5fd",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 100,
+    "inventoryConfig": { "baseCapacity": 4 },
+    "ai": {
+      "profileId": "colony_laborer",
+      "aggroRadius": 6,
+      "wanders": true
+    },
+    "faction": "town",
+    "attitude": "friendly",
+    "tags": ["actor", "town", "colonist"],
+    "enablePsychology": true,
+    "needs": { "rest": 85, "comfort": 80 },
+    "laborPriorities": { "mining": 1, "hauling": 2, "crafting": 1, "building": 2, "chopping": 3, "harvesting": 3 },
+    "memory": {
+      "factionStandings": {},
+      "grudges": [],
+      "facts": [],
+      "knowledge": {}
+    }
   }
 }

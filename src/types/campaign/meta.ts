@@ -106,6 +106,74 @@ export const DurabilityConfigSchema = z.object({
 /** Inferred type for campaign equipment durability configuration. */
 export type DurabilityConfig = z.infer<typeof DurabilityConfigSchema>;
 
+/** Zod schema defining physical voxel/item material thermal and structural properties. */
+export const MaterialDefinitionSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  hardness: z.number().int().nonnegative().default(5),
+  thermalConductivity: z.number().min(0).max(1).default(0.35),
+  meltTempC: z.number().int().optional(),
+  flammable: z.boolean().optional(),
+  boulderItemId: z.string().optional(),
+  obsidianTileId: z.string().optional()
+});
+/** Inferred type for a material definition. */
+export type MaterialDefinition = z.infer<typeof MaterialDefinitionSchema>;
+
+/** Zod schema defining one ingredient slot for construction blueprints or crafting recipes. */
+export const LaborIngredientSchema = z.object({
+  itemId: z.string().optional(),
+  tag: z.string().optional(),
+  count: z.number().int().positive().default(1)
+});
+/** Inferred type for a labor ingredient slot. */
+export type LaborIngredient = z.infer<typeof LaborIngredientSchema>;
+
+/** Zod schema defining a constructible terrain blueprint. */
+export const ConstructionBlueprintSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  targetTileId: z.string().min(1),
+  materialId: z.string().optional(),
+  requiredInputs: z.array(LaborIngredientSchema).default([]),
+  workUnits: z.number().int().positive().default(1),
+  requiredToolTag: z.string().optional(),
+  allowOverOpenAir: z.boolean().optional()
+});
+/** Inferred type for a construction blueprint. */
+export type ConstructionBlueprint = z.infer<typeof ConstructionBlueprintSchema>;
+
+/** Zod schema defining one item output from a workshop crafting recipe. */
+export const CraftingRecipeOutputSchema = z.object({
+  itemId: z.string().min(1),
+  count: z.number().int().positive().default(1)
+});
+/** Inferred type for a crafting recipe output. */
+export type CraftingRecipeOutput = z.infer<typeof CraftingRecipeOutputSchema>;
+
+/** Zod schema defining a multi-step workshop crafting recipe. */
+export const CraftingRecipeSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  workshopTag: z.string().min(1),
+  requiredInputs: z.array(LaborIngredientSchema).default([]),
+  requiredToolTag: z.string().optional(),
+  workUnits: z.number().int().positive().default(2),
+  outputs: z.array(CraftingRecipeOutputSchema).min(1),
+  skillId: z.string().optional()
+});
+/** Inferred type for a crafting recipe. */
+export type CraftingRecipe = z.infer<typeof CraftingRecipeSchema>;
+
+/** Zod schema for optional campaign-level psychology tuning parameters. */
+export const PsychologyRulesConfigSchema = z.object({
+  needDecayMultipliers: z.record(z.string(), z.number().nonnegative()).optional(),
+  moodBreakingThreshold: z.number().int().min(0).max(100).optional(),
+  moodInspirationThreshold: z.number().int().min(0).max(100).optional()
+});
+/** Inferred type for psychology configuration. */
+export type PsychologyRulesConfig = z.infer<typeof PsychologyRulesConfigSchema>;
+
 /** Zod schema for campaign engine configuration rules. */
 export const RulesConfigSchema = z.object({
   map: z.object({
@@ -138,6 +206,10 @@ export const RulesConfigSchema = z.object({
   durabilityConfig: DurabilityConfigSchema.optional(),
   fieldInteractions: z.array(FieldInteractionRuleSchema).optional(),
   currency: CurrencyConfigSchema.optional(),
+  materials: z.record(z.string(), MaterialDefinitionSchema).optional(),
+  blueprints: z.record(z.string(), ConstructionBlueprintSchema).optional(),
+  craftingRecipes: z.record(z.string(), CraftingRecipeSchema).optional(),
+  psychology: PsychologyRulesConfigSchema.optional(),
   spawning: z.object({
     maxMonstersPerRoom: z.number().int().nonnegative(),
     maxItemsPerRoom: z.number().int().nonnegative(),

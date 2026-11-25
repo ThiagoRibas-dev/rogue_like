@@ -6,6 +6,7 @@ import {
   cullStaleAndConfirmedRumors
 } from '../systems/gossip.system.ts';
 import { processPersonalitySystem } from '../systems/personality.system.ts';
+import { processActorPsychologyTick } from '../systems/psychology/needs.system.ts';
 import { processNemesisSystem } from '../systems/nemesis.system.ts';
 import { processRivalries } from '../systems/rivalry.system.ts';
 import { processWorldEvents } from '../systems/world_events.system.ts';
@@ -61,6 +62,7 @@ export function processTier2LocalCadence(state: GameState, didGlobalTurnAdvance:
     nextState = tickPendingRumors(nextState);
     nextState = cullStaleAndConfirmedRumors(nextState);
     nextState = processPersonalitySystem(nextState);
+    nextState = processActorPsychologyTick(nextState, 1);
   }
 
   return nextState;

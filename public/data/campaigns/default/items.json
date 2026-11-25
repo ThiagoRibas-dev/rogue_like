@@ -381,5 +381,57 @@
     "category": "tool",
     "weight": 1,
     "tags": ["bones", "quest_item"]
+  },
+  "stone_boulder": {
+    "spriteId": "tile_large_rock_1",
+    "id": "stone_boulder",
+    "name": "Rough Stone Boulder",
+    "unidentifiedName": "Stone",
+    "description": "A heavy slab of quarried stone suitable for masonry and wall building.",
+    "glyph": "o",
+    "fg": "#94a3b8",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 8,
+    "tags": ["material:stone", "haulable"]
+  },
+  "cut_stone_block": {
+    "spriteId": "tile_large_rock_1",
+    "id": "cut_stone_block",
+    "name": "Cut Stone Block",
+    "unidentifiedName": "Stone Block",
+    "description": "Precision-dressed stone block crafted at a masonry bench.",
+    "glyph": "=",
+    "fg": "#cbd5e1",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 4,
+    "tags": ["material:stone_block", "haulable"]
+  },
+  "stone_figurine": {
+    "spriteId": "item_ankh",
+    "id": "stone_figurine",
+    "name": "Carved Stone Figurine",
+    "unidentifiedName": "Figurine",
+    "description": "A small decorative carving made from cut stone.",
+    "glyph": "*",
+    "fg": "#e2e8f0",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 1,
+    "tags": ["valuable", "haulable"]
+  },
+  "iron_pickaxe": {
+    "spriteId": "item_short_sword",
+    "id": "iron_pickaxe",
+    "name": "Iron Pickaxe",
+    "unidentifiedName": "Pickaxe",
+    "description": "A heavy iron mining pick capable of breaking solid stone.",
+    "glyph": "(",
+    "fg": "#94a3b8",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 4,
+    "tags": ["tool:mining", "weapon", "haulable"]
   }
 }

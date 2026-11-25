@@ -15,7 +15,28 @@
     "glyph": "#",
     "fg": "#4a4d53",
     "bg": "#000000",
-    "tags": ["terrain", "solid"]
+    "mineable": true,
+    "minedTileId": "stone_floor",
+    "mineYieldItemId": "stone_boulder",
+    "mineYieldCount": 1,
+    "isLoadBearing": true,
+    "collapseDropItemId": "stone_boulder",
+    "tags": ["terrain", "solid", "mineable"]
+  },
+  "obsidian_wall": {
+    "spriteId": "tile_rough_stone_wall_top",
+    "walkable": false,
+    "transparent": false,
+    "isSolidObstacle": true,
+    "mineable": true,
+    "minedTileId": "stone_floor",
+    "mineYieldItemId": "stone_boulder",
+    "mineYieldCount": 1,
+    "isLoadBearing": true,
+    "glyph": "#",
+    "fg": "#312e81",
+    "bg": "#000000",
+    "tags": ["terrain", "solid", "obsidian", "mineable"]
   },
   "stairs_up": {
     "spriteId": "tile_staircase_up",

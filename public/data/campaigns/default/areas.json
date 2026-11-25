@@ -352,6 +352,25 @@
           "health_potion",
           "torch"
         ]
+      },
+      {
+        "templateId": "masonry_workshop",
+        "x": 3,
+        "y": 5,
+        "z": 0
+      },
+      {
+        "templateId": "camp_bed",
+        "x": 2,
+        "y": 5,
+        "z": 0
+      },
+      {
+        "templateId": "quarry_mason",
+        "x": 4,
+        "y": 5,
+        "z": 0,
+        "inventory": ["iron_pickaxe", "stone_boulder"]
       }
     ],
     "staticMap": {

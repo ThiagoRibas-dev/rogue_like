@@ -294,12 +294,21 @@ export function executeDnD35eSpellCast(
   const lastCastCount = castMsgCount > 0 ? (runningState.messages[castMsgCount - 1]?.count ?? 1) : 0;
   const castId = `cast_${runningState.globalTurn}_${castMsgCount}_${lastCastCount}_${spell.id}`;
 
-  const placementUnits = spell.effectUnits.filter((u) => u.type === 'spatial_field' || u.type === 'summon');
+  const placementUnits = spell.effectUnits.filter(
+    (u) => u.type === 'spatial_field' || u.type === 'summon' || u.type === 'terrain_sculpt' || u.type === 'fluid_spawn'
+  );
   const casterSelfUnits = evaluateSpellEffectUnitsForTarget(spell, {
     casterSelfTags: casterDag.selfTags,
     targetTags: casterDag.selfTags,
     metamagic: meta.flags
-  }).filter((u) => u.type !== 'spatial_field' && u.type !== 'summon' && u.targetRole === 'caster');
+  }).filter(
+    (u) =>
+      u.type !== 'spatial_field' &&
+      u.type !== 'summon' &&
+      u.type !== 'terrain_sculpt' &&
+      u.type !== 'fluid_spawn' &&
+      u.targetRole === 'caster'
+  );
   const chassis = aggregateProgressionChassis(casterDag.dndData.tracks, 0);
 
   if (placementUnits.length > 0) {
@@ -307,7 +316,7 @@ export function executeDnD35eSpellCast(
       state: runningState,
       casterId,
       targetId: casterId,
-      targetPos,
+      targetPos: { x: targetPos.x, y: targetPos.y, z: targetZ },
       spell,
       units: placementUnits,
       casterLevel: effectiveCasterLevel,
@@ -384,7 +393,15 @@ export function executeDnD35eSpellCast(
       ...(targetFighter ? { targetCurrentHp: targetFighter.hp } : {}),
       ...(targetChassis ? { targetHitDice: targetChassis.totalHD } : {})
     }).filter((u) => {
-      if (u.type === 'spatial_field' || u.type === 'summon' || u.targetRole === 'caster') return false;
+      if (
+        u.type === 'spatial_field' ||
+        u.type === 'summon' ||
+        u.type === 'terrain_sculpt' ||
+        u.type === 'fluid_spawn' ||
+        u.targetRole === 'caster'
+      ) {
+        return false;
+      }
       if (u.validTargetCategories && u.validTargetCategories.length > 0) {
         if (!matchesTargetCategoryFilter(runningState, casterId, targetId, u.validTargetCategories)) return false;
       }

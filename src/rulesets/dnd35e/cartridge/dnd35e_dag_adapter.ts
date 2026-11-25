@@ -1,3 +1,4 @@
+import { MOOD_BREAKING_MORALE_PENALTY, MOOD_ECSTATIC_MORALE_BONUS } from '../../../constants/personality.constants.ts';
 import { getComponent } from '../../../core/ecs.ts';
 import { resolveAreaEnvironmentProfile } from '../../../systems/world_clock.system.ts';
 import {
@@ -9,6 +10,7 @@ import {
   type IdentityComponent,
   type InventoryComponent,
   type ItemComponent,
+  type MemoryComponent,
   type PositionComponent,
   type PropertyOverlayComponent,
   type RulesetDataComponent,
@@ -116,6 +118,7 @@ interface CachedEntityDAGEntry {
   readonly envIllum: string;
   readonly envSun: boolean;
   readonly envPhase: string;
+  readonly moodTier: MemoryComponent['moodTier'];
   readonly fieldEntries: ReadonlyArray<ActiveFieldSnapshotEntry>;
   readonly result: DnD35EntityDAGResult | undefined;
 }
@@ -309,6 +312,7 @@ export function evaluateDnD35eEntityDAG(
   const identityRef = getComponent(state, entityId, ComponentType.Identity) as IdentityComponent | undefined;
   const factionRef = getComponent(state, entityId, ComponentType.Faction) as FactionComponent | undefined;
   const posRef = getComponent(state, entityId, ComponentType.Position) as PositionComponent | undefined;
+  const moodTier = (getComponent(state, entityId, ComponentType.Memory) as MemoryComponent | undefined)?.moodTier;
   const isSqueezing = posRef?.isSqueezing === true;
   const envProfile = resolveAreaEnvironmentProfile(state);
   const fieldEntries = getActiveFieldsForComponents(state);
@@ -340,6 +344,7 @@ export function evaluateDnD35eEntityDAG(
     cached.envIllum === envProfile.illumination &&
     cached.envSun === envProfile.isNaturalSunlight &&
     cached.envPhase === envProfile.clock.phaseId &&
+    cached.moodTier === moodTier &&
     (!hasAnyFields || (cached.factionRef === factionRef && cached.posX === posX && cached.posY === posY)) &&
     areFieldSnapshotsEqual(cached.fieldEntries, fieldEntries) &&
     areEquippedItemsEqual(cached.equippedItemRefs, equippedItemRefs) &&
@@ -388,6 +393,7 @@ export function evaluateDnD35eEntityDAG(
     envIllum: envProfile.illumination,
     envSun: envProfile.isNaturalSunlight,
     envPhase: envProfile.clock.phaseId,
+    moodTier,
     fieldEntries,
     result
   });
@@ -513,6 +519,17 @@ function evaluateDnD35eEntityDAGInternal(
     ])
   );
   extraModifiers.push(...collectRageAndFrenzyModifiers(mergedSelfTags, doctrine));
+
+  const memoryComp = getComponent(state, entityId, ComponentType.Memory) as MemoryComponent | undefined;
+  if (memoryComp?.moodTier === 'ecstatic') {
+    pushMod('attack', MOOD_ECSTATIC_MORALE_BONUS, 'morale', 'psychology_mood', 'psychology:mood/ecstatic', 'mundane');
+    pushMod('saves', MOOD_ECSTATIC_MORALE_BONUS, 'morale', 'psychology_mood', 'psychology:mood/ecstatic', 'mundane');
+    pushMod('skills', MOOD_ECSTATIC_MORALE_BONUS, 'morale', 'psychology_mood', 'psychology:mood/ecstatic', 'mundane');
+  } else if (memoryComp?.moodTier === 'breaking' || memoryComp?.moodTier === 'catatonic') {
+    pushMod('attack', MOOD_BREAKING_MORALE_PENALTY, 'morale', 'psychology_mood', 'psychology:mood/breaking', 'mundane');
+    pushMod('saves', MOOD_BREAKING_MORALE_PENALTY, 'morale', 'psychology_mood', 'psychology:mood/breaking', 'mundane');
+    pushMod('skills', MOOD_BREAKING_MORALE_PENALTY, 'morale', 'psychology_mood', 'psychology:mood/breaking', 'mundane');
+  }
 
   let dagContext: StatQueryContext = {
     ...contextOverride,

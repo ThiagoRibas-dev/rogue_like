@@ -18,6 +18,9 @@ import { IntentType } from '../../types/intents/intent.enum.ts';
 import type { StartDialogueIntent } from '../../types/intents/ui.intents.ts';
 import type { Intent } from '../../types/intents/intent.union.ts';
 import { rollFacetValue, rollPersonalityValue } from '../rng.ts';
+import { createDefaultNeedsComponent } from '../../systems/psychology/needs.system.ts';
+import { registerWorkshop } from '../../systems/labor/workshop.system.ts';
+import type { LaborKind } from '../../types/colony.types.ts';
 import { withEcsBatch } from './ecs_batch.ts';
 import { addComponent, createDefaultMemoryComponent, getComponent, removeComponent } from './ecs_core.ts';
 import { spawnItem, promoteEntity } from './ecs_item_promoter.ts';
@@ -331,9 +334,34 @@ export function spawnEntity(
 
     if (
       !batch.getComponent(entityId, ComponentType.Memory) &&
-      (templateId === 'player' || template.shop !== undefined || template.dialogueId !== undefined)
+      (templateId === 'player' ||
+        template.shop !== undefined ||
+        template.dialogueId !== undefined ||
+        template.enablePsychology === true)
     ) {
       batch.addComponent(entityId, createDefaultMemoryComponent());
+    }
+
+    if (template.needs !== undefined || template.enablePsychology === true || templateId === 'player') {
+      batch.addComponent(
+        entityId,
+        createDefaultNeedsComponent(template.needs, state.campaign.rules.psychology?.needDecayMultipliers)
+      );
+    }
+
+    if (template.laborPriorities !== undefined) {
+      const defaults: Record<LaborKind, number> = {
+        mining: template.laborPriorities.mining ?? 2,
+        chopping: template.laborPriorities.chopping ?? 2,
+        hauling: template.laborPriorities.hauling ?? 2,
+        building: template.laborPriorities.building ?? 2,
+        harvesting: template.laborPriorities.harvesting ?? 2,
+        crafting: template.laborPriorities.crafting ?? 2
+      };
+      batch.addComponent(entityId, {
+        type: ComponentType.LaborProfile,
+        priorities: defaults
+      });
     }
 
     return entityId;
@@ -393,6 +421,11 @@ export function spawnEntity(
   nextState = equipActorDefaultArmaments(nextState, entityId, templateId, x, y);
   nextState = getActiveRuleset(nextState).onEntitySpawned?.(nextState, entityId) ?? nextState;
   nextState = getActiveRuleset(nextState).syncActorSpatialFootprint?.(nextState, entityId) ?? nextState;
+
+  const workshopTag = template.tags?.find((t) => t.startsWith('workshop:'));
+  if (workshopTag) {
+    nextState = registerWorkshop(nextState, entityId, workshopTag);
+  }
 
   return [nextState, entityId];
 }

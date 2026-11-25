@@ -10,7 +10,9 @@ import type {
   HungerComponent,
   IdentityComponent,
   InteractionScoreComponent,
+  LaborProfileComponent,
   MemoryComponent,
+  NeedsComponent,
   NemesisComponent,
   PlayerComponent,
   ResourcePoolComponent,
@@ -95,7 +97,17 @@ export type {
   ImmediateReactionTrigger,
   ImmediateReactionPolicy,
   StealthStanceState,
-  TacticalDoctrineComponent
+  TacticalDoctrineComponent,
+  MoodTier,
+  InspirationKind,
+  MentalBreakKind,
+  ActiveInspirationState,
+  ActiveMentalBreakState,
+  CanonicalNeedId,
+  NeedMeterState,
+  NeedsComponent,
+  ActiveLaborJobState,
+  LaborProfileComponent
 } from './components/actor_components.types.ts';
 
 // Re-export Item & Equipment Components & Types
@@ -206,7 +218,9 @@ export const enum ComponentType {
   Structural = 'Structural',
   Corpse = 'Corpse',
   Religion = 'Religion',
-  IdentityMask = 'IdentityMask'
+  IdentityMask = 'IdentityMask',
+  Needs = 'Needs',
+  LaborProfile = 'LaborProfile'
 }
 
 /**
@@ -264,4 +278,6 @@ export type Component =
   | StructuralComponent
   | CorpseComponent
   | ReligionComponent
-  | IdentityMaskComponent;
+  | IdentityMaskComponent
+  | NeedsComponent
+  | LaborProfileComponent;

@@ -12,6 +12,7 @@ import { fleeBehavior } from '../ai/flee.behavior.ts';
 import { rangedBehavior } from '../ai/ranged.behavior.ts';
 import { spellBehavior } from '../ai/spell.behavior.ts';
 import { computeNextStepToward, followBehavior } from '../ai/follow.behavior.ts';
+import { laborBehavior, selectAndReserveLaborAction } from '../ai/labor.behavior.ts';
 import { sanitizeCompanionControllerLink } from '../ai/companion_targeting.ts';
 import { canActorPerformIntent, hasActorActedThisTurn } from './lifecycle.system.ts';
 
@@ -21,7 +22,8 @@ const BEHAVIOR_REGISTRY: Record<string, AIBehaviorFn> = {
   flee: fleeBehavior,
   ranged: rangedBehavior,
   spell: spellBehavior,
-  follow: followBehavior
+  follow: followBehavior,
+  labor: laborBehavior
 };
 
 /**
@@ -74,6 +76,20 @@ export function processAITurn(state: GameState, entityId: EntityId): { intent: I
   if (!profile) return { intent: null, state };
 
   const memory = getComponent(state, entityId, ComponentType.Memory);
+  if (memory?.activeMentalBreak && memory.activeMentalBreak.expiresAtTurn > (state.globalTurn ?? 0)) {
+    const breakKind = memory.activeMentalBreak.kind;
+    const breakIntent =
+      breakKind === 'berserk'
+        ? huntBehavior(state, entityId, { aggroRadius: 8 })
+        : breakKind === 'hide_in_room'
+          ? fleeBehavior(state, entityId, { threshold: 2.0 })
+          : wanderBehavior(state, entityId, {});
+    if (breakIntent && canActorPerformIntent(state, breakIntent)) {
+      return { intent: breakIntent, state };
+    }
+    return { intent: null, state };
+  }
+
   const facets = memory?.facets || {};
 
   // Map behaviors to evaluated scores
@@ -149,7 +165,15 @@ export function processAITurn(state: GameState, entityId: EntityId): { intent: I
         ...(ai.wanders !== undefined ? { wanders: ai.wanders } : {})
       };
 
-      const intent = behaviorFn(nextState, entityId, params);
+      let intent: Intent | null;
+      if (entry.behaviorId === 'labor') {
+        const searchRadius = typeof entry.searchRadius === 'number' ? entry.searchRadius : undefined;
+        const laborRes = selectAndReserveLaborAction(nextState, entityId, searchRadius);
+        nextState = laborRes.state;
+        intent = laborRes.intent;
+      } else {
+        intent = behaviorFn(nextState, entityId, params);
+      }
       if (intent !== null) {
         if (!canActorPerformIntent(nextState, intent)) {
           continue;

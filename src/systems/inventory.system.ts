@@ -68,17 +68,26 @@ export function getEffectiveCapacity(state: GameState, entityId: EntityId): numb
  * @param entityId The entity picking up the item.
  * @returns The updated GameState.
  */
-export function processPickUpIntent(state: GameState, entityId: EntityId): ActionResult {
+export function processPickUpIntent(state: GameState, entityId: EntityId, targetItemEntityId?: EntityId): ActionResult {
   const pos = getComponent(state, entityId, ComponentType.Position);
   if (!pos) return { state, success: false, energyCost: 0 };
 
   const entitiesAtTile = getEntitiesAtPosition(state, pos.x, pos.y, pos.z ?? 0);
 
   let itemEntityId: EntityId | undefined;
-  for (const id of entitiesAtTile) {
-    if (id !== entityId && getComponent(state, id, ComponentType.Item) !== undefined) {
-      itemEntityId = id;
-      break;
+  if (
+    targetItemEntityId !== undefined &&
+    targetItemEntityId !== entityId &&
+    entitiesAtTile.includes(targetItemEntityId) &&
+    getComponent(state, targetItemEntityId, ComponentType.Item) !== undefined
+  ) {
+    itemEntityId = targetItemEntityId;
+  } else {
+    for (const id of entitiesAtTile) {
+      if (id !== entityId && getComponent(state, id, ComponentType.Item) !== undefined) {
+        itemEntityId = id;
+        break;
+      }
     }
   }
 

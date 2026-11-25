@@ -123,7 +123,7 @@ export interface ApplySpellEffectsContext {
   readonly state: GameState;
   readonly casterId: EntityId;
   readonly targetId: EntityId;
-  readonly targetPos: { readonly x: number; readonly y: number };
+  readonly targetPos: { readonly x: number; readonly y: number; readonly z?: number | undefined };
   readonly spell: DnD35SpellDefinition;
   readonly units: ReadonlyArray<DnD35SpellEffectUnit>;
   readonly casterLevel: number;
@@ -424,6 +424,8 @@ function applySingleSpellUnit(
     case 'spell_strike':
     case 'save_or_die':
     case 'energy_drain':
+    case 'terrain_sculpt':
+    case 'fluid_spawn':
       return applySpecialSpellUnit({
         state: runningState,
         casterId,

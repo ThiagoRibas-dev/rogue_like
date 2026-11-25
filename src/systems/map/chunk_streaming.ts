@@ -11,6 +11,8 @@ import {
   type ChunkSynthesisParams,
   generateWorldChunkFromParams
 } from '../../map/chunk_generator.ts';
+import { releaseAllWorkerReservations } from '../labor/job_blackboard.ts';
+import { applyAnalyticalChunkCatchUp } from '../physics/chunk_catchup.ts';
 import { ComponentType, type ControllerLinkComponent, type PositionComponent } from '../../types/components.types.ts';
 import type { EntityId, GameState } from '../../types/game-state.types.ts';
 import type {
@@ -159,13 +161,18 @@ function packOutOfWindowEntities(
     nextComponents.delete(id);
   }
 
+  let nextState: GameState = {
+    ...state,
+    entities: nextEntities,
+    components: nextComponents,
+    spatialIndex: nextSpatial
+  };
+  for (const id of removeIds) {
+    nextState = releaseAllWorkerReservations(nextState, id);
+  }
+
   return {
-    state: {
-      ...state,
-      entities: nextEntities,
-      components: nextComponents,
-      spatialIndex: nextSpatial
-    },
+    state: nextState,
     evictedChunkEntities: nextEvicted
   };
 }
@@ -361,7 +368,7 @@ export function updateStreamingWorldWindow(
 
         const deltaChunk = getCachedWorldChunkDeltaSync(scopeKey, grid.areaId, cx, cy, cz);
         if (deltaChunk) {
-          nextChunks.set(packed, deltaChunk);
+          nextChunks.set(packed, applyAnalyticalChunkCatchUp(deltaChunk, state.globalTurn));
         } else {
           const prefetched = consumePrefetchChunk(buildPrefetchKey(scopeKey, grid.areaId, grid.worldSeed, cx, cy, cz));
           nextChunks.set(packed, prefetched ?? generateWorldChunkFromParams(synthParams, cx, cy, cz));

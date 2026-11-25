@@ -19,7 +19,16 @@ import type {
   TilePassabilityTier,
   TileTraversalEvaluation
 } from '../types/ruleset.types.ts';
-import { getMapZBounds, getTileDefAt, getTileIdAt, isInMapBounds, isMultiZMap } from '../map/map_accessor.ts';
+import { FLUID_WADING_DEPTH } from '../constants/world_chunk.constants.ts';
+import {
+  getFluidByteAt,
+  getMapZBounds,
+  getTileDefAt,
+  getTileIdAt,
+  isInMapBounds,
+  isMultiZMap
+} from '../map/map_accessor.ts';
+import { unpackFluidCell } from './physics/fluid_codec.ts';
 import { resolveGravityForEntity } from './gravity.system.ts';
 import { runActorMovementStep } from './lifecycle.system.ts';
 import {
@@ -178,12 +187,18 @@ export function evaluateTileTraversal(
       tileDef.hazardKind === 'bog' ||
       tags.includes('shallow_water') ||
       tags.includes('bog');
+    const cellularFluid =
+      state !== undefined && x !== undefined && y !== undefined
+        ? unpackFluidCell(getFluidByteAt(state.map, x, y, z))
+        : { kind: 'none' as const, depth: 0 };
+    const isCellularWading = !canFly && !canSwim && cellularFluid.depth >= FLUID_WADING_DEPTH;
     const isDifficult =
       !canFly &&
       (baseCost > NORMAL_TILE_MOVEMENT_COST ||
         tileDef.blocksCharge === true ||
         tags.includes('difficult') ||
-        isShallowWaterOrBog);
+        isShallowWaterOrBog ||
+        isCellularWading);
     const multiplier = isDifficult
       ? Math.max(DIFFICULT_TERRAIN_MIN_MULTIPLIER, Math.round(baseCost / NORMAL_TILE_MOVEMENT_COST))
       : 1;

@@ -7,6 +7,7 @@ import type { ApplyIntentTarget, VerbOption } from './intents/interaction.intent
 import type { Verb } from '../constants/verbs.constants.ts';
 import type { PendingKnowledgePropagation, PendingRumorPropagation } from './knowledge.types.ts';
 import type { RoomBounds } from './encounter.types.ts';
+import type { ColonySimulationState } from './colony.types.ts';
 import type { ChunkedWorldGrid, SerializedStreamingWorldState } from './world-chunk.types.ts';
 
 /**
@@ -70,6 +71,24 @@ export interface Tile {
 }
 
 /**
+ * Lazy, JSON-serializable sparse cellular physics plane for a single Z-level of a finite map.
+ */
+export interface FinitePhysicsSlice {
+  readonly fluid: ReadonlyArray<number>;
+  readonly temperature: ReadonlyArray<number>;
+  readonly materialId: ReadonlyArray<number>;
+  readonly dirtyFlags: number;
+  readonly lastSimulatedTurn: number;
+}
+
+/**
+ * Sparse per-Z physics overlay storing fluids, temperature, and materials on finite maps.
+ */
+export interface FinitePhysicsOverlay {
+  readonly slices: Readonly<Record<number, FinitePhysicsSlice>>;
+}
+
+/**
  * Interface representing the game map with a flat tiles grid and optional multi-Z slices / chunk grid.
  */
 export interface GameMap {
@@ -81,6 +100,7 @@ export interface GameMap {
   readonly maxZ?: number | undefined;
   readonly isFullyExplored?: boolean;
   readonly chunkGrid?: ChunkedWorldGrid | undefined;
+  readonly physicsOverlay?: FinitePhysicsOverlay | undefined;
 }
 
 /**
@@ -297,6 +317,7 @@ export interface GameState {
       }
     | undefined;
   readonly telemetry: TelemetryMetrics;
+  readonly colonyState?: ColonySimulationState | undefined;
 }
 
 /**
@@ -385,4 +406,5 @@ export interface SerializedGameState {
   readonly dramaTracker: DramaTracker;
   readonly telemetry?: TelemetryMetrics;
   readonly streamingState?: SerializedStreamingWorldState | undefined;
+  readonly colonyState?: ColonySimulationState | undefined;
 }

@@ -199,6 +199,87 @@ export const NOISE_OCTAVE3_SPAN = 4 as const;
 /** Tertiary fine octave weight for streaming overworld fractal value noise. */
 export const NOISE_OCTAVE3_WEIGHT = 0.12 as const;
 
+/** Bitmask extracting 3-bit fluid depth (`0..7`, representing `0/7` through `7/7`) from `WorldChunk.fluid`. */
+export const FLUID_DEPTH_MASK = 0x07 as const;
+
+/** Bit shift for the 3-bit `FluidKindCode` packed into `WorldChunk.fluid` bits `3..5`. */
+export const FLUID_KIND_SHIFT = 3 as const;
+
+/** Bitmask extracting `FluidKindCode` (`0..7`) from `WorldChunk.fluid`. */
+export const FLUID_KIND_MASK = 0x38 as const;
+
+/** Maximum cellular fluid depth (`7/7`). */
+export const MAX_FLUID_DEPTH = 7 as const;
+
+/** Minimum fluid depth (`6/7`) at which non-aquatic actors become submerged and lose breath. */
+export const FLUID_SUBMERSION_DEPTH = 6 as const;
+
+/** Minimum fluid depth (`3/7`) at which wading incurs difficult-terrain movement penalty. */
+export const FLUID_WADING_DEPTH = 3 as const;
+
+/** Reserved MaterialPaletteRegistry index representing an unspecified/default material. */
+export const VOID_MATERIAL_PALETTE_INDEX = 0 as const;
+
+/** Packed numeric fluid kind identifiers stored in `WorldChunk.fluid` bits `3..5`. */
+export const enum FluidKindCode {
+  None = 0,
+  Water = 1,
+  Magma = 2,
+  Oil = 3,
+  Mud = 4
+}
+
+/** Named string fluid kinds used in schemas, tooltips, and spell effect units. */
+export type FluidKind = 'none' | 'water' | 'magma' | 'oil' | 'mud';
+
+/** Freezing threshold for water in degrees Celsius. */
+export const WATER_FREEZE_TEMP_C = 0 as const;
+
+/** Boiling threshold for water in degrees Celsius. */
+export const WATER_BOIL_TEMP_C = 100 as const;
+
+/** Auto-ignition threshold for oil in degrees Celsius. */
+export const OIL_IGNITION_TEMP_C = 220 as const;
+
+/** Temperature boost applied to the water/magma contact voxel during obsidian solidification. */
+export const OBSIDIAN_CONTACT_TEMP_BOOST_C = 150 as const;
+
+/** Baseline magma thermal emitter temperature in degrees Celsius. */
+export const MAGMA_SOURCE_TEMP_C = 1000 as const;
+
+/** Baseline fire spatial-field thermal emitter temperature in degrees Celsius. */
+export const FIRE_FIELD_SOURCE_TEMP_C = 420 as const;
+
+/** Baseline cold spatial-field thermal emitter temperature in degrees Celsius. */
+export const COLD_FIELD_SOURCE_TEMP_C = -25 as const;
+
+/** Convergence band around ambient temperature at which dormant thermal chunks settle cleanly. */
+export const TEMP_CONVERGENCE_EPSILON_C = 1 as const;
+
+/** Default tile thermal conductivity factor (`0..1`). */
+export const DEFAULT_THERMAL_CONDUCTIVITY = 0.35 as const;
+
+/** Discrete neighbor heat diffusion coupling rate per tick. */
+export const TEMP_DIFFUSION_RATE = 0.2 as const;
+
+/** Exponential cooling/warming relaxation rate toward ambient temperature (`lambda` per turn). */
+export const TEMP_AMBIENT_RELAXATION_LAMBDA = 0.08 as const;
+
+/** Elapsed turn count threshold after which isolated 1/7 water/oil puddles evaporate on wake catch-up. */
+export const SHALLOW_EVAPORATION_TURNS = 25 as const;
+
+/** Minimum clamped cellular temperature in degrees Celsius. */
+export const MIN_CELL_TEMP_C = -100 as const;
+
+/** Maximum clamped cellular temperature in degrees Celsius. */
+export const MAX_CELL_TEMP_C = 2000 as const;
+
+/** Maximum horizontal BFS span (tiles) from a load-bearing support before an overhang caves in. */
+export const MAX_SUPPORT_SPAN_TILES = 6 as const;
+
+/** Falling rock/rubble crushing damage dealt to creatures underneath a structural cave-in. */
+export const CAVE_IN_CRUSH_DAMAGE = 12 as const;
+
 /** Maximum normalized elevation classified as open water in overworld chunk synthesis. */
 export const BIOME_WATER_ELEVATION_MAX = 0.24 as const;
 

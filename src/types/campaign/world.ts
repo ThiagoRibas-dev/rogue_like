@@ -52,7 +52,18 @@ export const TileDefinitionSchema = z.object({
   blocksVerticalLoS: z.boolean().optional(),
   hasFloorSupport: z.boolean().optional(),
   verticalLink: VerticalLinkKindEnum.optional(),
-  isClimbable: z.boolean().optional()
+  isClimbable: z.boolean().optional(),
+  mineable: z.boolean().optional(),
+  minedTileId: z.string().optional(),
+  mineYieldItemId: z.string().optional(),
+  mineYieldCount: z.number().int().positive().optional(),
+  mineWorkCost: z.number().int().positive().optional(),
+  requiredToolTag: z.string().optional(),
+  isLoadBearing: z.boolean().optional(),
+  collapseDropItemId: z.string().optional(),
+  thermalConductivity: z.number().min(0).max(1).optional(),
+  ignitionTempC: z.number().int().optional(),
+  burnedTileId: z.string().optional()
 });
 /** Inferred type for a tile definition. */
 export type TileDefinition = z.infer<typeof TileDefinitionSchema>;
