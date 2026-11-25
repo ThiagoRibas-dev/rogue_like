@@ -4,6 +4,7 @@ export {
   updateSpatialIndex,
   patchSpatialIndexForEntity,
   patchSpatialIndexInPlace,
+  getEntitiesAtPosition,
   addComponent,
   removeComponent,
   getComponent,

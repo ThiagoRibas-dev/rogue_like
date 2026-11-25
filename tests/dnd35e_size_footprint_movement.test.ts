@@ -140,7 +140,7 @@ describe('D&D 3.5e Multi-Tile Footprints, Dynamic Size Rendering, SRD Squeezing 
 
       for (let dy = 0; dy < expectedSpans[size]; dy++) {
         for (let dx = 0; dx < expectedSpans[size]; dx++) {
-          const occupants = state.spatialIndex.get(`${4 + dx},${4 + dy}`) ?? [];
+          const occupants = state.spatialIndex.get(`${4 + dx},${4 + dy},0`) ?? [];
           expect(occupants).toContain(entityId);
         }
       }
@@ -165,7 +165,7 @@ describe('D&D 3.5e Multi-Tile Footprints, Dynamic Size Rendering, SRD Squeezing 
     expect(eastPos.facing).toBe('east');
     expect(eastPos.footprintWidth).toBe(3);
     expect(eastPos.footprintHeight).toBe(1);
-    expect(moveEast.state.spatialIndex.get(`${eastPos.x + 2},${eastPos.y}`) ?? []).toContain(wormId);
+    expect(moveEast.state.spatialIndex.get(`${eastPos.x + 2},${eastPos.y},0`) ?? []).toContain(wormId);
 
     // Move South -> rotates footprint vertically to 1x3
     const moveSouth = processMoveIntent(moveEast.state, {
@@ -179,7 +179,7 @@ describe('D&D 3.5e Multi-Tile Footprints, Dynamic Size Rendering, SRD Squeezing 
     expect(southPos.facing).toBe('south');
     expect(southPos.footprintWidth).toBe(1);
     expect(southPos.footprintHeight).toBe(3);
-    expect(moveSouth.state.spatialIndex.get(`${southPos.x},${southPos.y + 2}`) ?? []).toContain(wormId);
+    expect(moveSouth.state.spatialIndex.get(`${southPos.x},${southPos.y + 2},0`) ?? []).toContain(wormId);
   });
 
   test('Dynamic size modifiers (Enlarge/Reduce Person style) update PositionComponent footprint & AoE deduplication', () => {
@@ -212,7 +212,7 @@ describe('D&D 3.5e Multi-Tile Footprints, Dynamic Size Rendering, SRD Squeezing 
     const enlargedPos = getComponent(state, giantId, ComponentType.Position) as PositionComponent;
     expect(enlargedPos.footprintWidth).toBe(2);
     expect(enlargedPos.footprintHeight).toBe(2);
-    expect(state.spatialIndex.get('11,11') ?? []).toContain(giantId);
+    expect(state.spatialIndex.get('11,11,0') ?? []).toContain(giantId);
 
     // Fireball targeting (12, 12) radius 5 ft clips ONLY square (11, 11) of the 2x2 creature -> hits once!
     const fireball = getDnD35SystemContent(campaign)?.spells['fireball'];

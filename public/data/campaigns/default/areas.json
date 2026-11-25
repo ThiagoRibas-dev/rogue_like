@@ -310,8 +310,96 @@
       {
         "targetAreaId": "endless_frontier",
         "direction": "edge"
+      },
+      {
+        "targetAreaId": "watchtower_overlook",
+        "direction": "portal"
       }
     ]
+  },
+  "watchtower_overlook": {
+    "id": "watchtower_overlook",
+    "name": "Highwatch Bastion",
+    "generatorType": "static",
+    "dangerRating": 2,
+    "environmentType": "outdoors",
+    "tags": [
+      "watchtower",
+      "multi_z"
+    ],
+    "connections": [
+      {
+        "targetAreaId": "outer_crossroads",
+        "direction": "portal",
+        "placementX": 2,
+        "placementY": 4,
+        "placementZ": 0
+      }
+    ],
+    "placedEntities": [
+      {
+        "templateId": "goblin",
+        "x": 9,
+        "y": 4,
+        "z": 1
+      },
+      {
+        "templateId": "wooden_chest",
+        "x": 3,
+        "y": 2,
+        "z": -1,
+        "inventory": [
+          "health_potion",
+          "torch"
+        ]
+      }
+    ],
+    "staticMap": {
+      "layout": [
+        "#############",
+        "#.......#...#",
+        "#.D.....#U..#",
+        "#....../#...#",
+        "#.......=...#",
+        "#...........#",
+        "#...........#",
+        "#...........#",
+        "#############"
+      ],
+      "zLevels": {
+        "-1": [
+          "#############",
+          "#...........#",
+          "#.U.........#",
+          "#...........#",
+          "#...........#",
+          "#############",
+          "#############",
+          "#############",
+          "#############"
+        ],
+        "1": [
+          "             ",
+          "        #### ",
+          "        #D.# ",
+          "        ...# ",
+          "        =... ",
+          "             ",
+          "             ",
+          "             ",
+          "             "
+        ]
+      },
+      "legend": {
+        "#": "stone_wall",
+        "=": "climbable_wall",
+        ".": "stone_floor",
+        "/": "stone_ramp",
+        "U": "wooden_stairs_up",
+        "D": "wooden_stairs_down",
+        " ": "open_air"
+      }
+    }
   },
   "endless_frontier": {
     "id": "endless_frontier",
@@ -336,6 +424,9 @@
       "chunkSize": 16,
       "activeRadiusChunks": 4,
       "prefetchRadiusChunks": 6,
+      "minZ": -2,
+      "maxZ": 2,
+      "activeRadiusZ": 1,
       "worldSeed": 45175,
       "spawnClearingRadius": 4,
       "biomePalette": {
@@ -344,7 +435,10 @@
         "plains": "stone_floor",
         "forest": "stone_floor",
         "ridge": "stone_wall",
-        "road": "stone_floor"
+        "road": "stone_floor",
+        "openAir": "open_air",
+        "underground": "stone_wall",
+        "ramp": "stone_ramp"
       }
     }
   }

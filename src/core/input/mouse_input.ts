@@ -13,7 +13,7 @@ import {
   createMoveTargetAction,
   createToggleTargetingAction
 } from '../../actions/targeting.actions.ts';
-import { getCameraOffset } from '../../rendering/camera.ts';
+import { getCameraOffset, resolveActiveViewZ, resolveRenderedCellZAt } from '../../rendering/camera.ts';
 import { uiStore } from '../../rendering/ui/core/ui_store.ts';
 import { setHudDockDisplayRef } from '../../rendering/ui/hud_dock.ui.ts';
 import { getValidVerbsForTarget, getVerbOptionsForTarget } from '../../systems/apply.system.ts';
@@ -25,7 +25,7 @@ import type { ApplyIntentTarget } from '../../types/intents/interaction.intents.
 import { isHostile } from '../../utils/faction.ts';
 import { getBresenhamLine } from '../../utils/grid.ts';
 import { getTileAt, isInMapBounds } from '../../map/map_accessor.ts';
-import { getComponent } from '../ecs.ts';
+import { getComponent, getEntitiesAtPosition } from '../ecs.ts';
 import { getGameState, queuePlayerIntent, setGameState } from '../game-loop.ts';
 import { setContextMenuAnchor, setHoveredTile } from '../hover_state.ts';
 import { recordHoverTileChange } from '../performance.ts';
@@ -57,7 +57,8 @@ function resolveEventWorldCoords(
 
   const mapX = vx + cameraX;
   const mapY = vy + cameraY;
-  if (!isInMapBounds(state.map, mapX, mapY)) return null;
+  const viewZ = resolveActiveViewZ(state);
+  if (!isInMapBounds(state.map, mapX, mapY, viewZ)) return null;
 
   return { mapX, mapY };
 }
@@ -73,13 +74,16 @@ function openContextVerbMenuAtTile(
   clientX: number,
   clientY: number
 ): void {
-  const entitiesOnTile = state.spatialIndex.get(`${mapX},${mapY}`) ?? [];
-  const otherEntityId = entitiesOnTile.find((id) => id !== playerEntityId);
   const playerPos = getComponent(state, playerEntityId, ComponentType.Position) as PositionComponent | undefined;
+  const baseZ = resolveActiveViewZ(state);
+  const viewZ = resolveRenderedCellZAt(state, mapX, mapY, baseZ).z;
+  const entitiesOnTile = getEntitiesAtPosition(state, mapX, mapY, viewZ);
+  const otherEntityId = entitiesOnTile.find((id) => id !== playerEntityId);
   const playerW = Math.max(1, playerPos?.footprintWidth ?? 1);
   const playerH = Math.max(1, playerPos?.footprintHeight ?? 1);
   const isPlayerFootprintTile =
     playerPos !== undefined &&
+    (playerPos.z ?? 0) === viewZ &&
     mapX >= playerPos.x &&
     mapX < playerPos.x + playerW &&
     mapY >= playerPos.y &&
@@ -92,7 +96,7 @@ function openContextVerbMenuAtTile(
   } else if (isPlayerFootprintTile) {
     target = { type: 'self' };
   } else {
-    target = { type: 'tile', x: mapX, y: mapY };
+    target = { type: 'tile', x: mapX, y: mapY, ...(viewZ !== 0 ? { z: viewZ } : {}) };
   }
 
   const validVerbs = getValidVerbsForTarget(state, playerEntityId, target);
@@ -131,8 +135,14 @@ function handleCanvasLeftClick(state: GameState, playerEntityId: EntityId, mapX:
       queuePlayerIntent(createMoveTargetAction(playerEntityId, dx, dy));
     }
     if (context?.verb === 'throw' && context.toolEntityId !== undefined) {
+      const targetZ = state.targetingMode.z ?? 0;
       queuePlayerIntent(
-        createApplyAction(playerEntityId, 'throw', { type: 'tile', x: mapX, y: mapY }, context.toolEntityId)
+        createApplyAction(
+          playerEntityId,
+          'throw',
+          { type: 'tile', x: mapX, y: mapY, ...(targetZ !== 0 ? { z: targetZ } : {}) },
+          context.toolEntityId
+        )
       );
       queuePlayerIntent(createToggleTargetingAction(playerEntityId));
     } else {
@@ -152,7 +162,7 @@ function handleCanvasLeftClick(state: GameState, playerEntityId: EntityId, mapX:
 
   // Clicked on any square of the player's own footprint: attack shared-square hostile, pick up item, or wait
   if (dx === 0 && dy === 0) {
-    const entitiesHere = state.spatialIndex.get(`${mapX},${mapY}`) ?? [];
+    const entitiesHere = getEntitiesAtPosition(state, mapX, mapY, playerPos.z ?? 0);
     const hostileHere = entitiesHere.find(
       (id) =>
         id !== playerEntityId &&

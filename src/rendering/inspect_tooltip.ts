@@ -1,4 +1,4 @@
-import { getComponent, resolveEntityDisplayName } from '../core/ecs.ts';
+import { getComponent, getEntitiesAtPosition, resolveEntityDisplayName } from '../core/ecs.ts';
 import { getHoverState } from '../core/hover_state.ts';
 import { getActiveRuleset } from '../rulesets/registry.ts';
 import { getEffectiveWorldClockConfig } from '../systems/world_clock.system.ts';
@@ -21,8 +21,9 @@ import {
 import type { ActiveEffectDisplayDTO } from '../types/ruleset.types.ts';
 import { type EntityId, type GameState, UIMode } from '../types/game-state.types.ts';
 import { formatTurnDurationCompact } from '../utils/duration.ts';
-import { getTileAt } from '../map/map_accessor.ts';
+import { getTileAt, isMultiZMap } from '../map/map_accessor.ts';
 import { getEffectiveStats } from '../utils/stats.ts';
+import { resolveActiveViewZ, resolveRenderedCellZAt } from './camera.ts';
 import { FACET_DOMINANT_HIGH_THRESHOLD, FACET_DOMINANT_LOW_THRESHOLD } from '../constants/personality.constants.ts';
 import type { InspectSectionDTO, InspectTooltipDTO } from './viewport_snapshot.types.ts';
 
@@ -284,13 +285,15 @@ export function buildInspectTooltip(
     return { active: false, vx, vy, sections: [] };
   }
 
-  const tile = getTileAt(state.map, ix, iy);
+  const baseZ = isKeyboardInspect ? (state.inspectMode?.z ?? 0) : resolveActiveViewZ(state);
+  const viewZ = isKeyboardInspect ? baseZ : resolveRenderedCellZAt(state, ix, iy, baseZ).z;
+  const tile = getTileAt(state.map, ix, iy, viewZ);
   if (!tile || (!tile.explored && !state.map.isFullyExplored)) {
     return { active: false, vx, vy, sections: [] };
   }
 
   const sections: InspectSectionDTO[] = [];
-  const entitiesAt = state.spatialIndex.get(`${ix},${iy}`) || [];
+  const entitiesAt = getEntitiesAtPosition(state, ix, iy, viewZ);
 
   const sortedEntities = [...entitiesAt].sort((a, b) => {
     const aActor = getComponent(state, a, ComponentType.Actor) ? 1 : 0;
@@ -320,7 +323,9 @@ export function buildInspectTooltip(
         .join(' ');
       sections.push({
         type: 'header',
-        value: `${tileDef.glyph} ${formattedName}`
+        value: isMultiZMap(state.map)
+          ? `${tileDef.glyph} ${formattedName} (Z:${viewZ})`
+          : `${tileDef.glyph} ${formattedName}`
       });
     }
   }

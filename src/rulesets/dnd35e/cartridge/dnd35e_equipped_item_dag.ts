@@ -8,12 +8,17 @@ import { scaleWeaponDamageDice, stepDamageDiceLadder } from '../equipment/weapon
 import { evaluateEffectBundle } from '../effect_bundle.ts';
 import { resolveTypedModifiersWithBreakdown } from '../modifiers.ts';
 import type { CreatureSizeCategory, DnD35EntityData, StatModifier } from '../types/dnd35e.types.ts';
-import type { DnD35ItemDefinition, DnD35ItemEnhancement } from '../types/dnd35e_system.types.ts';
+import type {
+  DnD35ItemDefinition,
+  DnD35ItemEnhancement,
+  DnD35RuleOverrideEntry
+} from '../types/dnd35e_system.types.ts';
 
 /** Result of evaluating equipped item DAG contributions across active anatomical slots. */
 export interface EquippedItemDAGContributions {
   readonly modifiers: ReadonlyArray<StatModifier>;
   readonly grantedTags: ReadonlyArray<string>;
+  readonly ruleOverrides: ReadonlyArray<DnD35RuleOverrideEntry>;
   readonly maxDexBonusCap: number | undefined;
   readonly armorCheckPenalty: number;
   readonly hasStructuredArmorOrShield: boolean;
@@ -75,6 +80,7 @@ export function collectEquippedItemDAGContributions(
     return {
       modifiers: [],
       grantedTags: [],
+      ruleOverrides: [],
       maxDexBonusCap: undefined,
       armorCheckPenalty: 0,
       hasStructuredArmorOrShield: false
@@ -83,6 +89,7 @@ export function collectEquippedItemDAGContributions(
 
   const modifiers: StatModifier[] = [];
   const grantedTags: string[] = [];
+  const ruleOverrides: DnD35RuleOverrideEntry[] = [];
   let maxDexBonusCap: number | undefined;
   let armorCheckPenalty = 0;
   let hasStructuredArmorOrShield = false;
@@ -204,6 +211,7 @@ export function collectEquippedItemDAGContributions(
       const evalRes = evaluateEffectBundle(itemDef.effectBundle, itemRoot, suppressedBundleIds, activeSelfTags);
       modifiers.push(...scopeWeaponModifiers(evalRes.statModifiers, weaponTags));
       grantedTags.push(...evalRes.grantedTags);
+      ruleOverrides.push(...evalRes.ruleOverrides);
     }
 
     const sysEnhancements =
@@ -218,11 +226,12 @@ export function collectEquippedItemDAGContributions(
         const evalRes = evaluateEffectBundle(enh.effectBundle, enhRoot, suppressedBundleIds, activeSelfTags);
         modifiers.push(...scopeWeaponModifiers(evalRes.statModifiers, weaponTags));
         grantedTags.push(...evalRes.grantedTags);
+        ruleOverrides.push(...evalRes.ruleOverrides);
       }
     }
   }
 
-  return { modifiers, grantedTags, maxDexBonusCap, armorCheckPenalty, hasStructuredArmorOrShield };
+  return { modifiers, grantedTags, ruleOverrides, maxDexBonusCap, armorCheckPenalty, hasStructuredArmorOrShield };
 }
 
 /**

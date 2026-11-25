@@ -66,7 +66,7 @@ function buildTestState(uiMode: UIMode = UIMode.Game, rulesetId: 'classic' | 'dn
     currentAreaId: 'area1',
     areas: new Map(),
     persistentEntities: new Map(),
-    spatialIndex: new Map([['5,5', [playerId]]]),
+    spatialIndex: new Map([['5,5,0', [playerId]]]),
     isGameOver: false,
     uiMode,
     identifiedItems: new Set(),

@@ -28,6 +28,7 @@ export const enum IntentType {
   ToggleRotated = 'ToggleRotated',
   Toggle3D = 'Toggle3D',
   SetZoomLevel = 'SetZoomLevel',
+  AdjustCameraZ = 'AdjustCameraZ',
   StartDialogue = 'StartDialogue',
   SelectDialogueOption = 'SelectDialogueOption',
   CloseDialogue = 'CloseDialogue',

@@ -1,4 +1,4 @@
-import { addComponent, createEntity, getComponent, removeEntity } from '../core/ecs.ts';
+import { addComponent, createEntity, getComponent, getEntitiesAtPosition, removeEntity } from '../core/ecs.ts';
 import { rng } from '../core/rng.ts';
 import type { FieldDefinition, FieldInteractionRule } from '../types/campaign/world.ts';
 import {
@@ -135,7 +135,8 @@ function ensureFieldDefinitionExists(state: GameState, fieldType: string): GameS
 function collectTargetTagsAtTile(
   state: GameState,
   x: number,
-  y: number
+  y: number,
+  z = 0
 ): {
   readonly tags: ReadonlySet<string>;
   readonly matchingFieldEntityIds: ReadonlyArray<EntityId>;
@@ -145,15 +146,15 @@ function collectTargetTagsAtTile(
   const matchingFieldEntityIds: EntityId[] = [];
   let frozenCrossingEntityId: EntityId | undefined;
 
-  if (isInMapBounds(state.map, x, y)) {
-    const tileDef = getTileDefAt(state, x, y);
+  if (isInMapBounds(state.map, x, y, z)) {
+    const tileDef = getTileDefAt(state, x, y, z);
     if (tileDef) {
       for (const t of tileDef.tags ?? []) tags.add(t);
       if (tileDef.hazardKind) tags.add(tileDef.hazardKind);
     }
   }
 
-  const crossing = queryCrossingAtPosition(state, x, y);
+  const crossing = queryCrossingAtPosition(state, x, y, z);
   if (crossing) {
     tags.add(crossing.crossing.crossingKind);
     if (crossing.crossing.crossingKind === 'frozen_surface') {
@@ -162,7 +163,7 @@ function collectTargetTagsAtTile(
     }
   }
 
-  const entitiesAt = state.spatialIndex.get(`${x},${y}`) ?? [];
+  const entitiesAt = getEntitiesAtPosition(state, x, y, z);
   for (const eid of entitiesAt) {
     const f = getComponent(state, eid, ComponentType.Field) as FieldComponent | undefined;
     if (!f) continue;
@@ -194,13 +195,14 @@ function spawnFieldRaw(
   intensity: number,
   duration: number,
   spreadRuleId?: string,
-  interaction?: InteractionChain
+  interaction?: InteractionChain,
+  z = 0
 ): [GameState, EntityId] {
   const readyState = ensureFieldDefinitionExists(state, fieldType);
   const def = readyState.campaign.fields[fieldType]!;
 
   // Deduplicate same-type stationary field on the exact same tile
-  const existingAtTile = readyState.spatialIndex.get(`${x},${y}`) ?? [];
+  const existingAtTile = getEntitiesAtPosition(readyState, x, y, z);
   for (const existingId of existingAtTile) {
     const existingField = getComponent(readyState, existingId, ComponentType.Field) as FieldComponent | undefined;
     if (existingField && existingField.fieldType === fieldType && existingField.anchorEntityId === undefined) {
@@ -236,7 +238,12 @@ function spawnFieldRaw(
         })
       : undefined;
 
-  const pos: PositionComponent = { type: ComponentType.Position, x, y };
+  const pos: PositionComponent = {
+    type: ComponentType.Position,
+    x,
+    y,
+    ...(z !== 0 ? { z } : {})
+  };
   const render: RenderableComponent = {
     type: ComponentType.Renderable,
     glyph: def.glyph,
@@ -284,9 +291,10 @@ function resolveFieldInteractionsTransaction(
   originX: number,
   originY: number,
   incomingTags: ReadonlyArray<string>,
-  interaction?: InteractionChain
+  interaction?: InteractionChain,
+  z = 0
 ): FieldInteractionTransactionResult {
-  if (incomingTags.length === 0 || !isInMapBounds(state.map, originX, originY)) {
+  if (incomingTags.length === 0 || !isInMapBounds(state.map, originX, originY, z)) {
     return { state, matched: false };
   }
 
@@ -304,7 +312,7 @@ function resolveFieldInteractionsTransaction(
     const incomingMatches = rule.incomingTags.some((t) => incomingSet.has(t));
     if (!incomingMatches) continue;
 
-    const originTarget = collectTargetTagsAtTile(nextState, originX, originY);
+    const originTarget = collectTargetTagsAtTile(nextState, originX, originY, z);
     const targetMatches = rule.targetTags.some((t) => originTarget.tags.has(t));
     if (!targetMatches) continue;
 
@@ -319,7 +327,7 @@ function resolveFieldInteractionsTransaction(
       if (visited.has(key)) continue;
       visited.add(key);
 
-      const tileTarget = collectTargetTagsAtTile(nextState, curr.x, curr.y);
+      const tileTarget = collectTargetTagsAtTile(nextState, curr.x, curr.y, z);
       if (!rule.targetTags.some((t) => tileTarget.tags.has(t))) continue;
 
       affectedCoords.push(curr);
@@ -332,7 +340,7 @@ function resolveFieldInteractionsTransaction(
           { x: curr.x, y: curr.y - 1 }
         ];
         for (const n of neighbors) {
-          if (isInMapBounds(nextState.map, n.x, n.y) && !visited.has(`${n.x},${n.y}`)) {
+          if (isInMapBounds(nextState.map, n.x, n.y, z) && !visited.has(`${n.x},${n.y}`)) {
             queue.push(n);
           }
         }
@@ -356,7 +364,7 @@ function resolveFieldInteractionsTransaction(
     }
 
     for (const coord of affectedCoords) {
-      const latestTarget = collectTargetTagsAtTile(nextState, coord.x, coord.y);
+      const latestTarget = collectTargetTagsAtTile(nextState, coord.x, coord.y, z);
       let inheritedInteraction = ruleInteraction;
 
       if (rule.extinguishTarget === true) {
@@ -389,6 +397,7 @@ function resolveFieldInteractionsTransaction(
           state: nextState,
           x: coord.x,
           y: coord.y,
+          ...(z !== 0 ? { z } : {}),
           crossingKind: rule.spawnCrossingKind,
           durationTurns: rule.spawnCrossingDuration ?? DEFAULT_FROZEN_CROSSING_DURATION,
           ...(inheritedInteraction !== undefined ? { interaction: inheritedInteraction } : {})
@@ -408,7 +417,8 @@ function resolveFieldInteractionsTransaction(
           rule.spawnFieldIntensity ?? 1,
           rule.spawnFieldDuration ?? DEFAULT_TRANSMUTED_FIELD_DURATION,
           undefined,
-          inheritedInteraction
+          inheritedInteraction,
+          z
         );
         nextState = withField;
         if (primarySpawnedEntityId === undefined) {
@@ -417,7 +427,7 @@ function resolveFieldInteractionsTransaction(
       }
 
       if (rule.shockDamageDice !== undefined) {
-        const occupants = nextState.spatialIndex.get(`${coord.x},${coord.y}`) ?? [];
+        const occupants = getEntitiesAtPosition(nextState, coord.x, coord.y, z);
         for (const occId of occupants) {
           const fighter = getComponent(nextState, occId, ComponentType.Fighter) as FighterComponent | undefined;
           if (!fighter || fighter.hp <= 0) continue;
@@ -466,9 +476,10 @@ export function evaluateFieldInteractionsAtTile(
   originX: number,
   originY: number,
   incomingTags: ReadonlyArray<string>,
-  interaction?: InteractionChain
+  interaction?: InteractionChain,
+  z = 0
 ): GameState {
-  return resolveFieldInteractionsTransaction(state, originX, originY, incomingTags, interaction).state;
+  return resolveFieldInteractionsTransaction(state, originX, originY, incomingTags, interaction, z).state;
 }
 
 /**
@@ -483,7 +494,8 @@ export function spawnField(
   intensity: number,
   duration: number,
   spreadRuleId?: string,
-  interaction?: InteractionChain
+  interaction?: InteractionChain,
+  z = 0
 ): [GameState, EntityId] {
   const def = state.campaign.fields[fieldType];
   if (
@@ -515,12 +527,12 @@ export function spawnField(
   if (fieldType.includes('water')) incomingTags.push('water', 'liquid');
 
   // Detect and commit transmutations BEFORE committing a raw incoming field (prevents double-spawning fire on oil).
-  const reaction = resolveFieldInteractionsTransaction(state, x, y, incomingTags, interaction);
+  const reaction = resolveFieldInteractionsTransaction(state, x, y, incomingTags, interaction, z);
   if (reaction.matched) {
     return [reaction.state, reaction.primarySpawnedEntityId ?? (-1 as unknown as EntityId)];
   }
 
-  return spawnFieldRaw(state, fieldType, x, y, intensity, duration, spreadRuleId, interaction);
+  return spawnFieldRaw(state, fieldType, x, y, intensity, duration, spreadRuleId, interaction, z);
 }
 
 /**
@@ -586,8 +598,8 @@ export function processFieldsTick(state: GameState): GameState {
 
     // 1. Apply effects to occupants for the current round
     if (def) {
-      const entitiesAtPos = nextState.spatialIndex.get(`${pos.x},${pos.y}`);
-      if (entitiesAtPos) {
+      const entitiesAtPos = getEntitiesAtPosition(nextState, pos.x, pos.y, pos.z ?? 0);
+      if (entitiesAtPos.length > 0) {
         const fieldChain =
           fieldCmp.interaction !== undefined
             ? appendInteractionFrame(fieldCmp.interaction, {
@@ -710,7 +722,8 @@ export interface ActiveFieldQueryResult {
 export function queryActiveFieldsAtPosition(
   state: GameState,
   x: number,
-  y: number
+  y: number,
+  z = 0
 ): ReadonlyArray<ActiveFieldQueryResult> {
   const results: ActiveFieldQueryResult[] = [];
 
@@ -721,17 +734,18 @@ export function queryActiveFieldsAtPosition(
     const pos = getComponent(state, entityId, ComponentType.Position) as PositionComponent | undefined;
     if (!pos) continue;
 
+    const dz = Math.abs((pos.z ?? 0) - z);
     const radiusFt = field.radiusFt ?? 0;
     const radiusTiles = Math.floor(radiusFt / 5);
 
     if (radiusTiles <= 0) {
-      if (pos.x === x && pos.y === y) {
+      if (pos.x === x && pos.y === y && dz === 0) {
         results.push({ entityId, field });
       }
     } else {
       const dx = Math.abs(pos.x - x);
       const dy = Math.abs(pos.y - y);
-      const distTiles = Math.max(dx, dy);
+      const distTiles = Math.max(dx, dy, dz);
       if (distTiles <= radiusTiles) {
         results.push({ entityId, field });
       }

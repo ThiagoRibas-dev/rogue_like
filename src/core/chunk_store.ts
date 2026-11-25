@@ -7,7 +7,7 @@ import {
 import { deserializeWorldChunkFromBuffer, serializeWorldChunkToBuffer } from '../map/world_chunk.ts';
 import type { GameState } from '../types/game-state.types.ts';
 import type { ChunkedWorldGrid, WorldChunk } from '../types/world-chunk.types.ts';
-import { unpackWorldCoord } from '../utils/grid.ts';
+import { unpackWorldCoord3D } from '../utils/grid.ts';
 
 let chunkDbPromise: Promise<IDBDatabase> | null = null;
 const memoryChunkStore = new Map<string, ArrayBuffer>();
@@ -256,8 +256,8 @@ async function overlayPersistedDeltasOnGrid(grid: ChunkedWorldGrid, scopeKey: st
 
   for (const packed of grid.dirtyChunkKeys) {
     const existing = nextChunks.get(packed);
-    const coords = existing ? { x: existing.cx, y: existing.cy } : unpackWorldCoord(packed);
-    const loaded = await loadWorldChunkDelta(scopeKey, grid.areaId, coords.x, coords.y, 0);
+    const coords = existing ? { x: existing.cx, y: existing.cy, z: existing.cz } : unpackWorldCoord3D(packed);
+    const loaded = await loadWorldChunkDelta(scopeKey, grid.areaId, coords.x, coords.y, coords.z);
     if (loaded && existing) {
       nextChunks.set(packed, loaded);
       modified = true;

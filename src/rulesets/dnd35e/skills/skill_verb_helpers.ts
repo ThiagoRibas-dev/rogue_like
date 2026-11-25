@@ -1,4 +1,4 @@
-import { addComponent, getComponent } from '../../../core/ecs.ts';
+import { addComponent, getComponent, getEntitiesAtPosition } from '../../../core/ecs.ts';
 import { ComponentType, type PositionComponent, type RulesetDataComponent } from '../../../types/components.types.ts';
 import type { EntityId, GameState } from '../../../types/game-state.types.ts';
 import type { ApplyIntentTarget } from '../../../types/intents/interaction.intents.ts';
@@ -304,13 +304,13 @@ export function findTargetEntityWithComponent(
     }
     const pos = getComponent(state, target.entityId, ComponentType.Position) as PositionComponent | undefined;
     if (pos) {
-      const entitiesAt = state.spatialIndex.get(`${pos.x},${pos.y}`) ?? [];
+      const entitiesAt = getEntitiesAtPosition(state, pos.x, pos.y, pos.z ?? 0);
       return entitiesAt.find((id) => getComponent(state, id, compType) !== undefined);
     }
     return undefined;
   }
   if (target.type === 'tile') {
-    const entitiesAt = state.spatialIndex.get(`${target.x},${target.y}`) ?? [];
+    const entitiesAt = getEntitiesAtPosition(state, target.x, target.y, target.z ?? 0);
     return entitiesAt.find((id) => getComponent(state, id, compType) !== undefined);
   }
   return undefined;

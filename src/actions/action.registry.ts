@@ -7,6 +7,7 @@ import { MAX_ZOOM_LEVEL, MIN_ZOOM_LEVEL } from '../constants/display.constants.t
 import { ComponentType } from '../types/components.types.ts';
 import { getComponent } from '../core/ecs.ts';
 import { assertNever } from '../utils/assert.ts';
+import { getMapZBounds } from '../map/map_accessor.ts';
 import { closeTopModal, getCurrentModal, openModal, toggleModal } from '../core/modal_manager.ts';
 import { switchEngineMode } from '../core/scheduler.ts';
 import { processMeleeAttackIntent } from '../systems/combat.system.ts';
@@ -172,6 +173,25 @@ export function dispatchAction(
       const nextZoom = Math.round(clampedZoom * ZOOM_ROUNDING_FACTOR) / ZOOM_ROUNDING_FACTOR;
       return {
         state: { ...state, zoomLevel: nextZoom },
+        success: false
+      };
+    }
+
+    case IntentType.AdjustCameraZ: {
+      if (intent.reset) {
+        return {
+          state: { ...state, cameraZOffset: 0 },
+          success: false
+        };
+      }
+      const pos = getComponent(state, intent.entityId, ComponentType.Position);
+      const actorZ = pos?.z ?? 0;
+      const bounds = getMapZBounds(state.map);
+      const minOffset = bounds.minZ - actorZ;
+      const maxOffset = bounds.maxZ - actorZ;
+      const nextOffset = Math.max(minOffset, Math.min(maxOffset, (state.cameraZOffset ?? 0) + intent.dz));
+      return {
+        state: { ...state, cameraZOffset: nextOffset },
         success: false
       };
     }

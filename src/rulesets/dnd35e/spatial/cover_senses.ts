@@ -2,7 +2,8 @@ import { queryActiveFieldsAtPosition } from '../../../systems/field.system.ts';
 import { evaluateDynamicLightAtTile } from '../../../systems/light_emitter.system.ts';
 import { resolveAreaEnvironmentProfile } from '../../../systems/world_clock.system.ts';
 import type { GameState } from '../../../types/game-state.types.ts';
-import { measureDnD35DistanceFt } from './grid_geometry.ts';
+import { getBresenhamLine3D } from '../../../utils/grid.ts';
+import { measureDnD35Distance3DFt } from './grid_geometry.ts';
 import type { CoverState, IlluminationLevel, SensoryProfile } from '../types/dnd35e.types.ts';
 
 /** AC bonus granted by Standard Cover or Soft Cover (`+4`). */
@@ -154,6 +155,85 @@ export function evaluateCover(
 }
 
 /**
+ * Traces a true 3D voxel line between `attackerPos` and `targetPos` across Z-levels to evaluate
+ * Total Cover, Standard Cover (floor/parapet edge grazing), Soft Cover, and Line of Effect.
+ */
+export function evaluateCover3D(
+  attackerPos: { readonly x: number; readonly y: number; readonly z?: number | undefined },
+  targetPos: { readonly x: number; readonly y: number; readonly z?: number | undefined },
+  isWallAt: (x: number, y: number, z: number) => boolean,
+  hasInterveningCreatureAt?: (x: number, y: number, z: number) => boolean,
+  isRangedAttack = false
+): CoverEvaluationResult {
+  const az = attackerPos.z ?? 0;
+  const tz = targetPos.z ?? 0;
+  if (az === tz) {
+    return evaluateCover(
+      attackerPos,
+      targetPos,
+      (x, y) => isWallAt(x, y, az),
+      hasInterveningCreatureAt ? (x, y) => hasInterveningCreatureAt(x, y, az) : undefined,
+      isRangedAttack
+    );
+  }
+
+  const line = getBresenhamLine3D(attackerPos.x, attackerPos.y, az, targetPos.x, targetPos.y, tz);
+  let wallBlockedRay = false;
+  let edgeGrazed = false;
+  let creatureInterposed = false;
+
+  for (let i = 1; i < line.length - 1; i++) {
+    const prev = line[i - 1]!;
+    const pt = line[i]!;
+    if (isWallAt(pt.x, pt.y, pt.z)) {
+      wallBlockedRay = true;
+      break;
+    }
+    if (pt.z !== prev.z && (isWallAt(pt.x, pt.y, prev.z) || isWallAt(prev.x, prev.y, pt.z))) {
+      edgeGrazed = true;
+    }
+    if (hasInterveningCreatureAt && hasInterveningCreatureAt(pt.x, pt.y, pt.z)) {
+      creatureInterposed = true;
+    }
+  }
+
+  if (wallBlockedRay) {
+    return {
+      coverState: 'total',
+      acBonus: IMPROVED_COVER_AC_BONUS,
+      reflexBonus: IMPROVED_COVER_REFLEX_BONUS,
+      blocksAoO: true,
+      blocksLineOfEffect: true
+    };
+  }
+  if (edgeGrazed) {
+    return {
+      coverState: 'standard',
+      acBonus: STANDARD_COVER_AC_BONUS,
+      reflexBonus: STANDARD_COVER_REFLEX_BONUS,
+      blocksAoO: true,
+      blocksLineOfEffect: false
+    };
+  }
+  if (isRangedAttack && creatureInterposed) {
+    return {
+      coverState: 'soft',
+      acBonus: STANDARD_COVER_AC_BONUS,
+      reflexBonus: 0,
+      blocksAoO: false,
+      blocksLineOfEffect: false
+    };
+  }
+  return {
+    coverState: 'none',
+    acBonus: 0,
+    reflexBonus: 0,
+    blocksAoO: false,
+    blocksLineOfEffect: false
+  };
+}
+
+/**
  * Checks whether an attacker and at least one threatening ally flank a defender by
  * occupying opposite sides or opposite corners across the defender's center coordinate.
  *
@@ -206,12 +286,14 @@ export function evaluateConcealmentAndSenses(
   observerPos: {
     readonly x: number;
     readonly y: number;
+    readonly z?: number | undefined;
     readonly footprintWidth?: number | undefined;
     readonly footprintHeight?: number | undefined;
   },
   targetPos: {
     readonly x: number;
     readonly y: number;
+    readonly z?: number | undefined;
     readonly footprintWidth?: number | undefined;
     readonly footprintHeight?: number | undefined;
   },
@@ -232,16 +314,20 @@ export function evaluateConcealmentAndSenses(
   const obsH = Math.max(1, observerPos.footprintHeight ?? 1);
   const tgtW = Math.max(1, targetPos.footprintWidth ?? 1);
   const tgtH = Math.max(1, targetPos.footprintHeight ?? 1);
+  const obsZ = observerPos.z ?? 0;
+  const tgtZ = targetPos.z ?? 0;
   let distanceFt = Infinity;
   for (let ody = 0; ody < obsH; ody++) {
     for (let odx = 0; odx < obsW; odx++) {
       for (let tdy = 0; tdy < tgtH; tdy++) {
         for (let tdx = 0; tdx < tgtW; tdx++) {
-          const d = measureDnD35DistanceFt(
+          const d = measureDnD35Distance3DFt(
             observerPos.x + odx,
             observerPos.y + ody,
+            obsZ,
             targetPos.x + tdx,
-            targetPos.y + tdy
+            targetPos.y + tdy,
+            tgtZ
           );
           if (d < distanceFt) distanceFt = d;
         }
@@ -373,17 +459,18 @@ export function resolveTileLightReading(
   state: GameState,
   x: number,
   y: number,
-  ambientOverride?: IlluminationLevel
+  ambientOverride?: IlluminationLevel,
+  z = 0
 ): TileLightReading {
   const envProfile = resolveAreaEnvironmentProfile(state);
   const baselineLevel = ambientOverride ?? envProfile.illumination;
   const winner = resolveWinningFieldIlluminationOverride(state, x, y);
   let level: IlluminationLevel = winner?.level ?? baselineLevel;
 
-  // Dynamic LightEmitterComponent sources brighten non-magical darkness/shadowy tiles symmetrically
+  // Dynamic LightEmitterComponent sources brighten non-magical darkness/shadowy tiles symmetrically in 3D
   const hasMagicalDarknessOverride = winner !== undefined && winner.level !== 'bright';
   if (!hasMagicalDarknessOverride && level !== 'bright') {
-    const dynamicLevel = evaluateDynamicLightAtTile(state, x, y);
+    const dynamicLevel = evaluateDynamicLightAtTile(state, x, y, z);
     if (dynamicLevel === 'bright') {
       level = 'bright';
     } else if (dynamicLevel === 'shadowy' && level === 'darkness') {
@@ -406,21 +493,16 @@ export function resolveTileLightReading(
 }
 
 /**
- * Resolves the effective `IlluminationLevel` (`'bright' | 'shadowy' | 'darkness'`) at `(x, y)`
+ * Resolves the effective `IlluminationLevel` (`'bright' | 'shadowy' | 'darkness'`) at `(x, y, z)`
  * by comparing active `FieldComponent.illuminationOverride` descriptors against `ambientIllumination`
  * (or the current area's environment & World Clock profile when `ambientIllumination` is omitted).
- *
- * @param state Current immutable GameState.
- * @param x Grid X coordinate.
- * @param y Grid Y coordinate.
- * @param ambientIllumination Optional explicit ambient illumination override.
- * @returns Effective `IlluminationLevel`.
  */
 export function resolveEffectiveTileIllumination(
   state: GameState,
   x: number,
   y: number,
-  ambientIllumination?: IlluminationLevel
+  ambientIllumination?: IlluminationLevel,
+  z = 0
 ): IlluminationLevel {
-  return resolveTileLightReading(state, x, y, ambientIllumination).level;
+  return resolveTileLightReading(state, x, y, ambientIllumination, z).level;
 }

@@ -1,4 +1,11 @@
-import { addComponent, createEntity, getComponent, removeEntity, resolveEntityDisplayName } from '../core/ecs.ts';
+import {
+  addComponent,
+  createEntity,
+  getComponent,
+  getEntitiesAtPosition,
+  removeEntity,
+  resolveEntityDisplayName
+} from '../core/ecs.ts';
 import { getActiveRuleset } from '../rulesets/registry.ts';
 import {
   ComponentType,
@@ -12,6 +19,7 @@ import {
 import type { EntityId, GameState } from '../types/game-state.types.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import { getEntityMovementModes } from './movement_displacement.ts';
+import { resolveGravityForEntity } from './gravity.system.ts';
 
 /** Visual descriptors for each world-owned `CrossingKind`. */
 const CROSSING_RENDER_PALETTE: Readonly<
@@ -28,6 +36,7 @@ export interface SpawnCrossingParams {
   readonly state: GameState;
   readonly x: number;
   readonly y: number;
+  readonly z?: number | undefined;
   readonly crossingKind: CrossingKind;
   readonly requiredSkill?: string | undefined;
   readonly skillDc?: number | undefined;
@@ -48,10 +57,11 @@ export interface SpawnCrossingParams {
 export function queryCrossingAtPosition(
   state: Readonly<GameState>,
   x: number,
-  y: number
+  y: number,
+  z = 0
 ): { readonly entityId: EntityId; readonly crossing: CrossingComponent } | undefined {
-  const candidates = state.spatialIndex.get(`${x},${y}`);
-  if (!candidates || candidates.length === 0) return undefined;
+  const candidates = getEntitiesAtPosition(state as GameState, x, y, z);
+  if (candidates.length === 0) return undefined;
 
   for (const entityId of candidates) {
     const crossing = getComponent(state, entityId, ComponentType.Crossing) as CrossingComponent | undefined;
@@ -70,7 +80,8 @@ export function queryCrossingAtPosition(
  * @returns Tuple `[updatedState, crossingEntityId]`.
  */
 export function spawnCrossingEntity(params: SpawnCrossingParams): [GameState, EntityId] {
-  const existing = queryCrossingAtPosition(params.state, params.x, params.y);
+  const z = params.z ?? 0;
+  const existing = queryCrossingAtPosition(params.state, params.x, params.y, z);
   if (existing && existing.crossing.crossingKind === params.crossingKind) {
     const updatedCrossing: CrossingComponent = {
       ...existing.crossing,
@@ -85,7 +96,8 @@ export function spawnCrossingEntity(params: SpawnCrossingParams): [GameState, En
   const pos: PositionComponent = {
     type: ComponentType.Position,
     x: params.x,
-    y: params.y
+    y: params.y,
+    ...(z !== 0 ? { z } : {})
   };
   const palette = CROSSING_RENDER_PALETTE[params.crossingKind];
   const render: RenderableComponent = {
@@ -137,7 +149,7 @@ export function destroyCrossingEntity(state: GameState, crossingEntityId: Entity
     nextState = addMessage(nextState, reasonMessage, MessageLogCategory.System);
   }
 
-  const occupants = [...(nextState.spatialIndex.get(`${pos.x},${pos.y}`) ?? [])];
+  const occupants = [...getEntitiesAtPosition(nextState, pos.x, pos.y, pos.z ?? 0)];
   const activeRuleset = getActiveRuleset(nextState);
 
   for (const occupantId of occupants) {
@@ -159,6 +171,7 @@ export function destroyCrossingEntity(state: GameState, crossingEntityId: Entity
     if (activeRuleset.onCrossingCollapsedForOccupant) {
       nextState = activeRuleset.onCrossingCollapsedForOccupant(nextState, occupantId, pos.x, pos.y);
     }
+    nextState = resolveGravityForEntity(nextState, occupantId).state;
   }
 
   return nextState;

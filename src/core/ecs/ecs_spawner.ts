@@ -41,14 +41,15 @@ export function spawnEntity(
   x: number,
   y: number,
   dynamicTraits?: ReadonlyArray<string>,
-  staticInventory?: ReadonlyArray<string>
+  staticInventory?: ReadonlyArray<string>,
+  z = 0
 ): [GameState, EntityId] {
   const template = state.campaign.entities[templateId];
   if (!template) throw new Error(`Unknown entity template: ${templateId}`);
 
   const batched = withEcsBatch(state, (batch) => {
     const entityId = batch.createEntity();
-    const pos: PositionComponent = { type: ComponentType.Position, x, y };
+    const pos: PositionComponent = { type: ComponentType.Position, x, y, ...(z !== 0 ? { z } : {}) };
     const render: RenderableComponent = {
       type: ComponentType.Renderable,
       glyph: template.glyph,
@@ -347,7 +348,7 @@ export function spawnEntity(
       for (const itemId of template.shop.inventory) {
         if (state.campaign.items[itemId]) {
           let itemEntityId: EntityId;
-          [nextState, itemEntityId] = spawnItem(nextState, itemId, x, y);
+          [nextState, itemEntityId] = spawnItem(nextState, itemId, x, y, z);
           nextState = removeComponent(nextState, itemEntityId, ComponentType.Position);
           shopInventoryIds.push(itemEntityId);
         }
@@ -373,7 +374,7 @@ export function spawnEntity(
       for (const itemId of staticInventory) {
         if (state.campaign.items[itemId]) {
           let itemEntityId: EntityId;
-          [nextState, itemEntityId] = spawnItem(nextState, itemId, x, y);
+          [nextState, itemEntityId] = spawnItem(nextState, itemId, x, y, z);
           nextState = removeComponent(nextState, itemEntityId, ComponentType.Position);
           itemEntityIds.push(itemEntityId);
         } else {

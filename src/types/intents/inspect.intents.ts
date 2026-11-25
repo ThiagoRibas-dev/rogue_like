@@ -12,5 +12,6 @@ export interface MoveInspectIntent extends BaseIntent {
   readonly type: IntentType.MoveInspect;
   readonly dx: number;
   readonly dy: number;
+  readonly dz?: number | undefined;
   readonly isImmediate: true;
 }

@@ -2,7 +2,7 @@
  * @file Declarative target category filtering for D&D 3.5e spells, effect units, and activated abilities.
  */
 
-import { getComponent } from '../../../core/ecs.ts';
+import { getComponent, getEntitiesAtPosition } from '../../../core/ecs.ts';
 import {
   ComponentType,
   type FighterComponent,
@@ -12,12 +12,12 @@ import {
 } from '../../../types/components.types.ts';
 import type { EntityId, GameState } from '../../../types/game-state.types.ts';
 import { getFactionRelation, isHostile } from '../../../utils/faction.ts';
-import { getTileDefAt, isInMapBounds } from '../../../map/map_accessor.ts';
+import { getMapZBounds, getTileDefAt, isInMapBounds, isMultiZMap } from '../../../map/map_accessor.ts';
 import { evaluateDnD35eEntityDAG } from '../cartridge/dnd35e_dag_adapter.ts';
 import { DND35E_DEATH_HP_THRESHOLD } from '../combat/damage_vitality.ts';
 import type { DnD35TargetCategory } from '../types/system/effect_system.types.ts';
 import type { DnD35SpellDefinition } from '../types/system/spell_system.types.ts';
-import { computeAoEAffectedSquares, type AoETemplateShape } from './aoe_rest.ts';
+import { computeAoEAffectedSquares, computeAoEAffectedSquares3D, type AoETemplateShape } from './aoe_rest.ts';
 
 const ALLEGIANCE_CATEGORIES: ReadonlySet<DnD35TargetCategory> = new Set(['self', 'ally', 'enemy', 'neutral']);
 
@@ -101,7 +101,7 @@ export function enumerateSpellTargets(
   state: GameState,
   casterId: EntityId,
   casterPos: PositionComponent,
-  targetPos: { readonly x: number; readonly y: number },
+  targetPos: { readonly x: number; readonly y: number; readonly z?: number | undefined },
   spell: DnD35SpellDefinition,
   areaMultiplier: number,
   skipAllies = false
@@ -156,28 +156,53 @@ export function enumerateSpellTargets(
       spell.aoeShape === 'cone' || spell.aoeShape === 'line' || spell.aoeShape === 'burst' ? spell.aoeShape : 'spread';
     const origin =
       shape === 'cone' || shape === 'line' || spell.range === 'personal'
-        ? { x: casterPos.x, y: casterPos.y }
-        : targetPos;
-    const isWallAt = (x: number, y: number): boolean => {
-      if (!isInMapBounds(state.map, x, y)) return true;
-      return !(getTileDefAt(state, x, y)?.walkable ?? false);
-    };
-    const affectedSquares = computeAoEAffectedSquares(
-      shape,
-      origin,
-      targetPos,
-      spell.aoeRadiusFt * areaMultiplier,
-      isWallAt
-    );
-    const squareKeys = new Set(affectedSquares.map((p) => `${p.x},${p.y}`));
+        ? { x: casterPos.x, y: casterPos.y, z: casterPos.z ?? 0 }
+        : { x: targetPos.x, y: targetPos.y, z: targetPos.z ?? casterPos.z ?? 0 };
+    const multiZ = isMultiZMap(state.map);
+    const zBounds = getMapZBounds(state.map);
+    const squareKeys = new Set<string>();
+    if (multiZ) {
+      const isWallAt3D = (x: number, y: number, z: number): boolean => {
+        if (z < zBounds.minZ || z > zBounds.maxZ || !isInMapBounds(state.map, x, y, z)) return true;
+        const def = getTileDefAt(state, x, y, z);
+        if (!def) return true;
+        return !def.walkable && def.isOpenAir !== true;
+      };
+      const affected3D = computeAoEAffectedSquares3D(
+        shape,
+        origin,
+        { x: targetPos.x, y: targetPos.y, z: targetPos.z ?? casterPos.z ?? 0 },
+        spell.aoeRadiusFt * areaMultiplier,
+        isWallAt3D
+      );
+      for (const p of affected3D) {
+        squareKeys.add(`${p.x},${p.y},${p.z}`);
+      }
+    } else {
+      const isWallAt = (x: number, y: number): boolean => {
+        if (!isInMapBounds(state.map, x, y)) return true;
+        return !(getTileDefAt(state, x, y)?.walkable ?? false);
+      };
+      const affectedSquares = computeAoEAffectedSquares(
+        shape,
+        origin,
+        targetPos,
+        spell.aoeRadiusFt * areaMultiplier,
+        isWallAt
+      );
+      for (const p of affectedSquares) {
+        squareKeys.add(`${p.x},${p.y},0`);
+      }
+    }
     return state.entities.filter((id) => {
       const p = getComponent(state, id, ComponentType.Position) as PositionComponent | undefined;
       if (!p || !isEligible(id)) return false;
       const w = Math.max(1, p.footprintWidth ?? 1);
       const h = Math.max(1, p.footprintHeight ?? 1);
+      const pz = p.z ?? 0;
       for (let dy = 0; dy < h; dy++) {
         for (let dx = 0; dx < w; dx++) {
-          if (squareKeys.has(`${p.x + dx},${p.y + dy}`)) {
+          if (squareKeys.has(`${p.x + dx},${p.y + dy},${pz}`)) {
             return true;
           }
         }
@@ -186,7 +211,7 @@ export function enumerateSpellTargets(
     });
   }
 
-  const entitiesHere = state.spatialIndex.get(`${targetPos.x},${targetPos.y}`) ?? [];
+  const entitiesHere = getEntitiesAtPosition(state, targetPos.x, targetPos.y, targetPos.z ?? 0);
   const eligibleHere = entitiesHere.filter((id) => isEligible(id));
   if (eligibleHere.length === 0) return [];
   const preferredActor = eligibleHere.find((id) => isActorAliveForTargeting(state, id));
@@ -198,7 +223,7 @@ export function predictSpellAoEVictims(
   state: GameState,
   casterId: EntityId,
   casterPos: PositionComponent,
-  targetPos: { readonly x: number; readonly y: number },
+  targetPos: { readonly x: number; readonly y: number; readonly z?: number | undefined },
   spell: DnD35SpellDefinition,
   areaMultiplier = 1,
   skipAllies = false

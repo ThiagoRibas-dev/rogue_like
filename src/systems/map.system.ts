@@ -40,7 +40,7 @@ export function updateExploredTiles(state: GameState): GameState {
   const playerPos = getComponent(state, playerEntityId, ComponentType.Position);
   if (playerPos === undefined) return state;
 
-  const visibleIndices: Set<number> = computeFOV(state, playerPos.x, playerPos.y);
+  const visibleIndices: Set<number> = computeFOV(state, playerPos.x, playerPos.y, undefined, playerPos.z ?? 0);
   const nextMap = markTilesExplored(state.map, visibleIndices);
 
   return {
@@ -68,7 +68,7 @@ export function getVisibleHostileEntityIds(state: GameState): ReadonlyArray<Enti
     const position = getComponent(state, entityId, ComponentType.Position);
     if (position === undefined) continue;
 
-    if (!isTileKeyInFov(state, position.x, position.y)) continue;
+    if (!isTileKeyInFov(state, position.x, position.y, position.z ?? 0)) continue;
 
     const attitude = getComponent(state, entityId, ComponentType.Attitude) as AttitudeComponent | undefined;
     const isNemesis = getComponent(state, entityId, ComponentType.Nemesis) !== undefined;
@@ -87,7 +87,7 @@ export function processChangeAreaIntent(
   state: GameState,
   intent: ChangeAreaIntent
 ): { state: GameState; success: boolean } {
-  const { targetAreaId, targetX, targetY, entityId } = intent;
+  const { targetAreaId, targetX, targetY, targetZ, entityId } = intent;
 
   // 1. Determine which entities migrate with the player (inventory, equipment, shop)
   const migratingEntities = new Set<EntityId>(collectOwnedEntityIds(state, entityId));
@@ -139,6 +139,7 @@ export function processChangeAreaIntent(
   let nextComponents = new Map<EntityId, Readonly<Record<string, Component>>>();
   let spawnX: number = targetX ?? -1;
   let spawnY: number = targetY ?? -1;
+  let spawnZ: number = targetZ ?? 0;
   let targetRooms: ReadonlyArray<RoomBounds> = [];
   let targetLastSpawnTurn: number = 0;
   let nextEntityId: number = state.nextEntityId;
@@ -180,6 +181,9 @@ export function processChangeAreaIntent(
         if (pos && spawnX === -1) {
           spawnX = pos.x;
           spawnY = pos.y;
+          if (targetZ === undefined) {
+            spawnZ = pos.z ?? 0;
+          }
           foundStairs = true;
           break;
         }
@@ -195,6 +199,9 @@ export function processChangeAreaIntent(
             if (pos) {
               spawnX = pos.x;
               spawnY = pos.y;
+              if (targetZ === undefined) {
+                spawnZ = pos.z ?? 0;
+              }
               foundStairs = true;
               break;
             }
@@ -208,6 +215,9 @@ export function processChangeAreaIntent(
       const center = getMapCenterFallbackCoord(targetMap);
       spawnX = center.x;
       spawnY = center.y;
+      if (targetZ === undefined) {
+        spawnZ = center.z;
+      }
     }
   } else {
     const genResult = generateAndPopulateAreaFloor(
@@ -216,13 +226,16 @@ export function processChangeAreaIntent(
       spawnX,
       spawnY,
       nextPersistentEntities,
-      nextAreas
+      nextAreas,
+      spawnZ,
+      targetZ !== undefined
     );
     targetMap = genResult.targetMap;
     targetRooms = genResult.targetRooms;
     targetLastSpawnTurn = genResult.targetLastSpawnTurn;
     spawnX = genResult.spawnX;
     spawnY = genResult.spawnY;
+    spawnZ = genResult.spawnZ;
     nextEntities = genResult.nextEntities;
     nextComponents = genResult.nextComponents;
     nextEntityId = genResult.nextEntityId;
@@ -248,7 +261,7 @@ export function processChangeAreaIntent(
   const migratingArray = Array.from(migratingEntities);
   nextEntities = [...migratingArray, ...nextEntities];
 
-  const occupiedTileKeys = new Set<string>([`${spawnX},${spawnY}`]);
+  const occupiedTileKeys = new Set<string>([`${spawnX},${spawnY},${spawnZ}`]);
   const candidateOffsets = [
     { x: 0, y: 1 },
     { x: 1, y: 0 },
@@ -263,35 +276,60 @@ export function processChangeAreaIntent(
   for (const id of migratingArray) {
     let comps = state.components.get(id) ?? {};
     if (id === entityId) {
-      comps = {
-        ...comps,
-        [ComponentType.Position]: { ...(comps[ComponentType.Position] as PositionComponent), x: spawnX, y: spawnY }
+      const prevPos = comps[ComponentType.Position] as PositionComponent | undefined;
+      const updatedPos: PositionComponent = {
+        ...prevPos,
+        type: ComponentType.Position,
+        x: spawnX,
+        y: spawnY
       };
+      if (spawnZ !== 0) {
+        comps = { ...comps, [ComponentType.Position]: { ...updatedPos, z: spawnZ } };
+      } else {
+        const { z: _removedZ, ...restPos } = updatedPos;
+        comps = { ...comps, [ComponentType.Position]: restPos };
+      }
     } else if (comps[ComponentType.ControllerLink] !== undefined && comps[ComponentType.Position] !== undefined) {
       let placed = false;
       for (const off of candidateOffsets) {
         const cx = spawnX + off.x;
         const cy = spawnY + off.y;
-        const cKey = `${cx},${cy}`;
-        if (isInMapBounds(targetMap, cx, cy)) {
-          const tileId = getTileIdAt(targetMap, cx, cy);
+        const cKey = `${cx},${cy},${spawnZ}`;
+        if (isInMapBounds(targetMap, cx, cy, spawnZ)) {
+          const tileId = getTileIdAt(targetMap, cx, cy, spawnZ);
           const tileDef = tileId ? state.campaign.tiles[tileId] : undefined;
           if (tileId && tileDef?.walkable !== false && !occupiedTileKeys.has(cKey)) {
             occupiedTileKeys.add(cKey);
-            comps = {
-              ...comps,
-              [ComponentType.Position]: { ...(comps[ComponentType.Position] as PositionComponent), x: cx, y: cy }
+            const prevCompPos = comps[ComponentType.Position] as PositionComponent;
+            const nextCompPos: PositionComponent = {
+              ...prevCompPos,
+              x: cx,
+              y: cy
             };
+            if (spawnZ !== 0) {
+              comps = { ...comps, [ComponentType.Position]: { ...nextCompPos, z: spawnZ } };
+            } else {
+              const { z: _removedZ, ...restPos } = nextCompPos;
+              comps = { ...comps, [ComponentType.Position]: restPos };
+            }
             placed = true;
             break;
           }
         }
       }
       if (!placed) {
-        comps = {
-          ...comps,
-          [ComponentType.Position]: { ...(comps[ComponentType.Position] as PositionComponent), x: spawnX, y: spawnY }
+        const prevCompPos = comps[ComponentType.Position] as PositionComponent;
+        const nextCompPos: PositionComponent = {
+          ...prevCompPos,
+          x: spawnX,
+          y: spawnY
         };
+        if (spawnZ !== 0) {
+          comps = { ...comps, [ComponentType.Position]: { ...nextCompPos, z: spawnZ } };
+        } else {
+          const { z: _removedZ, ...restPos } = nextCompPos;
+          comps = { ...comps, [ComponentType.Position]: restPos };
+        }
       }
     }
     nextComponents.set(id, comps);
@@ -309,13 +347,14 @@ export function processChangeAreaIntent(
     lastSpawnTurn: targetLastSpawnTurn,
     areas: nextAreas,
     persistentEntities: nextPersistentEntities,
+    cameraZOffset: 0,
     fovNeedsUpdate: true,
     cachedFov: new Set()
   };
 
   nextState = updateSpatialIndex(nextState);
   if (nextState.map.chunkGrid !== undefined) {
-    nextState = updateStreamingWorldWindow(nextState, spawnX, spawnY);
+    nextState = updateStreamingWorldWindow(nextState, spawnX, spawnY, { anchorZ: spawnZ });
   }
   nextState = deliverPendingKnowledgeToArea(nextState, targetAreaId);
 

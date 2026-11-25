@@ -7,6 +7,7 @@ import {
 } from '../types/components.types.ts';
 import {
   getComponent,
+  getEntitiesAtPosition,
   addComponent,
   removeComponent,
   removeEntity,
@@ -71,8 +72,7 @@ export function processPickUpIntent(state: GameState, entityId: EntityId): Actio
   const pos = getComponent(state, entityId, ComponentType.Position);
   if (!pos) return { state, success: false, energyCost: 0 };
 
-  const key = `${pos.x},${pos.y}`;
-  const entitiesAtTile = state.spatialIndex.get(key) ?? [];
+  const entitiesAtTile = getEntitiesAtPosition(state, pos.x, pos.y, pos.z ?? 0);
 
   let itemEntityId: EntityId | undefined;
   for (const id of entitiesAtTile) {

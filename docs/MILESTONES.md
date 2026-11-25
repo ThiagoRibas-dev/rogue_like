@@ -2432,28 +2432,28 @@ Upgrade the Tier 1 Core Console substrate to sustain Dwarf Fortress / RimWorld s
 
 ---
 
-# 🚀 Phase 46: True Multi-Z Voxel Space, 3D Vision, HPA\* Pathfinding & Z-Aware Cartridges
+# 🟢 Phase 46: True Multi-Z Voxel Space, 3D Vision, HPA\* Pathfinding & Z-Aware Cartridges (Completed)
 
 Evolve the chunked ground plane into a true multi-Z voxel world (`(x, y, z)`) with vertical line of sight, multi-floor peeking, hierarchical 3D pathfinding, and cartridge-agnostic Z-level mechanics.
 
-## ⚪ Milestone 176: 3D Coordinates (`PositionComponent.z`), Multi-Z Chunks, Ramps/Stairs & Gravity/Falling (Planned)
+## 🟢 Milestone 176: 3D Coordinates (`PositionComponent.z`), Multi-Z Chunks, Ramps/Stairs & Gravity/Falling (Completed)
 
-- [ ] **3D ECS Position & Voxel Chunk Indexing (`src/types/components/world_components.types.ts`, `src/core/ecs/ecs_core.ts`, `src/map/world_chunk.ts`)**: Add optional `z: number` (default `0` for 100% 2D compatibility) to `PositionComponent` and `spatialIndex` (`"x,y,z"`), extend chunks to `(cx, cy, cz)` vertical slices, and add `open_air` / `ramp` / `stair` traversal traits.
-- [ ] **Vertical Movement, Gravity & Falling System (`src/systems/movement_displacement.ts`, `src/systems/gravity.system.ts`)**: Resolve up/down ramps and stairs seamlessly during normal movement, apply unsupported fall detection with terminal fall resolution, and preserve deterministic multi-tile 3D footprints.
+- [x] **3D ECS Position & Voxel Chunk Indexing (`src/types/components/world_components.types.ts`, `src/core/ecs/ecs_core.ts`, `src/map/world_chunk.ts`)**: Added optional `z: number` (default `0` for 100% 2D compatibility) to `PositionComponent` and uniform `spatialIndex` (`"x,y,z"`), extended chunks to `(cx, cy, cz)` vertical slices via signed 3D packing (`packWorldCoord3D`), and added `open_air` / `ramp` / `stair` / `climbable` traversal traits + static `zLevels` validation.
+- [x] **Vertical Movement, Gravity & Falling System (`src/systems/movement_displacement.ts`, `src/systems/gravity.system.ts`)**: Resolved up/down ramps and stairs (`<`/`>`) seamlessly during normal movement, added unsupported fall detection (`resolveGravityForEntity`) with ruleset delegation and Console fallback, and preserved deterministic multi-tile 3D footprints (`watchtower_overlook` + vertical `endless_frontier` showcased in `default`).
 
-## ⚪ Milestone 177: Multi-Z Viewport Peeking, 3D Line-of-Sight & Vertical Lighting Propagation (Planned)
+## 🟢 Milestone 177: Multi-Z Viewport Peeking, 3D Line-of-Sight & Vertical Lighting Propagation (Completed)
 
-- [ ] **3D Shadowcasting & Vertical Light Attenuation (`src/map/fov_3d.ts`, `src/systems/light_emitter.system.ts`)**: Extend FOV and mobile light emitters across vertical openings (ceilings, hatches, grates, chasms, towers) while keeping horizontal 2D maps $O(r^2)$ fast.
-- [ ] **Multi-Z Canvas Renderer & Peeking (`src/rendering/viewport_snapshot.ts`, `renderer.ts`)**: Render depth-dimmed lower Z-levels beneath `open_air` chasm/balcony tiles (`Z-1`, `Z-2` atmospheric depth tinting) plus `<`/`>` Z-slice camera peeking controls.
+- [x] **3D Shadowcasting & Vertical Light Attenuation (`src/map/fov_3d.ts`, `src/systems/light_emitter.system.ts`)**: Extended FOV (`computeFOV3D`, `has3DLineOfSight`) and mobile light emitters (`evaluateDynamicLightAtTile`) across vertical openings (ceilings, hatches, parapets, chasms, towers) while keeping horizontal 2D maps $O(r^2)$ fast.
+- [x] **Multi-Z Canvas Renderer & Peeking (`src/rendering/viewport_snapshot.ts`, `src/rendering/renderer.ts`, `src/rendering/ui/hud/ChronosStrip.tsx`)**: Rendered depth-dimmed lower Z-levels beneath `open_air` chasm/balcony tiles (`Z-1`, `Z-2`, `Z-3` atmospheric depth tinting) plus `AdjustCameraZIntent` (`PageUp`/`[` / `PageDown`/`]` / `Home`) Z-slice camera peeking controls.
 
-## ⚪ Milestone 178: Hierarchical 3D Region Pathfinding (`RegionGrid` / HPA\*) & Shared Dijkstra Flow Fields (Planned)
+## 🟢 Milestone 178: Hierarchical 3D Region Pathfinding (`RegionGrid` / HPA\*) & Shared Dijkstra Flow Fields (Completed)
 
-- [ ] **Chunk Connectivity `RegionGrid` & HPA\* Portal Graph (`src/map/region_graph.ts`, `src/ai/pathfinding_hpa.ts`)**: Partition walkable contiguous pockets into per-chunk `regionId`s linked by door/ramp/stair portal edges, giving $O(1)$ disconnected-target rejection and fast continent-scale 3D routing.
-- [ ] **Shared Multi-Agent Dijkstra Flow Fields (`src/ai/flow_field.ts`)**: Compute shared target/goal distance fields (for group pursuit, camp fleeing, and stockpile hauling) sampled by many agents in $O(1)$ per step with automatic dirty-chunk invalidation.
+- [x] **Chunk Connectivity `RegionGrid` & HPA\* Portal Graph (`src/map/region_graph.ts`, `src/ai/pathfinding_hpa.ts`)**: Partitioned walkable contiguous pockets into per-chunk `regionId`s (`Uint16Array`) linked by horizontal boundary and vertical `stairs`/`ramp`/`ladder` portal edges, providing $O(1)$ disconnected-target detection and fast cross-Z 3D routing.
+- [x] **Shared Multi-Agent Dijkstra Flow Fields (`src/ai/flow_field.ts`)**: Computed LRU-cached shared target/goal 3D distance fields sampled by AI agents (`follow`, `hunt`, `flee`) in $O(1)$ per step with automatic `CHUNK_DIRTY_REGION` invalidation when structural doors or terrain change.
 
-## ⚪ Milestone 179: Z-Aware `RulesetContract` Hooks & D&D 3.5e 3D Mechanics (Planned)
+## 🟢 Milestone 179: Z-Aware `RulesetContract` Hooks & D&D 3.5e 3D Mechanics (Completed)
 
-- [ ] **Ruleset 3D Combat & Movement Hooks (`src/types/ruleset.types.ts`, `src/rulesets/dnd35e/**`)**: Add optional 3D distance, elevation advantage, cover, and fall-mitigation hooks to `RulesetContract`, wiring D&D 3.5e 3D spell radii (*Fireball* spheres), *Fly*/*Feather Fall* altitude control, *Climb* wall scaling, high-ground `+1` melee bonus, and `1d6` per 10 ft falling damage.
+- [x] **Ruleset 3D Combat & Movement Hooks (`src/types/ruleset.types.ts`, `src/rulesets/dnd35e/**`)**: Added optional 3D distance, elevation advantage, cover, and fall-mitigation hooks to `RulesetContract`, wiring D&D 3.5e 3D spell radii (`computeAoEAffectedSquares3D`), *Fly*/*Feather Fall* DAG overrides, *Climb* wall scaling, high-ground `+1` melee bonus, and `1d6` per 10 ft falling damage.
 
 ---
 

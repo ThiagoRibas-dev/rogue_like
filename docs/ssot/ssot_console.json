@@ -2028,7 +2028,9 @@
     "responsibility": "Interface representing the top-left coordinate offsets of the camera viewport.",
     "canonicalEntryPoints": [
       "CameraOffset",
-      "getCameraOffset"
+      "getCameraOffset",
+      "resolveActiveViewZ",
+      "resolveRenderedCellZAt"
     ],
     "ownershipBoundary": {
       "includes": "Pure implementation and exports for src/rendering/camera.ts.",
@@ -6325,6 +6327,7 @@
       "setTileIdAt",
       "markTilesExplored",
       "findRandomWalkableCoord",
+      "canTraverseVerticalTiles",
       "getMapCenterFallbackCoord"
     ],
     "ownershipBoundary": {
@@ -6391,6 +6394,97 @@
     },
     "antiPatterns": [
       "Do not manually slice or evict grid.chunks or evictedChunkEntities outside updateStreamingWorldWindow()."
+    ]
+  },
+  "src/systems/gravity.system.ts": {
+    "domain": "Core Console: ECS Systems & Simulation",
+    "tier": "tier1_console",
+    "responsibility": "Detects unsupported actors in multi-Z maps and resolves gravity drops and RulesetContract fall-impact delegation.",
+    "canonicalEntryPoints": [
+      "isEntitySupportedAt",
+      "resolveGravityForEntity"
+    ],
+    "ownershipBoundary": {
+      "includes": "Support checks (floors, stairs, ladders, ramps, crossings, flight) and vertical fall displacement.",
+      "excludes": "Ruleset-specific fall reduction math or Feather Fall item/spell definitions."
+    },
+    "antiPatterns": [
+      "Do not hardcode flying or falling damage formulas outside gravity.system.ts + RulesetContract hooks."
+    ]
+  },
+  "src/map/fov_3d.ts": {
+    "domain": "Core Console: Map Generation & Director",
+    "tier": "tier1_console",
+    "responsibility": "Computes 3D Line of Sight and Multi-Z Field of View across horizontal shadowcasting planes and vertical open_air strata.",
+    "canonicalEntryPoints": [
+      "has3DLineOfSight",
+      "computeFOV3D"
+    ],
+    "ownershipBoundary": {
+      "includes": "3D Bresenham ray occlusion and multi-Z FOV visibility propagation.",
+      "excludes": "Light source fuel ticking or viewport rendering."
+    },
+    "antiPatterns": [
+      "Do not duplicate 3D LoS raychecks outside has3DLineOfSight()."
+    ]
+  },
+  "src/map/region_graph.ts": {
+    "domain": "Core Console: Map Generation & Spatial Plane",
+    "tier": "tier1_console",
+    "responsibility": "Maintains connected-component cluster regionIds and HPA* boundary/vertical portal connectivity graphs.",
+    "canonicalEntryPoints": [
+      "HPA_FINITE_CLUSTER_SIZE",
+      "RegionPortalNode",
+      "RegionGraphEdge",
+      "ClusterRegionData",
+      "RegionGraph",
+      "getRegionKeyAt",
+      "isRegionGraphDirty",
+      "clearRegionGraphCache",
+      "buildOrUpdateRegionGraph"
+    ],
+    "ownershipBoundary": {
+      "includes": "Chunk/sector flood-fill connectivity and horizontal/vertical portal graph construction.",
+      "excludes": "AI decision behaviors or Dijkstra flow-field distance caching."
+    },
+    "antiPatterns": [
+      "Do not modify WorldChunk.regionId manually; rebuild via buildOrUpdateRegionGraph()."
+    ]
+  },
+  "src/ai/flow_field.ts": {
+    "domain": "Core Console: AI Behavior Trees & Tactics",
+    "tier": "tier1_console",
+    "responsibility": "Computes LRU-cached 3D Dijkstra flow fields and HPA* intermediate waypoints shared across multi-agent AI navigation.",
+    "canonicalEntryPoints": [
+      "DEFAULT_FLOW_FIELD_RADIUS",
+      "FlowField3D",
+      "clearFlowFieldCache",
+      "computeOrGetFlowField",
+      "lookupFlowFieldStep",
+      "resolveHpaIntermediateWaypoint"
+    ],
+    "ownershipBoundary": {
+      "includes": "Multi-Z Dijkstra distance maps and abstract region portal shortest-path waypoints.",
+      "excludes": "Entity-specific footprint squeezing or combat behavior selection."
+    },
+    "antiPatterns": [
+      "Do not compute redundant per-agent full-map Dijkstra sweeps when targets overlap."
+    ]
+  },
+  "src/ai/pathfinding_hpa.ts": {
+    "domain": "Core Console: AI Behavior Trees & Tactics",
+    "tier": "tier1_console",
+    "responsibility": "Combines shared 3D Dijkstra flow fields, HPA* portal routing, and bounded 3D local A* step refinement.",
+    "canonicalEntryPoints": [
+      "computeBoundedAStar3DStep",
+      "computeHierarchicalNextStep"
+    ],
+    "ownershipBoundary": {
+      "includes": "Unified hierarchical 3D next-step routing for follow, hunt, flee, and companion AI.",
+      "excludes": "Turn scheduling or low-level ECS displacement mutation."
+    },
+    "antiPatterns": [
+      "Do not call raw unbounded ROT.Path.AStar across huge/multi-Z maps; route through computeHierarchicalNextStep()."
     ]
   }
 }

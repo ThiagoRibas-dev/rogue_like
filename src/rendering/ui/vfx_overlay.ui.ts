@@ -129,7 +129,7 @@ export function renderFogOverlayCanvas(
     const pxX = cell.vx * tileWidthPx;
     const pxY = cell.vy * tileHeightPx;
 
-    ctx.fillStyle = cell.alpha === 1.0 ? 'rgba(0, 0, 0, 1.0)' : 'rgba(0, 0, 0, 0.55)';
+    ctx.fillStyle = `rgba(0, 0, 0, ${cell.alpha})`;
     ctx.fillRect(Math.floor(pxX), Math.floor(pxY), Math.ceil(tileWidthPx), Math.ceil(tileHeightPx));
   }
 

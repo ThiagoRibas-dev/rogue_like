@@ -35,6 +35,7 @@ export interface ResolvedAITarget {
   readonly distance: number;
   readonly dx: number;
   readonly dy: number;
+  readonly dz?: number | undefined;
 }
 
 /**
@@ -97,7 +98,7 @@ function isCandidateTargetInRange(
   if (!isHostile(state, attackerId, targetId)) return null;
 
   if (fov !== undefined) {
-    if (!fov.has(toMapTileKey(state.map, otherPos.x, otherPos.y))) return null;
+    if (!fov.has(toMapTileKey(state.map, otherPos.x, otherPos.y, otherPos.z ?? 0))) return null;
   }
 
   const attackerPos = getComponent(state, attackerId, ComponentType.Position);
@@ -105,7 +106,8 @@ function isCandidateTargetInRange(
   const attackerH = attackerPos?.footprintHeight ?? 1;
   const otherW = otherPos.footprintWidth ?? 1;
   const otherH = otherPos.footprintHeight ?? 1;
-  const distance = computeRectDistanceTiles(
+  const dz = (otherPos.z ?? 0) - (attackerPos?.z ?? 0);
+  const hDistance = computeRectDistanceTiles(
     attackerX,
     attackerY,
     attackerW,
@@ -115,6 +117,7 @@ function isCandidateTargetInRange(
     otherW,
     otherH
   );
+  const distance = Math.max(hDistance, Math.abs(dz));
   const delta = computeRectNearestDelta(
     attackerX,
     attackerY,
@@ -132,7 +135,7 @@ function isCandidateTargetInRange(
     if (distance > reachTiles) return null;
   }
 
-  return { targetId, distance, dx: delta.dx, dy: delta.dy };
+  return { targetId, distance, dx: delta.dx, dy: delta.dy, ...(dz !== 0 ? { dz } : {}) };
 }
 
 /**

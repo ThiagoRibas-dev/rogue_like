@@ -143,6 +143,56 @@ export const CONSOLE_COMMANDS: ReadonlyArray<CommandDefinition> = [
     source: 'console'
   },
   {
+    id: 'move.up_z',
+    label: 'Ascend / Aim Up Z',
+    description: 'Climb stairs, ladder, ramp, fly up, or raise aiming/inspect Z-level.',
+    category: 'movement',
+    scopes: ['world_gameplay', 'targeting_inspect'],
+    defaultBindings: [{ key: '<' }],
+    preventDefault: true,
+    source: 'console'
+  },
+  {
+    id: 'move.down_z',
+    label: 'Descend / Aim Down Z',
+    description: 'Descend stairs, ladder, ramp, fly down, or lower aiming/inspect Z-level.',
+    category: 'movement',
+    scopes: ['world_gameplay', 'targeting_inspect'],
+    defaultBindings: [{ key: '>' }],
+    preventDefault: true,
+    source: 'console'
+  },
+  {
+    id: 'camera.peek_z_up',
+    label: 'Peek Camera Up Z',
+    description: 'Shift the rendered camera focal Z-level up by 1 stratum without moving.',
+    category: 'panels',
+    scopes: ['world_gameplay', 'targeting_inspect'],
+    defaultBindings: [{ code: 'PageUp' }, { key: '[' }],
+    preventDefault: true,
+    source: 'console'
+  },
+  {
+    id: 'camera.peek_z_down',
+    label: 'Peek Camera Down Z',
+    description: 'Shift the rendered camera focal Z-level down by 1 stratum without moving.',
+    category: 'panels',
+    scopes: ['world_gameplay', 'targeting_inspect'],
+    defaultBindings: [{ code: 'PageDown' }, { key: ']' }],
+    preventDefault: true,
+    source: 'console'
+  },
+  {
+    id: 'camera.peek_z_reset',
+    label: 'Reset Camera Z Peek',
+    description: 'Snap the rendered camera focal Z-level back to the player elevation.',
+    category: 'panels',
+    scopes: ['world_gameplay', 'targeting_inspect'],
+    defaultBindings: [{ code: 'Home' }],
+    preventDefault: true,
+    source: 'console'
+  },
+  {
     id: 'action.wait',
     label: 'Wait / Toggle Pause',
     description: 'Wait one turn in Turn-Based mode, or toggle tactical pause in Real-Time with Pause.',
@@ -154,11 +204,11 @@ export const CONSOLE_COMMANDS: ReadonlyArray<CommandDefinition> = [
   },
   {
     id: 'action.interact',
-    label: 'Smart Interact / Stairs',
-    description: 'Interact with tile/entity or traverse stairs/portals.',
+    label: 'Smart Interact / Portals',
+    description: 'Interact with tile/entity or traverse portals/area transitions.',
     category: 'combat_actions',
     scopes: ['world_gameplay', 'targeting_inspect'],
-    defaultBindings: [{ key: '<' }, { key: '>' }, { key: ',' }, { key: '.' }],
+    defaultBindings: [{ key: ',' }, { key: '.' }],
     preventDefault: true,
     source: 'console'
   },

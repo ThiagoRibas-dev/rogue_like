@@ -108,7 +108,9 @@ export function applyIntentWithCost(state: GameState, intent: Intent): ActionRes
       : nextState.entities.find((id) => getComponent(nextState, id, ComponentType.Player) !== undefined);
     const playerPos = playerId !== undefined ? getComponent(nextState, playerId, ComponentType.Position) : undefined;
     if (playerPos !== undefined) {
-      nextState = updateStreamingWorldWindow(nextState, playerPos.x, playerPos.y);
+      nextState = updateStreamingWorldWindow(nextState, playerPos.x, playerPos.y, {
+        anchorZ: playerPos.z ?? 0
+      });
     }
   }
   nextState = processTier2LocalCadence(nextState, false);

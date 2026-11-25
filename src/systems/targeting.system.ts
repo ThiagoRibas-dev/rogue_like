@@ -1,4 +1,4 @@
-import { getComponent } from '../core/ecs.ts';
+import { getComponent, getEntitiesAtPosition } from '../core/ecs.ts';
 import { getRuleset } from '../rulesets/registry.ts';
 import { ComponentType } from '../types/components.types.ts';
 import { type GameState } from '../types/game-state.types.ts';
@@ -46,6 +46,7 @@ export function processToggleTargetingIntent(
           active: true,
           x: pos.x,
           y: pos.y,
+          ...((pos.z ?? 0) !== 0 ? { z: pos.z } : {}),
           ...(intent.radius !== undefined ? { radius: intent.radius } : {}),
           ...(intent.maxRangeTiles !== undefined ? { maxRangeTiles: intent.maxRangeTiles } : {}),
           context: intent.context
@@ -69,19 +70,22 @@ export function processMoveTargetIntent(
 
   const newX = state.targetingMode.x + intent.dx;
   const newY = state.targetingMode.y + intent.dy;
+  const newZ = (state.targetingMode.z ?? 0) + (intent.dz ?? 0);
 
   // Clamp to map boundaries
-  if (!isInMapBounds(state.map, newX, newY)) {
+  if (!isInMapBounds(state.map, newX, newY, newZ)) {
     return { state, success: false };
   }
 
+  const { z: _oldZ, ...restTargeting } = state.targetingMode;
   return {
     state: {
       ...state,
       targetingMode: {
-        ...state.targetingMode,
+        ...restTargeting,
         x: newX,
-        y: newY
+        y: newY,
+        ...(newZ !== 0 ? { z: newZ } : {})
       }
     },
     success: false
@@ -99,10 +103,11 @@ export function processFireAimedIntent(
 
   const targetX = state.targetingMode.x;
   const targetY = state.targetingMode.y;
+  const targetZ = state.targetingMode.z ?? 0;
   const context = state.targetingMode.context;
 
   if (context?.verb === 'order_target') {
-    const entitiesAtTile = state.spatialIndex.get(`${targetX},${targetY}`) ?? [];
+    const entitiesAtTile = getEntitiesAtPosition(state, targetX, targetY, targetZ);
     const hostileTargetId = entitiesAtTile.find(
       (id) =>
         id !== intent.entityId &&

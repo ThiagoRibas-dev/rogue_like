@@ -67,14 +67,25 @@ export function huntBehavior(
   const pos = getComponent(state, entityId, ComponentType.Position);
   if (!pos) return null;
 
-  const step = computeNextStepToward(state, entityId, pos.x, pos.y, pos.x + resolved.dx, pos.y + resolved.dy);
+  const curZ = pos.z ?? 0;
+  const step = computeNextStepToward(
+    state,
+    entityId,
+    pos.x,
+    pos.y,
+    pos.x + resolved.dx,
+    pos.y + resolved.dy,
+    curZ,
+    curZ + (resolved.dz ?? 0)
+  );
   if (!step) return null;
 
   const moveIntent: Intent = {
     type: IntentType.Move,
     entityId,
     dx: step.dx,
-    dy: step.dy
+    dy: step.dy,
+    ...(step.dz !== undefined ? { dz: step.dz } : {})
   };
   return canActorPerformIntent(state, moveIntent) ? moveIntent : null;
 }

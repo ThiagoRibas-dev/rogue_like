@@ -28,6 +28,8 @@ function cellEquals(a: ViewportCellDTO, b?: ViewportCellDTO): boolean {
     a.glyph !== b.glyph ||
     a.fg !== b.fg ||
     a.bg !== b.bg ||
+    a.z !== b.z ||
+    a.depthOffset !== b.depthOffset ||
     a.spriteId !== b.spriteId ||
     a.isVisible !== b.isVisible ||
     a.isExplored !== b.isExplored ||
@@ -72,6 +74,7 @@ export function render(display: Display, snapshot: ViewportSnapshot, prevSnapsho
     !prevSnapshot ||
     prevSnapshot.viewportW !== snapshot.viewportW ||
     prevSnapshot.viewportH !== snapshot.viewportH ||
+    prevSnapshot.viewZ !== snapshot.viewZ ||
     prevSnapshot.isSpriteMode !== snapshot.isSpriteMode;
 
   if (isFullRedraw) {

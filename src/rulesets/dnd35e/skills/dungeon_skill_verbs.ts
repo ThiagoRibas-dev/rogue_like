@@ -1,4 +1,10 @@
-import { addComponent, getComponent, removeComponent, resolveEntityDisplayName } from '../../../core/ecs.ts';
+import {
+  addComponent,
+  getComponent,
+  getEntitiesAtPosition,
+  removeComponent,
+  resolveEntityDisplayName
+} from '../../../core/ecs.ts';
 import { addMessage, MessageLogCategory } from '../../../systems/message.system.ts';
 import { SLEEPING_STATUS_ID } from '../../../systems/rest.system.ts';
 import { neutralizePendingSecondaryStatuses } from '../../../systems/status-effect.system.ts';
@@ -202,7 +208,12 @@ export function resolveDungeonSkillVerb(
       if (centerPos) {
         for (let dy = -SEARCH_SCAN_RADIUS_TILES; dy <= SEARCH_SCAN_RADIUS_TILES; dy++) {
           for (let dx = -SEARCH_SCAN_RADIUS_TILES; dx <= SEARCH_SCAN_RADIUS_TILES; dx++) {
-            const entitiesAt = state.spatialIndex.get(`${centerPos.x + dx},${centerPos.y + dy}`) ?? [];
+            const entitiesAt = getEntitiesAtPosition(
+              state,
+              centerPos.x + dx,
+              centerPos.y + dy,
+              'z' in centerPos && typeof centerPos.z === 'number' ? centerPos.z : 0
+            );
             for (const eid of entitiesAt) {
               const trap = getComponent(state, eid, ComponentType.Trap) as TrapComponent | undefined;
               if (trap && !trap.triggered) {

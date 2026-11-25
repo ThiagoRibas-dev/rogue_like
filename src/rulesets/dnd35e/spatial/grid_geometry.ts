@@ -137,6 +137,30 @@ export function measureDnD35DistanceFt(x1: number, y1: number, x2: number, y2: n
 }
 
 /**
+ * Measures 3D tactical grid distance in feet between `(x1, y1, z1)` and `(x2, y2, z2)` using the
+ * D&D 3.5e `1-2-1-2` diagonal metric extended symmetrically across X, Y, and Z axes.
+ * Reduces identically to `measureDnD35DistanceFt` when `z1 === z2`.
+ */
+export function measureDnD35Distance3DFt(
+  x1: number,
+  y1: number,
+  z1: number,
+  x2: number,
+  y2: number,
+  z2: number
+): number {
+  const dx = Math.abs(x2 - x1);
+  const dy = Math.abs(y2 - y1);
+  const dz = Math.abs(z2 - z1);
+  const maxAxis = Math.max(dx, dy, dz);
+  const secondarySum = dx + dy + dz - maxAxis;
+  const diagSteps = Math.min(maxAxis, secondarySum);
+  const orthSteps = maxAxis - diagSteps;
+  const totalSquares = orthSteps + dndFloor(diagSteps * DIAGONAL_STEP_RATIO);
+  return totalSquares * FEET_PER_GRID_SQUARE;
+}
+
+/**
  * Checks whether a single diagonal step `(x1, y1) -> (x2, y2)` is blocked by a hard wall corner.
  * In D&D 3.5e, an actor cannot move or make a melee attack diagonally past a corner if either
  * orthogonal neighbor `(x2, y1)` or `(x1, y2)` is an impassable wall.

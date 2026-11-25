@@ -13,8 +13,10 @@ export interface PositionComponent {
   readonly type: ComponentType.Position;
   readonly x: number;
   readonly y: number;
+  readonly z?: number | undefined;
   readonly footprintWidth?: number | undefined;
   readonly footprintHeight?: number | undefined;
+  readonly footprintDepth?: number | undefined;
   readonly facing?: CardinalFacing | undefined;
   readonly isSqueezing?: boolean | undefined;
   readonly sizeRankIndex?: number | undefined;
@@ -76,6 +78,8 @@ export interface PortalComponent {
   readonly targetAreaId: string;
   readonly targetX?: number | undefined;
   readonly targetY?: number | undefined;
+  readonly targetZ?: number | undefined;
+  readonly preserveCoords?: boolean | undefined;
 }
 
 /**

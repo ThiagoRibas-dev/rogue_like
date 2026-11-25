@@ -1,6 +1,7 @@
 import { dndFloor } from '../math/multipliers.ts';
-import { evaluateCover } from '../spatial/cover_senses.ts';
-import { FEET_PER_GRID_SQUARE, measureDnD35DistanceFt } from '../spatial/grid_geometry.ts';
+import { evaluateCover, evaluateCover3D } from '../spatial/cover_senses.ts';
+import { FEET_PER_GRID_SQUARE, measureDnD35Distance3DFt, measureDnD35DistanceFt } from '../spatial/grid_geometry.ts';
+import { getBresenhamLine3D } from '../../../utils/grid.ts';
 import type { DnD35ClassSpellbookState, DnD35PreparedSlotEntry } from '../types/dnd35e.types.ts';
 import type { PreparedSpellSlot } from './spellcasting.ts';
 
@@ -131,6 +132,101 @@ export function computeAoEAffectedSquares(
       const cover = evaluateCover(originPos, { x, y }, isWallAt);
       if (!cover.blocksLineOfEffect) {
         results.push({ x, y });
+      }
+    }
+  }
+
+  return results;
+}
+
+/**
+ * Computes true 3D spherical/conical/beam grid voxels `{ x, y, z }` affected by a D&D 3.5e AoE template.
+ */
+export function computeAoEAffectedSquares3D(
+  shape: AoETemplateShape,
+  originPos: { readonly x: number; readonly y: number; readonly z?: number | undefined },
+  targetPos: { readonly x: number; readonly y: number; readonly z?: number | undefined },
+  radiusFt: number,
+  isWallAt: (x: number, y: number, z: number) => boolean
+): ReadonlyArray<{ readonly x: number; readonly y: number; readonly z: number }> {
+  const oz = originPos.z ?? 0;
+  const tz = targetPos.z ?? oz;
+  const tileRadius = Math.max(1, dndFloor(radiusFt / FEET_PER_GRID_SQUARE));
+  const results: Array<{ readonly x: number; readonly y: number; readonly z: number }> = [];
+
+  if (shape === 'line') {
+    const line = getBresenhamLine3D(originPos.x, originPos.y, oz, targetPos.x, targetPos.y, tz);
+    for (let i = 1; i < line.length; i++) {
+      const pt = line[i]!;
+      if (isWallAt(pt.x, pt.y, pt.z)) break;
+      if (measureDnD35Distance3DFt(originPos.x, originPos.y, oz, pt.x, pt.y, pt.z) > radiusFt) break;
+      results.push({ x: pt.x, y: pt.y, z: pt.z });
+    }
+    return results;
+  }
+
+  if (shape === 'spread') {
+    const distMap: Record<string, number> = { [`${originPos.x},${originPos.y},${oz}`]: 0 };
+    const queue: Array<{ readonly x: number; readonly y: number; readonly z: number; readonly dist: number }> = [
+      { x: originPos.x, y: originPos.y, z: oz, dist: 0 }
+    ];
+    while (queue.length > 0) {
+      queue.sort((a, b) => a.dist - b.dist);
+      const curr = queue.shift()!;
+      results.push({ x: curr.x, y: curr.y, z: curr.z });
+
+      for (let dz = -1; dz <= 1; dz++) {
+        for (let dy = -1; dy <= 1; dy++) {
+          for (let dx = -1; dx <= 1; dx++) {
+            if (dx === 0 && dy === 0 && dz === 0) continue;
+            const nx = curr.x + dx;
+            const ny = curr.y + dy;
+            const nz = curr.z + dz;
+            if (isWallAt(nx, ny, nz)) continue;
+            const nonZeroAxes = (dx !== 0 ? 1 : 0) + (dy !== 0 ? 1 : 0) + (dz !== 0 ? 1 : 0);
+            const stepCost = nonZeroAxes > 1 ? FEET_PER_GRID_SQUARE * 1.5 : FEET_PER_GRID_SQUARE;
+            const nextDist = dndFloor(curr.dist + stepCost);
+            if (nextDist > radiusFt) continue;
+            const key = `${nx},${ny},${nz}`;
+            const prevDist = distMap[key];
+            if (prevDist === undefined || nextDist < prevDist) {
+              distMap[key] = nextDist;
+              queue.push({ x: nx, y: ny, z: nz, dist: nextDist });
+            }
+          }
+        }
+      }
+    }
+    return results;
+  }
+
+  const dirX = targetPos.x - originPos.x;
+  const dirY = targetPos.y - originPos.y;
+  const dirZ = tz - oz;
+  const dirLen = Math.hypot(dirX, dirY, dirZ) || 1;
+  const ux = dirX / dirLen;
+  const uy = dirY / dirLen;
+  const uz = dirZ / dirLen;
+
+  for (let z = oz - tileRadius; z <= oz + tileRadius; z++) {
+    for (let y = originPos.y - tileRadius; y <= originPos.y + tileRadius; y++) {
+      for (let x = originPos.x - tileRadius; x <= originPos.x + tileRadius; x++) {
+        if (isWallAt(x, y, z)) continue;
+        const distFt = measureDnD35Distance3DFt(originPos.x, originPos.y, oz, x, y, z);
+        if (distFt > radiusFt) continue;
+        if (shape === 'cone') {
+          if (x === originPos.x && y === originPos.y && z === oz) continue;
+          const vx = x - originPos.x;
+          const vy = y - originPos.y;
+          const vz = z - oz;
+          const vLen = Math.hypot(vx, vy, vz) || 1;
+          const dot = (vx * ux + vy * uy + vz * uz) / vLen;
+          if (dot < 0.7) continue;
+        }
+        const cover = evaluateCover3D(originPos, { x, y, z }, isWallAt);
+        if (!cover.blocksLineOfEffect) {
+          results.push({ x, y, z });
+        }
       }
     }
   }

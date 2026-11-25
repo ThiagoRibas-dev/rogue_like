@@ -1,6 +1,6 @@
 import type { JSX } from 'preact';
 import { createToggleDebugAction } from '../../../actions/core.actions.ts';
-import { getComponent } from '../../../core/ecs.ts';
+import { getComponent, getEntitiesAtPosition } from '../../../core/ecs.ts';
 import { queuePlayerIntent } from '../../../core/game-loop.ts';
 import { computeRenderRollingStats, computeTurnRollingStats, perfTracker } from '../../../core/performance.ts';
 import { PresentationDomain } from '../../../core/presentation_queue.ts';
@@ -79,9 +79,15 @@ export function DebugOverlay(): JSX.Element | null {
       ? state.targetingMode.y
       : undefined;
 
+  const cursorZ = state.inspectMode?.active
+    ? (state.inspectMode.z ?? 0)
+    : state.targetingMode?.active
+      ? (state.targetingMode.z ?? 0)
+      : 0;
+
   const fieldsAtCursor: FieldComponent[] = [];
   if (cursorX !== undefined && cursorY !== undefined) {
-    const entitiesAt = state.spatialIndex.get(`${cursorX},${cursorY}`) ?? [];
+    const entitiesAt = getEntitiesAtPosition(state, cursorX, cursorY, cursorZ);
     for (const eId of entitiesAt) {
       const field = getComponent(state, eId, ComponentType.Field) as FieldComponent | undefined;
       if (field) fieldsAtCursor.push(field);

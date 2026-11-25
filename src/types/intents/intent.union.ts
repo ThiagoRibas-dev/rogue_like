@@ -35,7 +35,7 @@ import type {
   ToggleCartridgeModalIntent
 } from './ui.intents.ts';
 
-import type { ToggleRotatedIntent, Toggle3DIntent, SetZoomLevelIntent } from './camera.intents.ts';
+import type { ToggleRotatedIntent, Toggle3DIntent, SetZoomLevelIntent, AdjustCameraZIntent } from './camera.intents.ts';
 
 import type {
   DebugRevealMapIntent,
@@ -77,6 +77,7 @@ export type Intent =
   | ToggleRotatedIntent
   | Toggle3DIntent
   | SetZoomLevelIntent
+  | AdjustCameraZIntent
   | StartDialogueIntent
   | SelectDialogueOptionIntent
   | CloseDialogueIntent

@@ -61,6 +61,48 @@ export const COORD_PACK_BIAS = 33_554_432 as const;
 /** Multiplier shifting packed Y coordinates above signed 26-bit packed X coordinates. */
 export const COORD_PACK_MULTIPLIER = 67_108_864 as const;
 
+/** Bias applied to signed X/Y coordinates for 20-bit 3D packing (+/- 524,287). */
+export const COORD3D_XY_BIAS = 524_288 as const;
+
+/** Radix span for 20-bit signed X/Y coordinates (2^20). */
+export const COORD3D_XY_SPAN = 1_048_576 as const;
+
+/** Bias applied to signed Z coordinates for 12-bit 3D packing (+/- 2,047 Z-levels). */
+export const COORD3D_Z_BIAS = 2_048 as const;
+
+/** Radix span for 12-bit signed Z coordinates (2^12). */
+export const COORD3D_Z_SPAN = 4_096 as const;
+
+/** Multiplier shifting Y above 20-bit X (2^20). */
+export const COORD3D_Y_MULT = 1_048_576 as const;
+
+/** Multiplier shifting Z above 40-bit (X, Y) (2^40). */
+export const COORD3D_Z_MULT = 1_099_511_627_776 as const;
+
+/** Default vertical elevation height per Z-level in feet (isotropic 5-ft voxel). */
+export const DEFAULT_FEET_PER_Z_LEVEL = 5 as const;
+
+/** Safety cap for vertical fall scans when resolving gravity over unbounded open air. */
+export const MAX_FALL_DISTANCE_Z = 32 as const;
+
+/** Fallback Console fall damage per Z-level fallen beyond a 1-Z safe hop when no ruleset hook handles falls. */
+export const DEFAULT_FALL_DAMAGE_PER_Z = 5 as const;
+
+/** Default vertical chunk streaming radius around originChunkZ when multi-Z streaming is active. */
+export const DEFAULT_ACTIVE_RADIUS_Z = 2 as const;
+
+/** Minimum allowed vertical chunk streaming radius in Z-levels. */
+export const MIN_ACTIVE_RADIUS_Z = 0 as const;
+
+/** Maximum allowed vertical chunk streaming radius in Z-levels. */
+export const MAX_ACTIVE_RADIUS_Z = 8 as const;
+
+/** Maximum lower Z-slices inspected beneath `open_air` during multi-Z viewport rendering. */
+export const MAX_RENDER_DEPTH_LAYERS = 3 as const;
+
+/** Maximum vertical span scanned above or below the observer by 3D shadowcasting. */
+export const MAX_FOV_Z_RANGE = 8 as const;
+
 /** IndexedDB database name storing delta-serialized streaming WorldChunk buffers. */
 export const WORLD_CHUNKS_DB_NAME = 'roguelike_world_chunks' as const;
 

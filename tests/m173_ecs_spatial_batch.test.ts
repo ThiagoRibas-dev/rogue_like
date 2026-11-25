@@ -93,8 +93,8 @@ describe('Milestone 173: Incremental spatialIndex & Batched ECS Transactions', (
     const afterLimbo = moveToLimbo(frozenBefore, orcId, 'dungeon_1');
     expect(afterLimbo.persistentEntities.has(orcId)).toBe(true);
     expect(afterLimbo.components.has(orcId)).toBe(false);
-    expect(afterLimbo.spatialIndex.get('6,6')).toBeUndefined();
-    expect(afterLimbo.spatialIndex.get('6,7')).toEqual([goblinId]);
+    expect(afterLimbo.spatialIndex.get('6,6,0')).toBeUndefined();
+    expect(afterLimbo.spatialIndex.get('6,7,0')).toEqual([goblinId]);
     expect(normalizeSpatialIndex(afterLimbo.spatialIndex)).toEqual(
       normalizeSpatialIndex(updateSpatialIndex(afterLimbo).spatialIndex)
     );
@@ -121,9 +121,9 @@ describe('Milestone 173: Incremental spatialIndex & Batched ECS Transactions', (
 
     expect(nextState.components.get(untouchedId)).toBe(baseState.components.get(untouchedId));
     expect((getComponent(nextState, secondId, ComponentType.Position) as PositionComponent).x).toBe(9);
-    expect(nextState.spatialIndex.get('4,4')).toBeUndefined();
-    expect(nextState.spatialIndex.get('9,9')).toEqual([secondId]);
-    expect(nextState.spatialIndex.get('8,8')).toEqual([result]);
+    expect(nextState.spatialIndex.get('4,4,0')).toBeUndefined();
+    expect(nextState.spatialIndex.get('9,9,0')).toEqual([secondId]);
+    expect(nextState.spatialIndex.get('8,8,0')).toEqual([result]);
     expect(normalizeSpatialIndex(nextState.spatialIndex)).toEqual(
       normalizeSpatialIndex(updateSpatialIndex(nextState).spatialIndex)
     );

@@ -138,10 +138,11 @@ export async function startNewGame(
 
   const spawnX = spawnOverride?.x ?? startPos.x;
   const spawnY = spawnOverride?.y ?? startPos.y;
-  const [stateAfterPlayerSpawn] = spawnEntity(state, 'player', spawnX, spawnY);
+  const spawnZ = startPos.z ?? 0;
+  const [stateAfterPlayerSpawn] = spawnEntity(state, 'player', spawnX, spawnY, undefined, undefined, spawnZ);
   state = stateAfterPlayerSpawn;
   if (state.map.chunkGrid !== undefined) {
-    state = updateStreamingWorldWindow(state, spawnX, spawnY);
+    state = updateStreamingWorldWindow(state, spawnX, spawnY, { anchorZ: spawnZ });
   }
 
   const mastermindId = state.nextEntityId as EntityId;
@@ -203,7 +204,13 @@ export async function startNewGame(
     [state, stairId] = createEntity(state);
 
     const stairTileKey = portal.connection.direction === 'up' ? 'stairs_up' : 'stairs_down';
-    const pos: PositionComponent = { type: ComponentType.Position, x: portal.x, y: portal.y };
+    const pz = portal.z ?? portal.connection.placementZ ?? 0;
+    const pos: PositionComponent = {
+      type: ComponentType.Position,
+      x: portal.x,
+      y: portal.y,
+      ...(pz !== 0 ? { z: pz } : {})
+    };
     const renderCmp: RenderableComponent = {
       type: ComponentType.Renderable,
       glyph:
@@ -218,7 +225,8 @@ export async function startNewGame(
       type: ComponentType.Portal,
       targetAreaId: portal.connection.targetAreaId,
       targetX: portal.connection.targetX,
-      targetY: portal.connection.targetY
+      targetY: portal.connection.targetY,
+      ...(portal.connection.targetZ !== undefined ? { targetZ: portal.connection.targetZ } : {})
     };
     const tagsCmp: TagsComponent = {
       type: ComponentType.Tags,
@@ -233,10 +241,11 @@ export async function startNewGame(
 
   if (placedEntities) {
     for (const ent of placedEntities) {
+      const ez = ent.z ?? 0;
       if (state.campaign.items[ent.templateId]) {
-        [state] = spawnItem(state, ent.templateId, ent.x, ent.y);
+        [state] = spawnItem(state, ent.templateId, ent.x, ent.y, ez);
       } else if (state.campaign.entities[ent.templateId]) {
-        [state] = spawnEntity(state, ent.templateId, ent.x, ent.y, ent.dynamicTraits, ent.inventory);
+        [state] = spawnEntity(state, ent.templateId, ent.x, ent.y, ent.dynamicTraits, ent.inventory, ez);
       } else {
         console.warn(`Placed entity template ${ent.templateId} not found in registries.`);
       }

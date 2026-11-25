@@ -13,6 +13,7 @@ import { addMessage, MessageLogCategory } from './message.system.ts';
 import { getEffectiveStats } from '../utils/stats.ts';
 import type { DamageComponent, DamageInstance, InteractionChain } from '../types/components.types.ts';
 import { appendInteractionFrame, createInteractionChain } from './interaction_provenance.system.ts';
+import { resolveGravityForEntity } from './gravity.system.ts';
 
 /**
  * Optional rich metadata attached when registering a dynamic `ActiveStatusEffect`
@@ -63,13 +64,13 @@ function notifyExpiredStatusEffects(
 ): GameState {
   if (expiredEffects.length === 0) return state;
   const ruleset = getRuleset(state.campaign?.manifest?.rulesetId);
-  if (!ruleset.onStatusEffectExpired) return state;
-
   let nextState = state;
-  for (const expired of expiredEffects) {
-    nextState = ruleset.onStatusEffectExpired(nextState, entityId, expired);
+  if (ruleset.onStatusEffectExpired) {
+    for (const expired of expiredEffects) {
+      nextState = ruleset.onStatusEffectExpired(nextState, entityId, expired);
+    }
   }
-  return nextState;
+  return resolveGravityForEntity(nextState, entityId).state;
 }
 
 function tickActorStatusEffectsSingleTurn(state: GameState, entityId: EntityId): GameState {

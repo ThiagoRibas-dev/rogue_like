@@ -1,5 +1,5 @@
 import type { Verb } from '../../constants/verbs.constants.ts';
-import { getComponent, queryEntities } from '../../core/ecs.ts';
+import { getComponent, getEntitiesAtPosition, queryEntities } from '../../core/ecs.ts';
 import { addMessage, MessageLogCategory } from '../../systems/message.system.ts';
 import { ComponentType, type FighterComponent, type ItemComponent } from '../../types/components.types.ts';
 import type { GameEvent } from '../../types/events.types.ts';
@@ -54,7 +54,9 @@ export function resolveDnD35eSkillVerb(
     if (intent.target.type === 'entity') {
       targetEntityId = intent.target.entityId;
     } else if (intent.target.type === 'tile') {
-      const candidates = state.spatialIndex.get(`${intent.target.x},${intent.target.y}`) ?? [];
+      const actorPos = getComponent(state, intent.entityId, ComponentType.Position);
+      const targetZ = intent.target.z ?? actorPos?.z ?? 0;
+      const candidates = getEntitiesAtPosition(state, intent.target.x, intent.target.y, targetZ);
       targetEntityId = candidates.find((id) => {
         if (id === intent.entityId) return false;
         const fighter = getComponent(state, id, ComponentType.Fighter) as FighterComponent | undefined;
@@ -84,13 +86,15 @@ export function getDnD35eValidVerbsForTarget(
 
   if (target.type === 'tile') {
     verbs.add('search');
-    if (findTargetEntityWithComponent(state, target, ComponentType.Lock) !== undefined) {
+    const sourcePos = getComponent(state, sourceEntityId, ComponentType.Position);
+    const targetZ = target.z ?? sourcePos?.z ?? 0;
+    if (findTargetEntityWithComponent(state, { ...target, z: targetZ }, ComponentType.Lock) !== undefined) {
       verbs.add('unlock');
     }
-    if (findTargetEntityWithComponent(state, target, ComponentType.Trap) !== undefined) {
+    if (findTargetEntityWithComponent(state, { ...target, z: targetZ }, ComponentType.Trap) !== undefined) {
       verbs.add('disarm');
     }
-    const candidates = state.spatialIndex.get(`${target.x},${target.y}`) ?? [];
+    const candidates = getEntitiesAtPosition(state, target.x, target.y, targetZ);
     const hostileTargetId = candidates.find((id) => {
       if (id === sourceEntityId) return false;
       const fighter = getComponent(state, id, ComponentType.Fighter) as FighterComponent | undefined;

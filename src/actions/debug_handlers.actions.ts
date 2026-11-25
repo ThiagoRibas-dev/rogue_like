@@ -1,6 +1,6 @@
 import type { GameState, EntityId } from '../types/game-state.types.ts';
 import type { DebugFastForwardSchemesIntent } from '../types/intents/debug.intents.ts';
-import { getComponent, spawnEntity, removeComponent, addComponent } from '../core/ecs.ts';
+import { getComponent, getEntitiesAtPosition, spawnEntity, removeComponent, addComponent } from '../core/ecs.ts';
 import { addActor } from '../core/scheduler.ts';
 import { addMessage, MessageLogCategory } from '../systems/message.system.ts';
 import { processSchemeTurn } from '../systems/scheme.system.ts';
@@ -58,10 +58,11 @@ export function processDebugSpawnEntity(state: GameState, entityId: EntityId): {
   let spawnX = -1;
   let spawnY = -1;
 
+  const z = pos.z ?? 0;
   for (const n of neighbors) {
-    if (getTileDefAt(state, n.x, n.y)?.walkable) {
-      const entitiesAt = state.spatialIndex.get(`${n.x},${n.y}`);
-      if (!entitiesAt || entitiesAt.length === 0) {
+    if (getTileDefAt(state, n.x, n.y, z)?.walkable) {
+      const entitiesAt = getEntitiesAtPosition(state, n.x, n.y, z);
+      if (entitiesAt.length === 0) {
         spawnX = n.x;
         spawnY = n.y;
         break;
@@ -76,7 +77,7 @@ export function processDebugSpawnEntity(state: GameState, entityId: EntityId): {
     };
   }
 
-  const [stateAfterSpawn, newEntityId] = spawnEntity(state, 'orc', spawnX, spawnY);
+  const [stateAfterSpawn, newEntityId] = spawnEntity(state, 'orc', spawnX, spawnY, undefined, undefined, z);
   const nextState = stateAfterSpawn;
   const actor = getComponent(nextState, newEntityId, ComponentType.Actor);
   if (actor) {

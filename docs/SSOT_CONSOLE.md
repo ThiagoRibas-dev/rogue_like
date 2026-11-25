@@ -4,19 +4,19 @@
 
 ## Table of Contents
 
-- [Core Console: AI Behavior Trees & Tactics (7 files)](#core-console-ai-behavior-trees-tactics)
+- [Core Console: AI Behavior Trees & Tactics (9 files)](#core-console-ai-behavior-trees-tactics)
 - [Core Console: Action Pipeline & Commands (10 files)](#core-console-action-pipeline-commands)
 - [Core Console: App Entry & Wiring (2 files)](#core-console-app-entry-wiring)
 - [Core Console: Campaign Editor Subsystem (27 files)](#core-console-campaign-editor-subsystem)
 - [Core Console: Constants & Dictionaries (17 files)](#core-console-constants-dictionaries)
 - [Core Console: Constants & World Chunk Layout (1 files)](#core-console-constants-world-chunk-layout)
 - [Core Console: ECS & State Management (1 files)](#core-console-ecs-state-management)
-- [Core Console: ECS Systems & Simulation (75 files)](#core-console-ecs-systems-simulation)
+- [Core Console: ECS Systems & Simulation (76 files)](#core-console-ecs-systems-simulation)
 - [Core Console: ECS, Loop, RNG & Loader (44 files)](#core-console-ecs-loop-rng-loader)
 - [Core Console: Engine Types & Schemas (39 files)](#core-console-engine-types-schemas)
 - [Core Console: Map & Spatial Simulation (1 files)](#core-console-map-spatial-simulation)
-- [Core Console: Map Generation & Director (10 files)](#core-console-map-generation-director)
-- [Core Console: Map Generation & Spatial Plane (4 files)](#core-console-map-generation-spatial-plane)
+- [Core Console: Map Generation & Director (11 files)](#core-console-map-generation-director)
+- [Core Console: Map Generation & Spatial Plane (5 files)](#core-console-map-generation-spatial-plane)
 - [Core Console: Persistence & Delta Storage (1 files)](#core-console-persistence-delta-storage)
 - [Core Console: Presentation & UI Views (31 files)](#core-console-presentation-ui-views)
 - [Core Console: Rendering & UI Views (77 files)](#core-console-rendering-ui-views)
@@ -29,14 +29,16 @@
 
 ## Core Console: AI Behavior Trees & Tactics
 
-**Modules in this domain:** 7
+**Modules in this domain:** 9
 
 | File | Tier | Responsibility | Canonical Entry Points | Ownership Boundary (Includes / Excludes) | Anti-Patterns |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | `src/ai/companion_targeting.ts` | `tier1_console` | Companion tactical target resolution, leash bounds, stance filtering, and stale focus-target sanitization. | `resolveAITarget`, `sanitizeCompanionControllerLink` | **Includes:** Pure implementation and exports for src/ai/companion_targeting.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/ai/companion_targeting.ts. |
 | `src/ai/flee.behavior.ts` | `tier1_console` | Flee behavior: runs away from the nearest hostile entity if HP is below the threshold. | `fleeBehavior` | **Includes:** Pure implementation and exports for src/ai/flee.behavior.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/ai/flee.behavior.ts. |
+| `src/ai/flow_field.ts` | `tier1_console` | Computes LRU-cached 3D Dijkstra flow fields and HPA* intermediate waypoints shared across multi-agent AI navigation. | `DEFAULT_FLOW_FIELD_RADIUS`, `FlowField3D`, `clearFlowFieldCache`, `computeOrGetFlowField`, `lookupFlowFieldStep`, `resolveHpaIntermediateWaypoint` | **Includes:** Multi-Z Dijkstra distance maps and abstract region portal shortest-path waypoints.<br>**Excludes:** Entity-specific footprint squeezing or combat behavior selection. | • Do not compute redundant per-agent full-map Dijkstra sweeps when targets overlap. |
 | `src/ai/follow.behavior.ts` | `tier1_console` | Follow behavior: routes controlled companions toward their controller while respecting hold stance and obstacles. | `computeNextStepToward`, `followBehavior` | **Includes:** Pure implementation and exports for src/ai/follow.behavior.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/ai/follow.behavior.ts. |
 | `src/ai/hunt.behavior.ts` | `tier1_console` | Hunt behavior: finds the nearest hostile entity within aggroRadius. | `huntBehavior` | **Includes:** Pure implementation and exports for src/ai/hunt.behavior.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/ai/hunt.behavior.ts. |
+| `src/ai/pathfinding_hpa.ts` | `tier1_console` | Combines shared 3D Dijkstra flow fields, HPA* portal routing, and bounded 3D local A* step refinement. | `computeBoundedAStar3DStep`, `computeHierarchicalNextStep` | **Includes:** Unified hierarchical 3D next-step routing for follow, hunt, flee, and companion AI.<br>**Excludes:** Turn scheduling or low-level ECS displacement mutation. | • Do not call raw unbounded ROT.Path.AStar across huge/multi-Z maps; route through computeHierarchicalNextStep(). |
 | `src/ai/ranged.behavior.ts` | `tier1_console` | Ranged behavior: finds the nearest hostile entity within range. | `rangedBehavior` | **Includes:** Pure implementation and exports for src/ai/ranged.behavior.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/ai/ranged.behavior.ts. |
 | `src/ai/spell.behavior.ts` | `tier1_console` | Spell casting behavior: evaluates a list of abilities and casts the first valid one | `spellBehavior` | **Includes:** Pure implementation and exports for src/ai/spell.behavior.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/ai/spell.behavior.ts. |
 | `src/ai/wander.behavior.ts` | `tier1_console` | Wander behavior: picks a random adjacent direction. | `wanderBehavior` | **Includes:** Pure implementation and exports for src/ai/wander.behavior.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/ai/wander.behavior.ts. |
@@ -143,7 +145,7 @@
 
 ## Core Console: ECS Systems & Simulation
 
-**Modules in this domain:** 75
+**Modules in this domain:** 76
 
 | File | Tier | Responsibility | Canonical Entry Points | Ownership Boundary (Includes / Excludes) | Anti-Patterns |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -165,6 +167,7 @@
 | `src/systems/effects/spatial_effects.ts` | `tier1_console` | Evaluates item effect target filters and resolves nearest-target, PBAoE, and status item effects. | `matchesTargetFilters`, `resolveDamageNearestEffect`, `resolveDamageAreaEffect`, `resolveApplyStatusEffect` | **Includes:** Pure implementation and exports for src/systems/effects/spatial_effects.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/systems/effects/spatial_effects.ts. |
 | `src/systems/field.system.ts` | `tier1_console` | Spawns spatial fields, evaluates declarative tag-driven elemental field interactions (with orthogonal BFS chain propagation), and ticks active field effects. | `DEFAULT_FIELD_INTERACTION_RULES`, `spawnField`, `evaluateFieldInteractionsAtTile`, `processFieldsTick`, `ActiveFieldQueryResult`, `queryActiveFieldsAtPosition` | **Includes:** Pure implementation and exports for src/systems/field.system.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/systems/field.system.ts. |
 | `src/systems/gossip.system.ts` | `tier1_console` | Processes queued events to generate matching rumors for delayed propagation. | `processRumorPropagationEvents`, `deliverPendingRumorsToArea`, `tickPendingRumors`, `cullStaleAndConfirmedRumors` | **Includes:** Pure implementation and exports for src/systems/gossip.system.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/systems/gossip.system.ts. |
+| `src/systems/gravity.system.ts` | `tier1_console` | Detects unsupported actors in multi-Z maps and resolves gravity drops and RulesetContract fall-impact delegation. | `isEntitySupportedAt`, `resolveGravityForEntity` | **Includes:** Support checks (floors, stairs, ladders, ramps, crossings, flight) and vertical fall displacement.<br>**Excludes:** Ruleset-specific fall reduction math or Feather Fall item/spell definitions. | • Do not hardcode flying or falling damage formulas outside gravity.system.ts + RulesetContract hooks. |
 | `src/systems/hunger.system.ts` | `tier1_console` | Represents the status levels of nutritional satiation for the player. | `HungerState`, `getHungerState`, `processHungerTick` | **Includes:** Pure implementation and exports for src/systems/hunger.system.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/systems/hunger.system.ts. |
 | `src/systems/inspect.system.ts` | `tier1_console` | Toggles inspect mode on or off. Centers the cursor on the player when opening. | `processToggleInspectIntent`, `processMoveInspectIntent` | **Includes:** Pure implementation and exports for src/systems/inspect.system.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/systems/inspect.system.ts. |
 | `src/systems/intent.system.ts` | `tier1_console` | Handles processing of an InteractIntent. | `processInteractIntent` | **Includes:** Pure implementation and exports for src/systems/intent.system.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/systems/intent.system.ts. |
@@ -330,13 +333,14 @@
 
 ## Core Console: Map Generation & Director
 
-**Modules in this domain:** 10
+**Modules in this domain:** 11
 
 | File | Tier | Responsibility | Canonical Entry Points | Ownership Boundary (Includes / Excludes) | Anti-Patterns |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | `src/map/director/director_zone.ts` | `tier1_console` | Resolves CR budget axes, floor tile placement, and single-zone encounter director allocation. | `resolveAxis`, `getRandomFloorTileInRoom`, `runForEncounterZone` | **Includes:** Pure implementation and exports for src/map/director/director_zone.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/map/director/director_zone.ts. |
 | `src/map/dla.ts` | `tier1_console` | Checks if a given coordinate is adjacent (8-way) to any already aggregated floor tile. | `runDLA` | **Includes:** Pure implementation and exports for src/map/dla.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/map/dla.ts. |
 | `src/map/encounter_director.ts` | `tier1_console` | Finds a random floor tile within room bounds, optionally biasing placement towards Dijkstra hot path coordinates. | `runEncounterDirector` | **Includes:** Pure implementation and exports for src/map/encounter_director.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/map/encounter_director.ts. |
+| `src/map/fov_3d.ts` | `tier1_console` | Computes 3D Line of Sight and Multi-Z Field of View across horizontal shadowcasting planes and vertical open_air strata. | `has3DLineOfSight`, `computeFOV3D` | **Includes:** 3D Bresenham ray occlusion and multi-Z FOV visibility propagation.<br>**Excludes:** Light source fuel ticking or viewport rendering. | • Do not duplicate 3D LoS raychecks outside has3DLineOfSight(). |
 | `src/map/fov.ts` | `tier1_console` | Computes the Field of View from a specific center point using Precise Shadowcasting. | `computeFOV` | **Includes:** Pure implementation and exports for src/map/fov.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/map/fov.ts. |
 | `src/map/generator_async.ts` | `tier1_console` | Progress update emitted by the asynchronous generator pipeline. | `GenerationProgress` | **Includes:** Pure implementation and exports for src/map/generator_async.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/map/generator_async.ts. |
 | `src/map/generator_stages.ts` | `tier1_console` | Procedural tile palette resolved for an area. | `ResolvedPalette`, `PlacedEntityDef`, `DiggerRoom`, `BaseCarveResult`, `RoomsAndPortalsResult`, `resolvePalette`, `carveBaseGeometry`, `carveRoomsAndPortals` | **Includes:** Pure implementation and exports for src/map/generator_stages.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/map/generator_stages.ts. |
@@ -347,12 +351,13 @@
 
 ## Core Console: Map Generation & Spatial Plane
 
-**Modules in this domain:** 4
+**Modules in this domain:** 5
 
 | File | Tier | Responsibility | Canonical Entry Points | Ownership Boundary (Includes / Excludes) | Anti-Patterns |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | `src/map/chunk_generator.ts` | `tier1_console` | Pure deterministic fractal value-noise biome synthesizer and initial Ring 0 ChunkedWorldGrid builder for declarative streaming_overworld areas. | `buildChunkSynthesisParams`, `generateWorldChunkFromParams`, `generateWorldChunk`, `createInitialStreamingGrid` | **Includes:** Pure coordinate-hashed biome classification runnable identically on main thread and Web Workers.<br>**Excludes:** Worker messaging, IndexedDB persistence, or ECS entity spawning. | • Do not mutate global ROT.RNG during chunk synthesis; keep chunk generation purely coordinate-hashed. |
-| `src/map/map_accessor.ts` | `tier1_console` | Canonical compatibility facade unifying tile bounds, coordinate keying, FOV checks, tile inspection, terrain mutation, and exploration updates across finite GameMap.tiles and ChunkedWorldGrid. | `isInMapBounds`, `toMapTileKey`, `isTileKeyInFov`, `getTileAt`, `getTileIdAt`, `getTileDefAt`, `isTileExploredAt`, `setTileIdAt`, `markTilesExplored`, `findRandomWalkableCoord`, `getMapCenterFallbackCoord` | **Includes:** All ruleset-agnostic spatial tile reads/writes bridging legacy finite maps and SoA chunk grids.<br>**Excludes:** Procedural terrain synthesis or Ring 0/1 streaming window eviction. | • Never index state.map.tiles[coordToIndex(...)] directly in engine/ruleset/rendering code; call MapAccessor helpers. |
+| `src/map/map_accessor.ts` | `tier1_console` | Canonical compatibility facade unifying tile bounds, coordinate keying, FOV checks, tile inspection, terrain mutation, and exploration updates across finite GameMap.tiles and ChunkedWorldGrid. | `isInMapBounds`, `toMapTileKey`, `isTileKeyInFov`, `getTileAt`, `getTileIdAt`, `getTileDefAt`, `isTileExploredAt`, `setTileIdAt`, `markTilesExplored`, `findRandomWalkableCoord`, `canTraverseVerticalTiles`, `getMapCenterFallbackCoord` | **Includes:** All ruleset-agnostic spatial tile reads/writes bridging legacy finite maps and SoA chunk grids.<br>**Excludes:** Procedural terrain synthesis or Ring 0/1 streaming window eviction. | • Never index state.map.tiles[coordToIndex(...)] directly in engine/ruleset/rendering code; call MapAccessor helpers. |
+| `src/map/region_graph.ts` | `tier1_console` | Maintains connected-component cluster regionIds and HPA* boundary/vertical portal connectivity graphs. | `HPA_FINITE_CLUSTER_SIZE`, `RegionPortalNode`, `RegionGraphEdge`, `ClusterRegionData`, `RegionGraph`, `getRegionKeyAt`, `isRegionGraphDirty`, `clearRegionGraphCache`, `buildOrUpdateRegionGraph` | **Includes:** Chunk/sector flood-fill connectivity and horizontal/vertical portal graph construction.<br>**Excludes:** AI decision behaviors or Dijkstra flow-field distance caching. | • Do not modify WorldChunk.regionId manually; rebuild via buildOrUpdateRegionGraph(). |
 | `src/map/tile_palette.ts` | `tier1_console` | Builds deterministic bidirectional flyweight mappings between string campaign tile IDs and Uint16Array indices. | `buildTilePaletteRegistry`, `getTileIdFromPaletteIndex`, `getPaletteIndexForTileId` | **Includes:** Deterministic lexicographic palette construction and index lookup.<br>**Excludes:** Hardcoded tile ID enums or content-specific branching. | • Do not hardcode numeric tile IDs for campaign tiles; resolve via buildTilePaletteRegistry(). |
 | `src/map/world_chunk.ts` | `tier1_console` | Allocates, clones, and binary-serializes/deserializes Structure-of-Arrays (SoA) TypedArray WorldChunks into transferable ArrayBuffers. | `createEmptyWorldChunk`, `cloneWorldChunk`, `serializeWorldChunkToBuffer`, `deserializeWorldChunkFromBuffer` | **Includes:** SoA TypedArray buffer allocation, copy-on-write chunk cloning, and RLCK binary framing.<br>**Excludes:** Biome synthesis, IndexedDB I/O, and entity sleep/wake orchestration. | • Do not serialize WorldChunks as bloated JSON tile arrays; use serializeWorldChunkToBuffer(). |
 
@@ -408,7 +413,7 @@
 
 | File | Tier | Responsibility | Canonical Entry Points | Ownership Boundary (Includes / Excludes) | Anti-Patterns |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| `src/rendering/camera.ts` | `tier1_console` | Interface representing the top-left coordinate offsets of the camera viewport. | `CameraOffset`, `getCameraOffset` | **Includes:** Pure implementation and exports for src/rendering/camera.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rendering/camera.ts. |
+| `src/rendering/camera.ts` | `tier1_console` | Interface representing the top-left coordinate offsets of the camera viewport. | `CameraOffset`, `getCameraOffset`, `resolveActiveViewZ`, `resolveRenderedCellZAt` | **Includes:** Pure implementation and exports for src/rendering/camera.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rendering/camera.ts. |
 | `src/rendering/display.ts` | `tier1_console` | Internal interface representing a ROT.js rectangular layout backend | `drawCell`, `syncDisplayLayout` | **Includes:** Coordinating facade and primary orchestration exports declared directly in src/rendering/display.ts.<br>**Excludes:** Underlying primitive symbols re-exported from leaf modules (e.g. src/rendering/sprite_atlas.ts). | • Do not duplicate or bypass exports from src/rendering/display.ts. |
 | `src/rendering/editor_ui.ts` | `tier1_console` | Controls operations in the Campaign Editor, handling workspace save/load, validation, undo/redo, and sandbox generation. | `EditorController`, `renderEditorUI` | **Includes:** Pure implementation and exports for src/rendering/editor_ui.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rendering/editor_ui.ts. |
 | `src/rendering/editor/editor_config.ts` | `tier1_console` | Module implementation for src/rendering/editor/editor_config.ts | `VIEW_GROUPS` | **Includes:** Pure implementation and exports for src/rendering/editor/editor_config.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rendering/editor/editor_config.ts. |

@@ -25,6 +25,7 @@ export interface TileTarget {
   readonly type: 'tile';
   readonly x: number;
   readonly y: number;
+  readonly z?: number | undefined;
 }
 
 /** Union type representing all possible target selections for applying intents. */

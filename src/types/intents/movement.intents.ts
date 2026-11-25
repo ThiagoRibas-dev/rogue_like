@@ -6,6 +6,7 @@ export interface MoveIntent extends BaseIntent {
   readonly type: IntentType.Move;
   readonly dx: number;
   readonly dy: number;
+  readonly dz?: number | undefined;
 }
 
 /** Intent to transition the player/actors to a new campaign map area. */
@@ -14,4 +15,5 @@ export interface ChangeAreaIntent extends BaseIntent {
   readonly targetAreaId: string;
   readonly targetX?: number | undefined;
   readonly targetY?: number | undefined;
+  readonly targetZ?: number | undefined;
 }

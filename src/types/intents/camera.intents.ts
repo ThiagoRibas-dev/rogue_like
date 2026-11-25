@@ -19,3 +19,13 @@ export interface SetZoomLevelIntent extends BaseIntent {
   readonly zoomDelta: number;
   readonly isImmediate: true;
 }
+
+/**
+ * Intent to adjust the camera's active Z-slice peek offset (or reset to player Z).
+ */
+export interface AdjustCameraZIntent extends BaseIntent {
+  readonly type: IntentType.AdjustCameraZ;
+  readonly dz: number;
+  readonly reset?: boolean | undefined;
+  readonly isImmediate: true;
+}

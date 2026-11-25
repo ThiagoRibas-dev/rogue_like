@@ -240,7 +240,14 @@ export function validateChargeLine(
   const defW = Math.max(1, defenderPos.footprintWidth ?? 1);
   const defH = Math.max(1, defenderPos.footprintHeight ?? 1);
 
-  const startDistFt = measureFootprintToFootprintDistanceFt(
+  const movementModes = getEntityMovementModes(state, attackerId) ?? attackerData.movementModes;
+  const attackerZ = attackerPos.z ?? 0;
+  const defenderZ = defenderPos.z ?? 0;
+  if (attackerZ !== defenderZ && (movementModes?.fly === undefined || movementModes.fly <= 0)) {
+    return fail('Cannot Charge across elevation tiers without flight.');
+  }
+
+  const hStartDistFt = measureFootprintToFootprintDistanceFt(
     attackerPos.x,
     attackerPos.y,
     atkW,
@@ -250,11 +257,12 @@ export function validateChargeLine(
     defW,
     defH
   );
+  const feetPerZ = state.campaign.rules.map.feetPerZLevel ?? FEET_PER_GRID_SQUARE;
+  const startDistFt = Math.max(hStartDistFt, Math.abs(attackerZ - defenderZ) * feetPerZ);
   if (startDistFt <= reachFt) {
     return fail('Too close to Charge; requires moving at least 10 ft in a straight line.');
   }
 
-  const movementModes = getEntityMovementModes(state, attackerId) ?? attackerData.movementModes;
   const tacticalSpeedFt = computeActorTacticalChargeSpeedFt(state, attackerId, movementModes);
   const maxChargeDistanceFt = tacticalSpeedFt * CHARGE_SPEED_MULTIPLIER;
 

@@ -1,4 +1,12 @@
-import { COORD_PACK_BIAS, COORD_PACK_MULTIPLIER } from '../constants/world_chunk.constants.ts';
+import {
+  COORD3D_XY_BIAS,
+  COORD3D_XY_SPAN,
+  COORD3D_Y_MULT,
+  COORD3D_Z_BIAS,
+  COORD3D_Z_MULT,
+  COORD_PACK_BIAS,
+  COORD_PACK_MULTIPLIER
+} from '../constants/world_chunk.constants.ts';
 
 /**
  * Converts 2D grid coordinates to a 1D flat array index.
@@ -82,6 +90,127 @@ export function worldToLocalIndex(x: number, y: number, chunkSize: number): numb
  */
 export function formatChunkKey(cx: number, cy: number, cz = 0): string {
   return `${cx},${cy},${cz}`;
+}
+
+/**
+ * Packs signed 3D coordinates (20-bit X +/- 524,287, 20-bit Y +/- 524,287, 12-bit Z +/- 2,047 = 52 bits)
+ * into a single safe JavaScript integer without precision loss.
+ *
+ * @param x World or chunk X coordinate.
+ * @param y World or chunk Y coordinate.
+ * @param z World or chunk Z coordinate (default `0`).
+ * @returns Packed 52-bit integer key.
+ */
+export function packWorldCoord3D(x: number, y: number, z = 0): number {
+  return (z + COORD3D_Z_BIAS) * COORD3D_Z_MULT + (y + COORD3D_XY_BIAS) * COORD3D_Y_MULT + (x + COORD3D_XY_BIAS);
+}
+
+/**
+ * Unpacks a 52-bit integer key produced by {@link packWorldCoord3D} back into signed `(x, y, z)`.
+ *
+ * @param key Packed 3D world/chunk coordinate key.
+ * @returns Object containing signed `x`, `y`, and `z` coordinates.
+ */
+export function unpackWorldCoord3D(key: number): { readonly x: number; readonly y: number; readonly z: number } {
+  const adjustedX = key % COORD3D_Y_MULT;
+  const withoutX = Math.floor(key / COORD3D_Y_MULT);
+  const adjustedY = withoutX % COORD3D_XY_SPAN;
+  const adjustedZ = Math.floor(withoutX / COORD3D_XY_SPAN);
+  return {
+    x: adjustedX - COORD3D_XY_BIAS,
+    y: adjustedY - COORD3D_XY_BIAS,
+    z: adjustedZ - COORD3D_Z_BIAS
+  };
+}
+
+/**
+ * Formats the canonical uniform 3D spatialIndex lookup key `"x,y,z"`.
+ *
+ * @param x Grid X coordinate.
+ * @param y Grid Y coordinate.
+ * @param z Grid Z coordinate (defaults to `0`).
+ * @returns Spatial index bucket key `"x,y,z"`.
+ */
+export function toSpatialKey(x: number, y: number, z = 0): string {
+  return `${x},${y},${z}`;
+}
+
+/**
+ * Returns all integer voxel coordinates along a 3D Bresenham line from `(x0, y0, z0)` to `(x1, y1, z1)`.
+ */
+export function getBresenhamLine3D(
+  x0: number,
+  y0: number,
+  z0: number,
+  x1: number,
+  y1: number,
+  z1: number
+): ReadonlyArray<{ readonly x: number; readonly y: number; readonly z: number }> {
+  const points: Array<{ readonly x: number; readonly y: number; readonly z: number }> = [];
+  let x = x0;
+  let y = y0;
+  let z = z0;
+  const dx = Math.abs(x1 - x0);
+  const dy = Math.abs(y1 - y0);
+  const dz = Math.abs(z1 - z0);
+  const xs = x1 > x0 ? 1 : x1 < x0 ? -1 : 0;
+  const ys = y1 > y0 ? 1 : y1 < y0 ? -1 : 0;
+  const zs = z1 > z0 ? 1 : z1 < z0 ? -1 : 0;
+  points.push({ x, y, z });
+
+  if (dx >= dy && dx >= dz) {
+    let p1 = 2 * dy - dx;
+    let p2 = 2 * dz - dx;
+    while (x !== x1) {
+      x += xs;
+      if (p1 >= 0) {
+        y += ys;
+        p1 -= 2 * dx;
+      }
+      if (p2 >= 0) {
+        z += zs;
+        p2 -= 2 * dx;
+      }
+      p1 += 2 * dy;
+      p2 += 2 * dz;
+      points.push({ x, y, z });
+    }
+  } else if (dy >= dx && dy >= dz) {
+    let p1 = 2 * dx - dy;
+    let p2 = 2 * dz - dy;
+    while (y !== y1) {
+      y += ys;
+      if (p1 >= 0) {
+        x += xs;
+        p1 -= 2 * dy;
+      }
+      if (p2 >= 0) {
+        z += zs;
+        p2 -= 2 * dy;
+      }
+      p1 += 2 * dx;
+      p2 += 2 * dz;
+      points.push({ x, y, z });
+    }
+  } else {
+    let p1 = 2 * dy - dz;
+    let p2 = 2 * dx - dz;
+    while (z !== z1) {
+      z += zs;
+      if (p1 >= 0) {
+        y += ys;
+        p1 -= 2 * dz;
+      }
+      if (p2 >= 0) {
+        x += xs;
+        p2 -= 2 * dz;
+      }
+      p1 += 2 * dy;
+      p2 += 2 * dx;
+      points.push({ x, y, z });
+    }
+  }
+  return points;
 }
 
 /**

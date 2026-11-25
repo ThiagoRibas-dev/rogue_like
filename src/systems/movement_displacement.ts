@@ -1,4 +1,4 @@
-import { addComponent, getComponent } from '../core/ecs.ts';
+import { addComponent, getComponent, getEntitiesAtPosition } from '../core/ecs.ts';
 import { getActiveRuleset } from '../rulesets/registry.ts';
 import type { TileDefinition } from '../types/campaign/world.ts';
 import {
@@ -19,7 +19,8 @@ import type {
   TilePassabilityTier,
   TileTraversalEvaluation
 } from '../types/ruleset.types.ts';
-import { getTileIdAt, isInMapBounds } from '../map/map_accessor.ts';
+import { getMapZBounds, getTileDefAt, getTileIdAt, isInMapBounds, isMultiZMap } from '../map/map_accessor.ts';
+import { resolveGravityForEntity } from './gravity.system.ts';
 import { runActorMovementStep } from './lifecycle.system.ts';
 import {
   evaluateFootprintOccupancy,
@@ -39,11 +40,12 @@ const DIFFICULT_TERRAIN_MIN_MULTIPLIER = 2;
 function findActiveCrossingAtPosition(
   state: Readonly<GameState> | undefined,
   x: number | undefined,
-  y: number | undefined
+  y: number | undefined,
+  z = 0
 ): CrossingComponent | undefined {
   if (!state || x === undefined || y === undefined) return undefined;
-  const candidates = state.spatialIndex.get(`${x},${y}`);
-  if (!candidates || candidates.length === 0) return undefined;
+  const candidates = getEntitiesAtPosition(state as GameState, x, y, z);
+  if (candidates.length === 0) return undefined;
   for (const eid of candidates) {
     const crossing = getComponent(state, eid, ComponentType.Crossing) as CrossingComponent | undefined;
     if (crossing) return crossing;
@@ -63,7 +65,8 @@ export function buildUpdatedPositionComponent(
   facing: CardinalFacing | undefined,
   isSqueezing: boolean,
   profile: ActorSpatialProfile,
-  existingFacing?: CardinalFacing
+  existingFacing?: CardinalFacing,
+  targetZ = 0
 ): PositionComponent {
   const effectiveFacing = profile.baseWidth !== profile.baseHeight ? (facing ?? existingFacing) : undefined;
   const isMultiTile = width > 1 || height > 1;
@@ -71,6 +74,7 @@ export function buildUpdatedPositionComponent(
     type: ComponentType.Position,
     x: anchorX,
     y: anchorY,
+    ...(targetZ !== 0 ? { z: targetZ } : {}),
     ...(isMultiTile || isSqueezing ? { footprintWidth: width, footprintHeight: height } : {}),
     ...(effectiveFacing !== undefined ? { facing: effectiveFacing } : {}),
     ...(isSqueezing ? { isSqueezing: true } : {}),
@@ -118,7 +122,8 @@ export function evaluateTileTraversal(
   movementModes?: MovementModes | undefined,
   state?: Readonly<GameState>,
   x?: number,
-  y?: number
+  y?: number,
+  z = 0
 ): TileTraversalEvaluation {
   if (!tileDef) {
     return {
@@ -134,6 +139,37 @@ export function evaluateTileTraversal(
   const canFly = movementModes?.fly !== undefined && movementModes.fly > 0;
   const canSwim = movementModes?.swim !== undefined && movementModes.swim > 0;
   const canBurrow = movementModes?.burrow !== undefined && movementModes.burrow > 0;
+
+  // Open-air voxel handling: flight passes unimpeded; solid roof directly below acts as walkable rooftop; otherwise chasm drop hazard
+  if (tileDef.isOpenAir === true) {
+    if (canFly) {
+      return {
+        passability: 'unimpeded',
+        moveCostMultiplier: 1,
+        triggersSolidCollision: false,
+        blocksCharge: false
+      };
+    }
+    if (
+      tileDef.hasFloorSupport === true ||
+      (state !== undefined &&
+        x !== undefined &&
+        y !== undefined &&
+        isMultiZMap(state.map) &&
+        z > getMapZBounds(state.map).minZ &&
+        (() => {
+          const below = getTileDefAt(state, x, y, z - 1);
+          return below !== undefined && below.isOpenAir !== true && !below.walkable && below.hazardKind === undefined;
+        })())
+    ) {
+      return {
+        passability: 'unimpeded',
+        moveCostMultiplier: 1,
+        triggersSolidCollision: false,
+        blocksCharge: false
+      };
+    }
+  }
 
   if (tileDef.walkable) {
     const baseCost = tileDef.movementCost ?? NORMAL_TILE_MOVEMENT_COST;
@@ -162,7 +198,7 @@ export function evaluateTileTraversal(
   }
 
   // World-owned crossing entity (`bridge`, `rope_line`, `ladder_span`, `frozen_surface`) overrides underlying hazards
-  const activeCrossing = findActiveCrossingAtPosition(state, x, y);
+  const activeCrossing = findActiveCrossingAtPosition(state, x, y, z);
   if (activeCrossing && tileDef.isSolidObstacle !== true) {
     if (activeCrossing.crossingKind === 'bridge') {
       return {
@@ -177,6 +213,16 @@ export function evaluateTileTraversal(
       moveCostMultiplier: DIFFICULT_TERRAIN_MIN_MULTIPLIER,
       triggersSolidCollision: false,
       blocksCharge: true
+    };
+  }
+
+  if (tileDef.isOpenAir === true) {
+    return {
+      passability: 'hazardous',
+      moveCostMultiplier: 1,
+      triggersSolidCollision: false,
+      blocksCharge: true,
+      hazardKind: tileDef.hazardKind ?? 'chasm'
     };
   }
 
@@ -275,7 +321,8 @@ function evaluateFootprintMaxTier(
   width: number,
   height: number,
   movementModes: MovementModes | undefined,
-  context: DisplacementContext
+  context: DisplacementContext,
+  targetZ = 0
 ): {
   readonly allowed: boolean;
   readonly enteredHazard: boolean;
@@ -290,12 +337,12 @@ function evaluateFootprintMaxTier(
     for (let ox = 0; ox < width; ox++) {
       const tx = anchorX + ox;
       const ty = anchorY + oy;
-      if (!isInMapBounds(state.map, tx, ty)) {
+      if (!isInMapBounds(state.map, tx, ty, targetZ)) {
         return { allowed: false, enteredHazard: false, stopReason: 'out_of_bounds', collidedTileId: undefined };
       }
-      const tileId = getTileIdAt(state.map, tx, ty);
+      const tileId = getTileIdAt(state.map, tx, ty, targetZ);
       const tileDef = tileId ? state.campaign.tiles[tileId] : undefined;
-      const evalRes = evaluateTileTraversal(tileDef, movementModes, state, tx, ty);
+      const evalRes = evaluateTileTraversal(tileDef, movementModes, state, tx, ty, targetZ);
       if (evalRes.passability === 'hazardous') {
         enteredHazard = true;
       }
@@ -326,9 +373,15 @@ function evaluateFootprintMaxTier(
   return { allowed: true, enteredHazard, stopReason: 'completed', collidedTileId: undefined };
 }
 
-function buildTileEnteredEvents(state: GameState, entityId: EntityId, x: number, y: number): ReadonlyArray<GameEvent> {
-  if (!isInMapBounds(state.map, x, y)) return [];
-  const tileId = getTileIdAt(state.map, x, y);
+function buildTileEnteredEvents(
+  state: GameState,
+  entityId: EntityId,
+  x: number,
+  y: number,
+  z = 0
+): ReadonlyArray<GameEvent> {
+  if (!isInMapBounds(state.map, x, y, z)) return [];
+  const tileId = getTileIdAt(state.map, x, y, z);
   if (!tileId) return [];
   const tileTags = state.campaign.tiles[tileId]?.tags ?? [tileId];
   return tileTags.map((tag) => ({
@@ -341,7 +394,7 @@ function buildTileEnteredEvents(state: GameState, entityId: EntityId, x: number,
 }
 
 /**
- * Executes a single atomic spatial displacement step to `(targetX, targetY)`:
+ * Executes a single atomic spatial displacement step to `(targetX, targetY, targetZ)`:
  * 1. Validates tile passability policy against `context.mode`.
  * 2. Resolves multi-tile footprint placement, hard-corner diagonals, squeezing, and occupancy.
  * 3. Commits updated `PositionComponent` atomically, flags `fovNeedsUpdate` for player,
@@ -355,12 +408,14 @@ export function displaceEntityStep(params: {
   readonly entityId: EntityId;
   readonly targetX: number;
   readonly targetY: number;
+  readonly targetZ?: number | undefined;
   readonly context: DisplacementContext;
   readonly precomputedPlacement?: FootprintPlacementResult | undefined;
   readonly skipOccupancyCheck?: boolean | undefined;
 }): DisplacementResult {
   const { state, entityId, targetX, targetY, context, precomputedPlacement, skipOccupancyCheck } = params;
   const fromPos = getComponent(state, entityId, ComponentType.Position) as PositionComponent | undefined;
+  const resolvedZ = params.targetZ ?? fromPos?.z ?? 0;
   if (!fromPos) {
     return {
       state,
@@ -373,7 +428,7 @@ export function displaceEntityStep(params: {
     };
   }
 
-  if (!isInMapBounds(state.map, targetX, targetY)) {
+  if (!isInMapBounds(state.map, targetX, targetY, resolvedZ)) {
     return {
       state,
       moved: false,
@@ -403,7 +458,16 @@ export function displaceEntityStep(params: {
     width = profile.baseWidth;
     height = profile.baseHeight;
     isSqueezing = false;
-    const tierCheck = evaluateFootprintMaxTier(state, anchorX, anchorY, width, height, movementModes, context);
+    const tierCheck = evaluateFootprintMaxTier(
+      state,
+      anchorX,
+      anchorY,
+      width,
+      height,
+      movementModes,
+      context,
+      resolvedZ
+    );
     if (!tierCheck.allowed) {
       return {
         state,
@@ -426,8 +490,13 @@ export function displaceEntityStep(params: {
         fromPos,
         dx,
         dy,
+        targetZ: resolvedZ,
         canTraverse: (tileDef, tx, ty) =>
-          canModeTraverseEvaluation(evaluateTileTraversal(tileDef, movementModes, state, tx, ty), context, tileDef)
+          canModeTraverseEvaluation(
+            evaluateTileTraversal(tileDef, movementModes, state, tx, ty, resolvedZ),
+            context,
+            tileDef
+          )
       });
 
     if (!placement.valid) {
@@ -438,7 +507,8 @@ export function displaceEntityStep(params: {
         profile.baseWidth,
         profile.baseHeight,
         movementModes,
-        context
+        context,
+        resolvedZ
       );
       const stopReason: DisplacementResult['stopReason'] =
         tierCheck.stopReason === 'completed' ? 'solid_obstacle' : tierCheck.stopReason;
@@ -462,7 +532,16 @@ export function displaceEntityStep(params: {
     isSqueezing = placement.isSqueezing;
     profile = placement.profile ?? profile;
 
-    const postTierCheck = evaluateFootprintMaxTier(state, anchorX, anchorY, width, height, movementModes, context);
+    const postTierCheck = evaluateFootprintMaxTier(
+      state,
+      anchorX,
+      anchorY,
+      width,
+      height,
+      movementModes,
+      context,
+      resolvedZ
+    );
     if (!postTierCheck.allowed) {
       return {
         state,
@@ -486,7 +565,8 @@ export function displaceEntityStep(params: {
       targetX: anchorX,
       targetY: anchorY,
       targetW: width,
-      targetH: height
+      targetH: height,
+      targetZ: resolvedZ
     });
     if (occupancy.blocked) {
       const blockerId = occupancy.meleeTargetId ?? occupancy.solidBlockerId ?? occupancy.swapCandidateId;
@@ -511,13 +591,14 @@ export function displaceEntityStep(params: {
     facing,
     isSqueezing,
     profile,
-    fromPos.facing
+    fromPos.facing,
+    resolvedZ
   );
 
   const prevWidth = Math.max(1, fromPos.footprintWidth ?? 1);
   const prevHeight = Math.max(1, fromPos.footprintHeight ?? 1);
   const prevSqueezing = fromPos.isSqueezing === true;
-  const anchorMoved = anchorX !== fromPos.x || anchorY !== fromPos.y;
+  const anchorMoved = anchorX !== fromPos.x || anchorY !== fromPos.y || resolvedZ !== (fromPos.z ?? 0);
   const placementCommitted =
     anchorMoved ||
     width !== prevWidth ||
@@ -536,9 +617,17 @@ export function displaceEntityStep(params: {
     { x: anchorX, y: anchorY },
     context
   );
-  const events = buildTileEnteredEvents(nextState, entityId, anchorX, anchorY).map((evt) =>
+  const events = buildTileEnteredEvents(nextState, entityId, anchorX, anchorY, resolvedZ).map((evt) =>
     context.interaction !== undefined ? { ...evt, interaction: context.interaction } : evt
   );
+
+  if (placementCommitted && isMultiZMap(nextState.map)) {
+    const gravRes = resolveGravityForEntity(nextState, entityId);
+    nextState = gravRes.state;
+    if (gravRes.fellLevels > 0) {
+      enteredHazard = true;
+    }
+  }
 
   return {
     state: nextState,

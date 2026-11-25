@@ -120,7 +120,7 @@ export interface DisplacementResult {
   readonly moved: boolean;
   readonly anchorMoved?: boolean | undefined;
   readonly stepsMoved: number;
-  readonly finalPos: { readonly x: number; readonly y: number };
+  readonly finalPos: { readonly x: number; readonly y: number; readonly z?: number | undefined };
   readonly stopReason:
     'completed' | 'solid_obstacle' | 'entity_blocker' | 'hazard_halted' | 'difficult_terrain_blocked' | 'out_of_bounds';
   readonly collidedTileId?: string | undefined;
@@ -406,7 +406,7 @@ export interface RulesetContract {
   resolveAimedAction?(
     state: GameState,
     actorId: EntityId,
-    targetPos: { readonly x: number; readonly y: number },
+    targetPos: { readonly x: number; readonly y: number; readonly z?: number | undefined },
     context: TargetingContext
   ): { readonly state: GameState; readonly success: boolean };
 
@@ -615,6 +615,44 @@ export interface RulesetContract {
    * and spatial emanation auras) for HUD Vitals, Inspect, and Character Sheet rendering.
    */
   projectActiveEffects?(state: Readonly<GameState>, entityId: EntityId): ReadonlyArray<ActiveEffectDisplayDTO>;
+
+  /**
+   * Optional hook measuring tactical 3D distance in feet between two grid voxels `(x1, y1, z1)` and `(x2, y2, z2)`.
+   */
+  measureDistance3DFt?(x1: number, y1: number, z1: number, x2: number, y2: number, z2: number): number;
+
+  /**
+   * Optional hook computing elevation-based combat modifiers (such as D&D 3.5e `+1 High Ground` melee bonus).
+   */
+  evaluateElevationCombatModifiers?(
+    state: Readonly<GameState>,
+    attackerId: EntityId,
+    defenderId: EntityId
+  ): { readonly attackBonus: number; readonly label?: string | undefined };
+
+  /**
+   * Optional hook resolving ruleset-specific falling impact when gravity drops an actor across `fellLevels` Z strata.
+   */
+  onEntityFallLanded?(
+    state: GameState,
+    entityId: EntityId,
+    fellLevels: number,
+    landX: number,
+    landY: number,
+    landZ: number
+  ): GameState;
+
+  /**
+   * Optional hook validating or resolving skill checks (such as Climb) when an actor adjusts Z altitude manually.
+   */
+  canActorAdjustAltitude?(
+    state: GameState,
+    entityId: EntityId,
+    dz: number,
+    targetX: number,
+    targetY: number,
+    targetZ: number
+  ): { readonly allowed: boolean; readonly reason?: string | undefined };
 }
 
 /**

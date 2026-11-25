@@ -3164,5 +3164,24 @@
     "antiPatterns": [
       "Do not duplicate 6-second round defaults outside src/rulesets/dnd35e/world_clock.ts."
     ]
+  },
+  "src/rulesets/dnd35e/spatial/dnd35e_spatial_3d.ts": {
+    "domain": "D&D 3.5e: Layer 3 — Spatial Geometry & Senses",
+    "tier": "tier2_cartridge",
+    "responsibility": "Implements D&D 3.5e 3D spatial rules including Fly DAG movement resolution, High Ground +1 melee advantage, 1d6/10ft fall damage + Feather Fall/Tumble mitigation, and Climb checks.",
+    "canonicalEntryPoints": [
+      "HIGH_GROUND_MELEE_ATTACK_BONUS",
+      "resolveDnD35eMovementModes",
+      "evaluateDnD35eElevationCombat",
+      "resolveDnD35eFallLanded",
+      "evaluateDnD35eAltitudeAdjustment"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/spatial/dnd35e_spatial_3d.ts.",
+      "excludes": "Tier 1 Console gravity displacement or generic fallback damage."
+    },
+    "antiPatterns": [
+      "Do not duplicate D&D 3.5e falling damage, Fly override, or high-ground bonuses outside dnd35e_spatial_3d.ts."
+    ]
   }
 }

@@ -22,6 +22,7 @@ export interface MoveTargetIntent extends BaseIntent {
   readonly type: IntentType.MoveTarget;
   readonly dx: number;
   readonly dy: number;
+  readonly dz?: number | undefined;
   readonly isImmediate: true;
 }
 

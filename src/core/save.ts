@@ -99,6 +99,10 @@ function serializeStreamingGridMetadata(grid: ChunkedWorldGrid): SerializedStrea
     evictRadiusChunks: grid.evictRadiusChunks,
     originChunkX: grid.originChunkX,
     originChunkY: grid.originChunkY,
+    ...(grid.originChunkZ !== undefined ? { originChunkZ: grid.originChunkZ } : {}),
+    ...(grid.activeRadiusZ !== undefined ? { activeRadiusZ: grid.activeRadiusZ } : {}),
+    ...(grid.minZ !== undefined ? { minZ: grid.minZ } : {}),
+    ...(grid.maxZ !== undefined ? { maxZ: grid.maxZ } : {}),
     dirtyChunkKeys: Array.from(grid.dirtyChunkKeys),
     evictedChunkEntities: grid.evictedChunkEntities
   };
@@ -128,7 +132,8 @@ function hydrateStreamingMapSync(
     areaDef,
     streamingState.originChunkX,
     streamingState.originChunkY,
-    streamingState
+    streamingState,
+    streamingState.originChunkZ ?? 0
   );
   const scopeKey = resolveDefaultChunkScopeKey(campaignId);
   const nextChunks = new Map(baseGrid.chunks);
@@ -145,6 +150,8 @@ function hydrateStreamingMapSync(
     width: rawMap.width,
     height: rawMap.height,
     tiles: [],
+    ...(finalGrid.minZ !== undefined ? { minZ: finalGrid.minZ } : {}),
+    ...(finalGrid.maxZ !== undefined ? { maxZ: finalGrid.maxZ } : {}),
     ...(rawMap.isFullyExplored !== undefined ? { isFullyExplored: rawMap.isFullyExplored } : {}),
     chunkGrid: finalGrid
   };

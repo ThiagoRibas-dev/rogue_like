@@ -5,7 +5,7 @@
  */
 
 import { getTurnsPerHour } from '../utils/duration.ts';
-import { addComponent, getComponent, spawnEntity } from '../core/ecs.ts';
+import { addComponent, getComponent, getEntitiesAtPosition, spawnEntity } from '../core/ecs.ts';
 import { rng } from '../core/rng.ts';
 import { getRuleset } from '../rulesets/registry.ts';
 import {
@@ -320,6 +320,7 @@ export function spawnCampAmbushPatrol(
     return { state, spawnedEntityIds: [] };
   }
 
+  const tz = targetPos.z ?? 0;
   const candidateCoords: Array<{ readonly x: number; readonly y: number }> = [];
   for (let dy = -AMBUSH_SPAWN_MAX_DIST; dy <= AMBUSH_SPAWN_MAX_DIST; dy++) {
     for (let dx = -AMBUSH_SPAWN_MAX_DIST; dx <= AMBUSH_SPAWN_MAX_DIST; dx++) {
@@ -327,9 +328,9 @@ export function spawnCampAmbushPatrol(
       if (dist < AMBUSH_SPAWN_MIN_DIST || dist > AMBUSH_SPAWN_MAX_DIST) continue;
       const tx = targetPos.x + dx;
       const ty = targetPos.y + dy;
-      if (!isInMapBounds(state.map, tx, ty)) continue;
-      if (!getTileDefAt(state, tx, ty)?.walkable) continue;
-      const occupants = state.spatialIndex.get(`${tx},${ty}`) ?? [];
+      if (!isInMapBounds(state.map, tx, ty, tz)) continue;
+      if (!getTileDefAt(state, tx, ty, tz)?.walkable) continue;
+      const occupants = getEntitiesAtPosition(state, tx, ty, tz);
       if (occupants.some((id) => getComponent(state, id, ComponentType.Fighter) !== undefined)) continue;
       candidateCoords.push({ x: tx, y: ty });
     }
@@ -341,9 +342,9 @@ export function spawnCampAmbushPatrol(
         if (dx === 0 && dy === 0) continue;
         const tx = targetPos.x + dx;
         const ty = targetPos.y + dy;
-        if (!isInMapBounds(state.map, tx, ty)) continue;
-        if (!getTileDefAt(state, tx, ty)?.walkable) continue;
-        const occupants = state.spatialIndex.get(`${tx},${ty}`) ?? [];
+        if (!isInMapBounds(state.map, tx, ty, tz)) continue;
+        if (!getTileDefAt(state, tx, ty, tz)?.walkable) continue;
+        const occupants = getEntitiesAtPosition(state, tx, ty, tz);
         if (occupants.some((id) => getComponent(state, id, ComponentType.Fighter) !== undefined)) continue;
         candidateCoords.push({ x: tx, y: ty });
       }
@@ -355,7 +356,15 @@ export function spawnCampAmbushPatrol(
     return { state, spawnedEntityIds: [] };
   }
 
-  const [nextState, spawnedId] = spawnEntity(state, chosenTemplateId, spawnCoord.x, spawnCoord.y);
+  const [nextState, spawnedId] = spawnEntity(
+    state,
+    chosenTemplateId,
+    spawnCoord.x,
+    spawnCoord.y,
+    undefined,
+    undefined,
+    tz
+  );
   return {
     state: nextState,
     spawnedEntityIds: [spawnedId]

@@ -1,4 +1,15 @@
-import { addComponent, getComponent, removeEntity, resolveEntityDisplayName } from '../core/ecs.ts';
+import {
+  addComponent,
+  getComponent,
+  getEntitiesAtPosition,
+  removeEntity,
+  resolveEntityDisplayName
+} from '../core/ecs.ts';
+import { CHUNK_DIRTY_REGION } from '../constants/world_chunk.constants.ts';
+import { clearFlowFieldCache } from '../ai/flow_field.ts';
+import { clearRegionGraphCache } from '../map/region_graph.ts';
+import { cloneWorldChunk } from '../map/world_chunk.ts';
+import { packWorldCoord3D, worldToChunkCoord } from '../utils/grid.ts';
 import { rng } from '../core/rng.ts';
 import type { DurabilityConfig } from '../types/campaign/meta.ts';
 import {
@@ -87,6 +98,32 @@ export function syncStructuralDoorState(
         ...renderable,
         glyph: nextGlyph
       });
+    }
+  }
+
+  clearRegionGraphCache();
+  clearFlowFieldCache();
+
+  const doorPos = getComponent(nextState, doorEntityId, ComponentType.Position) as PositionComponent | undefined;
+  const grid = nextState.map.chunkGrid;
+  if (grid && doorPos) {
+    const cx = worldToChunkCoord(doorPos.x, grid.chunkSize);
+    const cy = worldToChunkCoord(doorPos.y, grid.chunkSize);
+    const cz = doorPos.z ?? 0;
+    const chunkKey = packWorldCoord3D(cx, cy, cz);
+    const chunk = grid.chunks.get(chunkKey);
+    if (chunk && (chunk.dirtyFlags & CHUNK_DIRTY_REGION) === 0) {
+      const cloned = cloneWorldChunk(chunk);
+      const dirtyChunk = { ...cloned, dirtyFlags: chunk.dirtyFlags | CHUNK_DIRTY_REGION };
+      const nextChunks = new Map(grid.chunks);
+      nextChunks.set(chunkKey, dirtyChunk);
+      nextState = {
+        ...nextState,
+        map: {
+          ...nextState.map,
+          chunkGrid: { ...grid, chunks: nextChunks }
+        }
+      };
     }
   }
 
@@ -512,7 +549,7 @@ export function probeTrapWithReachTool(
     }
   }
 
-  const entitiesAt = state.spatialIndex.get(`${targetX},${targetY}`) ?? [];
+  const entitiesAt = getEntitiesAtPosition(state, targetX, targetY, actorPos?.z ?? 0);
   let nextState = state;
   let triggeredTrapCount = 0;
 

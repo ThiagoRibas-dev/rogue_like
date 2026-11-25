@@ -35,12 +35,13 @@ export function createToggleTargetingAction(
  * @param dy The y delta.
  * @returns The MoveTargetIntent.
  */
-export function createMoveTargetAction(entityId: EntityId, dx: number, dy: number): MoveTargetIntent {
+export function createMoveTargetAction(entityId: EntityId, dx: number, dy: number, dz?: number): MoveTargetIntent {
   return {
     type: IntentType.MoveTarget,
     entityId,
     dx,
     dy,
+    ...(dz !== undefined ? { dz } : {}),
     isImmediate: true
   };
 }

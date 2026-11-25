@@ -18,16 +18,17 @@ import { addComponent, createEntity, getComponent } from './ecs_core.ts';
  * @param itemId The ID of the item definition in ITEM_REGISTRY.
  * @param x The map X coordinate.
  * @param y The map Y coordinate.
+ * @param z The map Z coordinate (defaults to 0).
  * @returns A tuple of the updated state and the new EntityId.
  */
-export function spawnItem(state: GameState, itemId: string, x: number, y: number): [GameState, EntityId] {
+export function spawnItem(state: GameState, itemId: string, x: number, y: number, z = 0): [GameState, EntityId] {
   const def = state.campaign.items[itemId];
   if (!def) throw new Error(`Unknown item ID: ${itemId}`);
 
   const [stateAfterCreate, entityId] = createEntity(state);
   let nextState = stateAfterCreate;
 
-  const pos: PositionComponent = { type: ComponentType.Position, x, y };
+  const pos: PositionComponent = { type: ComponentType.Position, x, y, ...(z !== 0 ? { z } : {}) };
   const render: RenderableComponent = {
     type: ComponentType.Renderable,
     glyph: def.glyph,

@@ -97,6 +97,14 @@ export async function validateAreas(campaign: Readonly<CampaignData>): Promise<V
             fixSuggestion: 'Increase prefetchRadiusChunks so Ring 1 surrounds Ring 0.'
           });
         }
+        if (cfg.minZ !== undefined && cfg.maxZ !== undefined && cfg.minZ > cfg.maxZ) {
+          errors.push({
+            severity: 'error',
+            path: `/areas/${areaId}/streamingConfig/minZ`,
+            message: `Streaming minZ (${cfg.minZ}) cannot exceed maxZ (${cfg.maxZ}).`,
+            fixSuggestion: 'Set minZ <= maxZ.'
+          });
+        }
         const palette = cfg.biomePalette;
         const paletteEntries: ReadonlyArray<readonly [string, string | undefined]> = [
           ['water', palette.water],
@@ -104,7 +112,10 @@ export async function validateAreas(campaign: Readonly<CampaignData>): Promise<V
           ['plains', palette.plains],
           ['forest', palette.forest],
           ['ridge', palette.ridge],
-          ['road', palette.road]
+          ['road', palette.road],
+          ['openAir', palette.openAir],
+          ['underground', palette.underground],
+          ['ramp', palette.ramp]
         ];
         for (const [slot, tileId] of paletteEntries) {
           if (tileId !== undefined && !campaign.tiles[tileId]) {
@@ -215,7 +226,110 @@ export async function validateAreas(campaign: Readonly<CampaignData>): Promise<V
               });
             }
           }
+          if (conn.preserveCoords === true && conn.placementX !== undefined && conn.placementY !== undefined) {
+            const targetArea = campaign.areas[conn.targetAreaId];
+            if (targetArea?.generatorType === 'static' && targetArea.staticMap) {
+              const targetLayout =
+                conn.targetZ !== undefined && conn.targetZ !== 0
+                  ? targetArea.staticMap.zLevels?.[String(conn.targetZ)]
+                  : targetArea.staticMap.layout;
+              if (targetLayout) {
+                const targetChar = targetLayout[conn.placementY]?.[conn.placementX];
+                if (targetChar === undefined) {
+                  errors.push({
+                    severity: 'error',
+                    path: `/areas/${areaId}/connections/${cIdx}/preserveCoords`,
+                    message: `preserveCoords connection (${conn.placementX}, ${conn.placementY}) falls outside static target area '${conn.targetAreaId}' bounds.`,
+                    fixSuggestion: `Align '${conn.targetAreaId}' map dimensions or disable preserveCoords.`
+                  });
+                } else {
+                  const targetTileId = targetArea.staticMap.legend[targetChar];
+                  if (targetTileId && !campaign.tiles[targetTileId]?.walkable) {
+                    errors.push({
+                      severity: 'error',
+                      path: `/areas/${areaId}/connections/${cIdx}/preserveCoords`,
+                      message: `preserveCoords connection (${conn.placementX}, ${conn.placementY}) lands on unwalkable tile '${targetTileId}' in '${conn.targetAreaId}'.`,
+                      fixSuggestion: `Place a matching stair/floor tile at (${conn.placementX}, ${conn.placementY}) in '${conn.targetAreaId}'.`
+                    });
+                  }
+                }
+              }
+            }
+          }
         });
+      }
+
+      // 5. Multi-Z slice & vertical shaft alignment validation
+      if (area.staticMap.zLevels) {
+        const allSlices: Record<string, ReadonlyArray<string>> = {
+          '0': layout
+        };
+        for (const [zStr, sliceLayout] of Object.entries(area.staticMap.zLevels)) {
+          const zNum = Number(zStr);
+          if (!Number.isInteger(zNum)) {
+            errors.push({
+              severity: 'error',
+              path: `/areas/${areaId}/staticMap/zLevels/${zStr}`,
+              message: `zLevels key '${zStr}' must be an integer string.`,
+              fixSuggestion: 'Use integer strings like "-1" or "1".'
+            });
+            continue;
+          }
+          allSlices[zStr] = sliceLayout;
+
+          for (let sy = 0; sy < sliceLayout.length; sy++) {
+            const sRow = sliceLayout[sy] ?? '';
+            for (let sx = 0; sx < sRow.length; sx++) {
+              const ch = sRow[sx]!;
+              if (ch === ' ') continue;
+              if (legend[ch] === undefined && entityLegend[ch] === undefined) {
+                errors.push({
+                  severity: 'error',
+                  path: `/areas/${areaId}/staticMap/zLevels/${zStr}/layout/${sy}/${sx}`,
+                  message: `Layout character '${ch}' at (${sx}, ${sy}, ${zStr}) is not defined in legend or entityLegend.`,
+                  fixSuggestion: `Add '${ch}' to staticMap.legend or entityLegend.`
+                });
+              }
+            }
+          }
+        }
+
+        for (const [zStr, sliceLayout] of Object.entries(allSlices)) {
+          const z = Number(zStr);
+          const lowerSlice = allSlices[String(z - 1)];
+          if (!lowerSlice) continue;
+          for (let sy = 0; sy < sliceLayout.length; sy++) {
+            const sRow = sliceLayout[sy] ?? '';
+            for (let sx = 0; sx < sRow.length; sx++) {
+              const ch = sRow[sx]!;
+              const tid = legend[ch];
+              const def = tid ? campaign.tiles[tid] : undefined;
+              if (
+                def?.verticalLink === 'stairs_down' ||
+                def?.verticalLink === 'stairs_both' ||
+                def?.verticalLink === 'ladder'
+              ) {
+                const lowerCh = lowerSlice[sy]?.[sx] ?? ' ';
+                const lowerTid = legend[lowerCh];
+                const lowerDef = lowerTid ? campaign.tiles[lowerTid] : undefined;
+                if (
+                  lowerDef &&
+                  !lowerDef.walkable &&
+                  !lowerDef.isOpenAir &&
+                  lowerDef.verticalLink === undefined &&
+                  lowerDef.isClimbable !== true
+                ) {
+                  errors.push({
+                    severity: 'warning',
+                    path: `/areas/${areaId}/staticMap/zLevels/${zStr}`,
+                    message: `Vertical stair/ladder '${tid}' at (${sx}, ${sy}, ${z}) sits directly above solid tile '${lowerTid}' on z=${z - 1}.`,
+                    fixSuggestion: `Ensure (${sx}, ${sy}) on z=${z - 1} has matching stairs, ladder, floor, or open air.`
+                  });
+                }
+              }
+            }
+          }
+        }
       }
     }
   }

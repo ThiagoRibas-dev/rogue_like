@@ -1,4 +1,5 @@
 import { getComponent, resolveEntityDisplayName, withEcsBatchState } from '../core/ecs.ts';
+import { getActiveRuleset } from '../rulesets/registry.ts';
 import { ComponentType, type MovementModes, type PositionComponent } from '../types/components.types.ts';
 import type { TileDefinition } from '../types/campaign/world.ts';
 import type { GameEvent } from '../types/events.types.ts';
@@ -6,7 +7,15 @@ import type { GameState } from '../types/game-state.types.ts';
 import { IntentType } from '../types/intents/intent.enum.ts';
 import type { MoveIntent } from '../types/intents/movement.intents.ts';
 import { getFactionRelation } from '../utils/faction.ts';
-import { getTileAt, getTileDefAt, getTileIdAt, isInMapBounds, setTileIdAt } from '../map/map_accessor.ts';
+import {
+  canTraverseVerticalTiles,
+  getTileAt,
+  getTileDefAt,
+  getTileIdAt,
+  isInMapBounds,
+  isMultiZMap,
+  setTileIdAt
+} from '../map/map_accessor.ts';
 import { processApplyIntent } from './apply.system.ts';
 import { processMeleeAttackIntent } from './combat.system.ts';
 import { isPlayerControlledCompanion } from './companion_commands.system.ts';
@@ -21,15 +30,32 @@ import {
 } from './movement_displacement.ts';
 import { evaluateFootprintOccupancy, resolveMovementFootprintPlacement } from './movement_footprint.ts';
 
+function hasAdjacentClimbableSurface(state: Readonly<GameState>, x: number, y: number, z: number): boolean {
+  const offsets: ReadonlyArray<readonly [number, number]> = [
+    [1, 0],
+    [-1, 0],
+    [0, 1],
+    [0, -1]
+  ];
+  for (const [ox, oy] of offsets) {
+    if (!isInMapBounds(state.map, x + ox, y + oy, z)) continue;
+    if (getTileDefAt(state, x + ox, y + oy, z)?.isClimbable === true) {
+      return true;
+    }
+  }
+  return false;
+}
+
 /**
  * Canonical Single Source of Truth for tile traversal validation across movement modes.
  * Delegates to `evaluateTileTraversal`, permitting `unimpeded` and `difficult` tiles for voluntary walking/flying/swimming/burrowing.
  *
  * @param tileDef TileDefinition of the target tile.
  * @param movementModes Optional MovementModes of the moving entity.
- * @param state Optional GameState used to check world-owned `CrossingComponent` entities at `(x, y)`.
+ * @param state Optional GameState used to check world-owned `CrossingComponent` entities at `(x, y, z)`.
  * @param x Optional grid X coordinate.
  * @param y Optional grid Y coordinate.
+ * @param z Optional grid Z coordinate (defaults to `0`).
  * @returns True if the entity can voluntarily traverse the tile.
  */
 export function canTraverseTile(
@@ -37,16 +63,18 @@ export function canTraverseTile(
   movementModes?: MovementModes | undefined,
   state?: Readonly<GameState>,
   x?: number,
-  y?: number
+  y?: number,
+  z = 0
 ): boolean {
-  const evalRes = evaluateTileTraversal(tileDef, movementModes, state, x, y);
+  const evalRes = evaluateTileTraversal(tileDef, movementModes, state, x, y, z);
   return evalRes.passability === 'unimpeded' || evalRes.passability === 'difficult';
 }
 
 /**
- * Processes a MoveIntent.
+ * Processes a MoveIntent (2D step, ramp auto-elevation, or explicit vertical `<`/`>` move).
  * Checks for collision against walls, hazard tiles (accounting for multi-mode movement modes),
- * and entities using the spatial index, then delegates displacement to the Tier 1 kernel.
+ * and entities using the uniform 3D spatial index, delegates displacement to the Tier 1 kernel,
+ * and evaluates post-step gravity.
  * @param state The current GameState.
  * @param intent The MoveIntent to process.
  * @returns The new or original GameState.
@@ -56,33 +84,184 @@ export function processMoveIntent(
   intent: MoveIntent
 ): { state: GameState; success: boolean; events?: readonly GameEvent[] } {
   const { entityId, dx, dy } = intent;
+  const dz = intent.dz ?? 0;
 
   const position = getComponent(state, entityId, ComponentType.Position) as PositionComponent | undefined;
   if (position === undefined) {
     return { state, success: false };
   }
 
+  const currentZ = position.z ?? 0;
   const targetX: number = position.x + dx;
   const targetY: number = position.y + dy;
+  const movementModes = getEntityMovementModes(state, entityId);
 
-  if (!isInMapBounds(state.map, targetX, targetY)) {
+  if (dz !== 0) {
+    const isPlayer = getComponent(state, entityId, ComponentType.Player) !== undefined;
+    if (!isMultiZMap(state.map)) {
+      return {
+        state: isPlayer
+          ? addMessage(state, 'There is nowhere up or down to climb here.', MessageLogCategory.System)
+          : state,
+        success: false
+      };
+    }
+
+    const targetZ = currentZ + dz;
+    if (!isInMapBounds(state.map, targetX, targetY, targetZ)) {
+      return {
+        state: isPlayer
+          ? addMessage(state, 'You cannot move further in that vertical direction.', MessageLogCategory.System)
+          : state,
+        success: false
+      };
+    }
+
+    const curDef = getTileDefAt(state, position.x, position.y, currentZ);
+    const targetDef = getTileDefAt(state, targetX, targetY, targetZ);
+    const canFly = movementModes?.fly !== undefined && movementModes.fly > 0;
+    const canClimbSpeed = movementModes?.climb !== undefined && movementModes.climb > 0;
+    const adjacentClimbable =
+      hasAdjacentClimbableSurface(state, position.x, position.y, currentZ) ||
+      hasAdjacentClimbableSurface(state, targetX, targetY, targetZ);
+    const hasLinkOrClimb =
+      curDef?.verticalLink !== undefined ||
+      targetDef?.verticalLink !== undefined ||
+      curDef?.isClimbable === true ||
+      targetDef?.isClimbable === true ||
+      adjacentClimbable;
+
+    const altitudeCheck = getActiveRuleset(state).canActorAdjustAltitude?.(
+      state,
+      entityId,
+      dz,
+      targetX,
+      targetY,
+      targetZ
+    );
+    if (altitudeCheck && !altitudeCheck.allowed) {
+      return {
+        state:
+          isPlayer && altitudeCheck.reason ? addMessage(state, altitudeCheck.reason, MessageLogCategory.System) : state,
+        success: false
+      };
+    }
+
+    const rulesetExplicitlyPermits = altitudeCheck?.allowed === true;
+    const isSameColumnStep = dx === 0 && dy === 0;
+    const isPermittedVerticalMove =
+      canFly ||
+      (isSameColumnStep &&
+        ((dz < 0 && curDef?.isOpenAir === true) ||
+          canTraverseVerticalTiles(curDef, targetDef, dz) ||
+          ((canClimbSpeed || rulesetExplicitlyPermits) && hasLinkOrClimb)));
+
+    const destIsSolidRock =
+      !targetDef ||
+      (targetDef.walkable !== true &&
+        targetDef.isOpenAir !== true &&
+        targetDef.verticalLink === undefined &&
+        targetDef.isClimbable !== true);
+
+    if (!isPermittedVerticalMove || destIsSolidRock) {
+      return {
+        state: isPlayer
+          ? addMessage(
+              state,
+              dz > 0 ? 'There is no way up here.' : 'Solid ground blocks your descent.',
+              MessageLogCategory.System
+            )
+          : state,
+        success: false
+      };
+    }
+
+    const occupancyZ = evaluateFootprintOccupancy({
+      state,
+      moverId: entityId,
+      moverPos: position,
+      targetX,
+      targetY,
+      targetW: Math.max(1, position.footprintWidth ?? 1),
+      targetH: Math.max(1, position.footprintHeight ?? 1),
+      targetZ
+    });
+    if (occupancyZ.meleeTargetId !== undefined) {
+      return processMeleeAttackIntent(state, {
+        type: IntentType.MeleeAttack,
+        entityId,
+        defenderId: occupancyZ.meleeTargetId
+      });
+    }
+    if (occupancyZ.blocked) {
+      return {
+        state: isPlayer ? addMessage(state, 'Something is in the way.', MessageLogCategory.CombatHit) : state,
+        success: false
+      };
+    }
+
+    const vertRes = displaceEntityStep({
+      state,
+      entityId,
+      targetX,
+      targetY,
+      targetZ,
+      context: { mode: 'voluntary_walk', isForced: false, provokesAoO: true },
+      skipOccupancyCheck: true
+    });
+    if (!vertRes.moved) {
+      return { state: vertRes.state, success: false };
+    }
+    return { state: vertRes.state, success: true, events: vertRes.events };
+  }
+
+  // Horizontal movement: support seamless ramp elevation up (+1 Z) or down (-1 Z)
+  let targetZ = currentZ;
+  if (isMultiZMap(state.map)) {
+    const curDef = getTileDefAt(state, position.x, position.y, currentZ);
+    const sameLevelDef = getTileDefAt(state, targetX, targetY, currentZ);
+    if (
+      curDef?.verticalLink === 'ramp' &&
+      (!sameLevelDef || !canTraverseTile(sameLevelDef, movementModes, state, targetX, targetY, currentZ)) &&
+      isInMapBounds(state.map, targetX, targetY, currentZ + 1) &&
+      canTraverseTile(
+        getTileDefAt(state, targetX, targetY, currentZ + 1),
+        movementModes,
+        state,
+        targetX,
+        targetY,
+        currentZ + 1
+      )
+    ) {
+      targetZ = currentZ + 1;
+    } else if (
+      sameLevelDef?.isOpenAir === true &&
+      (movementModes?.fly ?? 0) <= 0 &&
+      isInMapBounds(state.map, targetX, targetY, currentZ - 1) &&
+      getTileDefAt(state, targetX, targetY, currentZ - 1)?.verticalLink === 'ramp'
+    ) {
+      targetZ = currentZ - 1;
+    }
+  }
+
+  if (!isInMapBounds(state.map, targetX, targetY, targetZ)) {
     return { state, success: false };
   }
 
-  const targetTile = getTileAt(state.map, targetX, targetY);
+  const targetTile = getTileAt(state.map, targetX, targetY, targetZ);
   if (targetTile === undefined) {
     return { state, success: false };
   }
 
   // 1. Multi-Tile Footprint Placement, Hard-Corner Diagonals & SRD Squeezing
-  const movementModes = getEntityMovementModes(state, entityId);
   const placement = resolveMovementFootprintPlacement({
     state,
     entityId,
     fromPos: position,
     dx,
     dy,
-    canTraverse: (def, tx, ty) => canTraverseTile(def, movementModes, state, tx, ty)
+    targetZ,
+    canTraverse: (def, tx, ty) => canTraverseTile(def, movementModes, state, tx, ty, targetZ)
   });
 
   if (!placement.valid) {
@@ -99,8 +278,8 @@ export function processMoveIntent(
           for (let ox = 0; ox < fw; ox++) {
             const bx = targetX + ox;
             const by = targetY + oy;
-            if (!isInMapBounds(state.map, bx, by)) continue;
-            if (getTileDefAt(state, bx, by)?.bumpTransition) {
+            if (!isInMapBounds(state.map, bx, by, targetZ)) continue;
+            if (getTileDefAt(state, bx, by, targetZ)?.bumpTransition) {
               bumpX = bx;
               bumpY = by;
               break bumpSearch;
@@ -108,8 +287,8 @@ export function processMoveIntent(
           }
         }
       }
-      if (getTileIdAt(state.map, bumpX, bumpY) !== undefined) {
-        const nextMap = setTileIdAt(state.map, bumpX, bumpY, bumpTileDef.bumpTransition);
+      if (getTileIdAt(state.map, bumpX, bumpY, targetZ) !== undefined) {
+        const nextMap = setTileIdAt(state.map, bumpX, bumpY, bumpTileDef.bumpTransition, targetZ);
         let nextState: GameState = { ...state, map: nextMap, fovNeedsUpdate: true };
         if (isPlayer) {
           const msg = bumpTileDef.interactMessage ?? 'You bump into it.';
@@ -121,7 +300,7 @@ export function processMoveIntent(
 
     if (isPlayer) {
       const tileDef = placement.blockedByObstacleDef ?? directTileDef;
-      const evalBlocked = evaluateTileTraversal(tileDef, movementModes, state, targetX, targetY);
+      const evalBlocked = evaluateTileTraversal(tileDef, movementModes, state, targetX, targetY, targetZ);
       const obstacleName =
         evalBlocked.hazardKind === 'pit' ||
         evalBlocked.hazardKind === 'chasm' ||
@@ -150,7 +329,8 @@ export function processMoveIntent(
     targetX: placement.anchorX,
     targetY: placement.anchorY,
     targetW: placement.width,
-    targetH: placement.height
+    targetH: placement.height,
+    targetZ
   });
 
   if (occupancy.meleeTargetId !== undefined) {
@@ -166,7 +346,7 @@ export function processMoveIntent(
     if (blockedByEntityId !== undefined) {
       const dialogueComp = getComponent(state, blockedByEntityId, ComponentType.Dialogue);
       const interactable = getComponent(state, blockedByEntityId, ComponentType.Interactable);
-      const originTileDef = getTileDefAt(state, position.x, position.y);
+      const originTileDef = getTileDefAt(state, position.x, position.y, currentZ);
       const blockerPos = getComponent(state, blockedByEntityId, ComponentType.Position) as
         PositionComponent | undefined;
       const moverIsSingleTile = (position.footprintWidth ?? 1) === 1 && (position.footprintHeight ?? 1) === 1;
@@ -179,7 +359,14 @@ export function processMoveIntent(
         blockerIsSingleTile &&
         (isPlayerControlledCompanion(state, entityId, blockedByEntityId) ||
           getFactionRelation(state, entityId, blockedByEntityId) === 'friendly') &&
-        canTraverseTile(originTileDef, getEntityMovementModes(state, blockedByEntityId), state, position.x, position.y);
+        canTraverseTile(
+          originTileDef,
+          getEntityMovementModes(state, blockedByEntityId),
+          state,
+          position.x,
+          position.y,
+          currentZ
+        );
 
       if (canFriendlySwap && blockerPos) {
         const swapContext = { mode: 'swap' as const, isForced: false, provokesAoO: true };
@@ -191,16 +378,20 @@ export function processMoveIntent(
           placement.facing,
           placement.isSqueezing,
           placement.profile,
-          position.facing
+          position.facing,
+          targetZ
         );
+        const { z: _blockerOldZ, ...blockerRestPos } = blockerPos;
+        const swappedBlockerPos: PositionComponent = {
+          ...blockerRestPos,
+          type: ComponentType.Position,
+          x: position.x,
+          y: position.y,
+          ...(currentZ !== 0 ? { z: currentZ } : {})
+        };
         let nextState = withEcsBatchState(state, (batch) => {
           batch.addComponent(entityId, moverPosComp);
-          batch.addComponent(blockedByEntityId, {
-            ...blockerPos,
-            type: ComponentType.Position,
-            x: position.x,
-            y: position.y
-          });
+          batch.addComponent(blockedByEntityId, swappedBlockerPos);
         });
         nextState = runActorMovementStep(
           nextState,
@@ -285,6 +476,7 @@ export function processMoveIntent(
     entityId,
     targetX: placement.anchorX,
     targetY: placement.anchorY,
+    targetZ,
     context: { mode: 'voluntary_walk', isForced: false, provokesAoO: true },
     precomputedPlacement: placement,
     skipOccupancyCheck: true

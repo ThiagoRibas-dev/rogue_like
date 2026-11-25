@@ -4,7 +4,7 @@
  * executes `resolveCastPipeline`, saving throws, SR, AoE geometry, and damage/buff application.
  */
 
-import { consumeResourcePool, getComponent } from '../../../core/ecs.ts';
+import { consumeResourcePool, getComponent, getEntitiesAtPosition } from '../../../core/ecs.ts';
 import { addMessage, MessageLogCategory } from '../../../systems/message.system.ts';
 import { matchesEntityTagCondition } from '../../../systems/reaction.system.ts';
 import {
@@ -38,11 +38,8 @@ import { hydrateEntityRoundActionBudget } from '../cartridge/dnd35e_turn_budget.
 import { rollD20 } from '../math/dice.ts';
 import { resolveTypedModifiers } from '../modifiers/stacking_engine.ts';
 import { aggregateProgressionChassis } from '../progression.ts';
-import {
-  measureFootprintToFootprintDistanceFt,
-  measureFootprintToTileDistanceFt
-} from '../spatial/footprint_resolver.ts';
-import { FEET_PER_GRID_SQUARE } from '../spatial/grid_geometry.ts';
+import { measureFootprintToTileDistanceFt } from '../spatial/footprint_resolver.ts';
+import { FEET_PER_GRID_SQUARE, measureDnD35Distance3DFt } from '../spatial/grid_geometry.ts';
 import { getDnD35EntityData, setDnD35EntityData } from '../srd_registry.ts';
 import { getDnD35SystemContent } from '../types/dnd35e_system.types.ts';
 
@@ -55,7 +52,7 @@ export { computeSpellRangeTiles, summarizeMetamagic, type DnD35SpellCastContext 
 export function executeDnD35eSpellCast(
   state: GameState,
   casterId: EntityId,
-  targetPos: { readonly x: number; readonly y: number },
+  targetPos: { readonly x: number; readonly y: number; readonly z?: number | undefined },
   castContext: DnD35SpellCastContext
 ): { readonly state: GameState; readonly success: boolean } {
   const sysContent = getDnD35SystemContent(state.campaign);
@@ -105,6 +102,8 @@ export function executeDnD35eSpellCast(
   );
   const casterW = Math.max(1, casterPos.footprintWidth ?? 1);
   const casterH = Math.max(1, casterPos.footprintHeight ?? 1);
+  const casterZ = casterPos.z ?? 0;
+  const targetZ = targetPos.z ?? casterZ;
   let minDistanceFt = measureFootprintToTileDistanceFt(
     casterPos.x,
     casterPos.y,
@@ -113,20 +112,17 @@ export function executeDnD35eSpellCast(
     targetPos.x,
     targetPos.y
   );
-  const targetOccupants = state.spatialIndex.get(`${targetPos.x},${targetPos.y}`) ?? [];
+  if (casterZ !== targetZ) {
+    minDistanceFt = Math.max(
+      minDistanceFt,
+      measureDnD35Distance3DFt(casterPos.x, casterPos.y, casterZ, targetPos.x, targetPos.y, targetZ)
+    );
+  }
+  const targetOccupants = getEntitiesAtPosition(state, targetPos.x, targetPos.y, targetZ);
   for (const occId of targetOccupants) {
     const occPos = getComponent(state, occId, ComponentType.Position) as PositionComponent | undefined;
     if (occPos) {
-      const d = measureFootprintToFootprintDistanceFt(
-        casterPos.x,
-        casterPos.y,
-        casterW,
-        casterH,
-        occPos.x,
-        occPos.y,
-        occPos.footprintWidth ?? 1,
-        occPos.footprintHeight ?? 1
-      );
+      const d = measureDnD35Distance3DFt(casterPos.x, casterPos.y, casterZ, occPos.x, occPos.y, occPos.z ?? 0);
       if (d < minDistanceFt) minDistanceFt = d;
     }
   }

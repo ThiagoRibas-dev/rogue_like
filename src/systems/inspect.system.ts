@@ -27,7 +27,8 @@ export function processToggleInspectIntent(
       inspectMode: {
         active: true,
         x: pos.x,
-        y: pos.y
+        y: pos.y,
+        ...((pos.z ?? 0) !== 0 ? { z: pos.z } : {})
       }
     },
     success: false
@@ -45,25 +46,28 @@ export function processMoveInspectIntent(
 
   const newX = state.inspectMode.x + intent.dx;
   const newY = state.inspectMode.y + intent.dy;
+  const newZ = (state.inspectMode.z ?? 0) + (intent.dz ?? 0);
 
   // Restrict to map bounds
-  if (!isInMapBounds(state.map, newX, newY)) {
+  if (!isInMapBounds(state.map, newX, newY, newZ)) {
     return { state, success: false };
   }
 
   // Restrict to explored tiles (can't inspect unrevealed fog of war)
-  const tile = getTileAt(state.map, newX, newY);
+  const tile = getTileAt(state.map, newX, newY, newZ);
   if (!tile || (!tile.explored && !state.map.isFullyExplored)) {
     return { state, success: false };
   }
 
+  const { z: _oldZ, ...restInspect } = state.inspectMode;
   return {
     state: {
       ...state,
       inspectMode: {
-        ...state.inspectMode,
+        ...restInspect,
         x: newX,
-        y: newY
+        y: newY,
+        ...(newZ !== 0 ? { z: newZ } : {})
       }
     },
     success: false

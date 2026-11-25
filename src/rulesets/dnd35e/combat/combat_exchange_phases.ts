@@ -13,6 +13,7 @@ import {
   FLANKING_ATTACK_BONUS,
   resolveEffectiveTileIllumination
 } from '../spatial/cover_senses.ts';
+import { evaluateDnD35eElevationCombat } from '../spatial/dnd35e_spatial_3d.ts';
 import { evaluateEntityFlankingTarget } from '../spatial/flanking_graph.ts';
 import { measureFootprintToFootprintDistanceFt } from '../spatial/footprint_resolver.ts';
 import { FEET_PER_GRID_SQUARE, SIZE_METRICS } from '../spatial/grid_geometry.ts';
@@ -97,7 +98,13 @@ export function resolveStrikePreAttackContext(
 
   let concealmentMissChance = defenderEval.dagResult.concealmentMissChancePercent ?? 0;
   if (attackerPos && defenderPos) {
-    const tileIllumination = resolveEffectiveTileIllumination(state, defenderPos.x, defenderPos.y);
+    const tileIllumination = resolveEffectiveTileIllumination(
+      state,
+      defenderPos.x,
+      defenderPos.y,
+      undefined,
+      defenderPos.z ?? 0
+    );
     const observerSenses: SensoryProfile = {
       lowLightVision: attackerData.senses?.lowLightVision ?? attackerSelfTags.includes('trait:low_light_vision'),
       darkvisionRangeFt:
@@ -125,6 +132,7 @@ export function resolveStrikePreAttackContext(
   }
 
   const chargeBonus = isChargeAttack === true ? CHARGE_ATTACK_BONUS : 0;
+  const elevationEval = evaluateDnD35eElevationCombat(state, attackerId, defenderId);
   let strikeLabel = strike.label;
   if (totalStrikes > 1 && strike.attackSource === 'manufactured_primary') {
     strikeLabel = `${strikeLabel} (Iterative ${strikeIndex + 1})`;
@@ -132,12 +140,15 @@ export function resolveStrikePreAttackContext(
   if (chargeBonus > 0) {
     strikeLabel = `${strikeLabel} [Charge +${chargeBonus}]`;
   }
+  if (elevationEval.attackBonus > 0 && elevationEval.label) {
+    strikeLabel = `${strikeLabel} [${elevationEval.label}]`;
+  }
   if (isFlanking) {
     strikeLabel = `${strikeLabel} [Flanking +${flankingBonus}]`;
   }
 
   return {
-    effectiveAttackBonus: strike.attackBonus + flankingBonus + chargeBonus,
+    effectiveAttackBonus: strike.attackBonus + flankingBonus + chargeBonus + elevationEval.attackBonus,
     strikeLabel,
     concealmentMissChance,
     isFlanking
@@ -192,7 +203,7 @@ export function resolveOnDropCleaveFollowup(
     const candPos = getComponent(state, candId, ComponentType.Position) as PositionComponent | undefined;
     if (!candFighter || candFighter.hp <= 0 || !candPos) continue;
 
-    const candDistFt = measureFootprintToFootprintDistanceFt(
+    const hDistFt = measureFootprintToFootprintDistanceFt(
       attackerPos.x,
       attackerPos.y,
       attackerPos.footprintWidth ?? 1,
@@ -202,6 +213,9 @@ export function resolveOnDropCleaveFollowup(
       candPos.footprintWidth ?? 1,
       candPos.footprintHeight ?? 1
     );
+    const feetPerZ = state.campaign.rules.map.feetPerZLevel ?? FEET_PER_GRID_SQUARE;
+    const dzFt = Math.abs((attackerPos.z ?? 0) - (candPos.z ?? 0)) * feetPerZ;
+    const candDistFt = Math.max(hDistFt, dzFt);
     if (candDistFt <= attackerReachFt && isHostile(state, attackerId, candId)) {
       cleaveTargetId = candId;
       cleaveTargetName = resolveEntityDisplayName(state, candId, 'foe');

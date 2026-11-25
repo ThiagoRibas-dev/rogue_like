@@ -1,16 +1,19 @@
 import { z } from 'zod';
 import {
   DEFAULT_ACTIVE_RADIUS_CHUNKS,
+  DEFAULT_ACTIVE_RADIUS_Z,
   DEFAULT_CHUNK_SIZE,
   DEFAULT_PREFETCH_RADIUS_CHUNKS,
   DEFAULT_SPAWN_CLEARING_RADIUS,
   DEFAULT_STREAMING_WORLD_SEED,
   MAX_ACTIVE_RADIUS_CHUNKS,
+  MAX_ACTIVE_RADIUS_Z,
   MAX_CHUNK_SIZE,
   MAX_EVICT_RADIUS_CHUNKS,
   MAX_PREFETCH_RADIUS_CHUNKS,
   MAX_SPAWN_CLEARING_RADIUS,
   MIN_ACTIVE_RADIUS_CHUNKS,
+  MIN_ACTIVE_RADIUS_Z,
   MIN_CHUNK_SIZE,
   MIN_EVICT_RADIUS_CHUNKS,
   MIN_PREFETCH_RADIUS_CHUNKS,
@@ -21,6 +24,11 @@ import {
 export const FactionRelationEnum = z.enum(['hostile', 'neutral', 'friendly']);
 /** Inferred type representing a faction stance. */
 export type FactionRelation = z.infer<typeof FactionRelationEnum>;
+
+/** Zod enum for declarative vertical tile traversal connectors (ramps, stairs, ladders). */
+export const VerticalLinkKindEnum = z.enum(['ramp', 'stairs_up', 'stairs_down', 'stairs_both', 'ladder']);
+/** Inferred type representing a vertical tile link. */
+export type VerticalLinkKind = z.infer<typeof VerticalLinkKindEnum>;
 
 /** Zod schema defining structural map tiles. */
 export const TileDefinitionSchema = z.object({
@@ -39,7 +47,12 @@ export const TileDefinitionSchema = z.object({
   isSolidObstacle: z.boolean().optional(),
   hazardKind: z.string().optional(),
   blocksCharge: z.boolean().optional(),
-  soundAttenuation: z.number().nonnegative().optional()
+  soundAttenuation: z.number().nonnegative().optional(),
+  isOpenAir: z.boolean().optional(),
+  blocksVerticalLoS: z.boolean().optional(),
+  hasFloorSupport: z.boolean().optional(),
+  verticalLink: VerticalLinkKindEnum.optional(),
+  isClimbable: z.boolean().optional()
 });
 /** Inferred type for a tile definition. */
 export type TileDefinition = z.infer<typeof TileDefinitionSchema>;
@@ -71,7 +84,10 @@ export const StreamingBiomePaletteSchema = z.object({
   plains: z.string().describe('Primary open ground Tile ID'),
   forest: z.string().optional().describe('Forest/overgrown ground Tile ID (falls back to plains)'),
   ridge: z.string().describe('Impassable mountain/cliff ridge Tile ID'),
-  road: z.string().optional().describe('Road/path Tile ID (falls back to plains)')
+  road: z.string().optional().describe('Road/path Tile ID (falls back to plains)'),
+  openAir: z.string().optional().describe('Sky / empty open-air Tile ID for elevated Z-levels'),
+  underground: z.string().optional().describe('Subterranean solid rock/earth Tile ID below surface'),
+  ramp: z.string().optional().describe('Slope/ramp Tile ID linking elevation steps')
 });
 /** Inferred type for streaming overworld biome tile ID mappings. */
 export type StreamingBiomePaletteConfig = z.infer<typeof StreamingBiomePaletteSchema>;
@@ -92,6 +108,15 @@ export const StreamingAreaConfigSchema = z.object({
     .max(MAX_PREFETCH_RADIUS_CHUNKS)
     .default(DEFAULT_PREFETCH_RADIUS_CHUNKS),
   evictRadiusChunks: z.number().int().min(MIN_EVICT_RADIUS_CHUNKS).max(MAX_EVICT_RADIUS_CHUNKS).optional(),
+  minZ: z.number().int().optional(),
+  maxZ: z.number().int().optional(),
+  activeRadiusZ: z
+    .number()
+    .int()
+    .min(MIN_ACTIVE_RADIUS_Z)
+    .max(MAX_ACTIVE_RADIUS_Z)
+    .default(DEFAULT_ACTIVE_RADIUS_Z)
+    .optional(),
   worldSeed: z.number().int().default(DEFAULT_STREAMING_WORLD_SEED),
   spawnClearingRadius: z
     .number()
@@ -117,8 +142,11 @@ export const AreaConnectionSchema = z.object({
   targetAreaId: z.string(),
   targetX: z.number().int().optional(),
   targetY: z.number().int().optional(),
+  targetZ: z.number().int().optional(),
   placementX: z.number().int().optional(),
   placementY: z.number().int().optional(),
+  placementZ: z.number().int().optional(),
+  preserveCoords: z.boolean().optional(),
   direction: z.enum(['up', 'down', 'edge', 'portal']),
   portalTemplateId: z.string().optional(),
   placementSide: z.enum(['top', 'bottom', 'left', 'right', 'any']).optional()
@@ -126,9 +154,10 @@ export const AreaConnectionSchema = z.object({
 /** Inferred type for an area connection definition. */
 export type AreaConnection = z.infer<typeof AreaConnectionSchema>;
 
-/** Zod schema outlining the layout, legend, and entities of a static map. */
+/** Zod schema outlining the layout, legend, optional multi-Z zLevels, and entities of a static map. */
 export const StaticMapLayoutSchema = z.object({
   layout: z.array(z.string()),
+  zLevels: z.record(z.string(), z.array(z.string())).optional(),
   legend: z.record(z.string(), z.string()),
   entityLegend: z.record(z.string(), z.string()).optional()
 });
@@ -176,6 +205,7 @@ export const AreaDefinitionSchema = z.object({
         templateId: z.string(),
         x: z.number().int(),
         y: z.number().int(),
+        z: z.number().int().optional(),
         inventory: z.array(z.string()).optional()
       })
     )

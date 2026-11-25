@@ -86,7 +86,7 @@ describe('Floor Transition Entity ID Integrity & Ruleset Base Content Loading', 
         const pos = getComponent(state, portalId, ComponentType.Position) as PositionComponent | undefined;
         expect(portal).toBeDefined();
         expect(pos).toBeDefined();
-        expect(state.spatialIndex.get(`${pos!.x},${pos!.y}`)).toContain(portalId);
+        expect(state.spatialIndex.get(`${pos!.x},${pos!.y},${pos!.z ?? 0}`)).toContain(portalId);
       }
       for (const doorId of floor2Doors) {
         expect(state.entities).toContain(doorId);
@@ -96,7 +96,7 @@ describe('Floor Transition Entity ID Integrity & Ruleset Base Content Loading', 
         const pos = getComponent(state, doorId, ComponentType.Position) as PositionComponent | undefined;
         expect(isDoor).toBe(true);
         expect(pos).toBeDefined();
-        expect(state.spatialIndex.get(`${pos!.x},${pos!.y}`)).toContain(doorId);
+        expect(state.spatialIndex.get(`${pos!.x},${pos!.y},${pos!.z ?? 0}`)).toContain(doorId);
       }
     },
     HEAVY_INTEGRATION_TIMEOUT_MS

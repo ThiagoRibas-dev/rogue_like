@@ -13,6 +13,6 @@ export function createToggleInspectAction(entityId: EntityId): ToggleInspectInte
 /**
  * Creates a MoveInspectIntent to move the look cursor.
  */
-export function createMoveInspectAction(entityId: EntityId, dx: number, dy: number): MoveInspectIntent {
-  return { type: IntentType.MoveInspect, entityId, dx, dy, isImmediate: true };
+export function createMoveInspectAction(entityId: EntityId, dx: number, dy: number, dz?: number): MoveInspectIntent {
+  return { type: IntentType.MoveInspect, entityId, dx, dy, ...(dz !== undefined ? { dz } : {}), isImmediate: true };
 }

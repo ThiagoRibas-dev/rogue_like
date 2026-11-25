@@ -1,4 +1,4 @@
-import { addComponent, getComponent, resolveEntityDisplayName } from '../../../core/ecs.ts';
+import { addComponent, getComponent, getEntitiesAtPosition, resolveEntityDisplayName } from '../../../core/ecs.ts';
 import { addMessage, MessageLogCategory } from '../../../systems/message.system.ts';
 import { getEntityMovementModes } from '../../../systems/movement_displacement.ts';
 import { updateActorTacticalDoctrine } from '../../../systems/stance.system.ts';
@@ -545,14 +545,15 @@ export function applyFlourPouchDust(
   state: GameState,
   throwerId: EntityId,
   targetX: number,
-  targetY: number
+  targetY: number,
+  targetZ = 0
 ): { readonly state: GameState; readonly dustedEntityIds: ReadonlyArray<EntityId> } {
   let nextState = state;
   const dustedEntityIds: EntityId[] = [];
 
   for (let dy = -1; dy <= 1; dy++) {
     for (let dx = -1; dx <= 1; dx++) {
-      const occupants = nextState.spatialIndex.get(`${targetX + dx},${targetY + dy}`) ?? [];
+      const occupants = getEntitiesAtPosition(nextState, targetX + dx, targetY + dy, targetZ);
       for (const eid of occupants) {
         const fighter = getComponent(nextState, eid, ComponentType.Fighter) as FighterComponent | undefined;
         if (!fighter || fighter.hp <= 0) continue;

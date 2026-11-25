@@ -2,7 +2,8 @@
  * @file Pure view projection engine that converts GameState and ECS state into immutable ViewportSnapshot DTOs.
  */
 
-import { getComponent } from '../core/ecs.ts';
+import { MAX_RENDER_DEPTH_LAYERS } from '../constants/world_chunk.constants.ts';
+import { getComponent, getEntitiesAtPosition } from '../core/ecs.ts';
 import {
   ComponentType,
   type FieldComponent,
@@ -13,9 +14,9 @@ import {
 import { getAvailableSpriteKeys } from './sprite_keys.ts';
 import { recordMissingSprite } from './render_debug.ts';
 import type { GameState } from '../types/game-state.types.ts';
-import { getTileAt, isInMapBounds, toMapTileKey } from '../map/map_accessor.ts';
+import { getMapZBounds, getTileAt, isInMapBounds, isMultiZMap, toMapTileKey } from '../map/map_accessor.ts';
 import { resolveThemeSpriteSheets } from '../utils/sprite_pack.ts';
-import { getCameraOffset } from './camera.ts';
+import { getCameraOffset, resolveActiveViewZ } from './camera.ts';
 import { buildTacticalViewportData } from './tactical_snapshot.ts';
 import { isEffectiveSpriteMode, resolvePlaybackThemeConfig } from './procedural_sprites.ts';
 import { buildInspectTooltip } from './inspect_tooltip.ts';
@@ -31,6 +32,23 @@ import type {
 
 export * from './inspect_tooltip.ts';
 
+function dimHexColorForDepth(hex: string, depth: number): string {
+  if (depth <= 0 || !hex.startsWith('#') || (hex.length !== 7 && hex.length !== 4)) {
+    return hex;
+  }
+  const full = hex.length === 4 ? `#${hex[1]}${hex[1]}${hex[2]}${hex[2]}${hex[3]}${hex[3]}` : hex;
+  const r = Number.parseInt(full.slice(1, 3), 16);
+  const g = Number.parseInt(full.slice(3, 5), 16);
+  const b = Number.parseInt(full.slice(5, 7), 16);
+  if (!Number.isFinite(r) || !Number.isFinite(g) || !Number.isFinite(b)) return hex;
+  const scale = Math.max(0.32, 1 - depth * 0.22);
+  const nr = Math.max(0, Math.min(255, Math.round(r * scale)));
+  const ng = Math.max(0, Math.min(255, Math.round(g * scale)));
+  const nb = Math.max(0, Math.min(255, Math.round(b * Math.min(1, scale + 0.08))));
+  const toHex = (n: number): string => n.toString(16).padStart(2, '0');
+  return `#${toHex(nr)}${toHex(ng)}${toHex(nb)}`;
+}
+
 /**
  * Builds an immutable, pre-projected ViewportSnapshot for the given GameState and viewport dimensions.
  *
@@ -41,6 +59,10 @@ export * from './inspect_tooltip.ts';
  */
 export function buildViewportSnapshot(state: GameState, viewportW: number, viewportH: number): ViewportSnapshot {
   const { x: cameraX, y: cameraY } = getCameraOffset(state, viewportW, viewportH);
+  const multiZ = isMultiZMap(state.map);
+  const zBounds = getMapZBounds(state.map);
+  const viewZ = resolveActiveViewZ(state);
+
   const visibleIndices: ReadonlySet<number> = state.cachedFov;
   const effectiveTheme = resolvePlaybackThemeConfig(state.campaign);
   const effectiveSheets = resolveThemeSpriteSheets(effectiveTheme);
@@ -64,13 +86,41 @@ export function buildViewportSnapshot(state: GameState, viewportW: number, viewp
       let spriteId: string | undefined;
       let isExplored = false;
       let isVisible = false;
+      let renderZ = viewZ;
+      let depthOffset = 0;
       const entitiesAtTile: EntityRenderDTO[] = [];
 
-      if (isInMapBounds(state.map, mapX, mapY)) {
-        const tile = getTileAt(state.map, mapX, mapY);
-        const tileIndex = toMapTileKey(state.map, mapX, mapY);
+      if (isInMapBounds(state.map, mapX, mapY, viewZ)) {
+        let tile = getTileAt(state.map, mapX, mapY, viewZ);
+        let tileIndex = toMapTileKey(state.map, mapX, mapY, viewZ);
         isExplored = tile !== undefined && (state.map.isFullyExplored || tile.explored);
         isVisible = state.map.isFullyExplored || visibleIndices.has(tileIndex);
+
+        if (multiZ && tile !== undefined) {
+          const topDef = state.campaign.tiles[tile.tileId];
+          if (topDef?.isOpenAir === true && (isExplored || isVisible)) {
+            for (let d = 1; d <= MAX_RENDER_DEPTH_LAYERS; d++) {
+              const probeZ = viewZ - d;
+              if (probeZ < zBounds.minZ || !isInMapBounds(state.map, mapX, mapY, probeZ)) break;
+              const lowerTile = getTileAt(state.map, mapX, mapY, probeZ);
+              if (!lowerTile) continue;
+              const lowerDef = state.campaign.tiles[lowerTile.tileId];
+              const lowerIdx = toMapTileKey(state.map, mapX, mapY, probeZ);
+              const lowerExplored = state.map.isFullyExplored || lowerTile.explored;
+              const lowerVisible = state.map.isFullyExplored || visibleIndices.has(lowerIdx);
+              if (!lowerExplored && !lowerVisible) break;
+              if (lowerDef?.isOpenAir !== true || d === MAX_RENDER_DEPTH_LAYERS) {
+                tile = lowerTile;
+                tileIndex = lowerIdx;
+                isExplored = lowerExplored;
+                isVisible = lowerVisible;
+                renderZ = probeZ;
+                depthOffset = d;
+                break;
+              }
+            }
+          }
+        }
 
         if (isExplored && tile !== undefined) {
           const tileDef = state.campaign.tiles[tile.tileId];
@@ -83,9 +133,12 @@ export function buildViewportSnapshot(state: GameState, viewportW: number, viewp
                 fgColor = state.campaign.theme.colors.floorDimFg ?? fgColor;
               }
             }
+            if (depthOffset > 0) {
+              fgColor = dimHexColorForDepth(fgColor, depthOffset);
+            }
             glyph = tileDef.glyph;
             fg = fgColor;
-            bg = tileDef.bg;
+            bg = depthOffset > 0 ? '#0c111d' : tileDef.bg;
             spriteId = tileDef.spriteId;
 
             if (availableSpriteKeys !== undefined) {
@@ -101,8 +154,8 @@ export function buildViewportSnapshot(state: GameState, viewportW: number, viewp
         }
 
         if (isVisible) {
-          const entitiesAtTileIds = state.spatialIndex.get(`${mapX},${mapY}`);
-          if (entitiesAtTileIds && entitiesAtTileIds.length > 0) {
+          const entitiesAtTileIds = getEntitiesAtPosition(state, mapX, mapY, renderZ);
+          if (entitiesAtTileIds.length > 0) {
             const sortedEntitiesAtTile = [...entitiesAtTileIds].sort((a, b) => {
               const aPlayer = getComponent(state, a, ComponentType.Player) ? 1 : 0;
               const bPlayer = getComponent(state, b, ComponentType.Player) ? 1 : 0;
@@ -131,7 +184,8 @@ export function buildViewportSnapshot(state: GameState, viewportW: number, viewp
                   entityPos.subTileScale < 1 &&
                   getComponent(state, entityId, ComponentType.Fighter) !== undefined;
                 const identity = getComponent(state, entityId, ComponentType.Identity) as IdentityComponent | undefined;
-                const entityFg = identity?.colorOverride ?? renderable.fg;
+                const baseEntityFg = identity?.colorOverride ?? renderable.fg;
+                const entityFg = depthOffset > 0 ? dimHexColorForDepth(baseEntityFg, depthOffset) : baseEntityFg;
 
                 if (availableSpriteKeys !== undefined) {
                   const template = getComponent(state, entityId, ComponentType.Template) as
@@ -175,14 +229,14 @@ export function buildViewportSnapshot(state: GameState, viewportW: number, viewp
         if (isSpriteMode) {
           if (!isExplored) {
             fogCells.push({ vx, vy, alpha: 1.0 });
-          } else if (!isVisible) {
-            fogCells.push({ vx, vy, alpha: 0.55 });
+          } else if (!isVisible || depthOffset > 0) {
+            fogCells.push({ vx, vy, alpha: !isVisible ? 0.55 : Math.min(0.45, depthOffset * 0.14) });
           }
         }
       }
 
       let highlight: { glyph: string; fg: string; bg: string } | undefined;
-      if (state.targetingMode?.active) {
+      if (state.targetingMode?.active && (state.targetingMode.z ?? 0) === viewZ) {
         const dx = mapX - state.targetingMode.x;
         const dy = mapY - state.targetingMode.y;
         const radius = state.targetingMode.radius ?? 0;
@@ -191,7 +245,12 @@ export function buildViewportSnapshot(state: GameState, viewportW: number, viewp
         } else if (radius > 0 && dx * dx + dy * dy <= radius * radius) {
           highlight = { glyph: '*', fg: '#ffdd88', bg: '#7c2d12' };
         }
-      } else if (state.inspectMode?.active && state.inspectMode.x === mapX && state.inspectMode.y === mapY) {
+      } else if (
+        state.inspectMode?.active &&
+        (state.inspectMode.z ?? 0) === viewZ &&
+        state.inspectMode.x === mapX &&
+        state.inspectMode.y === mapY
+      ) {
         highlight = { glyph: 'X', fg: '#000000', bg: '#00ffff' };
       }
 
@@ -202,6 +261,8 @@ export function buildViewportSnapshot(state: GameState, viewportW: number, viewp
       cells.push({
         vx,
         vy,
+        ...(renderZ !== 0 ? { z: renderZ } : {}),
+        ...(depthOffset > 0 ? { depthOffset } : {}),
         glyph,
         fg,
         bg,
@@ -246,6 +307,7 @@ export function buildViewportSnapshot(state: GameState, viewportW: number, viewp
     viewportH,
     cameraX,
     cameraY,
+    ...(viewZ !== 0 ? { viewZ } : {}),
     isSpriteMode,
     is3D: state.is3D,
     cells,

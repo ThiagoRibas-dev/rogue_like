@@ -1,4 +1,4 @@
-import { addComponent, getComponent, resolveEntityDisplayName } from '../../core/ecs.ts';
+import { addComponent, getComponent, getEntitiesAtPosition, resolveEntityDisplayName } from '../../core/ecs.ts';
 import { addMessage, MessageLogCategory } from '../../systems/message.system.ts';
 import { ComponentType, type FighterComponent } from '../../types/components.types.ts';
 import type { EntityId, GameState } from '../../types/game-state.types.ts';
@@ -20,6 +20,13 @@ import {
   validateChargeLine
 } from './combat/charge_resolver.ts';
 import { resolveSavingThrow } from './combat/damage_vitality.ts';
+import {
+  evaluateDnD35eAltitudeAdjustment,
+  evaluateDnD35eElevationCombat,
+  resolveDnD35eFallLanded,
+  resolveDnD35eMovementModes
+} from './spatial/dnd35e_spatial_3d.ts';
+import { measureDnD35Distance3DFt } from './spatial/grid_geometry.ts';
 import { DND35E_DEFAULT_CURRENCY_CONFIG } from './currency.ts';
 import { DND35E_DEFAULT_WORLD_CLOCK_CONFIG } from './world_clock.ts';
 import { checkDnD35eRuleset } from './dnd35e_validator.ts';
@@ -260,7 +267,7 @@ export const dnd35eRulesetContract: RulesetContract = {
   onActorTurnStart: onDnD35eActorTurnStart,
   onActorMovementStep: onDnD35eActorMovementStep,
   getEntityMovementModes(state, entityId) {
-    return getDnD35EntityData(state, entityId).movementModes;
+    return resolveDnD35eMovementModes(state, entityId);
   },
   evaluateCombatChargeIntent(state, attackerId, defenderId) {
     return validateChargeLine(state, attackerId, defenderId).valid;
@@ -284,7 +291,8 @@ export const dnd35eRulesetContract: RulesetContract = {
       return executeAbruptJauntTeleport(state, actorId, targetPos.x, targetPos.y, true);
     }
     if (context.verb === 'charge') {
-      const occupants = state.spatialIndex.get(`${targetPos.x},${targetPos.y}`) ?? [];
+      const targetZ = targetPos.z ?? 0;
+      const occupants = getEntitiesAtPosition(state, targetPos.x, targetPos.y, targetZ);
       const targetId =
         occupants.find((id) => {
           if (id === actorId) return false;
@@ -419,5 +427,9 @@ export const dnd35eRulesetContract: RulesetContract = {
     return spawnArcaneCasterSpellbookLoot(state, victimId, x, y).state;
   },
   onStatusEffectExpired: onDnD35eStatusEffectExpired,
-  projectActiveEffects: projectDnD35eActiveEffects
+  projectActiveEffects: projectDnD35eActiveEffects,
+  measureDistance3DFt: measureDnD35Distance3DFt,
+  evaluateElevationCombatModifiers: evaluateDnD35eElevationCombat,
+  onEntityFallLanded: resolveDnD35eFallLanded,
+  canActorAdjustAltitude: evaluateDnD35eAltitudeAdjustment
 };

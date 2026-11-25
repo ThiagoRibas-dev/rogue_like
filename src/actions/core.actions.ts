@@ -8,6 +8,7 @@ import {
   type WaitIntent
 } from '../types/intents/core.intents.ts';
 import {
+  type AdjustCameraZIntent,
   type SetZoomLevelIntent,
   type Toggle3DIntent,
   type ToggleRotatedIntent
@@ -30,12 +31,13 @@ import {
  * @param dy The delta y.
  * @returns The generated MoveIntent.
  */
-export function createMoveAction(entityId: EntityId, dx: number, dy: number): MoveIntent {
+export function createMoveAction(entityId: EntityId, dx: number, dy: number, dz?: number): MoveIntent {
   return {
     type: IntentType.Move,
     entityId,
     dx,
-    dy
+    dy,
+    ...(dz !== undefined ? { dz } : {})
   };
 }
 
@@ -115,6 +117,19 @@ export function createSetZoomLevelAction(entityId: EntityId, zoomDelta: number):
     type: IntentType.SetZoomLevel,
     entityId,
     zoomDelta,
+    isImmediate: true
+  };
+}
+
+/**
+ * Creates a camera Z-peek adjustment intent (or reset to actor's current elevation).
+ */
+export function createAdjustCameraZAction(entityId: EntityId, dz: number, reset?: boolean): AdjustCameraZIntent {
+  return {
+    type: IntentType.AdjustCameraZ,
+    entityId,
+    dz,
+    ...(reset !== undefined ? { reset } : {}),
     isImmediate: true
   };
 }

@@ -1,6 +1,7 @@
 import {
   addComponent,
   getComponent,
+  getEntitiesAtPosition,
   removeComponent,
   removeEntity,
   resolveEntityDisplayName
@@ -188,7 +189,8 @@ export function resolveCaltropsStepHazard(
   x: number,
   y: number,
   forcedD20?: number,
-  context?: FloorStepHazardContext
+  context?: FloorStepHazardContext,
+  z?: number
 ): {
   readonly state: GameState;
   readonly triggered: boolean;
@@ -204,9 +206,11 @@ export function resolveCaltropsStepHazard(
     return { state, triggered: false, hit: false, haltMovement: false };
   }
 
-  const activeFields = queryActiveFieldsAtPosition(state, x, y);
+  const pos = getComponent(state, entityId, ComponentType.Position);
+  const resolvedZ = z ?? pos?.z ?? 0;
+  const activeFields = queryActiveFieldsAtPosition(state, x, y, resolvedZ);
   const caltropFieldEntry = activeFields.find((f) => f.field.fieldType === 'caltrops');
-  const tileEntities = state.spatialIndex.get(`${x},${y}`) ?? [];
+  const tileEntities = getEntitiesAtPosition(state, x, y, resolvedZ);
   const caltropItemId = tileEntities.find((eid) => resolveItemTags(state, eid).includes('caltrops_hazard'));
 
   if (!caltropFieldEntry && caltropItemId === undefined) {
@@ -315,19 +319,22 @@ export function resolveSlipperyFloorStepHazard(
   entityId: EntityId,
   x: number,
   y: number,
-  forcedD20?: number
+  forcedD20?: number,
+  z?: number
 ): { readonly state: GameState; readonly triggered: boolean; readonly fellProne: boolean } {
   const modes = getEntityMovementModes(state, entityId);
   if (modes?.fly !== undefined && modes.fly > 0) {
     return { state, triggered: false, fellProne: false };
   }
 
-  const activeFields = queryActiveFieldsAtPosition(state, x, y);
+  const pos = getComponent(state, entityId, ComponentType.Position);
+  const resolvedZ = z ?? pos?.z ?? 0;
+  const activeFields = queryActiveFieldsAtPosition(state, x, y, resolvedZ);
   const hasGrease = activeFields.some((f) => f.field.fieldType === 'grease');
   const hasMarblesField = activeFields.some(
     (f) => f.field.fieldType === 'marbles' || f.field.fieldType === 'ice' || f.field.fieldType === 'frozen_surface'
   );
-  const tileEntities = state.spatialIndex.get(`${x},${y}`) ?? [];
+  const tileEntities = getEntitiesAtPosition(state, x, y, resolvedZ);
   const hasMarblesItem = tileEntities.some((eid) => resolveItemTags(state, eid).includes('marbles_hazard'));
 
   if (!hasGrease && !hasMarblesField && !hasMarblesItem) {
@@ -374,10 +381,11 @@ export function evaluateActorFloorStepHazards(
   entityId: EntityId,
   x: number,
   y: number,
-  context?: FloorStepHazardContext
+  context?: FloorStepHazardContext,
+  z?: number
 ): GameState {
-  const caltropRes = resolveCaltropsStepHazard(state, entityId, x, y, undefined, context);
-  const slipRes = resolveSlipperyFloorStepHazard(caltropRes.state, entityId, x, y);
+  const caltropRes = resolveCaltropsStepHazard(state, entityId, x, y, undefined, context, z);
+  const slipRes = resolveSlipperyFloorStepHazard(caltropRes.state, entityId, x, y, undefined, z);
   return slipRes.state;
 }
 

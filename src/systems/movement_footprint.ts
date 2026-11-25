@@ -1,4 +1,4 @@
-import { getComponent } from '../core/ecs.ts';
+import { getComponent, getEntitiesAtPosition } from '../core/ecs.ts';
 import { getActiveRuleset } from '../rulesets/registry.ts';
 import type { TileDefinition } from '../types/campaign/world.ts';
 import { ComponentType, type PositionComponent, type TagsComponent } from '../types/components.types.ts';
@@ -152,9 +152,9 @@ export function getEntitySpatialProfile(
   };
 }
 
-function isHardCornerWallTile(state: GameState, x: number, y: number): boolean {
-  if (!isInMapBounds(state.map, x, y)) return true;
-  const tileDef = getTileDefAt(state, x, y);
+function isHardCornerWallTile(state: GameState, x: number, y: number, z = 0): boolean {
+  if (!isInMapBounds(state.map, x, y, z)) return true;
+  const tileDef = getTileDefAt(state, x, y, z);
   if (!tileDef || tileDef.walkable) return false;
   if (tileDef.isSolidObstacle === true) return true;
   // SRD: You can move diagonally past impassable obstacles such as pits/chasms, only not past wall corners.
@@ -181,12 +181,13 @@ export function isFootprintDiagonalBlockedByHardCorner(
   width: number,
   height: number,
   dx: number,
-  dy: number
+  dy: number,
+  z = 0
 ): boolean {
   if (dx === 0 || dy === 0) return false;
   const leadX = dx > 0 ? fromX + Math.max(1, width) - 1 : fromX;
   const leadY = dy > 0 ? fromY + Math.max(1, height) - 1 : fromY;
-  return isHardCornerWallTile(state, leadX + dx, leadY) || isHardCornerWallTile(state, leadX, leadY + dy);
+  return isHardCornerWallTile(state, leadX + dx, leadY, z) || isHardCornerWallTile(state, leadX, leadY + dy, z);
 }
 
 function checkRectTilesTraversable(
@@ -195,16 +196,17 @@ function checkRectTilesTraversable(
   anchorY: number,
   width: number,
   height: number,
-  canTraverse: (tileDef: TileDefinition | undefined, tx: number, ty: number) => boolean
+  canTraverse: (tileDef: TileDefinition | undefined, tx: number, ty: number) => boolean,
+  z = 0
 ): { readonly ok: boolean; readonly firstBlockedDef: TileDefinition | undefined } {
   for (let dy = 0; dy < height; dy++) {
     for (let dx = 0; dx < width; dx++) {
       const tx = anchorX + dx;
       const ty = anchorY + dy;
-      if (!isInMapBounds(state.map, tx, ty)) {
+      if (!isInMapBounds(state.map, tx, ty, z)) {
         return { ok: false, firstBlockedDef: undefined };
       }
-      const tileDef = getTileDefAt(state, tx, ty);
+      const tileDef = getTileDefAt(state, tx, ty, z);
       if (!canTraverse(tileDef, tx, ty)) {
         return { ok: false, firstBlockedDef: tileDef };
       }
@@ -215,7 +217,7 @@ function checkRectTilesTraversable(
 
 /**
  * Resolves whether a creature can place its full footprint (or SRD Squeezing footprint `>= ceil(span / 2)`)
- * when stepping by `(dx, dy)`, enforcing hard-corner diagonal rules and orientation rotation.
+ * when stepping by `(dx, dy)` at elevation `targetZ` (default `fromPos.z ?? 0`), enforcing hard-corner diagonal rules and orientation rotation.
  */
 export function resolveMovementFootprintPlacement(params: {
   readonly state: GameState;
@@ -223,9 +225,11 @@ export function resolveMovementFootprintPlacement(params: {
   readonly fromPos: PositionComponent;
   readonly dx: number;
   readonly dy: number;
+  readonly targetZ?: number | undefined;
   readonly canTraverse: (tileDef: TileDefinition | undefined, tx: number, ty: number) => boolean;
 }): FootprintPlacementResult {
-  const { state, entityId, fromPos, dx, dy, canTraverse } = params;
+  const { state, entityId, fromPos, dx, dy, targetZ, canTraverse } = params;
+  const resolvedZ = targetZ ?? fromPos.z ?? 0;
   const nextFacing = resolveCardinalFacing(dx, dy, fromPos.facing);
   const profile = getEntitySpatialProfile(state, entityId, nextFacing);
   const curW = Math.max(
@@ -241,7 +245,7 @@ export function resolveMovementFootprintPlacement(params: {
 
   if (
     !profile.isIncorporeal &&
-    isFootprintDiagonalBlockedByHardCorner(state, fromPos.x, fromPos.y, curW, curH, dx, dy)
+    isFootprintDiagonalBlockedByHardCorner(state, fromPos.x, fromPos.y, curW, curH, dx, dy, resolvedZ)
   ) {
     return {
       valid: false,
@@ -261,7 +265,7 @@ export function resolveMovementFootprintPlacement(params: {
   const targetY = fromPos.y + dy;
 
   // 1. Attempt normal unsqueezed placement (plus aligned shift if un-squeezing or rotating near wall).
-  const fullCheck = checkRectTilesTraversable(state, targetX, targetY, baseW, baseH, canTraverse);
+  const fullCheck = checkRectTilesTraversable(state, targetX, targetY, baseW, baseH, canTraverse, resolvedZ);
   if (fullCheck.ok) {
     return {
       valid: true,
@@ -289,7 +293,15 @@ export function resolveMovementFootprintPlacement(params: {
     for (let sy = 0; sy <= maxShiftY; sy++) {
       for (let sx = 0; sx <= maxShiftX; sx++) {
         if (sx === 0 && sy === 0) continue;
-        const shifted = checkRectTilesTraversable(state, targetX - sx, targetY - sy, baseW, baseH, canTraverse);
+        const shifted = checkRectTilesTraversable(
+          state,
+          targetX - sx,
+          targetY - sy,
+          baseW,
+          baseH,
+          canTraverse,
+          resolvedZ
+        );
         if (shifted.ok) {
           return {
             valid: true,
@@ -330,7 +342,15 @@ export function resolveMovementFootprintPlacement(params: {
       const shiftYMax = dy > 0 ? 0 : Math.max(0, curH - cand.h);
       for (let sy = 0; sy <= shiftYMax; sy++) {
         for (let sx = 0; sx <= shiftXMax; sx++) {
-          const check = checkRectTilesTraversable(state, targetX + sx, targetY + sy, cand.w, cand.h, canTraverse);
+          const check = checkRectTilesTraversable(
+            state,
+            targetX + sx,
+            targetY + sy,
+            cand.w,
+            cand.h,
+            canTraverse,
+            resolvedZ
+          );
           if (check.ok) {
             return {
               valid: true,
@@ -380,8 +400,10 @@ export function evaluateFootprintOccupancy(params: {
   readonly targetY: number;
   readonly targetW: number;
   readonly targetH: number;
+  readonly targetZ?: number | undefined;
 }): FootprintOccupancyResult {
-  const { state, moverId, moverPos, targetX, targetY, targetW, targetH } = params;
+  const { state, moverId, moverPos, targetX, targetY, targetW, targetH, targetZ } = params;
+  const resolvedZ = targetZ ?? moverPos.z ?? 0;
   const seenIds = new Set<EntityId>();
   const moverProfile = getEntitySpatialProfile(state, moverId, moverPos.facing);
   const friendlyShareIds: EntityId[] = [];
@@ -391,8 +413,7 @@ export function evaluateFootprintOccupancy(params: {
 
   for (let dy = 0; dy < targetH; dy++) {
     for (let dx = 0; dx < targetW; dx++) {
-      const ids = state.spatialIndex.get(`${targetX + dx},${targetY + dy}`);
-      if (!ids) continue;
+      const ids = getEntitiesAtPosition(state, targetX + dx, targetY + dy, resolvedZ);
       for (const otherId of ids) {
         if (otherId !== moverId) {
           seenIds.add(otherId);

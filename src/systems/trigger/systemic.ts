@@ -6,7 +6,13 @@ import { GameEventType } from '../../types/events.types.ts';
 import type { ConsequenceAction, RunScriptConsequenceFn } from '../../types/trigger.types.ts';
 import { ComponentType } from '../../types/components.types.ts';
 import type { TrapComponent, DamageComponent, DamageInstance, PortalComponent } from '../../types/components.types.ts';
-import { getComponent, addComponent, removeEntity, resolveEntityDisplayName } from '../../core/ecs.ts';
+import {
+  getComponent,
+  getEntitiesAtPosition,
+  addComponent,
+  removeEntity,
+  resolveEntityDisplayName
+} from '../../core/ecs.ts';
 import { processChangeAreaIntent } from '../map.system.ts';
 import { addMessage, MessageLogCategory } from '../message.system.ts';
 import { IntentType } from '../../types/intents/intent.enum.ts';
@@ -24,8 +30,7 @@ export function processTraps(state: GameState, entityId: EntityId): GameState {
   const pos = getComponent(state, entityId, ComponentType.Position);
   if (!pos) return state;
 
-  const targetKey = `${pos.x},${pos.y}`;
-  const entitiesAtNewTarget = state.spatialIndex.get(targetKey) || [];
+  const entitiesAtNewTarget = getEntitiesAtPosition(state, pos.x, pos.y, pos.z ?? 0);
 
   let nextState = state;
 
@@ -255,6 +260,7 @@ export const systemicConsequences = {
     let targetAreaId = consequence.targetAreaId;
     let targetX = consequence.targetX;
     let targetY = consequence.targetY;
+    let targetZ: number | undefined;
 
     let eId: EntityId | undefined;
     if ('entityId' in event) {
@@ -270,8 +276,16 @@ export const systemicConsequences = {
           PortalComponent | undefined;
         if (portalComp) {
           targetAreaId = portalComp.targetAreaId;
-          targetX = portalComp.targetX;
-          targetY = portalComp.targetY;
+          targetZ = portalComp.targetZ;
+          if (portalComp.preserveCoords) {
+            const portalPos = getComponent(state, targetPayload.entityId, ComponentType.Position);
+            const actorPos = eId !== undefined ? getComponent(state, eId, ComponentType.Position) : undefined;
+            targetX = actorPos?.x ?? portalPos?.x ?? portalComp.targetX;
+            targetY = actorPos?.y ?? portalPos?.y ?? portalComp.targetY;
+          } else {
+            targetX = portalComp.targetX;
+            targetY = portalComp.targetY;
+          }
         }
       }
     }
@@ -282,7 +296,8 @@ export const systemicConsequences = {
         entityId: eId,
         targetAreaId,
         targetX,
-        targetY
+        targetY,
+        ...(targetZ !== undefined ? { targetZ } : {})
       });
       if (result.success) {
         nextState = result.state;

@@ -1,5 +1,5 @@
 import { DEFAULT_ACTOR_TURN_DURATION, HALF_ROUND_ENERGY_COST } from '../../../constants/scheduler.constants.ts';
-import { getComponent } from '../../../core/ecs.ts';
+import { getComponent, getEntitiesAtPosition } from '../../../core/ecs.ts';
 import {
   ComponentType,
   type EquipmentComponent,
@@ -341,8 +341,8 @@ export function resolveDnD35eActionEnergyCost(
             if (tileCost > maxTileCost) {
               maxTileCost = tileCost;
             }
-            const occupants = state.spatialIndex.get(`${sqX},${sqY}`);
-            if (occupants) {
+            const occupants = getEntitiesAtPosition(state, sqX, sqY, posAfter.z ?? 0);
+            if (occupants.length > 0) {
               for (const otherId of occupants) {
                 if (otherId === intent.entityId) continue;
                 const otherProfile = resolveDnD35eActorSpatialProfile(state, otherId);
@@ -482,6 +482,7 @@ export function resolveDnD35eActionEnergyCost(
     case IntentType.ToggleRotated:
     case IntentType.Toggle3D:
     case IntentType.SetZoomLevel:
+    case IntentType.AdjustCameraZ:
     case IntentType.StartDialogue:
     case IntentType.SelectDialogueOption:
     case IntentType.CloseDialogue:
@@ -581,6 +582,7 @@ export function canDnD35eActorPerformIntent(state: GameState, intent: Intent): b
     case IntentType.ToggleRotated:
     case IntentType.Toggle3D:
     case IntentType.SetZoomLevel:
+    case IntentType.AdjustCameraZ:
     case IntentType.StartDialogue:
     case IntentType.SelectDialogueOption:
     case IntentType.CloseDialogue:

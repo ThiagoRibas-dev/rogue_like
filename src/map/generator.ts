@@ -30,6 +30,7 @@ export function generateArea(campaign: CampaignData, areaId: string, context?: D
     const portals = (areaDef.connections ?? []).map((conn, idx) => ({
       x: conn.placementX ?? 1 + idx,
       y: conn.placementY ?? 1,
+      ...(conn.placementZ !== undefined ? { z: conn.placementZ } : {}),
       connection: conn
     }));
     return {
@@ -46,6 +47,7 @@ export function generateArea(campaign: CampaignData, areaId: string, context?: D
     const portals = (areaDef.connections ?? []).map((conn, idx) => ({
       x: conn.placementX ?? idx + 1,
       y: conn.placementY ?? 0,
+      ...(conn.placementZ !== undefined ? { z: conn.placementZ } : {}),
       connection: conn
     }));
     return {
@@ -53,6 +55,8 @@ export function generateArea(campaign: CampaignData, areaId: string, context?: D
         width: 0,
         height: 0,
         tiles: [],
+        minZ: chunkGrid.minZ,
+        maxZ: chunkGrid.maxZ,
         chunkGrid
       },
       startPos: { x: 0, y: 0 },

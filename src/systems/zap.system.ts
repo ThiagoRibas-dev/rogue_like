@@ -1,7 +1,7 @@
 import type { GameState } from '../types/game-state.types.ts';
 import type { ApplyIntent } from '../types/intents/interaction.intents.ts';
 import { ComponentType, type ItemComponent, type PositionComponent } from '../types/components.types.ts';
-import { addComponent, getComponent, resolveEntityDisplayName } from '../core/ecs.ts';
+import { addComponent, getComponent, getEntitiesAtPosition, resolveEntityDisplayName } from '../core/ecs.ts';
 import { getActiveRuleset } from '../rulesets/registry.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import { getBresenhamLine } from '../utils/grid.ts';
@@ -91,7 +91,7 @@ export function processWandZap(state: GameState, intent: ApplyIntent): { state: 
 
       // Check for entities (bolt stops at first entity, beam goes through)
       if (zappable.pattern === 'bolt') {
-        const entitiesAtPoint = state.spatialIndex.get(`${point.x},${point.y}`) || [];
+        const entitiesAtPoint = getEntitiesAtPosition(state, point.x, point.y, userPos.z ?? 0);
         const hitEntity = entitiesAtPoint.find((id) => getComponent(state, id, ComponentType.Fighter) !== undefined);
         if (hitEntity && hitEntity !== intent.entityId) {
           break; // Bolt stops on hit
@@ -126,7 +126,7 @@ export function processWandZap(state: GameState, intent: ApplyIntent): { state: 
   // Apply effect to all entities in the affected tiles
   let hitSomeone = false;
   for (const pt of affectedTiles) {
-    const entitiesAtPoint = state.spatialIndex.get(`${pt.x},${pt.y}`) || [];
+    const entitiesAtPoint = getEntitiesAtPosition(state, pt.x, pt.y, userPos.z ?? 0);
     for (const id of entitiesAtPoint) {
       if (id !== intent.entityId) {
         nextState = applyItemEffect(nextState, intent.entityId, zappable.effectId, itemName, id);

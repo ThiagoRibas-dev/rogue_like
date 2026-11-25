@@ -1,5 +1,5 @@
-import * as ROT from 'rot-js';
-import { getComponent } from '../core/ecs.ts';
+import { getComponent, getEntitiesAtPosition } from '../core/ecs.ts';
+import { computeHierarchicalNextStep } from './pathfinding_hpa.ts';
 import { processMoveIntent } from '../systems/movement.system.ts';
 import { evaluateTileTraversal, getEntityMovementModes } from '../systems/movement_displacement.ts';
 import {
@@ -53,11 +53,11 @@ function isTileBlockedByActor(
   y: number,
   selfId: EntityId,
   selfProfile: ActorSpatialProfile,
-  profileCache: Map<EntityId, ActorSpatialProfile>
+  profileCache: Map<EntityId, ActorSpatialProfile>,
+  z = 0
 ): boolean {
-  const key = `${x},${y}`;
-  const entitiesAtTile = state.spatialIndex.get(key);
-  if (!entitiesAtTile || entitiesAtTile.length === 0) return false;
+  const entitiesAtTile = getEntitiesAtPosition(state, x, y, z);
+  if (entitiesAtTile.length === 0) return false;
 
   for (const id of entitiesAtTile) {
     if (id === selfId) continue;
@@ -88,7 +88,9 @@ function isStepPassable(
   profile: ActorSpatialProfile,
   profileCache: Map<EntityId, ActorSpatialProfile>,
   prevX?: number,
-  prevY?: number
+  prevY?: number,
+  z = 0,
+  prevZ = z
 ): boolean {
   const baseW = profile.baseWidth;
   const baseH = profile.baseHeight;
@@ -96,8 +98,9 @@ function isStepPassable(
   if (
     prevX !== undefined &&
     prevY !== undefined &&
+    z === prevZ &&
     !profile.isIncorporeal &&
-    isFootprintDiagonalBlockedByHardCorner(state, prevX, prevY, baseW, baseH, x - prevX, y - prevY)
+    isFootprintDiagonalBlockedByHardCorner(state, prevX, prevY, baseW, baseH, x - prevX, y - prevY, z)
   ) {
     return false;
   }
@@ -108,21 +111,21 @@ function isStepPassable(
     for (let dx = 0; dx < minW; dx++) {
       const tx = x + dx;
       const ty = y + dy;
-      if (!isInMapBounds(state.map, tx, ty)) return false;
-      const tileDef = getTileDefAt(state, tx, ty);
+      if (!isInMapBounds(state.map, tx, ty, z)) return false;
+      const tileDef = getTileDefAt(state, tx, ty, z);
       if (!tileDef) return false;
-      const traversal = evaluateTileTraversal(tileDef, movementModes, state, tx, ty);
+      const traversal = evaluateTileTraversal(tileDef, movementModes, state, tx, ty, z);
       if (traversal.passability !== 'unimpeded' && traversal.passability !== 'difficult') return false;
-      if (isTileBlockedByActor(state, tx, ty, entityId, profile, profileCache)) return false;
+      if (isTileBlockedByActor(state, tx, ty, entityId, profile, profileCache, z)) return false;
     }
   }
   return true;
 }
 
 /**
- * Computes the next passable 1-tile step from `(fromX, fromY)` toward `(goalX, goalY)` using
- * 8-way `ROT.Path.AStar` pathfinding around walls and actors, with a squared-distance greedy
- * fallback. Never returns a step directly onto `(goalX, goalY)`.
+ * Computes the next passable 1-tile step from `(fromX, fromY, fromZ)` toward `(goalX, goalY, goalZ)` using
+ * shared 3D Dijkstra Flow Fields, HPA* Region Pathfinding across sectors/Z-strata, local A* refinement,
+ * and a squared-distance greedy fallback. Never returns a step directly onto `(goalX, goalY, goalZ)`.
  *
  * @param state The current GameState.
  * @param entityId The moving entity taking its turn.
@@ -130,7 +133,9 @@ function isStepPassable(
  * @param fromY Current Y coordinate.
  * @param goalX Target X coordinate.
  * @param goalY Target Y coordinate.
- * @returns Relative `{ dx, dy }` step, or `null` if no passable advancing step exists.
+ * @param fromZ Current Z coordinate (default `0`).
+ * @param goalZ Target Z coordinate (default `0`).
+ * @returns Relative `{ dx, dy, dz? }` step, or `null` if no passable advancing step exists.
  */
 export function computeNextStepToward(
   state: GameState,
@@ -138,40 +143,31 @@ export function computeNextStepToward(
   fromX: number,
   fromY: number,
   goalX: number,
-  goalY: number
-): { readonly dx: number; readonly dy: number } | null {
+  goalY: number,
+  fromZ = 0,
+  goalZ = 0
+): { readonly dx: number; readonly dy: number; readonly dz?: number | undefined } | null {
   const movementModes = getEntityMovementModes(state, entityId);
   const profileCache = new Map<EntityId, ActorSpatialProfile>();
   const selfProfile = getCachedSpatialProfile(state, entityId, profileCache);
 
-  const astar = new ROT.Path.AStar(
+  const hierarchicalStep = computeHierarchicalNextStep(
+    state,
+    fromX,
+    fromY,
+    fromZ,
     goalX,
     goalY,
-    (x: number, y: number): boolean => {
-      if (x === fromX && y === fromY) return true;
-      if (x === goalX && y === goalY) return true;
-      return isStepPassable(state, x, y, entityId, movementModes, selfProfile, profileCache);
-    },
-    { topology: 8 }
+    goalZ,
+    (nx, ny, nz, px, py, pz) =>
+      isStepPassable(state, nx, ny, entityId, movementModes, selfProfile, profileCache, px, py, nz, pz)
   );
-
-  const pathSteps: Array<{ readonly x: number; readonly y: number }> = [];
-  astar.compute(fromX, fromY, (x: number, y: number): void => {
-    pathSteps.push({ x, y });
-  });
-
-  if (pathSteps.length >= 2) {
-    const nextStep = pathSteps[1];
-    if (
-      nextStep &&
-      !(nextStep.x === goalX && nextStep.y === goalY) &&
-      isStepPassable(state, nextStep.x, nextStep.y, entityId, movementModes, selfProfile, profileCache, fromX, fromY)
-    ) {
-      return {
-        dx: nextStep.x - fromX,
-        dy: nextStep.y - fromY
-      };
-    }
+  if (hierarchicalStep) {
+    return {
+      dx: hierarchicalStep.dx,
+      dy: hierarchicalStep.dy,
+      ...(hierarchicalStep.dz !== 0 ? { dz: hierarchicalStep.dz } : {})
+    };
   }
 
   const rankedCandidates = CARDINAL_AND_DIAGONAL_OFFSETS.map((offset) => {
@@ -185,7 +181,7 @@ export function computeNextStepToward(
 
   for (const candidate of rankedCandidates) {
     if (candidate.distSq >= currentDistSq) continue;
-    if (candidate.nx === goalX && candidate.ny === goalY) continue;
+    if (candidate.nx === goalX && candidate.ny === goalY && fromZ === goalZ) continue;
     if (
       isStepPassable(
         state,
@@ -196,7 +192,9 @@ export function computeNextStepToward(
         selfProfile,
         profileCache,
         fromX,
-        fromY
+        fromY,
+        fromZ,
+        fromZ
       )
     ) {
       return { dx: candidate.dx, dy: candidate.dy };
@@ -228,20 +226,32 @@ export function followBehavior(
 
   const paramFollowDistance = typeof params.followDistance === 'number' ? params.followDistance : undefined;
   const followDistance = link.followDistance ?? paramFollowDistance ?? DEFAULT_COMPANION_FOLLOW_DISTANCE;
+  const selfZ = pos.z ?? 0;
+  const controllerZ = controllerPos.z ?? 0;
   const currentDistance = Math.max(Math.abs(controllerPos.x - pos.x), Math.abs(controllerPos.y - pos.y));
 
-  if (currentDistance <= followDistance) {
+  if (selfZ === controllerZ && currentDistance <= followDistance) {
     return null;
   }
 
-  const step = computeNextStepToward(state, entityId, pos.x, pos.y, controllerPos.x, controllerPos.y);
+  const step = computeNextStepToward(
+    state,
+    entityId,
+    pos.x,
+    pos.y,
+    controllerPos.x,
+    controllerPos.y,
+    pos.z ?? 0,
+    controllerPos.z ?? 0
+  );
   if (!step) return null;
 
   return {
     type: IntentType.Move,
     entityId,
     dx: step.dx,
-    dy: step.dy
+    dy: step.dy,
+    ...(step.dz !== undefined ? { dz: step.dz } : {})
   };
 }
 

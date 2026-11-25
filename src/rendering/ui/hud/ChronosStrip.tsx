@@ -1,5 +1,6 @@
 import type { JSX } from 'preact';
 import {
+  createAdjustCameraZAction,
   createSetRTwPSpeedAction,
   createSetZoomLevelAction,
   createToggle3DAction,
@@ -11,6 +12,7 @@ import {
 import { ZOOM_STEP_DELTA } from '../../../constants/display.constants.ts';
 import { getComponent } from '../../../core/ecs.ts';
 import { queuePlayerIntent } from '../../../core/game-loop.ts';
+import { getMapZBounds, isMultiZMap } from '../../../map/map_accessor.ts';
 import { formatWorldClockShort, resolveAreaEnvironmentProfile } from '../../../systems/world_clock.system.ts';
 import { ComponentType, type PositionComponent } from '../../../types/components.types.ts';
 import { EngineMode, type EntityId, type GameState } from '../../../types/game-state.types.ts';
@@ -40,6 +42,11 @@ export function ChronosStrip({ state, playerId, isHudFocused }: ChronosStripProp
     env.environmentType === 'outdoors' ? 'Outdoors' : env.environmentType === 'underground' ? 'Underground' : 'Indoors';
   const clockText = `${formatWorldClockShort(env.clock)} • ${envLabel}`;
   const pos = getComponent(state, playerId, ComponentType.Position) as PositionComponent | undefined;
+  const multiZ = isMultiZMap(state.map);
+  const playerZ = pos?.z ?? 0;
+  const zOffset = state.cameraZOffset ?? 0;
+  const viewZ = playerZ + zOffset;
+  const zBounds = multiZ ? getMapZBounds(state.map) : undefined;
 
   return (
     <header
@@ -51,7 +58,45 @@ export function ChronosStrip({ state, playerId, isHudFocused }: ChronosStripProp
       <span className="ui-chronos-area">{areaName}</span>
       <Badge tone={typeof danger === 'number' && danger > 0 ? 'warning' : 'success'}>{dangerLabel}</Badge>
       <Badge tone="neutral">{clockText}</Badge>
-      {pos ? <Badge tone="neutral">{`X:${pos.x} Y:${pos.y}`}</Badge> : null}
+      {pos ? (
+        <Badge tone={zOffset !== 0 ? 'warning' : 'neutral'}>
+          {multiZ
+            ? zOffset !== 0
+              ? `X:${pos.x} Y:${pos.y} Z:${playerZ} (View:${viewZ})`
+              : `X:${pos.x} Y:${pos.y} Z:${playerZ}`
+            : `X:${pos.x} Y:${pos.y}`}
+        </Badge>
+      ) : null}
+      {multiZ && zBounds ? (
+        <>
+          <Button
+            variant="ghost"
+            size="sm"
+            title="Peek Camera Down Z (PageDown / ])"
+            onClick={(): void => queuePlayerIntent(createAdjustCameraZAction(playerId, -1))}
+          >
+            Z−
+          </Button>
+          {zOffset !== 0 ? (
+            <Button
+              variant="secondary"
+              size="sm"
+              title="Reset Camera Z to Player Level (Home)"
+              onClick={(): void => queuePlayerIntent(createAdjustCameraZAction(playerId, 0, true))}
+            >
+              Z0
+            </Button>
+          ) : null}
+          <Button
+            variant="ghost"
+            size="sm"
+            title="Peek Camera Up Z (PageUp / [)"
+            onClick={(): void => queuePlayerIntent(createAdjustCameraZAction(playerId, 1))}
+          >
+            Z+
+          </Button>
+        </>
+      ) : null}
 
       <div className="ui-chronos-divider" />
 

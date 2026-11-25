@@ -1,4 +1,11 @@
-import { addComponent, createEntity, getComponent, removeEntity, resolveEntityDisplayName } from '../core/ecs.ts';
+import {
+  addComponent,
+  createEntity,
+  getComponent,
+  getEntitiesAtPosition,
+  removeEntity,
+  resolveEntityDisplayName
+} from '../core/ecs.ts';
 import {
   ComponentType,
   type CorpseComponent,
@@ -320,7 +327,7 @@ export function tickCorpseDecay(state: GameState): GameState {
 
     const pos = getComponent(nextState, entityId, ComponentType.Position) as PositionComponent | undefined;
     if (pos) {
-      const tileEntities = nextState.spatialIndex.get(`${pos.x},${pos.y}`) ?? [];
+      const tileEntities = getEntitiesAtPosition(nextState, pos.x, pos.y, pos.z ?? 0);
       const hasFireOnTile = tileEntities.some((eid) => {
         const field = getComponent(nextState, eid, ComponentType.Field);
         return field !== undefined && 'fieldType' in field && field.fieldType.includes('fire');

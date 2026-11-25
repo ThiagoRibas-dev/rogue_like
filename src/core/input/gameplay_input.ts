@@ -1,4 +1,9 @@
-import { createMoveAction, createTogglePauseAction, createWaitAction } from '../../actions/core.actions.ts';
+import {
+  createAdjustCameraZAction,
+  createMoveAction,
+  createTogglePauseAction,
+  createWaitAction
+} from '../../actions/core.actions.ts';
 import { createMoveInspectAction, createToggleInspectAction } from '../../actions/inspect.actions.ts';
 import { createApplyAction } from '../../actions/interaction.actions.ts';
 import {
@@ -18,7 +23,7 @@ import type { ApplyIntentTarget } from '../../types/intents/interaction.intents.
 import { Direction, getDirectionDelta } from '../../utils/direction.ts';
 import { isHostile } from '../../utils/faction.ts';
 import { isTileKeyInFov } from '../../map/map_accessor.ts';
-import { getComponent } from '../ecs.ts';
+import { getComponent, getEntitiesAtPosition } from '../ecs.ts';
 import { queuePlayerIntent, setGameState } from '../game-loop.ts';
 import { getCommandBindings } from '../settings.ts';
 import { commandRegistry, matchesChord } from './command_registry.ts';
@@ -75,7 +80,9 @@ function handleSmartInteraction(
 }
 
 function interactWithTile(state: GameState, playerEntityId: EntityId, tileX: number, tileY: number): void {
-  const entitiesOnTile = state.spatialIndex.get(`${tileX},${tileY}`) ?? [];
+  const playerPos = getComponent(state, playerEntityId, ComponentType.Position) as PositionComponent | undefined;
+  const tileZ = playerPos?.z ?? 0;
+  const entitiesOnTile = getEntitiesAtPosition(state, tileX, tileY, tileZ);
   const interactableEntity = entitiesOnTile.find((id) => id !== playerEntityId);
 
   if (interactableEntity !== undefined) {
@@ -216,6 +223,37 @@ export function handleGameplayOrTargetingKey(
   if (isCommandMatched(event, 'action.inspect')) {
     event.preventDefault();
     queuePlayerIntent(createToggleInspectAction(playerEntityId));
+    return true;
+  }
+
+  if (isCommandMatched(event, 'camera.peek_z_up')) {
+    event.preventDefault();
+    queuePlayerIntent(createAdjustCameraZAction(playerEntityId, 1));
+    return true;
+  }
+
+  if (isCommandMatched(event, 'camera.peek_z_down')) {
+    event.preventDefault();
+    queuePlayerIntent(createAdjustCameraZAction(playerEntityId, -1));
+    return true;
+  }
+
+  if (isCommandMatched(event, 'camera.peek_z_reset')) {
+    event.preventDefault();
+    queuePlayerIntent(createAdjustCameraZAction(playerEntityId, 0, true));
+    return true;
+  }
+
+  if (isCommandMatched(event, 'move.up_z') || isCommandMatched(event, 'move.down_z')) {
+    event.preventDefault();
+    const dz = isCommandMatched(event, 'move.up_z') ? 1 : -1;
+    if (isTargeting) {
+      queuePlayerIntent(createMoveTargetAction(playerEntityId, 0, 0, dz));
+    } else if (currentState.inspectMode?.active === true) {
+      queuePlayerIntent(createMoveInspectAction(playerEntityId, 0, 0, dz));
+    } else {
+      queuePlayerIntent(createMoveAction(playerEntityId, 0, 0, dz));
+    }
     return true;
   }
 

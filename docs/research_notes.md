@@ -1,114 +1,206 @@
-# Research Notes — Phase 45: High-Throughput ECS Hot-Path & Chunked `TypedArray` SoA Ground Plane (Milestones 173–175)
+# Phase 46 Research Notes: True Multi-Z Voxel Space, 3D Vision, HPA* Pathfinding & Z-Aware Cartridges
 
-**Date:** 2026-11-24  
-**Scope:** Milestones 173, 174 & 175 — Performance & World-Scale Architecture Research  
-**Target Tiers:** Tier 1 Core Console (`src/types/`, `src/utils/`, `src/core/`, `src/map/`, `src/systems/`, `src/rendering/`, `src/worker/`) + Campaign Adapters (`public/data/campaigns/`)  
-**Reference Roadmap:** [MILESTONES.md](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/docs/MILESTONES.md) (Phase 45–48)
+**Scope:** Milestones 176, 177, 178, and 179 (`docs/MILESTONES.md` lines 2435–2457)  
+**Prerequisites Completed:** Phase 45 (Milestones 173–175: Incremental `spatialIndex`, `EcsBatch`, `WorldChunk` SoA buffers, `MapAccessor`, `streaming_overworld`, pooled chunk workers, and delta-only IndexedDB persistence).
 
 ---
 
-## 1. Objective & Architectural Strategy
+## 1. Reiterated Architectural Rules & Standards
 
-Phase 45 builds the Tier 1 Console spatial and ECS performance substrate required to evolve our roguelike engine toward **Dwarf Fortress (Adventure/World), RimWorld, and other deeply systemic simulations** with **D&D 3.5e** (and future cartridges like tissue/wound rules) layered cleanly on top via `RulesetContract`.
+All Phase 46 design and implementation work is governed strictly by `AGENTS.md`, `docs/ARCHITECTURE.md`, `docs/SSOT_CONSOLE.md`, and `docs/SSOT_DND35E.md`:
 
-The core design insight verified by codebase inspection is a **Hybrid Split**:
-- **Terrain, Materials, Fluids, Temperature, Regions, Flags (High-Volume Spatial Grids):** Stored in **Chunked `TypedArray` Structure-of-Arrays (SoA)** buffers (`~10 bytes/tile`, zero GC churn, zero-copy `ArrayBuffer` worker transfer & IndexedDB storage).
-- **Actors, Items, Social/Chronicle State, D&D 3.5e Rulesets (Complex Low/Medium-Count Entities):** Kept in our rich serializable ECS `Record<string, Component>` store — **upgraded** with $O(1)$ incremental spatial indexing and batched per-tick transactions to eliminate map cloning and full-floor rebuild overhead.
-
-Every upgrade preserves **100% backward compatibility** with all 5 existing finite 2D dungeon campaigns, `SerializedGameState`, D&D 3.5e's 4-stage Stat DAG, and all 404 regression tests.
-
----
-
-## 2. Deep Codebase Inventory & Cross-Referenced Findings
-
-### 2.1 Milestone 173: Incremental $O(1)$ `spatialIndex` & Batched Per-Tick ECS Transactions
-
-- **Current Bottleneck in [`src/core/ecs/ecs_core.ts`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/core/ecs/ecs_core.ts#L32-L190):**
-  - `updateSpatialIndex(state)` scans **every entity** in `state.entities` (`O(N * footprintArea)`) and constructs a brand-new `Map<string, EntityId[]>()` with string keys (`"${x},${y}"`).
-  - Both `addComponent(Position)` (`line 99`), `removeComponent(Position)` (`line 125`), and `removeEntity(id)` (`line 181`) call `updateSpatialIndex(nextState)` unconditionally.
-  - Across `src/`, there are **`355` calls to `addComponent(`**, plus `updateSpatialIndex` calls in [`ecs_lifecycle.ts`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/core/ecs/ecs_lifecycle.ts#L235) (`moveToLimbo`), [`save.ts`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/core/save.ts#L104-L363) (`pruneOrphanEntities`, `deserializeGameState`), [`map.system.ts`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/systems/map.system.ts#L124-L295), [`nemesis_adaptation.ts`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/systems/nemesis/nemesis_adaptation.ts#L244), and [`rivalry/query.ts`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/systems/rivalry/query.ts#L130).
-  - Additionally, every single `addComponent` / `removeComponent` call allocates `new Map(state.components)` and `{ ...entityComponents, [type]: component }`, meaning a multi-component sequence (`spawnEntity` runs 10–18 `addComponent` calls, `applyResolvedSpellEffectsToTarget` runs multiple, `displaceEntityStep` + `step` updates move dozens of actors) clones the top-level `Map` dozens of times per turn.
-
-- **Critical Reference-Equality & Immutability Invariants We MUST Preserve:**
-  1. [`classifyPresentationComponentDiff`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/core/presentation_queue.ts#L72-L144): Checks `prev.components !== next.components` and iterates `for (const id of next.entities)` skipping any entity where `pMap === nMap`. **Invariant:** Batched ECS transactions must reuse untouched per-entity component objects (`prev.components.get(id) === next.components.get(id)`), mutating/copying **only** entity component maps actually written in the batch.
-  2. `campaignEntityDagCache` (`src/rulesets/dnd35e/cartridge/dnd35e_dag_adapter.ts`): Relies on immutable `GameState` snapshots between turns/reads and component reference equality.
-  3. [`deepFreezeGameState`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/tests/helpers.ts#L248) & RTwP state transitions: All committed states returned to `setGameState` / `applyIntentWithCost` / callers must remain immutable — any internal mutable working maps inside an opt-in `withEcsBatch(state, fn)` scope must never leak mutable references outside `withEcsBatch`.
-  4. Multi-tile footprints (`PositionComponent.footprintWidth`, `footprintHeight` >= 1): Incremental removal must clear all old footprint tiles `[oldX .. oldX+fw-1, oldY .. oldY+fh-1]` and insert all new footprint tiles `[newX .. newX+fw-1, newY .. newY+fh-1]` without duplicate IDs in any bucket (`patchSpatialIndexForEntity`).
-  5. Preserving public signatures of `addComponent`, `removeComponent`, `removeEntity` keeps all **355+** callers compiling unchanged while letting hot paths (`spawnEntity`, `generateAndPopulateAreaFloor`, multi-step AI/combat resolution) opt into `withEcsBatch`.
+1. **Strict TypeScript & ECS Purity (Rules 10–14, §3–§4):** Zero `any`, zero magic gameplay literals, explicit return types, exhaustive `switch` (`assertNever`), `exactOptionalPropertyTypes: true` compliance, flat control flow, and 100% JSON-serializable ECS components (zero `Map`/`Set` inside components; runtime caches like HPA* portal graphs and Dijkstra flow fields live outside ECS components).
+2. **Three-Tier Placement Heuristic (Rule 16):**
+   - **Tier 1 — Core Console Engine (`src/core/`, `src/map/`, `src/systems/`, `src/ai/`, `src/rendering/`, `src/types/`):** 3D `PositionComponent.z`, 3D `spatialIndex`, multi-Z `WorldChunk` slabs & finite `zSlices`, `MapAccessor` 3D queries, declarative vertical links (`ramp`/`stairs`/`ladder`/`open_air`), `gravity.system.ts`, 3D FOV (`fov_3d.ts`), 3D light attenuation, multi-Z depth-dimmed rendering & Z-slice peeking, `RegionGrid` / HPA* (`region_graph.ts`, `pathfinding_hpa.ts`), and shared Dijkstra Flow Fields (`flow_field.ts`).
+   - **Tier 2 — Ruleset Cartridge (`src/rulesets/dnd35e/`):** 3D `1-2-1-2` distance (`grid_geometry.ts`), 3D spherical/cylindrical AoE (`aoe_rest.ts`, `target_category_filter.ts`), 3D cover & LoE (`cover_senses.ts`), High-Ground `+1` melee bonus (`combat_exchange_phases.ts`), *Fly*/*Climb* altitude hooks, and *Feather Fall* / Slow Fall / Tumble / `1d6` per 10 ft fall resolution.
+   - **Tier 3 — System & Campaign Content (`public/data/campaigns/default/*`, `public/data/rulesets/dnd35e/*`):** Multi-Z showcase tiles (`open_air`, `stone_ramp`, `chasm_void`, etc.) and a multi-Z showcase structure/overworld elevation profile in `default` campaign so the default campaign exercises every engine feature (§5).
+3. **Zero Content-ID Branching & Declarative Overrides (Rules 17, 19, 21):**
+   - Never check `tileId === 'open_air'`, `spellId === 'fly'`, or `spellId === 'feather_fall'` in `.ts` code.
+   - Drive vertical geometry from declarative `TileDefinitionSchema` fields (`isOpenAir`, `blocksVerticalLoS`, `hasFloorSupport`, `verticalLink`).
+   - Drive *Fly* and *Feather Fall* directly from their already-authored Tier 3 JSON `ruleOverrides` (`can_fly`, `immune_falling_damage`), `StatModifier`s (`fall_damage_reduction_ft`), and semantic tags (`flight:*`).
+4. **100% 2D Backwards Compatibility:** All existing 2D finite campaigns (`default`, `dungeons`, etc.) and 423 existing unit tests must continue to run at full 2D speed (`z = 0` default, 2D FOV fast-path when no multi-Z slices exist).
 
 ---
 
-### 2.2 Milestone 174: Chunked `TypedArray` SoA World Grid (`WorldChunk`), Flyweight Palettes & `MapAccessor`
+## 2. Codebase Audit & Task-to-Architecture Mapping
 
-- **Exact Inventory of `.map.tiles` Coupling Across Codebase (`46` call sites in `33` files):**
-  - Core/Loop/Input (`2`): `src/core/loop/intent_cost_resolver.ts` (`1`), `src/core/input/mouse_input.ts` (`1`)
-  - Map/FOV (`1`): [`src/map/fov.ts`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/map/fov.ts) (`1`)
-  - Movement (`8`): [`src/systems/movement.system.ts`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/systems/movement.system.ts) (`4`), `src/systems/movement_footprint.ts` (`2`), `src/systems/movement_displacement.ts` (`2`)
-  - Systems (`10`): `src/systems/rest.system.ts` (`2`), `src/systems/projectile.system.ts` (`2`), `src/systems/zap.system.ts` (`1`), `src/systems/sound.system.ts` (`1`), `src/systems/reaction.system.ts` (`1`), `src/systems/map.system.ts` (`1`), `src/systems/light_emitter.system.ts` (`1`), `src/systems/inspect.system.ts` (`1`), `src/systems/field.system.ts` (`1`), `src/systems/nemesis/{nemesis_tracker,nemesis_hierarchy}.ts` (`2`)
-  - AI & Actions (`2`): `src/ai/follow.behavior.ts` (`1`), `src/actions/debug_handlers.actions.ts` (`1`)
-  - Rulesets D&D 3.5e (`10`): `src/rulesets/dnd35e/spatial/terrain_traversal_resolver.ts` (`4`), `combat/immediate_reactions.ts` (`2`), `spatial/stealth_resolver.ts` (`1`), `magic/target_category_filter.ts` (`1`), `magic/counterspell_interrupt.ts` (`1`), `companions.ts` (`1`), `combat/pool_ability_resolver.ts` (`1`), `cartridge/dnd35e_turn_budget.ts` (`1`)
-  - Rendering & Editor (`8`): [`src/rendering/viewport_snapshot.ts`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/rendering/viewport_snapshot.ts) (`1`), `tactical_snapshot.ts` (`2`), `inspect_tooltip.ts` (`1`), `ui/area_editor.ts` (`2`), `ui/director/director_telemetry_view.ts` (`1`), `editor/simulation/fuzzer_invariants.ts` (`1`)
+### Milestone 176: 3D Coordinates (`PositionComponent.z`), Multi-Z Chunks, Ramps/Stairs & Gravity/Falling
 
-- **Critical Coordinate-Indexing Gotcha Discovered (`coordToIndex`):**
-  - Today [`coordToIndex(x, y, map.width)`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/utils/grid.ts#L8-L10) computes `y * width + x`, and `GameState.cachedFov` (`ReadonlySet<number>`) + `presentation_queue.ts` + `fov.ts` + `sound.system.ts` + `gameplay_input.ts` all index visible tiles using that `number`.
-  - **Problem on an unbounded / gigantic streaming plane:** `coordToIndex` breaks on negative coordinates (`x = -5, y = 2`) and collides whenever `x >= width` or chunks grow dynamically!
-  - **Solution:** Add signed coordinate packing (`packWorldCoord(x, y)` / `unpackWorldCoord(key)`) storing signed 26-bit `(x, y)` pairs in a single safe JS integer (`±33,554,432` tiles per axis cleanly inside `Number.MAX_SAFE_INTEGER` `2^53 - 1`, zero GC string allocations). Finite legacy `GameMap` areas continue using `coordToIndex` (or `mapAccessor.toTileKey(x, y)`), while streaming chunked maps use `packWorldCoord(x, y)` seamlessly inside `cachedFov` and FOV checks.
+#### 2.1 `PositionComponent` & Spatial Indexing
+- **Current State:**
+  - `src/types/components/world_components.types.ts`: `PositionComponent` has `{ x, y, footprintWidth?, footprintHeight?, facing?, isSqueezing?, sizeRankIndex?, canShareTile?, subTileScale? }` — no `z` field yet.
+  - `src/core/ecs/ecs_core.ts`: `getPositionFootprintKeys`, `sameSpatialFootprint`, `patchSpatialIndexInPlace`, `patchSpatialIndexForEntity`, and `updateSpatialIndex` format keys as `` `${x},${y}` ``.
+  - **Call-Site Audit:** A full grep across `src/` found **~45 direct `state.spatialIndex.get(...)` call sites** across `actions/`, `ai/`, `core/`, `map/`, `rendering/`, `rulesets/dnd35e/`, and `systems/`, plus **6 test files** that read `state.spatialIndex.get('x,y')` directly (`floor_transition_entity_id_and_loader.test.ts`, `input_scope_and_keymap.test.ts`, `m156_durability_spellbooks_ecology.test.ts`, `dnd35e_size_footprint_movement.test.ts`, `m173_ecs_spatial_batch.test.ts`, `m175_chunk_streaming.test.ts`).
+- **Architectural Finding:**
+  - Add optional `readonly z?: number | undefined` (defaulting to `0` everywhere omitted) to `PositionComponent` and optional `readonly footprintDepth?: number | undefined` (default `1`) if tall multi-Z creatures are needed later.
+  - Introduce canonical SSOT spatial helpers in `src/utils/grid.ts` and `src/core/ecs/ecs_core.ts`:
+    - `toSpatialKey(x: number, y: number, z = 0): string`
+    - `getEntitiesAtPosition(state: Readonly<GameState>, x: number, y: number, z = 0): ReadonlyArray<EntityId>`
+  - Migrate all ~45 `src/` direct `spatialIndex.get(...)` call sites to `getEntitiesAtPosition` / `toSpatialKey` so Z-filtering is enforced consistently across collision, FOV, rendering, spells, crossings, fields, sound, and tooltips.
 
-- **SoA `WorldChunk` Memory Layout (Aligned with Phases 46 & 47):**
-  - Chunk dimension: **`32 × 32 = 1,024` tiles per chunk** (clean balance: `5×5` Ring 0 window = `160×160` live tiles across `25` chunks; ~10 KB/chunk).
-  - Contiguous `TypedArray` planes per `WorldChunk`:
-    - `tileType: Uint16Array` (`1024` — flyweight index into `TilePaletteRegistry`, `0` = void/unloaded)
-    - `materialId: Uint16Array` (`1024` — flyweight material index, `0` = default)
-    - `fluid: Uint8Array` (`1024` — high nibble fluid kind, low 3 bits depth `0..7` for Phase 47)
-    - `temperature: Int16Array` (`1024` — degrees Celsius/baseline `20` for Phase 47)
-    - `flags: Uint8Array` (`1024` — bitmask: `EXPLORED = 1 << 0`, `NATURAL = 1 << 1`, `OUTDOOR = 1 << 2`, `SMOOTHED = 1 << 3`, `DIRTY_CELL = 1 << 4`)
-    - `regionId: Uint16Array` (`1024` — HPA\* connected component ID for Phase 46)
-  - Chunk metadata: `cx`, `cy`, `cz` (`0` in Phase 45), `dirtyFlags: number` (`CHUNK_DIRTY_PERSIST`, `CHUNK_DIRTY_REGION`, etc.), `lastSimulatedTurn: number`.
-  - Note on `GameState.map` serialization: `worldChunks` runtime cache uses native `TypedArray`s cleanly decoupled from `JSON.stringify` (`localStorage` save), while `MapAccessor` (`src/map/map_accessor.ts`) reads/writes either legacy `GameMap.tiles` or `ChunkedWorldGrid` uniformly.
+#### 2.2 3D Integer Coordinate Packing & Multi-Z Storage (`WorldChunk` & Finite `GameMap`)
+- **Critical Bit-Budget Finding (`src/utils/grid.ts`, `src/constants/world_chunk.constants.ts`):**
+  - Phase 45's `packWorldCoord(x, y)` packs 26 bits for X + 26 bits for Y = **52 bits** (just under `Number.MAX_SAFE_INTEGER` = $2^{53} - 1$). We **cannot** append Z bits on top of 26+26 without losing IEEE-754 integer precision!
+  - **3D Packing Solution:** Introduce `packWorldCoord3D(x, y, z = 0)` and `unpackWorldCoord3D(key)` using **20 bits X** ($\pm 524,287$) + **20 bits Y** ($\pm 524,287$) + **12 bits Z** ($\pm 2,047$, i.e. 4,096 vertical stories) = **52 bits exact** ($2^{52} - 1 < 2^{53} - 1$, 100% `Number.isSafeInteger` safe with zero floating-point drift).
+  - Keep existing `packWorldCoord(x, y)` / `unpackWorldCoord(key)` for 2D callers or tests that assert 26-bit range, while `ChunkedWorldGrid.chunks`, `dirtyChunkKeys`, and multi-Z `cachedFov` use `packWorldCoord3D` / `unpackWorldCoord3D`.
+- **Multi-Z Chunk Architecture (`src/map/world_chunk.ts`, `src/types/world-chunk.types.ts`, `src/core/chunk_store.ts`):**
+  - Phase 45 **already** future-proofed `WorldChunk` with `cz: number`, `regionId: Uint16Array`, `CHUNK_DIRTY_REGION`, and the 32-byte binary `RLCK` v1 header (`WORLD_CHUNK_HDR_OFFSET_CZ = 16`, `Int32`), AND `chunk_store.ts` already keys IndexedDB entries as `${scopeKey}:${areaId}:${cx}:${cy}:${cz}`!
+  - **1-Z-Slice Slab Model (`cz === z`):** Each `WorldChunk` represents a horizontal `chunkSize × chunkSize` slab at elevation `cz = z`. This preserves the `RLCK` v1 binary format with zero breaking changes, keeps copy-on-write edits to ~2.5 KB per edited slice, and keeps horizontal FOV/rendering/region flood-fill cache-contiguous.
+  - `ChunkedWorldGrid` & `SerializedStreamingWorldState` gain `originChunkZ: number` (default `0`), `activeRadiusZ: number` (default e.g. `2`), `minZ: number`, `maxZ: number` (configurable via `StreamingAreaConfigSchema`).
+  - `chunk_store.ts` (`overlayPersistedDeltasOnGrid`) updates from `unpackWorldCoord(packed)` with hardcoded `cz = 0` to `unpackWorldCoord3D(packed)` so persisted multi-Z chunk edits hydrate cleanly on cold reload!
+  - `chunk_generator.ts` extends `generateWorldChunkFromParams(params, cx, cy, cz)` to synthesize true 3D elevation terrain across `cz` (underground rock/caverns for `cz < surfaceZ`, surface terrain + slope ramps at `cz === surfaceZ`, and `open_air` sky for `cz > surfaceZ`) when multi-Z is enabled on the area's `streamingConfig` (while keeping `minZ === 0 && maxZ === 0` 100% identical to Phase 45 for 2D streaming areas!).
+- **Multi-Z Finite Static Maps (`src/types/game-state.types.ts`, `src/types/campaign/world.ts`, `src/map/map_accessor.ts`):**
+  - Add optional `zSlices?: Readonly<Record<number, ReadonlyArray<Tile>>>` (and `minZ?: number`, `maxZ?: number`) to `GameMap`, plus optional `zLevels?: Record<string, string[]>` to `StaticMapLayoutSchema` and optional `z?: number` to `placedEntities` / `AreaConnectionSchema`.
+  - `MapAccessor` (`isInMapBounds`, `getTileAt`, `getTileIdAt`, `getTileDefAt`, `isTileExploredAt`, `setTileIdAt`, `toMapTileKey`, `isTileKeyInFov`, `markTilesExplored`) gains optional `z = 0` parameter and a `isMultiZMap(map)` helper. At `z = 0` on a finite 2D map, it hits `map.tiles` directly with zero overhead!
 
----
-
-### 2.3 Milestone 175: Seamless Overworld Chunk Streaming, Async Worker Prefetch & Delta IndexedDB Persistence
-
-- **Existing Infrastructure Ready to Leverage:**
-  - [`src/core/campaign_store.ts`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/core/campaign_store.ts#L15-L54) already manages an IndexedDB database (`CAMPAIGN_DB_NAME`, `CAMPAIGN_DB_VERSION`); we can add a dedicated [`src/core/chunk_store.ts`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/core/chunk_store.ts) IndexedDB store (`WORLD_CHUNKS_STORE`) storing raw packed `ArrayBuffer` chunk deltas keyed by `${saveSlotOrCampaignId}:${areaId}:${cx}:${cy}:${cz}` (with an in-memory `Map<string, ArrayBuffer>` driver for headless Bun tests / environments without IndexedDB!).
-  - [`src/worker/worker_bridge.ts`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/worker/worker_bridge.ts#L48-L84) and [`src/worker/map.worker.ts`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/worker/map.worker.ts) already execute Vite Web Worker jobs with cooperative main-thread fallbacks. Extending them to support a **pooled chunk worker** transferring generated chunk `ArrayBuffer`s (`postMessage(response, [transferables])`) avoids spawning/destroying a worker per chunk.
-  - **Delta-Only Save Strategy (`src/core/save.ts`):**
-    - `SerializedGameState` in `localStorage` remains compact JSON (`streamingState?: { areaId, worldSeed, activeOriginChunk, dirtyChunkKeys, evictedChunkEntities }`) — never dumping thousands of untouched terrain tiles into `localStorage`.
-    - Clean chunks regenerate deterministically in `< 1 ms` from `hash(worldSeed, areaId, cx, cy, cz)`.
-    - Only chunks modified by gameplay (`CHUNK_DIRTY_PERSIST` — explored fog, chopped trees, placed objects, blood/scorch decals, future digging) flush asynchronously to `WORLD_CHUNKS_STORE`.
-  - **Declarative Schema Extension (`src/types/campaign/world.ts`):**
-    - Add `'streaming_overworld'` to `AreaGeneratorTypeEnum` alongside optional `streamingConfig` (`chunkSize`, `activeRadiusChunks`, `prefetchRadiusChunks`, `worldSeed`, `biomePalette`: water/sand/grass/forest/rock/road tile IDs + encounter density) so any campaign opts in declaratively via JSON (`AGENTS.md` Rule 21).
-
----
-
-## 3. Architectural Rules & SSOT Ownership Mapping
-
-- **Ruleset-Agnostic Console Boundary (`AGENTS.md` Rule 16):** All Phase 45 primitives (`ecs_core`, `MapAccessor`, `WorldChunk`, `TilePaletteRegistry`, `chunk_streaming`, `chunk_store`, `map.worker`) live strictly in Tier 1 Console (`src/core/`, `src/map/`, `src/systems/`, `src/utils/`, `src/types/`, `src/worker/`) and remain completely agnostic of `dnd35e` / `classic`.
-- **Zero Content-ID Branching (Rule 21):** `TilePaletteRegistry` builds dynamically from `campaign.tiles`; `streaming_overworld` reads biome tile IDs from `areaDef.streamingConfig` in campaign JSON (`Rule 12`: no magic biome tile strings in `.ts`).
-- **Dependency Layer Discipline (`.dependency-cruiser.cjs`):**
-  - `src/utils/` (`packWorldCoord`) stays pure (imports nothing above `constants/`).
-  - `src/map/` (`WorldChunk`, `TilePaletteRegistry`, `MapAccessor`, `chunk_generator`, `fov.ts`) may import `types/`, `constants/`, `utils/`, `core/ecs.ts` — never `rendering/` or `editor/`.
-  - Headless purity: Worker & IndexedDB modules provide synchronous/in-memory fallbacks when `Worker` or `indexedDB` is unavailable (`bun test` runs cleanly with zero browser mocks required).
-- **SSOT Registry Updates Required Per Milestone:** Register any newly created files in [`docs/ssot/ssot_console.json`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/docs/ssot/ssot_console.json) and regenerate `docs/SSOT_CONSOLE.md` via `bun scripts/map-codebase.ts`.
+#### 2.3 Declarative Vertical Traversal, Ramps/Stairs & Gravity/Falling
+- **Declarative Tile Traits (`src/types/campaign/world.ts` — `TileDefinitionSchema`):**
+  - `isOpenAir?: boolean` — unsupported sky/chasm/balcony cell.
+  - `blocksVerticalLoS?: boolean` — defaults to `!transparent` (allows grates/hatches/open_air to transmit sight & light vertically).
+  - `hasFloorSupport?: boolean` — defaults to `walkable && !isOpenAir`.
+  - `verticalLink?: 'ramp' | 'stairs_up' | 'stairs_down' | 'stairs_both' | 'ladder'` — declarative vertical movement connector.
+  - `isClimbable?: boolean` — walls/cliffs/ladders that support climbing when adjacent.
+- **Vertical Movement (`src/types/intents/movement.intents.ts`, `src/systems/movement.system.ts`, `src/systems/movement_displacement.ts`):**
+  - Extend `MoveIntent` with optional `readonly dz?: number | undefined` (`-1 | 0 | 1`, default `0`).
+  - **Seamless Ramp Transitions:**
+    - Ascending: Moving horizontally `(dx, dy)` from a `verticalLink === 'ramp'` tile at `z` into a blocked/solid cell at `(nx, ny, z)` automatically checks whether `(nx, ny, z + 1)` is traversable and supported -> smoothly transitions the actor to `(nx, ny, z + 1)`!
+    - Descending: Moving horizontally `(dx, dy)` from `z` into an `isOpenAir` cell at `(nx, ny, z)` whose cell below `(nx, ny, z - 1)` has `verticalLink === 'ramp'` automatically steps down safely onto `(nx, ny, z - 1)` without falling!
+  - **Stairs / Ladders / Flight / Climb (`dz !== 0`):**
+    - Ascending (`dz = +1`) or descending (`dz = -1`) in-place checks: (a) stair/ladder link on current/destination tile, (b) `movementModes.fly > 0`, or (c) `RulesetContract.canActorAdjustAltitude` (e.g., D&D 3.5e *Climb* wall scaling!).
+    - Preserves legacy `PortalComponent` area transitions (`ChangeAreaIntent`) whenever an entity interacts with an area portal.
+- **Gravity & Falling System (`src/systems/gravity.system.ts` — New Tier 1 Module):**
+  - `isEntitySupportedAt(state, entityId, x, y, z)`: true if tile at `(x, y, z)` has floor support, a live `CrossingComponent` spans `(x, y, z)`, the tile directly below `(x, y, z - 1)` is a load-bearing solid block, OR the actor has active flight (`movementModes.fly > 0`) / active climb hold.
+  - `resolveGravityForEntity(state, entityId, options?)`: scans downward `z - 1 .. minZ` (capped by `MAX_FALL_DISTANCE_Z`) until finding a supported landing tile `(x, y, landingZ)`, commits the vertical displacement atomically (preserving multi-tile 3D footprints), emits a `TileEntered` / fall log event, and invokes `RulesetContract.onEntityFallLanded` (or falls back to Console default fall damage for Classic ruleset).
+  - Triggered cleanly after `displaceEntityStep` (on voluntary walk, forced push/pull, teleport), after crossing collapse (`destroyCrossingEntity` / `processCrossingsTick`), and on status/flight expiration (`onStatusEffectExpired`).
 
 ---
 
-## 4. Cascading Effects Matrix (Rule 15)
+### Milestone 177: Multi-Z Viewport Peeking, 3D Line-of-Sight & Vertical Lighting Propagation
 
-| Change | Upstream | Downstream | Lateral |
-|---|---|---|---|
-| **M173: Incremental `spatialIndex` & `withEcsBatch`** | All `355` `addComponent` / `removeComponent` / `removeEntity` callers (`spawnEntity`, `displaceEntityStep`, `moveToLimbo`, etc.) keep existing APIs unchanged | Preserves `PresentationEventQueue` diffing (`pMap === nMap`), `campaignEntityDagCache`, and post-commit `deepFreezeGameState` invariants | `map.system.ts`, `nemesis_adaptation.ts`, `rivalry/query.ts`, `save.ts` keep full `updateSpatialIndex` only for save/area rehydration |
-| **M174: `WorldChunk` SoA, `TilePaletteRegistry`, `packWorldCoord` & `MapAccessor`** | Campaign loader / bootstrap initializes `TilePaletteRegistry` from `campaign.tiles` (`WorldChunk` created for chunked areas; finite `GameMap.tiles` wrapped seamlessly) | Migrates `46` `.map.tiles` sites (movement, FOV, viewport/tactical/inspect renderers, D&D 3.5e spatial resolvers, AI, input) onto `MapAccessor` | `AreaEditor` / `director_telemetry_view` / headless test builders construct/wrap finite `GameMap` without breaking static editing |
-| **M175: `streaming_overworld`, `chunk_store.ts`, Worker Prefetch & Delta Save** | Declarative `AreaGeneratorTypeEnum` (`'streaming_overworld'`) & `streamingConfig` in campaign `areas.json`; Zod validator & campaign editor schemas | Decouples overworld chunks from `localStorage` JSON payload via `WORLD_CHUNKS_STORE` (`ArrayBuffer` deltas) + handles out-of-range chunk entity sleep/wake | `default` showcase campaign (`outer_crossroads` connection if opted in) & `run-validator.ts` area-connection checks |
+#### 2.4 3D Shadowcasting & Vertical Lighting
+- **Current State:**
+  - `src/map/fov.ts`: `computeFOV(state, px, py, radius?)` runs 2D `ROT.FOV.PreciseShadowcasting`, checking `getTileDefAt(state, x, y)` and `state.spatialIndex.get(\`${x},${y}\`)`.
+  - `src/systems/light_emitter.system.ts`: `ResolvedActiveLightEmitter` has `{ x, y, radiusFt, shadowyRadiusFt, coneAngleDeg?, facing? }`, `evaluateDynamicLightAtTile` uses 2D `Math.hypot(x - ex, y - ey)` and 2D Bresenham LoS (`hasClearLightLineOfSight`).
+- **Architectural Design:**
+  - Create `src/map/fov_3d.ts` (Tier 1 Console):
+    - `has3DLineOfSight(state, x0, y0, z0, x1, y1, z1)`: 3D Bresenham/DDA voxel traversal checking tile `transparent` / `blocksVerticalLoS`, opaque entities (`tags.includes('opaque')`), and `blocksSight` fields.
+    - `computeFOV3D(state, px, py, pz, radius)`: runs 2D `PreciseShadowcasting` on slice `pz` for $O(r^2)$ speed, then propagates visibility vertically through every visible vertically-transparent cell (`isOpenAir || blocksVerticalLoS === false`) across `pz - MAX_Z_PEEK_DEPTH .. pz + MAX_Z_PEEK_UP` validated by `has3DLineOfSight`.
+    - `computeFOV` in `src/map/fov.ts` delegates to `computeFOV3D` ONLY when `isMultiZMap(state.map)` is true, keeping 2D dungeons on the exact existing $O(r^2)$ path!
+  - Update `src/systems/light_emitter.system.ts`:
+    - Include `z: pos.z ?? 0` on `ResolvedActiveLightEmitter`.
+    - `evaluateDynamicLightAtTile(state, x, y, z = 0)` uses 3D Euclidean distance (`feetPerZLevel` scaling) and `has3DLineOfSight` when `z !== emitter.z`.
+
+#### 2.5 Multi-Z Canvas Rendering, Depth Dimming & Camera Z-Peeking
+- **Current State:**
+  - `src/rendering/viewport_snapshot.ts` reads `(mapX, mapY)` at single plane, builds `ViewportCellDTO` and `FogOverlayCellDTO`, and queries `state.spatialIndex.get(\`${mapX},${mapY}\`)`.
+  - `src/rendering/renderer.ts` diffs `ViewportCellDTO` via `cellEquals`.
+  - `src/rendering/tactical_snapshot.ts` renders unit badges for all `state.entities` whose `(x, y)` is in `visibleIndices` (would leak units from other Z-levels if not filtered by `viewZ` / visible depth!).
+  - **CRITICAL KEYBINDING CONFLICT DISCOVERED (`src/core/input/command_catalog.ts` line 161):**
+    - `action.interact` currently binds `[{ key: '<' }, { key: '>' }, { key: ',' }, { key: '.' }]` in `world_gameplay` and `targeting_inspect`!
+    - Registering `<` / `>` for Z-peeking without updating `action.interact` will fail `commandRegistry.detectConflicts()` and existing keybind tests!
+- **Architectural Design:**
+  - Add ephemeral `readonly cameraZOffset?: number | undefined` (default `0`, not required in saves, resets on area change) to `GameState`, plus `SetCameraZOffsetIntent` / `AdjustCameraZIntent` (`isImmediate: true`) in `src/types/intents/camera.intents.ts` and `src/actions/action.registry.ts`.
+  - Effective viewed elevation: `viewZ = (playerPos?.z ?? 0) + (state.cameraZOffset ?? 0)` (clamped to `[minZ, maxZ]`).
+  - **Depth-Dimmed Lower Z-Level Rendering (`viewport_snapshot.ts`, `renderer.ts`):**
+    - For each viewport cell `(mapX, mapY)` at `viewZ`: if the cell at `viewZ` is `isOpenAir === true`, scan downward `dz = 1..MAX_RENDER_DEPTH_LAYERS` (`3`) until finding a solid/floor tile or entity.
+    - Apply deterministic atmospheric depth tinting/dimming (`depthDelta: 0 | 1 | 2 | 3`) to ASCII `fg`/`bg` colors AND emit translucent depth-tint overlay alpha in sprite mode (`fogOverlay` / `depthDelta` on `ViewportCellDTO`), updating `cellEquals` in `renderer.ts` to compare `depthDelta`.
+    - Filter `tactical_snapshot.ts` unit badges and `inspect_tooltip.ts` strictly to entities at `viewZ` (or visible through `open_air` at `viewZ - depthDelta`), plus update `targetingMode` and `inspectMode` to carry optional `z?: number`.
 
 ---
 
-## 5. Open Design Questions to Confirm Before Drafting `implementation_plan.md` (Step 4)
+### Milestone 178: Hierarchical 3D Region Pathfinding (`RegionGrid` / HPA\*) & Shared Dijkstra Flow Fields
 
-1. **Incremental Execution Cadence (`AGENTS.md` Rule 13 — Prefer SMALL changes):**
-   Phase 45 spans 3 major milestones (M173 ECS Hot-Path → M174 `WorldChunk`/`MapAccessor` Migration → M175 Worker Streaming & IndexedDB Deltas). Should Step 4 draft a focused, code-exact **`implementation_plan.md` for Milestone 173 first** (implement & verify M173 cleanly before drafting M174, then M175), or draft one massive plan covering all 3 milestones upfront? *(Recommendation: plan & execute **M173 → M174 → M175 sequentially**, one `./verify.sh`-clean milestone at a time.)*
-2. **Chunk Geometry (`32×32` vs `16×16`):**
-   Do you prefer **`32×32` chunks** (`1024` tiles/chunk, `5×5` Ring 0 window = `160×160` tiles, fewer chunk boundary crossings) or **`16×16` chunks** (`256` tiles/chunk, lighter memory when Phase 46 introduces multi-Z vertical slices)? *(Both fit `packWorldCoord`; `32×32` is ideal for ground planes, `16×16` is great once 3D Z-stacks grow tall.)*
-3. **Default Showcase Overworld (`AGENTS.md` §5):**
-   In M175, should we add a live `streaming_overworld` wilderness zone to the `default` campaign (e.g., an outward exploration portal from `outer_crossroads` so players can walk seamlessly out onto an infinite seed-generated frontier) in addition to unit tests?
+#### 2.6 Chunk Connectivity `RegionGrid` & HPA\* Portal Graph
+- **Current State:**
+  - `src/ai/follow.behavior.ts` (`computeNextStepToward`) creates a fresh `new ROT.Path.AStar` per actor per step on a flat 2D grid — unbounded on huge streaming worlds when a target is unreachable, and blind to Z-levels/ramps/stairs.
+  - `WorldChunk` already stores `regionId: Uint16Array` and `CHUNK_DIRTY_REGION = 1 << 1` (`world_chunk.constants.ts`).
+- **Architectural Design (New Tier 1 Modules: `src/map/region_graph.ts`, `src/ai/pathfinding_hpa.ts`):**
+  - **Per-Chunk Flood-Fill (`rebuildChunkRegions`):** Partitions contiguous walkable cells inside a chunk `(cx, cy, cz)` into local region IDs `1..K` written to `chunk.regionId`, clearing `CHUNK_DIRTY_REGION`.
+  - **Portal Graph (`RegionPortalGraph`, cached outside ECS by map/chunk-version):**
+    - Extracts horizontal border portal spans between adjacent chunks `(cx, cy, cz)` and `(cx±1, cy±1, cz)`.
+    - Extracts vertical ramp/stair/ladder portal edges between `(cx, cy, cz)` and `(cx, cy, cz±1)`.
+    - Maintains a Disjoint-Set Union (`componentId`) over all region nodes for **$O(1)$ disconnected-target rejection**!
+  - **Finite Map Parity:** Supports finite maps (single-Z or multi-Z `zSlices`) via lightweight virtual `16×16` sector tiling using the exact same `RegionPortalGraph` interface.
+  - **3D Hierarchical Pathfinding (`findHierarchicalPath3D`):**
+    1. Rejects disconnected `(start, goal)` in $O(1)$ via `componentId` (unless the mover can fly/burrow over barriers).
+    2. Runs abstract A\* over the portal graph to find the next waypoint portal.
+    3. Refines the immediate local segment with bounded 3D A\* (handling 8-way horizontal + ramp/stair vertical steps, hard-corner diagonals, and multi-tile footprints).
+
+#### 2.7 Shared Multi-Agent Dijkstra Flow Fields (`src/ai/flow_field.ts`)
+- **Architectural Design:**
+  - `computeFlowField3D(state, goalX, goalY, goalZ, maxRadius)`: computes a bounded 3D Dijkstra distance grid (`Map<number, number>` keyed by `packWorldCoord3D`) outward from `(goalX, goalY, goalZ)` respecting walkability, movement costs, ramps, and stairs.
+  - Cached in an ephemeral LRU cache keyed by `(areaId, goalPacked3D, regionVersion)` — zero ECS/save bloat, automatically invalidated whenever any tile edit or chunk mutation sets `CHUNK_DIRTY_REGION` or increments the map topology version.
+  - `sampleFlowFieldStep(state, field, entityId, fromX, fromY, fromZ)`: selects the lowest-cost passable neighbor `(dx, dy, dz)` in **$O(1)$** per agent!
+  - `computeNextStepToward` in `src/ai/follow.behavior.ts` (and `huntBehavior` / `followBehavior` / `fleeBehavior`) upgrades to accept 3D coordinates `(fromX, fromY, fromZ, goalX, goalY, goalZ)`, leveraging shared Flow Fields for common actor targets (e.g. player/controller) and HPA\* 3D pathfinding for arbitrary 3D goals.
+
+---
+
+### Milestone 179: Z-Aware `RulesetContract` Hooks & D&D 3.5e 3D Mechanics
+
+#### 2.8 Tier 1 `RulesetContract` Extensions (`src/types/ruleset.types.ts`)
+All new hooks are **optional** so `classic` and any third-party cartridge remain 100% compatible without breaking changes:
+- `measureDistance3DFt?(from: Coord3D, to: Coord3D, feetPerZLevel?: number): number`
+- `evaluateElevationCombatModifiers?(state: Readonly<GameState>, attackerId: EntityId, defenderId: EntityId, attackKind: 'melee' | 'ranged'): ElevationCombatModifiers`
+- `onEntityFallLanded?(state: GameState, entityId: EntityId, fallContext: EntityFallContext): GameState`
+- `canActorAdjustAltitude?(state: Readonly<GameState>, entityId: EntityId, dz: number): AltitudeAdjustmentCheck`
+- Add optional `z?: number` to `onActorMovementStep` (`fromPos`/`toPos`), `resolveAimedAction` (`targetPos`), `DisplacementResult.finalPos`, `onCrossingCollapsedForOccupant`, and `onEntityDied`.
+
+#### 2.9 Tier 2 D&D 3.5e 3D Mechanics (`src/rulesets/dnd35e/**`)
+- **Critical Existing Gap Discovered (`dnd35e_ruleset.ts:262`):**
+  - `getEntityMovementModes` currently returns only static `getDnD35EntityData(state, entityId).movementModes`, ignoring active DAG `ruleOverrides` (`can_fly` from `fly.json`!).
+  - **Fix:** Resolve dynamic `MovementModes` from static `dndData.movementModes` merged with active DAG `ruleOverrides` (`can_fly` -> derive fly speed `60 ft`, or `40 ft` in medium/heavy armor/load per SRD *Fly*, plus any `fly_speed`/`climb_speed` modifiers) with **zero spell-ID hardcoding**.
+- **3D `1-2-1-2` Distance (`src/rulesets/dnd35e/spatial/grid_geometry.ts`):**
+  - `measureDnD35Distance3DFt(x1, y1, z1, x2, y2, z2, feetPerZLevel)`: converts `dz` to 5-ft vertical units and extends the `1-2-1-2` alternating diagonal rule symmetrically across 3 axes (reducing identically to `measureDnD35DistanceFt` when `z1 === z2`).
+- **3D Spell Spheres & Cover (`aoe_rest.ts`, `cover_senses.ts`, `target_category_filter.ts`, `spell_cast_resolver.ts`):**
+  - Add `evaluateCover3D` (3D Bresenham/DDA ray checking solid walls, ceilings, floors, and parapet/cliff-edge grazing cover).
+  - Add `computeAoEAffectedSquares3D` (for `burst` spheres, `spread` 3D flood-fill around ledges/openings, `cone`, `line`, and `cylinder`), updating `enumerateSpellTargets` so *Fireball* hits elevated/flying/pit targets within its 20-ft 3D sphere while respecting floor/ceiling Total Cover!
+- **High-Ground `+1` Melee Attack Bonus (`combat_exchange_phases.ts`):**
+  - In `resolveStrikePreAttackContext`, when `attackerZ > defenderZ` (and within 3D melee reach), add `HIGH_GROUND_MELEE_ATTACK_BONUS = 1` with label `[High Ground +1]`.
+- ***Feather Fall*, Slow Fall, Tumble & `1d6`/10 ft Falling (`terrain_traversal_resolver.ts` + `dnd35e_ruleset.ts`):**
+  - `onDnD35eEntityFallLanded` inspects DAG `ruleOverrides` (`immune_falling_damage`, already authored in `public/data/rulesets/dnd35e/spells/feather_fall.json`!), `fall_damage_reduction_ft` StatModifiers (Monk Slow Fall), intentional jump / Tumble DC 15 (`-10 ft`), and water landings, then rolls `Math.min(20, Math.floor(effectiveFt / 10))` × `1d6` bludgeoning falling damage + `'prone'`.
+- ***Climb* Wall Scaling (`canActorAdjustAltitude`):**
+  - Allows actors adjacent to a climbable wall (`isClimbable` or solid wall) to move vertically (`dz = ±1`) via a D&D 3.5e `Climb` check (or automatically with natural `climb > 0`, `+2` circumstance bonus with `climbing_kit` tag), without hardcoding item or feat IDs.
+
+---
+
+## 3. Cascading Effects Matrix (Rule 15)
+
+| Change | Upstream (Callers, Emitters, Authors, Tests) | Downstream (Consumers, Renderers, Validators, Saves) | Lateral (Siblings, Campaigns, Docs, Registries) |
+| :--- | :--- | :--- | :--- |
+| **`PositionComponent.z` & `spatialIndex` 3D keys (`toSpatialKey` / `getEntitiesAtPosition`)** | `ecs_core.ts`, `ecs_batch.ts`, `ecs_lifecycle.ts`, `ecs_spawner.ts`, `movement_displacement.ts`, `movement.system.ts`, ~45 `spatialIndex.get` call sites, 6 test files reading `spatialIndex` directly | `viewport_snapshot.ts`, `tactical_snapshot.ts`, `inspect_tooltip.ts`, `fov.ts`, `fov_3d.ts`, `crossing.system.ts`, `field.system.ts`, `sound.system.ts`, `projectile.system.ts`, `zap.system.ts`, `save.ts` (`updateSpatialIndex` on deserialize) | `fuzzer_invariants.ts`, `DebugOverlay.tsx`, `SSOT_CONSOLE.md` |
+| **3D Packed Keys (`packWorldCoord3D`, `unpackWorldCoord3D`) & Multi-Z `WorldChunk` / `GameMap.zSlices`** | `grid.ts`, `world_chunk.constants.ts`, `map_accessor.ts`, `chunk_generator.ts`, `chunk_streaming.ts`, `worker_bridge.ts`, `map.worker.ts` | `chunk_store.ts` (`overlayPersistedDeltasOnGrid`), `save.ts` (`SerializedStreamingWorldState`), `fov_3d.ts`, `viewport_snapshot.ts`, `area.validator.ts` | `world.ts` (`StaticMapLayoutSchema`, `StreamingAreaConfigSchema`, `TileDefinitionSchema`), `ai-prompt-kit/` schema contract, `default/areas.json` & `default/tiles.json` |
+| **Vertical Traversal (`MoveIntent.dz`, Ramps/Stairs) & `gravity.system.ts`** | `movement.system.ts`, `movement_displacement.ts`, `movement_footprint.ts`, `crossing.system.ts` (collapse), `status-effect.system.ts` (flight expiry), `gameplay_input.ts` | `lifecycle.system.ts` (`runActorMovementStep`), `intent_cost_resolver.ts` (energy cost + window sliding on Z), `RulesetContract.onEntityFallLanded`, `canActorAdjustAltitude` | `dnd35e_turn_budget.ts` (vertical movement feet accounting), `dnd35e_lifecycle_adapter.ts`, `companion_targeting.ts` / `follow.behavior.ts` (companions following across Z) |
+| **3D FOV (`fov_3d.ts`), Vertical Light & Multi-Z Depth Renderer / Z-Peeking** | `map.system.ts` (`updateExploredTiles`), `light_emitter.system.ts`, `camera.ts`, `command_catalog.ts`, `gameplay_input.ts`, `action.registry.ts` | `viewport_snapshot.ts`, `viewport_snapshot.types.ts`, `renderer.ts` (`cellEquals`), `tactical_snapshot.ts`, `vfx_overlay.ui.ts`, `inspect_tooltip.ts`, HUD Z-indicator component | `presentation_queue.ts` (detect `cameraZOffset` dirtying `PresentationDomain.Map`), `input_scope_and_keymap.test.ts` (conflict check), `cover_senses.ts` (`resolveTileLightReading`) |
+| **HPA\* `RegionGrid` (`region_graph.ts`, `pathfinding_hpa.ts`) & Shared Dijkstra Flow Fields (`flow_field.ts`)** | `map_accessor.ts` (`setTileIdAt` sets `CHUNK_DIRTY_REGION`), `chunk_streaming.ts` (eviction/load invalidates graph), `durability.system.ts` (door open/close invalidates region) | `ai/follow.behavior.ts` (`computeNextStepToward`), `ai/hunt.behavior.ts`, `ai/flee.behavior.ts`, `ai/ranged.behavior.ts` | `SSOT_CONSOLE.md`, `ssot_console.json`, Phase 47 hauling/labor AI readiness |
+| **Z-Aware `RulesetContract` & D&D 3.5e 3D Mechanics** | `ruleset.types.ts`, `dnd35e_ruleset.ts`, `grid_geometry.ts`, `cover_senses.ts`, `aoe_rest.ts`, `target_category_filter.ts`, `spell_cast_resolver.ts`, `combat_exchange_phases.ts`, `terrain_traversal_resolver.ts` | `classic_ruleset.ts` (unaffected due to optional hooks), `dnd35e_combat_adapter.ts`, `flanking_graph.ts`, `charge_resolver.ts`, `spell.behavior.ts` | `public/data/rulesets/dnd35e/spells/{fly,feather_fall,fireball}.json` (already declarative!), `SSOT_DND35E.md`, `ARCHITECTURE.md` |
+
+---
+
+## 4. Open Architectural Decisions (Confirm Before Drafting Implementation Plan)
+
+Per `AGENTS.md` Rules 6 & 7, please review and confirm the following **4 key design decisions** before we proceed to Step 4 (`docs/implementation_plan.md`):
+
+1. **Vertical Scale (`FEET_PER_Z_LEVEL`): `5 ft` (Isotropic Voxel) vs. `10 ft` (Story Scale)?**
+   - **Option A (Recommended): `5 ft` per Z-level default** (configurable via `campaign.rules.map.feetPerZLevel`, default `5`).
+     - *Why:* Matches D&D 3.5e's 5-ft cubic grid isotropically — a 20-ft *Fireball* sphere has an exact 4-voxel radius in X, Y, and Z; a Medium creature on a 5-ft elevated ledge/ramp (`z + 1`) can still make a 5-ft melee attack with the `+1` High Ground bonus against a target at `z = 0`; falling `2` Z-levels = `10 ft` = `1d6` damage (`1` Z-level = safe hop down!).
+   - **Option B: `10 ft` per Z-level** (1 Z-level = 1 architectural story; falling `1` Z-level = `10 ft` = `1d6` damage, though melee attackers at `z + 1` require 10-ft reach to hit `z = 0`).
+
+2. **`spatialIndex` Key Format: Uniform `"x,y,z"` vs. Hybrid `"x,y"` at `z = 0`?**
+   - **Option A (Recommended): Uniform `"x,y,z"` via `toSpatialKey(x, y, z = 0)` and `getEntitiesAtPosition(state, x, y, z = 0)`.**
+     - *Why:* Matches `docs/MILESTONES.md` (`"x,y,z"`), eliminates conditional branching on `z === 0`, and migrates all ~45 `src/` callers plus the 6 unit tests cleanly onto the SSOT helper.
+   - **Option B: Hybrid (`"x,y"` when `z === 0`, `"x,y,z"` when `z !== 0`).**
+     - Preserves raw string lookups like `spatialIndex.get('5,5')` in legacy tests untouched, at the cost of a branch inside `toSpatialKey`.
+
+3. **Keybinding Split for `<`/`>` vs. Z-Slice Peeking (`command_catalog.ts` Conflict):**
+   - Currently, `action.interact` binds `['<', '>', ',', '.']`.
+   - **Recommended Conflict-Free Layout:**
+     - **Vertical Movement (`move.up_z` / `move.down_z`):** `<` (ascend stairs/ladder/fly/climb, or trigger up-portal) and `>` (descend stairs/ladder/fly/climb, or trigger down-portal).
+     - **Smart Interact (`action.interact`):** `,` and `.` (still works on portals, containers, NPCs, items).
+     - **Z-Slice Camera Peeking (`camera.peek_z_up` / `camera.peek_z_down` / `camera.peek_z_reset`):** `PageUp` / `PageDown` (plus `[` / `]` as secondary bindings, and `Home` to snap back to player's Z). Inside Look/Inspect (`x`) or Aim/Target (`f`) mode, `<` / `>` also shift the cursor's Z-slice up/down!
+   - Would you like this layout, or prefer `<`/`>` exclusively for Z-slice peeking?
+
+4. **Default Campaign Multi-Z Showcase:**
+   - Per `AGENTS.md` §5 (*"The `default` campaign must represent ALL of the game's engine features"*), we propose adding:
+     - New declarative tiles in `public/data/campaigns/default/tiles.json`: `open_air` (`isOpenAir: true`, `transparent: true`, `blocksVerticalLoS: false`), `stone_ramp` (`verticalLink: 'ramp'`), `wooden_stairs_up` / `wooden_stairs_down` (`verticalLink: 'stairs_up' | 'stairs_down'`), and `climbable_wall` (`isClimbable: true`).
+     - A multi-story showcase area (e.g., a 3-level **Watchtower / Overlook** connected from `outer_crossroads` with `z = 0` courtyard, `z = 1` ramp-accessible battlement overlooking `open_air`, and `z = -1` cellar/pit) AND enabling multi-Z strata (`minZ: -2, maxZ: 2`) on `endless_frontier`!
+   - Confirm if this showcase layout sounds good!

@@ -28,7 +28,7 @@ import { processChangeAreaIntent, updateExploredTiles } from '../src/systems/map
 import { ComponentType, type PositionComponent } from '../src/types/components.types.ts';
 import type { EntityId, GameState } from '../src/types/game-state.types.ts';
 import { IntentType } from '../src/types/intents/intent.enum.ts';
-import { packWorldCoord } from '../src/utils/grid.ts';
+import { packWorldCoord, packWorldCoord3D } from '../src/utils/grid.ts';
 import { buildGameState, loadCampaignFromDisk } from './helpers.ts';
 
 function createFakeIndexedDb(backing: Map<string, ArrayBuffer>): IDBFactory {
@@ -197,7 +197,7 @@ describe('Milestone 175: Streaming Overworld, Worker Prefetch & Delta Persistenc
     expect(state.entities.includes(orcId)).toBe(true);
     expect(state.entities.includes(carriedItemId)).toBe(true);
     expect(state.entities.includes(portalId)).toBe(true);
-    expect(state.spatialIndex.get('2,2')?.includes(orcId)).toBe(true);
+    expect(state.spatialIndex.get('2,2,0')?.includes(orcId)).toBe(true);
     expect(state.map.chunkGrid?.evictedChunkEntities['0,0,0']).toBeUndefined();
   });
 
@@ -236,7 +236,7 @@ describe('Milestone 175: Streaming Overworld, Worker Prefetch & Delta Persistenc
     // SerializedGameState must contain slim streamingState and ZERO tile payloads
     const serialized = serializeGameState(state);
     expect(serialized.map.tiles.length).toBe(0);
-    expect(serialized.streamingState?.dirtyChunkKeys.includes(packWorldCoord(-1, -1))).toBe(true);
+    expect(serialized.streamingState?.dirtyChunkKeys.includes(packWorldCoord3D(-1, -1, 0))).toBe(true);
 
     // Round-trip deserialize + async delta rehydration restores custom tile & explored fog
     const rehydratedSync = deserializeGameState(serialized, defaultCampaign, state.campaignId);
@@ -334,7 +334,7 @@ describe('Milestone 175: Streaming Overworld, Worker Prefetch & Delta Persistenc
     const wokenState = updateStreamingWorldWindow(evictedState, 0, 0, { enablePrefetch: false });
     setGameState(wokenState);
     expect(wokenState.entities.includes(orcId)).toBe(true);
-    expect(wokenState.spatialIndex.get('2,2')?.includes(orcId)).toBe(true);
+    expect(wokenState.spatialIndex.get('2,2,0')?.includes(orcId)).toBe(true);
     expect(getActorRemainingScheduleTime(orcId)).toBeGreaterThan(0);
   });
 
@@ -387,7 +387,7 @@ describe('Milestone 175: Streaming Overworld, Worker Prefetch & Delta Persistenc
       expect(isInMapBounds(state.map, -2, -2)).toBe(false);
 
       const scopeKey = resolveDefaultChunkScopeKey(state.campaignId);
-      const dirtyMinus1Chunk = state.map.chunkGrid?.dirtyChunkKeys.has(packWorldCoord(-1, -1));
+      const dirtyMinus1Chunk = state.map.chunkGrid?.dirtyChunkKeys.has(packWorldCoord3D(-1, -1, 0));
       expect(dirtyMinus1Chunk).toBe(true);
 
       saveGame(state);
@@ -407,7 +407,7 @@ describe('Milestone 175: Streaming Overworld, Worker Prefetch & Delta Persistenc
       expect(isTileExploredAt(walkedBack.map, 0, 0)).toBe(true);
 
       // Also verify deleteSave() clears the non-'default' campaign chunk scope
-      putWorldChunkDeltaSync(scopeKey, 'endless_frontier', walkedBack.map.chunkGrid!.chunks.get(packWorldCoord(0, 0))!);
+      putWorldChunkDeltaSync(scopeKey, 'endless_frontier', walkedBack.map.chunkGrid!.chunks.get(packWorldCoord3D(0, 0, 0))!);
       deleteSave();
       await new Promise((resolve) => setTimeout(resolve, 10));
       expect(Array.from(idbBacking.keys()).some((k) => k.startsWith(`${scopeKey}:`))).toBe(false);
@@ -505,7 +505,7 @@ describe('Milestone 175: Streaming Overworld, Worker Prefetch & Delta Persistenc
     expect(respawnPos.x).toBe(0);
     expect(respawnPos.y).toBe(0);
     expect(state.entities.includes(portalId)).toBe(true);
-    expect(state.spatialIndex.get('0,0')?.includes(portalId)).toBe(true);
+    expect(state.spatialIndex.get('0,0,0')?.includes(portalId)).toBe(true);
   });
 
   it('keeps player companions active during eviction and avoids duplicate packing for NPC-controlled minions', () => {

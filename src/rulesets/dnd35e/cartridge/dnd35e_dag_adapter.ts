@@ -56,7 +56,7 @@ import type {
   StatModifier,
   StatQueryContext
 } from '../types/dnd35e.types.ts';
-import { getDnD35SystemContent } from '../types/dnd35e_system.types.ts';
+import { type DnD35RuleOverrideEntry, getDnD35SystemContent } from '../types/dnd35e_system.types.ts';
 import { resolveEffectiveEntityDataWithOverlays } from '../wild_shape.ts';
 import { buildActorNaturalWeaponLimbs, collectEquippedItemDAGContributions } from './dnd35e_equipped_item_dag.ts';
 
@@ -79,6 +79,7 @@ export interface DnD35EntityDAGResult {
   readonly hasGreatCleave: boolean;
   readonly chargeIgnoresDifficultTerrain?: boolean | undefined;
   readonly statModifiers?: ReadonlyArray<StatModifier> | undefined;
+  readonly ruleOverrides?: ReadonlyArray<DnD35RuleOverrideEntry> | undefined;
 }
 
 interface ActiveFieldSnapshotEntry {
@@ -629,9 +630,27 @@ function evaluateDnD35eEntityDAGInternal(
     suppressedIds,
     mergedSelfTags
   );
+  const statusSpellRuleOverrides: DnD35RuleOverrideEntry[] = [];
+  for (const activeEffect of statusComp?.activeEffects ?? []) {
+    if (activeEffect.duration <= 0 && activeEffect.isPermanent !== true) continue;
+    const spellDef = sysContent?.spells?.[activeEffect.effectId];
+    if (spellDef?.effectBundle?.ruleOverrides) {
+      statusSpellRuleOverrides.push(...spellDef.effectBundle.ruleOverrides);
+    }
+    for (const unit of spellDef?.effectUnits ?? []) {
+      if (unit.type === 'stat_bundle' && unit.effectBundle.ruleOverrides) {
+        statusSpellRuleOverrides.push(...unit.effectBundle.ruleOverrides);
+      }
+    }
+  }
+  const combinedRuleOverrides: ReadonlyArray<DnD35RuleOverrideEntry> = [
+    ...featRuleOverrides,
+    ...itemContrib.ruleOverrides,
+    ...statusSpellRuleOverrides
+  ];
   const offHandIsLight =
     finalWeapons.offHandWeapons.length > 0 && finalWeapons.offHandWeapons.every((w) => w.handedness === 'light');
-  const activeCombatRules = buildCombatRuleOverridesFromActiveRules(featRuleOverrides, offHandIsLight);
+  const activeCombatRules = buildCombatRuleOverridesFromActiveRules(combinedRuleOverrides, offHandIsLight);
 
   const attackRoutine = resolveActorAttackRoutine({
     resolvedWeapons: finalWeapons,
@@ -665,7 +684,8 @@ function evaluateDnD35eEntityDAGInternal(
     hasCleave: activeCombatRules.hasCleave,
     hasGreatCleave: activeCombatRules.hasGreatCleave,
     chargeIgnoresDifficultTerrain: activeCombatRules.chargeIgnoresDifficultTerrain,
-    statModifiers: extraModifiers
+    statModifiers: extraModifiers,
+    ruleOverrides: combinedRuleOverrides
   };
 }
 

@@ -53,5 +53,61 @@
     "bg": "#000000",
     "movementCost": 200,
     "tags": ["terrain", "liquid", "water"]
+  },
+  "open_air": {
+    "spriteId": "tile_empty",
+    "walkable": false,
+    "transparent": true,
+    "isOpenAir": true,
+    "blocksVerticalLoS": false,
+    "hasFloorSupport": false,
+    "glyph": " ",
+    "fg": "#4a6fa5",
+    "bg": "#000000",
+    "tags": ["terrain", "air"]
+  },
+  "stone_ramp": {
+    "spriteId": "tile_staircase_up",
+    "walkable": true,
+    "transparent": true,
+    "verticalLink": "ramp",
+    "blocksVerticalLoS": false,
+    "glyph": "▲",
+    "fg": "#d5dbdb",
+    "bg": "#000000",
+    "tags": ["terrain", "ramp"]
+  },
+  "wooden_stairs_up": {
+    "spriteId": "tile_staircase_up",
+    "walkable": true,
+    "transparent": true,
+    "verticalLink": "stairs_up",
+    "blocksVerticalLoS": false,
+    "glyph": "<",
+    "fg": "#f5b041",
+    "bg": "#000000",
+    "tags": ["terrain", "stairs"]
+  },
+  "wooden_stairs_down": {
+    "spriteId": "tile_staircase_down",
+    "walkable": true,
+    "transparent": true,
+    "verticalLink": "stairs_down",
+    "blocksVerticalLoS": false,
+    "glyph": ">",
+    "fg": "#e67e22",
+    "bg": "#000000",
+    "tags": ["terrain", "stairs"]
+  },
+  "climbable_wall": {
+    "spriteId": "tile_rough_stone_wall_top",
+    "walkable": false,
+    "transparent": false,
+    "isClimbable": true,
+    "isSolidObstacle": true,
+    "glyph": "#",
+    "fg": "#95a5a6",
+    "bg": "#000000",
+    "tags": ["terrain", "solid", "climbable"]
   }
 }

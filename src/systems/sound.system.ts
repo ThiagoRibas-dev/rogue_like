@@ -1,4 +1,4 @@
-import { addComponent, getComponent } from '../core/ecs.ts';
+import { addComponent, getComponent, getEntitiesAtPosition } from '../core/ecs.ts';
 import { getActiveRuleset } from '../rulesets/registry.ts';
 import {
   ComponentType,
@@ -88,16 +88,16 @@ export interface SoundEventResult {
  * @param y Grid Y coordinate.
  * @returns Acoustic attenuation in dB.
  */
-export function resolveTileSoundAttenuation(state: Readonly<GameState>, x: number, y: number): number {
-  if (!isInMapBounds(state.map, x, y)) {
+export function resolveTileSoundAttenuation(state: Readonly<GameState>, x: number, y: number, z = 0): number {
+  if (!isInMapBounds(state.map, x, y, z)) {
     return DEFAULT_WALL_SOUND_ATTENUATION * 4;
   }
-  const tileDef = getTileDefAt(state, x, y);
+  const tileDef = getTileDefAt(state, x, y, z);
   if (tileDef?.soundAttenuation !== undefined) {
     return tileDef.soundAttenuation;
   }
 
-  const entitiesAt = state.spatialIndex.get(`${x},${y}`) ?? [];
+  const entitiesAt = getEntitiesAtPosition(state as GameState, x, y, z);
   for (const eid of entitiesAt) {
     const lock = getComponent(state, eid, ComponentType.Lock) as LockComponent | undefined;
     if (lock !== undefined && (lock.locked || lock.jammed === true)) {

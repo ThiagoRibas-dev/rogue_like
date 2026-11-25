@@ -25,6 +25,7 @@ import type { ChunkedWorldGrid, WorldChunk } from '../src/types/world-chunk.type
 import type { GameMap, GameState } from '../src/types/game-state.types.ts';
 import {
   packWorldCoord,
+  packWorldCoord3D,
   unpackWorldCoord,
   worldToChunkCoord,
   worldToLocalCoord,
@@ -116,11 +117,11 @@ describe('Milestone 174: WorldChunk SoA, TilePaletteRegistry, packWorldCoord & M
     ] as const) {
       const c = createEmptyWorldChunk(cx, cy, 0, 16);
       c.tileType.fill(floorIdx);
-      chunks.set(packWorldCoord(cx, cy), c);
+      chunks.set(packWorldCoord3D(cx, cy, 0), c);
     }
 
     // Place a wall at (-2, 0) in chunk (-1, 0)
-    const westChunk = chunks.get(packWorldCoord(-1, 0))!;
+    const westChunk = chunks.get(packWorldCoord3D(-1, 0, 0))!;
     westChunk.tileType[worldToLocalIndex(-2, 0, 16)] = wallIdx;
 
     const grid: ChunkedWorldGrid = {
@@ -146,7 +147,7 @@ describe('Milestone 174: WorldChunk SoA, TilePaletteRegistry, packWorldCoord & M
 
     map = setTileIdAt(map, -1, -1, 'shallow_water');
     expect(getTileAt(map, -1, -1)?.tileId).toBe('shallow_water');
-    expect(map.chunkGrid?.dirtyChunkKeys.has(packWorldCoord(-1, -1))).toBe(true);
+    expect(map.chunkGrid?.dirtyChunkKeys.has(packWorldCoord3D(-1, -1, 0))).toBe(true);
 
     const chunkState: GameState = { ...baseState, map };
     expect(getTileDefAt(chunkState, -2, 0)?.walkable).toBe(false);

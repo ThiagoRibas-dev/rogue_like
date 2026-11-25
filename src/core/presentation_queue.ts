@@ -47,7 +47,7 @@ function isFootprintInFov(
   const h = pos.footprintHeight ?? 1;
   for (let dy = 0; dy < h; dy++) {
     for (let dx = 0; dx < w; dx++) {
-      if (fov.has(toMapTileKey(map, pos.x + dx, pos.y + dy))) {
+      if (fov.has(toMapTileKey(map, pos.x + dx, pos.y + dy, pos.z ?? 0))) {
         return true;
       }
     }
@@ -223,6 +223,7 @@ class PresentationEventQueue {
       prev.isRotated !== next.isRotated ||
       prev.is3D !== next.is3D ||
       prev.zoomLevel !== next.zoomLevel ||
+      prev.cameraZOffset !== next.cameraZOffset ||
       prev.currentAreaId !== next.currentAreaId
     ) {
       this.markDirty(PresentationDomain.Map);

@@ -120,7 +120,8 @@ export const RulesConfigSchema = z.object({
     dugPercentage: z.number().positive().max(1),
     waterScatterChance: z.number().nonnegative().max(1).default(0),
     startingAreaId: z.string(),
-    fovRadius: z.number().int().positive()
+    fovRadius: z.number().int().positive(),
+    feetPerZLevel: z.number().int().positive().optional()
   }),
   hunger: z.object({
     maxSatiation: z.number().int().positive(),

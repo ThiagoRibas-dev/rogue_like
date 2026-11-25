@@ -7,6 +7,7 @@ import {
 import { type EntityId, type GameState, toEntityId } from '../../types/game-state.types.ts';
 
 import type { DormantChunkEntityRecord } from '../../types/world-chunk.types.ts';
+import { toSpatialKey } from '../../utils/grid.ts';
 
 function isEntityInDormantChunkMap(
   evicted: Readonly<Record<string, ReadonlyArray<DormantChunkEntityRecord>>> | undefined,
@@ -71,15 +72,19 @@ export function createEntity(state: GameState): [GameState, EntityId] {
 
 function getPositionFootprintKeys(pos: PositionComponent | undefined): ReadonlyArray<string> {
   if (pos === undefined) return [];
+  const z = pos.z ?? 0;
   const footprintWidth = Math.max(1, pos.footprintWidth ?? 1);
   const footprintHeight = Math.max(1, pos.footprintHeight ?? 1);
-  if (footprintWidth === 1 && footprintHeight === 1) {
-    return [`${pos.x},${pos.y}`];
+  const footprintDepth = Math.max(1, pos.footprintDepth ?? 1);
+  if (footprintWidth === 1 && footprintHeight === 1 && footprintDepth === 1) {
+    return [toSpatialKey(pos.x, pos.y, z)];
   }
   const keys: string[] = [];
-  for (let dy = 0; dy < footprintHeight; dy++) {
-    for (let dx = 0; dx < footprintWidth; dx++) {
-      keys.push(`${pos.x + dx},${pos.y + dy}`);
+  for (let dz = 0; dz < footprintDepth; dz++) {
+    for (let dy = 0; dy < footprintHeight; dy++) {
+      for (let dx = 0; dx < footprintWidth; dx++) {
+        keys.push(toSpatialKey(pos.x + dx, pos.y + dy, z + dz));
+      }
     }
   }
   return keys;
@@ -91,8 +96,10 @@ function sameSpatialFootprint(a: PositionComponent | undefined, b: PositionCompo
   return (
     a.x === b.x &&
     a.y === b.y &&
+    (a.z ?? 0) === (b.z ?? 0) &&
     Math.max(1, a.footprintWidth ?? 1) === Math.max(1, b.footprintWidth ?? 1) &&
-    Math.max(1, a.footprintHeight ?? 1) === Math.max(1, b.footprintHeight ?? 1)
+    Math.max(1, a.footprintHeight ?? 1) === Math.max(1, b.footprintHeight ?? 1) &&
+    Math.max(1, a.footprintDepth ?? 1) === Math.max(1, b.footprintDepth ?? 1)
   );
 }
 
@@ -180,19 +187,14 @@ export function updateSpatialIndex(state: GameState): GameState {
   for (const entityId of state.entities) {
     const pos = getComponent(state, entityId, ComponentType.Position);
     if (pos !== undefined) {
-      const footprintWidth = Math.max(1, pos.footprintWidth ?? 1);
-      const footprintHeight = Math.max(1, pos.footprintHeight ?? 1);
-      for (let dy = 0; dy < footprintHeight; dy++) {
-        for (let dx = 0; dx < footprintWidth; dx++) {
-          const key = `${pos.x + dx},${pos.y + dy}`;
-          let arr = newIndex.get(key);
-          if (!arr) {
-            arr = [];
-            newIndex.set(key, arr);
-          }
-          if (!arr.includes(entityId)) {
-            arr.push(entityId);
-          }
+      for (const key of getPositionFootprintKeys(pos)) {
+        let arr = newIndex.get(key);
+        if (!arr) {
+          arr = [];
+          newIndex.set(key, arr);
+        }
+        if (!arr.includes(entityId)) {
+          arr.push(entityId);
         }
       }
     }
@@ -201,6 +203,18 @@ export function updateSpatialIndex(state: GameState): GameState {
     ...state,
     spatialIndex: newIndex
   };
+}
+
+/**
+ * Queries entities occupying the given 3D grid coordinate via the uniform 3D spatial index.
+ * @param state The current game state.
+ * @param x The map X coordinate.
+ * @param y The map Y coordinate.
+ * @param z The map Z coordinate (defaults to 0).
+ * @returns Read-only array of EntityIds at `(x, y, z)`.
+ */
+export function getEntitiesAtPosition(state: GameState, x: number, y: number, z = 0): ReadonlyArray<EntityId> {
+  return state.spatialIndex.get(toSpatialKey(x, y, z)) ?? [];
 }
 
 /**

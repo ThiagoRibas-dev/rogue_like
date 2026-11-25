@@ -3,7 +3,7 @@
  * status pips, torchlight FOV center, and path preview DTOs for the 60Hz presenter.
  */
 
-import { getComponent } from '../core/ecs.ts';
+import { getComponent, getEntitiesAtPosition } from '../core/ecs.ts';
 import { getHoverState } from '../core/hover_state.ts';
 import { MAX_UNIT_STATUS_PIPS } from '../constants/ui.constants.ts';
 import {
@@ -19,6 +19,8 @@ import type { EntityId, GameState } from '../types/game-state.types.ts';
 import { getFactionRelation } from '../utils/faction.ts';
 import { getBresenhamLine } from '../utils/grid.ts';
 import { getTileAt, getTileDefAt, isInMapBounds, toMapTileKey } from '../map/map_accessor.ts';
+import { MAX_RENDER_DEPTH_LAYERS } from '../constants/world_chunk.constants.ts';
+import { resolveActiveViewZ } from './camera.ts';
 import { getEffectiveStats } from '../utils/stats.ts';
 import type {
   TacticalAttitude,
@@ -86,13 +88,15 @@ export function buildTacticalViewportData(
     }
   }
 
+  const viewZ = resolveActiveViewZ(state);
+
   const visibleCells: Array<{ readonly vx: number; readonly vy: number }> = [];
   for (let vy = 0; vy < viewportH; vy++) {
     for (let vx = 0; vx < viewportW; vx++) {
       const mapX = vx + cameraX;
       const mapY = vy + cameraY;
-      if (!isInMapBounds(state.map, mapX, mapY)) continue;
-      const tileIdx = toMapTileKey(state.map, mapX, mapY);
+      if (!isInMapBounds(state.map, mapX, mapY, viewZ)) continue;
+      const tileIdx = toMapTileKey(state.map, mapX, mapY, viewZ);
       if (state.map.isFullyExplored || visibleIndices.has(tileIdx)) {
         visibleCells.push({ vx, vy });
       }
@@ -106,11 +110,12 @@ export function buildTacticalViewportData(
     const pos = getComponent(state, entityId, ComponentType.Position) as PositionComponent | undefined;
     const fighter = getComponent(state, entityId, ComponentType.Fighter) as FighterComponent | undefined;
     if (!pos || !fighter) continue;
+    const posZ = pos.z ?? 0;
     const fw = Math.max(1, pos.footprintWidth ?? 1);
     const fh = Math.max(1, pos.footprintHeight ?? 1);
     for (let dy = 0; dy < fh; dy++) {
       for (let dx = 0; dx < fw; dx++) {
-        const key = `${pos.x + dx},${pos.y + dy}`;
+        const key = `${pos.x + dx},${pos.y + dy},${posZ}`;
         occupiedCellCounts.set(key, (occupiedCellCounts.get(key) ?? 0) + 1);
       }
     }
@@ -120,6 +125,18 @@ export function buildTacticalViewportData(
     const pos = getComponent(state, entityId, ComponentType.Position) as PositionComponent | undefined;
     const fighter = getComponent(state, entityId, ComponentType.Fighter) as FighterComponent | undefined;
     if (!pos || !fighter) continue;
+    const posZ = pos.z ?? 0;
+    if (posZ > viewZ || viewZ - posZ > MAX_RENDER_DEPTH_LAYERS) continue;
+    if (posZ < viewZ) {
+      let hasOpenAirColumn = true;
+      for (let probeZ = posZ + 1; probeZ <= viewZ; probeZ++) {
+        if (getTileDefAt(state, pos.x, pos.y, probeZ)?.isOpenAir !== true) {
+          hasOpenAirColumn = false;
+          break;
+        }
+      }
+      if (!hasOpenAirColumn) continue;
+    }
 
     const fw = Math.max(1, pos.footprintWidth ?? 1);
     const fh = Math.max(1, pos.footprintHeight ?? 1);
@@ -134,13 +151,13 @@ export function buildTacticalViewportData(
       for (let dx = 0; dx < fw; dx++) {
         const sx = pos.x + dx;
         const sy = pos.y + dy;
-        if (isInMapBounds(state.map, sx, sy)) {
-          const tileIdx = toMapTileKey(state.map, sx, sy);
+        if (isInMapBounds(state.map, sx, sy, posZ)) {
+          const tileIdx = toMapTileKey(state.map, sx, sy, posZ);
           if (visibleIndices.has(tileIdx)) {
             anyVisible = true;
           }
         }
-        if ((occupiedCellCounts.get(`${sx},${sy}`) ?? 0) > 1) {
+        if ((occupiedCellCounts.get(`${sx},${sy},${posZ}`) ?? 0) > 1) {
           isSharedTile = true;
         }
       }
@@ -217,13 +234,16 @@ function buildTacticalCursorData(
 ): TacticalCursorDTO | null {
   let targetX: number | undefined;
   let targetY: number | undefined;
+  let targetZ = (playerPos?.z ?? 0) + (state.cameraZOffset ?? 0);
 
   if (state.targetingMode?.active) {
     targetX = state.targetingMode.x;
     targetY = state.targetingMode.y;
+    targetZ = state.targetingMode.z ?? 0;
   } else if (state.inspectMode?.active) {
     targetX = state.inspectMode.x;
     targetY = state.inspectMode.y;
+    targetZ = state.inspectMode.z ?? 0;
   } else {
     const hovered = getHoverState().hoveredTile;
     if (hovered !== null) {
@@ -233,21 +253,21 @@ function buildTacticalCursorData(
   }
 
   if (targetX === undefined || targetY === undefined) return null;
-  if (!isInMapBounds(state.map, targetX, targetY)) return null;
+  if (!isInMapBounds(state.map, targetX, targetY, targetZ)) return null;
 
   const vx = targetX - cameraX;
   const vy = targetY - cameraY;
   if (vx < 0 || vx >= viewportW || vy < 0 || vy >= viewportH) return null;
 
-  const tile = getTileAt(state.map, targetX, targetY);
-  const tileIdx = toMapTileKey(state.map, targetX, targetY);
+  const tile = getTileAt(state.map, targetX, targetY, targetZ);
+  const tileIdx = toMapTileKey(state.map, targetX, targetY, targetZ);
   const isExplored = tile !== undefined && (state.map.isFullyExplored || tile.explored);
   if (!isExplored) return null;
 
   let attitude: TacticalAttitude | 'terrain' = 'terrain';
   const isVisible = state.map.isFullyExplored || state.cachedFov.has(tileIdx);
   if (isVisible) {
-    const entitiesAt = state.spatialIndex.get(`${targetX},${targetY}`) ?? [];
+    const entitiesAt = getEntitiesAtPosition(state, targetX, targetY, targetZ);
     const actorId = entitiesAt.find((id) => getComponent(state, id, ComponentType.Fighter) !== undefined);
     if (actorId !== undefined) {
       attitude = resolveUnitAttitude(state, playerEntityId, actorId);

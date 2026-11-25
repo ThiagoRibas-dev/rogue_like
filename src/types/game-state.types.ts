@@ -65,16 +65,20 @@ export interface Tile {
   readonly tileId: string;
   readonly x: number;
   readonly y: number;
+  readonly z?: number | undefined;
   readonly explored: boolean;
 }
 
 /**
- * Interface representing the game map with a flat tiles grid.
+ * Interface representing the game map with a flat tiles grid and optional multi-Z slices / chunk grid.
  */
 export interface GameMap {
   readonly width: number;
   readonly height: number;
   readonly tiles: ReadonlyArray<Tile>;
+  readonly zSlices?: Readonly<Record<number, ReadonlyArray<Tile>>> | undefined;
+  readonly minZ?: number | undefined;
+  readonly maxZ?: number | undefined;
   readonly isFullyExplored?: boolean;
   readonly chunkGrid?: ChunkedWorldGrid | undefined;
 }
@@ -227,6 +231,7 @@ export interface GameState {
         readonly active: boolean;
         readonly x: number;
         readonly y: number;
+        readonly z?: number | undefined;
         readonly radius?: number | undefined;
         readonly maxRangeTiles?: number | undefined;
         readonly context?: TargetingContext | undefined;
@@ -237,6 +242,7 @@ export interface GameState {
         readonly active: boolean;
         readonly x: number;
         readonly y: number;
+        readonly z?: number | undefined;
       }
     | undefined;
   readonly activeDialogue?:
@@ -268,6 +274,8 @@ export interface GameState {
   readonly isRotated: boolean;
   readonly is3D: boolean;
   readonly zoomLevel: number;
+  /** Ephemeral Z-slice camera peek offset relative to the player's current Z-level. */
+  readonly cameraZOffset?: number | undefined;
   /** Indicates if this is a temporary sandbox run, which should skip saving. */
   readonly isSandbox?: boolean;
   readonly playerCommandQueue: ReadonlyArray<Intent>;
@@ -365,6 +373,8 @@ export interface SerializedGameState {
   readonly isRotated: boolean;
   readonly is3D: boolean;
   readonly zoomLevel: number;
+  /** Ephemeral Z-slice camera peek offset relative to the player's current Z-level. */
+  readonly cameraZOffset?: number | undefined;
   readonly investigation: InvestigationKnowledge;
   readonly historicalLedger: ReadonlyArray<GameEvent>;
   readonly factionEntityIds: Readonly<Record<string, EntityId>>;

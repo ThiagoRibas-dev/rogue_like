@@ -19,7 +19,7 @@ import type {
   OwnedDormantEntityRecord,
   WorldChunk
 } from '../../types/world-chunk.types.ts';
-import { formatChunkKey, packWorldCoord, worldToChunkCoord } from '../../utils/grid.ts';
+import { formatChunkKey, packWorldCoord3D, worldToChunkCoord } from '../../utils/grid.ts';
 import { generateChunkBatchOffload } from '../../worker/worker_bridge.ts';
 import type { StreamingChunkCoord } from '../../worker/worker.types.ts';
 
@@ -106,7 +106,8 @@ function packOutOfWindowEntities(
 
     const cx = worldToChunkCoord(pos.x, chunkSize);
     const cy = worldToChunkCoord(pos.y, chunkSize);
-    const key = formatChunkKey(cx, cy, 0);
+    const cz = pos.z ?? 0;
+    const key = formatChunkKey(cx, cy, cz);
     if (evictedChunkKeys.has(key)) {
       rootToChunkKey.set(entityId, key);
     }
@@ -243,20 +244,25 @@ function scheduleRing1Prefetch(
   params: ChunkSynthesisParams,
   originCx: number,
   originCy: number,
+  originCz: number,
   activeRadius: number,
   prefetchRadius: number,
+  minLoadZ: number,
+  maxLoadZ: number,
   loadedChunks: ReadonlyMap<number, WorldChunk>
 ): void {
   if (prefetchRadius <= activeRadius) return;
   const coordsToFetch: StreamingChunkCoord[] = [];
 
-  for (let cy = originCy - prefetchRadius; cy <= originCy + prefetchRadius; cy++) {
-    for (let cx = originCx - prefetchRadius; cx <= originCx + prefetchRadius; cx++) {
-      if (Math.max(Math.abs(cx - originCx), Math.abs(cy - originCy)) <= activeRadius) continue;
-      if (loadedChunks.has(packWorldCoord(cx, cy))) continue;
-      const cacheKey = buildPrefetchKey(scopeKey, params.areaId, params.worldSeed, cx, cy, 0);
-      if (prefetchChunkCache.has(cacheKey)) continue;
-      coordsToFetch.push({ cx, cy, cz: 0 });
+  for (let cz = minLoadZ; cz <= maxLoadZ; cz++) {
+    for (let cy = originCy - prefetchRadius; cy <= originCy + prefetchRadius; cy++) {
+      for (let cx = originCx - prefetchRadius; cx <= originCx + prefetchRadius; cx++) {
+        if (Math.max(Math.abs(cx - originCx), Math.abs(cy - originCy)) <= activeRadius && cz === originCz) continue;
+        if (loadedChunks.has(packWorldCoord3D(cx, cy, cz))) continue;
+        const cacheKey = buildPrefetchKey(scopeKey, params.areaId, params.worldSeed, cx, cy, cz);
+        if (prefetchChunkCache.has(cacheKey)) continue;
+        coordsToFetch.push({ cx, cy, cz });
+      }
     }
   }
 
@@ -275,21 +281,25 @@ function scheduleRing1Prefetch(
 }
 
 /**
- * Slides the Ring 0 active chunk window to stay centered around `(anchorX, anchorY)`,
+ * Slides the Ring 0 active chunk window to stay centered around `(anchorX, anchorY, anchorZ)`,
  * waking/loading newly entered chunks, sleeping/evicting distant chunks beyond `evictRadiusChunks`,
  * and issuing non-blocking batched worker prefetch requests across Ring 1.
  *
  * @param state Current immutable GameState.
  * @param anchorX Player/anchor X coordinate.
  * @param anchorY Player/anchor Y coordinate.
- * @param options Optional persistence scope key and prefetch control.
+ * @param options Optional persistence scope key, Z anchor, and prefetch control.
  * @returns Updated GameState with synchronized chunks and active/dormant entities.
  */
 export function updateStreamingWorldWindow(
   state: GameState,
   anchorX: number,
   anchorY: number,
-  options?: { readonly scopeKey?: string | undefined; readonly enablePrefetch?: boolean | undefined }
+  options?: {
+    readonly scopeKey?: string | undefined;
+    readonly enablePrefetch?: boolean | undefined;
+    readonly anchorZ?: number | undefined;
+  }
 ): GameState {
   const grid = state.map.chunkGrid;
   if (!grid) return state;
@@ -299,53 +309,73 @@ export function updateStreamingWorldWindow(
 
   const targetCx = worldToChunkCoord(anchorX, grid.chunkSize);
   const targetCy = worldToChunkCoord(anchorY, grid.chunkSize);
+  const minZ = grid.minZ ?? areaDef.streamingConfig?.minZ ?? 0;
+  const maxZ = grid.maxZ ?? areaDef.streamingConfig?.maxZ ?? 0;
+  const activeRadiusZ = grid.activeRadiusZ ?? areaDef.streamingConfig?.activeRadiusZ ?? 0;
+  const targetCz = Math.max(minZ, Math.min(maxZ, options?.anchorZ ?? grid.originChunkZ ?? 0));
+  const minLoadZ = Math.max(minZ, targetCz - activeRadiusZ);
+  const maxLoadZ = Math.min(maxZ, targetCz + activeRadiusZ);
+  const evictRadiusZ = activeRadiusZ + 1;
+
   const activeRadius = grid.activeRadiusChunks;
   const evictRadius = Math.max(activeRadius + 1, grid.evictRadiusChunks);
   const scopeKey = options?.scopeKey ?? resolveDefaultChunkScopeKey(state.campaignId);
-  const baseSynthParams = buildChunkSynthesisParams(grid.palette, areaDef);
+  const baseSynthParams = buildChunkSynthesisParams(grid.palette, areaDef, state.campaign.tiles);
   const synthParams: ChunkSynthesisParams = {
     ...baseSynthParams,
     worldSeed: grid.worldSeed,
-    chunkSize: grid.chunkSize
+    chunkSize: grid.chunkSize,
+    minZ,
+    maxZ
   };
 
-  // Fast-path: check whether origin matches and every Ring 0 chunk is already resident
+  // Fast-path: check whether origin matches and every Ring 0 3D chunk is already resident
   let missingRing0 = false;
-  for (let cy = targetCy - activeRadius; cy <= targetCy + activeRadius && !missingRing0; cy++) {
-    for (let cx = targetCx - activeRadius; cx <= targetCx + activeRadius; cx++) {
-      if (!grid.chunks.has(packWorldCoord(cx, cy))) {
-        missingRing0 = true;
-        break;
+  for (let cz = minLoadZ; cz <= maxLoadZ && !missingRing0; cz++) {
+    for (let cy = targetCy - activeRadius; cy <= targetCy + activeRadius && !missingRing0; cy++) {
+      for (let cx = targetCx - activeRadius; cx <= targetCx + activeRadius; cx++) {
+        if (!grid.chunks.has(packWorldCoord3D(cx, cy, cz))) {
+          missingRing0 = true;
+          break;
+        }
       }
     }
   }
-  if (!missingRing0 && grid.originChunkX === targetCx && grid.originChunkY === targetCy) {
+  if (
+    !missingRing0 &&
+    grid.originChunkX === targetCx &&
+    grid.originChunkY === targetCy &&
+    (grid.originChunkZ ?? 0) === targetCz
+  ) {
     return state;
   }
 
   const nextChunks = new Map(grid.chunks);
   const wokenChunkKeys: string[] = [];
 
-  for (let cy = targetCy - activeRadius; cy <= targetCy + activeRadius; cy++) {
-    for (let cx = targetCx - activeRadius; cx <= targetCx + activeRadius; cx++) {
-      const packed = packWorldCoord(cx, cy);
-      if (nextChunks.has(packed)) continue;
+  for (let cz = minLoadZ; cz <= maxLoadZ; cz++) {
+    for (let cy = targetCy - activeRadius; cy <= targetCy + activeRadius; cy++) {
+      for (let cx = targetCx - activeRadius; cx <= targetCx + activeRadius; cx++) {
+        const packed = packWorldCoord3D(cx, cy, cz);
+        if (nextChunks.has(packed)) continue;
 
-      const deltaChunk = getCachedWorldChunkDeltaSync(scopeKey, grid.areaId, cx, cy, 0);
-      if (deltaChunk) {
-        nextChunks.set(packed, deltaChunk);
-      } else {
-        const prefetched = consumePrefetchChunk(buildPrefetchKey(scopeKey, grid.areaId, grid.worldSeed, cx, cy, 0));
-        nextChunks.set(packed, prefetched ?? generateWorldChunkFromParams(synthParams, cx, cy, 0));
+        const deltaChunk = getCachedWorldChunkDeltaSync(scopeKey, grid.areaId, cx, cy, cz);
+        if (deltaChunk) {
+          nextChunks.set(packed, deltaChunk);
+        } else {
+          const prefetched = consumePrefetchChunk(buildPrefetchKey(scopeKey, grid.areaId, grid.worldSeed, cx, cy, cz));
+          nextChunks.set(packed, prefetched ?? generateWorldChunkFromParams(synthParams, cx, cy, cz));
+        }
+        wokenChunkKeys.push(formatChunkKey(cx, cy, cz));
       }
-      wokenChunkKeys.push(formatChunkKey(cx, cy, 0));
     }
   }
 
   const evictedKeys = new Set<string>();
   for (const [packed, chunk] of Array.from(nextChunks.entries())) {
-    const dist = Math.max(Math.abs(chunk.cx - targetCx), Math.abs(chunk.cy - targetCy));
-    if (dist > evictRadius) {
+    const hDist = Math.max(Math.abs(chunk.cx - targetCx), Math.abs(chunk.cy - targetCy));
+    const zDist = Math.abs(chunk.cz - targetCz);
+    if (hDist > evictRadius || (minZ < maxZ && zDist > evictRadiusZ)) {
       if ((chunk.dirtyFlags & CHUNK_DIRTY_PERSIST) !== 0) {
         putWorldChunkDeltaSync(scopeKey, grid.areaId, chunk);
         void saveWorldChunkDelta(scopeKey, grid.areaId, chunk);
@@ -370,6 +400,10 @@ export function updateStreamingWorldWindow(
     ...grid,
     originChunkX: targetCx,
     originChunkY: targetCy,
+    originChunkZ: targetCz,
+    activeRadiusZ,
+    minZ,
+    maxZ,
     chunks: nextChunks,
     evictedChunkEntities: nextEvictedEntities
   };
@@ -380,8 +414,11 @@ export function updateStreamingWorldWindow(
       synthParams,
       targetCx,
       targetCy,
+      targetCz,
       activeRadius,
       grid.prefetchRadiusChunks,
+      minLoadZ,
+      maxLoadZ,
       nextChunks
     );
   }

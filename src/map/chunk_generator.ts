@@ -6,6 +6,7 @@ import {
   CHUNK_FLAG_NATURAL,
   CHUNK_FLAG_OUTDOOR,
   DEFAULT_ACTIVE_RADIUS_CHUNKS,
+  DEFAULT_ACTIVE_RADIUS_Z,
   DEFAULT_CHUNK_SIZE,
   DEFAULT_EVICT_RADIUS_CHUNKS,
   DEFAULT_PREFETCH_RADIUS_CHUNKS,
@@ -21,14 +22,14 @@ import {
   NOISE_OCTAVE3_WEIGHT,
   SPAWN_CLEARING_ROAD_DIST_SQ
 } from '../constants/world_chunk.constants.ts';
-import type { AreaDefinition, CampaignData } from '../types/campaign.types.ts';
+import type { AreaDefinition, CampaignData, TileDefinition } from '../types/campaign.types.ts';
 import type {
   ChunkedWorldGrid,
   SerializedStreamingWorldState,
   TilePaletteRegistry,
   WorldChunk
 } from '../types/world-chunk.types.ts';
-import { packWorldCoord } from '../utils/grid.ts';
+import { packWorldCoord3D } from '../utils/grid.ts';
 import { buildTilePaletteRegistry, getPaletteIndexForTileId } from './tile_palette.ts';
 import { createEmptyWorldChunk } from './world_chunk.ts';
 
@@ -42,6 +43,9 @@ export interface StreamingBiomePaletteIndices {
   readonly forest: number;
   readonly ridge: number;
   readonly road: number;
+  readonly openAir?: number | undefined;
+  readonly underground?: number | undefined;
+  readonly ramp?: number | undefined;
 }
 
 /**
@@ -53,6 +57,8 @@ export interface ChunkSynthesisParams {
   readonly chunkSize: number;
   readonly spawnClearingRadius: number;
   readonly isOutdoor: boolean;
+  readonly minZ?: number | undefined;
+  readonly maxZ?: number | undefined;
   readonly biomeIndices: StreamingBiomePaletteIndices;
 }
 
@@ -111,16 +117,32 @@ function sampleFractalNoise(seed: number, wx: number, wy: number): number {
  */
 export function buildChunkSynthesisParams(
   palette: TilePaletteRegistry,
-  areaDef: Readonly<AreaDefinition>
+  areaDef: Readonly<AreaDefinition>,
+  tiles?: Readonly<Record<string, TileDefinition>>
 ): ChunkSynthesisParams {
   const cfg = areaDef.streamingConfig;
   const plainsTileId = cfg?.biomePalette.plains ?? palette.indexToTileId[1] ?? '';
   const plains = getPaletteIndexForTileId(palette, plainsTileId);
-  const pickOrPlains = (tileId: string | undefined): number => {
-    if (!tileId) return plains;
+  const pickOrFallback = (tileId: string | undefined, fallback: number): number => {
+    if (!tileId) return fallback;
     const idx = getPaletteIndexForTileId(palette, tileId);
-    return idx > 0 ? idx : plains;
+    return idx > 0 ? idx : fallback;
   };
+  const findTileByPredicate = (predicate: (def: TileDefinition) => boolean): string | undefined => {
+    if (!tiles) return undefined;
+    for (const [id, def] of Object.entries(tiles)) {
+      if (predicate(def)) return id;
+    }
+    return undefined;
+  };
+
+  const ridgeIdx = pickOrFallback(cfg?.biomePalette.ridge, plains);
+  const openAirTileId = cfg?.biomePalette.openAir ?? findTileByPredicate((d) => d.isOpenAir === true);
+  const undergroundTileId =
+    cfg?.biomePalette.underground ??
+    cfg?.biomePalette.ridge ??
+    findTileByPredicate((d) => !d.walkable && !d.transparent);
+  const rampTileId = cfg?.biomePalette.ramp ?? findTileByPredicate((d) => d.verticalLink === 'ramp');
 
   return {
     worldSeed: cfg?.worldSeed ?? DEFAULT_STREAMING_WORLD_SEED,
@@ -128,20 +150,25 @@ export function buildChunkSynthesisParams(
     chunkSize: Math.max(MIN_CHUNK_SIZE, Math.min(MAX_CHUNK_SIZE, cfg?.chunkSize ?? DEFAULT_CHUNK_SIZE)),
     spawnClearingRadius: cfg?.spawnClearingRadius ?? DEFAULT_SPAWN_CLEARING_RADIUS,
     isOutdoor: areaDef.environmentType !== 'underground',
+    minZ: cfg?.minZ ?? 0,
+    maxZ: cfg?.maxZ ?? 0,
     biomeIndices: {
-      water: pickOrPlains(cfg?.biomePalette.water),
-      shore: pickOrPlains(cfg?.biomePalette.shore),
+      water: pickOrFallback(cfg?.biomePalette.water, plains),
+      shore: pickOrFallback(cfg?.biomePalette.shore, plains),
       plains,
-      forest: pickOrPlains(cfg?.biomePalette.forest),
-      ridge: pickOrPlains(cfg?.biomePalette.ridge),
-      road: pickOrPlains(cfg?.biomePalette.road)
+      forest: pickOrFallback(cfg?.biomePalette.forest, plains),
+      ridge: ridgeIdx,
+      road: pickOrFallback(cfg?.biomePalette.road, plains),
+      openAir: pickOrFallback(openAirTileId, plains),
+      underground: pickOrFallback(undergroundTileId, ridgeIdx),
+      ramp: pickOrFallback(rampTileId, plains)
     }
   };
 }
 
 /**
- * Deterministically synthesizes a single `WorldChunk` cleanly across seamless signed coordinates
- * with continuous multi-octave biome terrain and an open spawn clearing around `(0, 0)`.
+ * Deterministically synthesizes a single `WorldChunk` cleanly across seamless signed 3D coordinates
+ * with continuous multi-octave biome terrain, sky/canopy layers (`cz > 0`), and subterranean cavern strata (`cz < 0`).
  *
  * @param params Pre-resolved seed, chunkSize, and biome palette indices.
  * @param cx Signed chunk X coordinate.
@@ -155,7 +182,48 @@ export function generateWorldChunkFromParams(params: ChunkSynthesisParams, cx: n
   const elevSeed = (params.worldSeed ^ areaHash) | 0;
   const moistSeed = (params.worldSeed ^ Math.imul(areaHash, 31) ^ 0x51f23a9d) | 0;
   const clearingSq = params.spawnClearingRadius * params.spawnClearingRadius;
-  const baseFlags = CHUNK_FLAG_NATURAL | (params.isOutdoor ? CHUNK_FLAG_OUTDOOR : 0);
+  const baseFlags = CHUNK_FLAG_NATURAL | (cz >= 0 && params.isOutdoor ? CHUNK_FLAG_OUTDOOR : 0);
+
+  if (cz > 0) {
+    const openAirIdx = params.biomeIndices.openAir ?? params.biomeIndices.plains;
+    const ridgeThreshold = BIOME_RIDGE_ELEVATION_MIN + 0.08 * cz;
+    for (let ly = 0; ly < chunk.size; ly++) {
+      const wy = cy * chunk.size + ly;
+      for (let lx = 0; lx < chunk.size; lx++) {
+        const wx = cx * chunk.size + lx;
+        const localIdx = ly * chunk.size + lx;
+        chunk.flags[localIdx] = baseFlags;
+        if (wx * wx + wy * wy <= clearingSq) {
+          chunk.tileType[localIdx] = openAirIdx;
+          continue;
+        }
+        const elevation = sampleFractalNoise(elevSeed, wx, wy);
+        chunk.tileType[localIdx] = elevation > ridgeThreshold ? params.biomeIndices.ridge : openAirIdx;
+      }
+    }
+    return chunk;
+  }
+
+  if (cz < 0) {
+    const undergroundIdx = params.biomeIndices.underground ?? params.biomeIndices.ridge;
+    const rampIdx = params.biomeIndices.ramp ?? params.biomeIndices.plains;
+    const caveSeed = (elevSeed ^ Math.imul(cz, 0x27d4eb2d)) | 0;
+    for (let ly = 0; ly < chunk.size; ly++) {
+      const wy = cy * chunk.size + ly;
+      for (let lx = 0; lx < chunk.size; lx++) {
+        const wx = cx * chunk.size + lx;
+        const localIdx = ly * chunk.size + lx;
+        chunk.flags[localIdx] = baseFlags;
+        if (wx === 0 && wy === 0) {
+          chunk.tileType[localIdx] = rampIdx;
+          continue;
+        }
+        const cave = sampleFractalNoise(caveSeed, wx, wy);
+        chunk.tileType[localIdx] = cave > BIOME_FOREST_MOISTURE_MIN ? params.biomeIndices.plains : undergroundIdx;
+      }
+    }
+    return chunk;
+  }
 
   for (let ly = 0; ly < chunk.size; ly++) {
     const wy = cy * chunk.size + ly;
@@ -209,18 +277,19 @@ export function generateWorldChunk(
   cz = 0
 ): WorldChunk {
   const palette = buildTilePaletteRegistry(campaign.tiles);
-  const params = buildChunkSynthesisParams(palette, areaDef);
+  const params = buildChunkSynthesisParams(palette, areaDef, campaign.tiles);
   return generateWorldChunkFromParams(params, cx, cy, cz);
 }
 
 /**
- * Constructs a `ChunkedWorldGrid` synchronously populated across the initial Ring 0 window around `(originCx, originCy)`.
+ * Constructs a `ChunkedWorldGrid` synchronously populated across the initial Ring 0 window around `(originCx, originCy, originCz)`.
  *
  * @param campaign Loaded CampaignData.
  * @param areaDef Target streaming area definition.
  * @param originCx Initial anchor chunk X coordinate (default `0`).
  * @param originCy Initial anchor chunk Y coordinate (default `0`).
  * @param overrideMetadata Optional persisted streaming metadata for save/load restoration.
+ * @param originCz Initial anchor Z coordinate (default `0`).
  * @returns Initialized `ChunkedWorldGrid`.
  */
 export function createInitialStreamingGrid(
@@ -228,10 +297,11 @@ export function createInitialStreamingGrid(
   areaDef: Readonly<AreaDefinition>,
   originCx = 0,
   originCy = 0,
-  overrideMetadata?: SerializedStreamingWorldState
+  overrideMetadata?: SerializedStreamingWorldState,
+  originCz = 0
 ): ChunkedWorldGrid {
   const palette = buildTilePaletteRegistry(campaign.tiles);
-  const baseParams = buildChunkSynthesisParams(palette, areaDef);
+  const baseParams = buildChunkSynthesisParams(palette, areaDef, campaign.tiles);
   const chunkSize = overrideMetadata?.chunkSize ?? baseParams.chunkSize;
   const activeRadiusChunks =
     overrideMetadata?.activeRadiusChunks ?? areaDef.streamingConfig?.activeRadiusChunks ?? DEFAULT_ACTIVE_RADIUS_CHUNKS;
@@ -244,17 +314,31 @@ export function createInitialStreamingGrid(
     areaDef.streamingConfig?.evictRadiusChunks ??
     Math.max(activeRadiusChunks + 2, prefetchRadiusChunks + 1, DEFAULT_EVICT_RADIUS_CHUNKS);
   const worldSeed = overrideMetadata?.worldSeed ?? baseParams.worldSeed;
+  const minZ = overrideMetadata?.minZ ?? areaDef.streamingConfig?.minZ ?? 0;
+  const maxZ = overrideMetadata?.maxZ ?? areaDef.streamingConfig?.maxZ ?? 0;
+  const resolvedOriginCz = overrideMetadata?.originChunkZ ?? originCz;
+  const activeRadiusZ =
+    overrideMetadata?.activeRadiusZ ??
+    areaDef.streamingConfig?.activeRadiusZ ??
+    (minZ === maxZ ? 0 : DEFAULT_ACTIVE_RADIUS_Z);
 
   const synthParams: ChunkSynthesisParams = {
     ...baseParams,
     chunkSize,
-    worldSeed
+    worldSeed,
+    minZ,
+    maxZ
   };
 
+  const minLoadZ = Math.max(minZ, resolvedOriginCz - activeRadiusZ);
+  const maxLoadZ = Math.min(maxZ, resolvedOriginCz + activeRadiusZ);
+
   const chunks = new Map<number, WorldChunk>();
-  for (let cy = originCy - activeRadiusChunks; cy <= originCy + activeRadiusChunks; cy++) {
-    for (let cx = originCx - activeRadiusChunks; cx <= originCx + activeRadiusChunks; cx++) {
-      chunks.set(packWorldCoord(cx, cy), generateWorldChunkFromParams(synthParams, cx, cy, 0));
+  for (let cz = minLoadZ; cz <= maxLoadZ; cz++) {
+    for (let cy = originCy - activeRadiusChunks; cy <= originCy + activeRadiusChunks; cy++) {
+      for (let cx = originCx - activeRadiusChunks; cx <= originCx + activeRadiusChunks; cx++) {
+        chunks.set(packWorldCoord3D(cx, cy, cz), generateWorldChunkFromParams(synthParams, cx, cy, cz));
+      }
     }
   }
 
@@ -267,6 +351,10 @@ export function createInitialStreamingGrid(
     evictRadiusChunks,
     originChunkX: originCx,
     originChunkY: originCy,
+    originChunkZ: resolvedOriginCz,
+    activeRadiusZ,
+    minZ,
+    maxZ,
     palette,
     chunks,
     dirtyChunkKeys: new Set(overrideMetadata?.dirtyChunkKeys ?? []),

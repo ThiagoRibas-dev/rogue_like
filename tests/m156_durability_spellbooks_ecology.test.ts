@@ -411,7 +411,7 @@ describe('Milestone 156: SRD Object/Durability Engine, Structural Doors, Spellbo
       killerId: playerId
     });
     state = processDeathSystem(state);
-    const droppedCorpseOn7_5 = (state.spatialIndex.get('7,5') ?? []).find(
+    const droppedCorpseOn7_5 = (state.spatialIndex.get('7,5,0') ?? []).find(
       (eid) => getComponent(state, eid, ComponentType.Corpse) !== undefined
     );
     expect(droppedCorpseOn7_5).toBeDefined();

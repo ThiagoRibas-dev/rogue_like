@@ -58,6 +58,10 @@ export interface ChunkedWorldGrid {
   readonly evictRadiusChunks: number;
   readonly originChunkX: number;
   readonly originChunkY: number;
+  readonly originChunkZ?: number | undefined;
+  readonly activeRadiusZ?: number | undefined;
+  readonly minZ?: number | undefined;
+  readonly maxZ?: number | undefined;
   readonly palette: TilePaletteRegistry;
   readonly chunks: ReadonlyMap<number, WorldChunk>;
   readonly dirtyChunkKeys: ReadonlySet<number>;
@@ -77,6 +81,10 @@ export interface SerializedStreamingWorldState {
   readonly evictRadiusChunks: number;
   readonly originChunkX: number;
   readonly originChunkY: number;
+  readonly originChunkZ?: number | undefined;
+  readonly activeRadiusZ?: number | undefined;
+  readonly minZ?: number | undefined;
+  readonly maxZ?: number | undefined;
   readonly dirtyChunkKeys: ReadonlyArray<number>;
   readonly evictedChunkEntities: Readonly<Record<string, ReadonlyArray<DormantChunkEntityRecord>>>;
 }
@@ -88,5 +96,6 @@ export interface TileSnapshot {
   readonly tileId: string;
   readonly x: number;
   readonly y: number;
+  readonly z?: number | undefined;
   readonly explored: boolean;
 }

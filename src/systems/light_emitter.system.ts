@@ -11,7 +11,7 @@ import {
 } from '../types/components.types.ts';
 import type { EntityId, GameState } from '../types/game-state.types.ts';
 import { assertNever } from '../utils/assert.ts';
-import { getTileDefAt, isInMapBounds } from '../map/map_accessor.ts';
+import { has3DLineOfSight } from '../map/fov_3d.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 
 /** Standard grid square length in feet (`5` ft). */
@@ -38,6 +38,7 @@ export interface ResolvedActiveLightEmitter {
   readonly carrierEntityId?: EntityId | undefined;
   readonly x: number;
   readonly y: number;
+  readonly z?: number | undefined;
   readonly radiusFt: number;
   readonly shadowyRadiusFt: number;
   readonly coneAngleDeg?: number | undefined;
@@ -90,37 +91,6 @@ export function isPointWithinEmitterCone(
   const clampedDot = Math.max(-1, Math.min(1, dot));
   const angleDeg = (Math.acos(clampedDot) * 180) / Math.PI;
   return angleDeg <= coneAngleDeg / 2 + 0.001;
-}
-
-/**
- * Traces a simple grid ray from `(x0, y0)` to `(x1, y1)` returning `false` if any strictly intermediate
- * tile blocks sight (`tileDef.blocksSight === true`).
- */
-function hasClearLightLineOfSight(state: Readonly<GameState>, x0: number, y0: number, x1: number, y1: number): boolean {
-  let x = x0;
-  let y = y0;
-  const dx = Math.abs(x1 - x0);
-  const dy = Math.abs(y1 - y0);
-  const sx = x0 < x1 ? 1 : -1;
-  const sy = y0 < y1 ? 1 : -1;
-  let err = dx - dy;
-
-  while (x !== x1 || y !== y1) {
-    const e2 = err * 2;
-    if (e2 > -dy) {
-      err -= dy;
-      x += sx;
-    }
-    if (e2 < dx) {
-      err += dx;
-      y += sy;
-    }
-    if (x === x1 && y === y1) break;
-    if (!isInMapBounds(state.map, x, y)) return false;
-    const tileDef = getTileDefAt(state, x, y);
-    if (tileDef?.transparent === false) return false;
-  }
-  return true;
 }
 
 function getItemDefinitionRecord(
@@ -248,6 +218,7 @@ export function getActiveLightEmitters(state: Readonly<GameState>): ReadonlyArra
         carrierEntityId: actorId,
         x: pos.x,
         y: pos.y,
+        ...(pos.z !== undefined && pos.z !== 0 ? { z: pos.z } : {}),
         radiusFt: emitter.radiusFt,
         shadowyRadiusFt: emitter.shadowyRadiusFt ?? emitter.radiusFt * 2,
         ...(emitter.coneAngleDeg !== undefined ? { coneAngleDeg: emitter.coneAngleDeg, facing: effectiveFacing } : {})
@@ -269,6 +240,7 @@ export function getActiveLightEmitters(state: Readonly<GameState>): ReadonlyArra
       emitterEntityId: entityId,
       x: pos.x,
       y: pos.y,
+      ...(pos.z !== undefined && pos.z !== 0 ? { z: pos.z } : {}),
       radiusFt: emitter.radiusFt,
       shadowyRadiusFt: emitter.shadowyRadiusFt ?? emitter.radiusFt * 2,
       ...(emitter.coneAngleDeg !== undefined ? { coneAngleDeg: emitter.coneAngleDeg, facing: effectiveFacing } : {})
@@ -280,23 +252,31 @@ export function getActiveLightEmitters(state: Readonly<GameState>): ReadonlyArra
 
 /**
  * Evaluates the strongest dynamic illumination level (`'bright' | 'shadowy' | 'darkness'`)
- * cast onto `(x, y)` by all active radial and cone `LightEmitterComponent` sources.
+ * cast onto `(x, y, z)` by all active radial and cone `LightEmitterComponent` sources with true 3D occlusion.
  *
  * @param state Current immutable GameState.
  * @param x Target tile X coordinate.
  * @param y Target tile Y coordinate.
+ * @param z Target tile Z coordinate (defaults to `0`).
  * @returns Dynamic illumination level contributed by active emitters.
  */
 export function evaluateDynamicLightAtTile(
   state: Readonly<GameState>,
   x: number,
-  y: number
+  y: number,
+  z = 0
 ): 'bright' | 'shadowy' | 'darkness' {
   const emitters = getActiveLightEmitters(state);
+  const feetPerZ = state.campaign.rules.map.feetPerZLevel ?? FEET_PER_SQUARE;
   let level: 'bright' | 'shadowy' | 'darkness' = 'darkness';
 
   for (const emitter of emitters) {
-    const distFt = Math.hypot(x - emitter.x, y - emitter.y) * FEET_PER_SQUARE;
+    const emitterZ = emitter.z ?? 0;
+    const distFt = Math.hypot(
+      (x - emitter.x) * FEET_PER_SQUARE,
+      (y - emitter.y) * FEET_PER_SQUARE,
+      (z - emitterZ) * feetPerZ
+    );
     if (distFt > emitter.shadowyRadiusFt) continue;
 
     if (emitter.coneAngleDeg !== undefined && emitter.facing !== undefined) {
@@ -305,7 +285,7 @@ export function evaluateDynamicLightAtTile(
       }
     }
 
-    if (!hasClearLightLineOfSight(state, emitter.x, emitter.y, x, y)) {
+    if (!has3DLineOfSight(state, emitter.x, emitter.y, emitterZ, x, y, z)) {
       continue;
     }
 
@@ -319,16 +299,22 @@ export function evaluateDynamicLightAtTile(
 }
 
 /**
- * Checks whether `(x, y)` is currently illuminated (`'bright'` or `'shadowy'`) by at least one active,
+ * Checks whether `(x, y, z)` is currently illuminated (`'bright'` or `'shadowy'`) by at least one active,
  * lit, non-depleted `LightEmitterComponent` source (carried by a living actor or placed on the map).
  *
  * @param state Current immutable GameState.
  * @param x Target tile X coordinate.
  * @param y Target tile Y coordinate.
- * @returns `true` if `(x, y)` is illuminated by an active light emitter.
+ * @param z Target tile Z coordinate (defaults to `0`).
+ * @returns `true` if `(x, y, z)` is illuminated by an active light emitter.
  */
-export function isPositionIlluminatedByActiveLightEmitter(state: Readonly<GameState>, x: number, y: number): boolean {
-  return evaluateDynamicLightAtTile(state, x, y) !== 'darkness';
+export function isPositionIlluminatedByActiveLightEmitter(
+  state: Readonly<GameState>,
+  x: number,
+  y: number,
+  z = 0
+): boolean {
+  return evaluateDynamicLightAtTile(state, x, y, z) !== 'darkness';
 }
 
 function actorHasFireStarter(state: Readonly<GameState>, actorId: EntityId, igniterItemEntityId?: EntityId): boolean {

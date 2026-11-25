@@ -7,45 +7,25 @@ import {
   type DamageComponent,
   type CoatingComponent
 } from '../types/components.types.ts';
-import { getComponent, addComponent, removeComponent, removeEntity, resolveEntityDisplayName } from '../core/ecs.ts';
+import {
+  getComponent,
+  getEntitiesAtPosition,
+  addComponent,
+  removeComponent,
+  removeEntity,
+  resolveEntityDisplayName
+} from '../core/ecs.ts';
 import { getTileDefAt } from '../map/map_accessor.ts';
+import { getBresenhamLine3D } from '../utils/grid.ts';
+import { resolveGravityForEntity } from './gravity.system.ts';
 import { processReactions } from './reaction.system.ts';
 import { rng } from '../core/rng.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import { applyStatusEffect } from './status-effect.system.ts';
 
 /**
- * Returns an array of points representing a line from (x0, y0) to (x1, y1)
- * using Bresenham's line algorithm.
- */
-function getBresenhamLine(x0: number, y0: number, x1: number, y1: number): Array<{ x: number; y: number }> {
-  const points = [];
-  const dx = Math.abs(x1 - x0);
-  const dy = Math.abs(y1 - y0);
-  const sx = x0 < x1 ? 1 : -1;
-  const sy = y0 < y1 ? 1 : -1;
-  let err = dx - dy;
-
-  // eslint-disable-next-line no-constant-condition
-  while (true) {
-    points.push({ x: x0, y: y0 });
-    if (x0 === x1 && y0 === y1) break;
-    const e2 = 2 * err;
-    if (e2 > -dy) {
-      err -= dy;
-      x0 += sx;
-    }
-    if (e2 < dx) {
-      err += dx;
-      y0 += sy;
-    }
-  }
-  return points;
-}
-
-/**
- * Processes the deterministic flight of a thrown item, including Bresenham line calculation,
- * collisions, range checks, and miss scatter.
+ * Processes the deterministic 3D flight of a thrown item, including 3D Bresenham trajectory,
+ * wall/floor occlusion, open-air flight, entity collisions, range checks, scatter, and gravity drop.
  */
 export function processProjectileThrow(state: GameState, intent: ApplyIntent): { state: GameState; success: boolean } {
   if (!intent.toolEntityId) return { state, success: false };
@@ -59,55 +39,82 @@ export function processProjectileThrow(state: GameState, intent: ApplyIntent): {
   const throwerPos = getComponent(state, intent.entityId, ComponentType.Position) as PositionComponent | undefined;
   if (!throwerPos) return { state, success: false };
 
+  const throwerZ = throwerPos.z ?? 0;
   let targetX: number;
   let targetY: number;
+  let targetZ: number;
 
   if (intent.target.type === 'tile') {
     targetX = intent.target.x;
     targetY = intent.target.y;
+    targetZ = intent.target.z ?? throwerZ;
   } else if (intent.target.type === 'entity') {
     const targetPos = getComponent(state, intent.target.entityId, ComponentType.Position) as
       PositionComponent | undefined;
     if (!targetPos) return { state, success: false };
     targetX = targetPos.x;
     targetY = targetPos.y;
+    targetZ = targetPos.z ?? 0;
   } else {
     // Unsupported target type for throwing
     return { state, success: false };
   }
 
   const maxRange = itemDef.throwable?.range ?? 3;
-  const path = getBresenhamLine(throwerPos.x, throwerPos.y, targetX, targetY);
+  const path = getBresenhamLine3D(throwerPos.x, throwerPos.y, throwerZ, targetX, targetY, targetZ);
 
   let impactX = throwerPos.x;
   let impactY = throwerPos.y;
+  let impactZ = throwerZ;
   let hitEntityId: EntityId | undefined;
 
-  // We skip the first point since it's the thrower's tile
+  // Skip index 0 (thrower's own tile)
   for (let i = 1; i < path.length; i++) {
+    const prev = path[i - 1]!;
     const point = path[i];
     if (!point) break;
 
-    // Check Range
-    const distance = Math.max(Math.abs(point.x - throwerPos.x), Math.abs(point.y - throwerPos.y));
+    const distance = Math.max(
+      Math.abs(point.x - throwerPos.x),
+      Math.abs(point.y - throwerPos.y),
+      Math.abs(point.z - throwerZ)
+    );
     if (distance > maxRange) {
       break;
     }
 
-    // Check Map Walls
-    const tileDef = getTileDefAt(state, point.x, point.y);
+    // Check vertical floor/ceiling barriers when transitioning across Z strata
+    if (point.z !== prev.z) {
+      const upperZ = Math.max(prev.z, point.z);
+      const upperPrevDef = getTileDefAt(state, prev.x, prev.y, upperZ);
+      const upperPtDef = getTileDefAt(state, point.x, point.y, upperZ);
+      const verticalOpeningExists =
+        upperPrevDef?.isOpenAir === true ||
+        upperPrevDef?.verticalLink !== undefined ||
+        upperPrevDef?.blocksVerticalLoS === false ||
+        upperPtDef?.isOpenAir === true ||
+        upperPtDef?.verticalLink !== undefined ||
+        upperPtDef?.blocksVerticalLoS === false;
+      if (!verticalOpeningExists) {
+        impactX = prev.x;
+        impactY = prev.y;
+        impactZ = prev.z;
+        break;
+      }
+    }
+
+    // Check voxel walls while allowing flight across open_air gaps
+    const tileDef = getTileDefAt(state, point.x, point.y, point.z);
     if (!tileDef) break;
-    if (!tileDef.walkable) {
-      // Impact is the LAST valid tile before the wall, or the wall itself?
-      // Typically, hitting a wall means it drops right before the wall or at the wall if it's an impact effect.
-      // Let's set impact to the previous point so it drops on the floor instead of "inside" the wall.
-      impactX = path[i - 1]?.x ?? throwerPos.x;
-      impactY = path[i - 1]?.y ?? throwerPos.y;
+    if (!tileDef.walkable && tileDef.isOpenAir !== true && tileDef.verticalLink === undefined) {
+      impactX = prev.x;
+      impactY = prev.y;
+      impactZ = prev.z;
       break;
     }
 
     // Check Entity Collisions
-    const entitiesAtPoint = state.spatialIndex.get(`${point.x},${point.y}`) || [];
+    const entitiesAtPoint = getEntitiesAtPosition(state, point.x, point.y, point.z);
     const blocker = entitiesAtPoint.find(
       (id) =>
         id !== intent.entityId &&
@@ -119,11 +126,13 @@ export function processProjectileThrow(state: GameState, intent: ApplyIntent): {
       hitEntityId = blocker;
       impactX = point.x;
       impactY = point.y;
+      impactZ = point.z;
       break;
     }
 
     impactX = point.x;
     impactY = point.y;
+    impactZ = point.z;
   }
 
   let missed = false;
@@ -139,8 +148,8 @@ export function processProjectileThrow(state: GameState, intent: ApplyIntent): {
   if (missed && !hitEntityId) {
     const scatterX = impactX + rng.getUniformInt(-1, 1);
     const scatterY = impactY + rng.getUniformInt(-1, 1);
-    const scatterTileDef = getTileDefAt(state, scatterX, scatterY);
-    if (scatterTileDef?.walkable) {
+    const scatterTileDef = getTileDefAt(state, scatterX, scatterY, impactZ);
+    if (scatterTileDef?.walkable || scatterTileDef?.isOpenAir === true) {
       impactX = scatterX;
       impactY = scatterY;
     }
@@ -223,12 +232,22 @@ export function processProjectileThrow(state: GameState, intent: ApplyIntent): {
     });
   }
   nextState = removeComponent(nextState, intent.toolEntityId, ComponentType.Inventory);
-  nextState = addComponent(nextState, intent.toolEntityId, { type: ComponentType.Position, x: impactX, y: impactY });
+  nextState = addComponent(nextState, intent.toolEntityId, {
+    type: ComponentType.Position,
+    x: impactX,
+    y: impactY,
+    ...(impactZ !== 0 ? { z: impactZ } : {})
+  });
+  nextState = resolveGravityForEntity(nextState, intent.toolEntityId).state;
 
   // Invoke Reaction System
+  const postDropPos = getComponent(nextState, intent.toolEntityId, ComponentType.Position) as
+    PositionComponent | undefined;
+  const landedX = postDropPos?.x ?? impactX;
+  const landedY = postDropPos?.y ?? impactY;
   const reactionTarget = hitEntityId
     ? { type: 'entity' as const, entityId: hitEntityId }
-    : { type: 'tile' as const, x: impactX, y: impactY };
+    : { type: 'tile' as const, x: landedX, y: landedY };
 
   const reactionResult = processReactions(nextState, 'impact', intent.toolEntityId, reactionTarget, undefined);
   nextState = reactionResult.state;

@@ -18,6 +18,8 @@ export interface EntityRenderDTO {
 export interface ViewportCellDTO {
   readonly vx: number;
   readonly vy: number;
+  readonly z?: number | undefined;
+  readonly depthOffset?: number | undefined;
   readonly glyph: string;
   readonly fg: string;
   readonly bg: string;
@@ -169,6 +171,7 @@ export interface ViewportSnapshot {
   readonly viewportH: number;
   readonly cameraX: number;
   readonly cameraY: number;
+  readonly viewZ?: number | undefined;
   readonly isSpriteMode: boolean;
   readonly is3D: boolean;
   readonly cells: ReadonlyArray<ViewportCellDTO>;
