@@ -78,7 +78,12 @@ export function spawnEntity(
     }
 
     if (template.isActor) {
-      const actor: ActorComponent = { type: ComponentType.Actor, speed: template.speed ?? 100 };
+      const actor: ActorComponent = {
+        type: ComponentType.Actor,
+        speed: template.speed ?? 100,
+        ...(template.languages !== undefined ? { languages: template.languages } : {}),
+        ...(template.primaryLanguage !== undefined ? { primaryLanguage: template.primaryLanguage } : {})
+      };
       batch.addComponent(entityId, actor);
     }
 

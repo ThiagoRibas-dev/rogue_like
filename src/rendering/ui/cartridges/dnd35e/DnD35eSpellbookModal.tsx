@@ -144,6 +144,7 @@ export function DnD35eSpellbookModal({ state }: DnD35eSpellbookModalProps): JSX.
       title="Spellbook & Grimoire"
       subtitle={`${activeClassId.toUpperCase()} • ${activeBook.castingMode} spellcasting`}
       size="xl"
+      scrollMode="panes"
       showHelpHint
       onClose={handleClose}
     >

@@ -1,4 +1,5 @@
 import {
+  createToggleAutomapAction,
   createToggleCartridgeModalAction,
   createToggleDebugAction,
   createToggleDossierAction,
@@ -19,7 +20,7 @@ import { cycleHotbarBank, executeHotbarSlotByKey } from '../../rendering/ui/hud_
 import type { EntityId } from '../../types/game-state.types.ts';
 import type { Intent } from '../../types/intents/intent.union.ts';
 import { getGameState, queuePlayerIntent } from '../game-loop.ts';
-import { getCommandBindings, isAction, type ActionType } from '../settings.ts';
+import { getCommandBindings, getDebugModeEnabled, isAction, type ActionType } from '../settings.ts';
 import { commandRegistry, matchesChord } from './command_registry.ts';
 import { toggleAllHudPanelsFolded } from './mouse_input.ts';
 
@@ -87,6 +88,7 @@ const SHORTCUT_BINDINGS: ReadonlyArray<ShortcutBinding> = [
   { commandId: 'panel.dossier', legacyAction: 'dossier', buildIntent: createToggleDossierAction },
   { commandId: 'panel.ledger', legacyAction: 'ledger', buildIntent: createToggleLedgerAction },
   { commandId: 'panel.legends', buildIntent: createToggleLegendsAction },
+  { commandId: 'panel.automap', legacyAction: 'automap', buildIntent: createToggleAutomapAction },
   { commandId: 'panel.debug', buildIntent: createToggleDebugAction }
 ];
 
@@ -131,9 +133,15 @@ export function handleGameShortcutKey(event: KeyboardEvent, playerEntityId: Enti
     }
   }
 
-  const binding = SHORTCUT_BINDINGS.find((candidate) =>
-    candidate.legacyAction ? isAction(event, candidate.legacyAction) : isCommandMatch(event, candidate.commandId)
-  );
+  const binding = SHORTCUT_BINDINGS.find((candidate) => {
+    const cmdDef = commandRegistry.getCommand(candidate.commandId);
+    if (cmdDef?.requiresDebugMode === true && !getDebugModeEnabled()) {
+      return false;
+    }
+    return candidate.legacyAction
+      ? isAction(event, candidate.legacyAction)
+      : isCommandMatch(event, candidate.commandId);
+  });
   if (binding !== undefined) {
     event.preventDefault();
     queuePlayerIntent(binding.buildIntent(playerEntityId));

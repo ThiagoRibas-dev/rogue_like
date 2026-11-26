@@ -13,7 +13,8 @@ import {
   ACTION_TO_COMMAND_ID,
   buildDefaultCommandBindings,
   migrateV1KeybindsToV2,
-  projectV2BindingsToLegacyStrings
+  projectV2BindingsToLegacyStrings,
+  upgradePrePhase50CommandBindings
 } from './input/keybind_migration.ts';
 
 /**
@@ -40,6 +41,7 @@ export type ActionType =
   | 'verb_menu'
   | 'dossier'
   | 'ledger'
+  | 'automap'
   | 'character_sheet'
   | 'spellbook'
   | 'level_up';
@@ -86,6 +88,8 @@ export interface PanelLayoutSettings {
  */
 export interface PlayerSettings {
   settingsVersion?: number | undefined;
+  keybindRevision?: number | undefined;
+  debugModeEnabled?: boolean | undefined;
   keybindPreset?: KeybindPresetId | undefined;
   keybinds: Record<ActionType, string[]>;
   commandBindings?: Record<string, KeyChord[]> | undefined;
@@ -96,6 +100,7 @@ export interface PlayerSettings {
 }
 
 const CURRENT_SETTINGS_VERSION = 2;
+const CURRENT_KEYBIND_REVISION = 3;
 
 function createInitialCommandBindings(presetId: KeybindPresetId = 'modern'): Record<string, KeyChord[]> {
   return buildDefaultCommandBindings(presetId);
@@ -105,6 +110,8 @@ const DEFAULT_V2_BINDINGS = createInitialCommandBindings('modern');
 
 const DEFAULT_SETTINGS: PlayerSettings = {
   settingsVersion: CURRENT_SETTINGS_VERSION,
+  keybindRevision: CURRENT_KEYBIND_REVISION,
+  debugModeEnabled: false,
   keybindPreset: 'modern',
   keybinds: {
     move_north: ['arrowup', 'w', '8'],
@@ -112,21 +119,22 @@ const DEFAULT_SETTINGS: PlayerSettings = {
     move_west: ['arrowleft', 'a', '4'],
     move_east: ['arrowright', 'd', '6'],
     wait: [' '],
-    interact: ['<', '>', ',', '.'],
+    interact: ['e', '.', ','],
     pick_up: ['g'],
     inventory: ['i'],
     target_toggle: ['f'],
     target_confirm: ['enter'],
     inspect: ['x'],
-    debug_reveal_map: ['r'],
-    debug_god_mode: ['o'],
-    debug_spawn_entity: ['e'],
-    factions: ['y'],
+    debug_reveal_map: ['Alt+r'],
+    debug_god_mode: ['Alt+g'],
+    debug_spawn_entity: ['Alt+e'],
+    factions: ['j'],
     quests: ['q'],
-    investigation: ['v'],
-    verb_menu: ['m', 'enter'],
+    investigation: ['k'],
+    verb_menu: ['v', 'enter'],
     dossier: ['n'],
     ledger: ['Shift+l'],
+    automap: ['m'],
     character_sheet: ['c'],
     spellbook: ['b'],
     level_up: ['u']
@@ -201,6 +209,10 @@ export function migrateSettingsPayload(
           .map((item) => normalizeChord(item));
       }
     }
+    const rawRev = typeof raw['keybindRevision'] === 'number' ? raw['keybindRevision'] : 0;
+    if (rawRev < CURRENT_KEYBIND_REVISION) {
+      commandBindings = upgradePrePhase50CommandBindings(commandBindings, presetId);
+    }
   } else if (raw['keybinds'] && typeof raw['keybinds'] === 'object') {
     commandBindings = migrateV1KeybindsToV2(
       raw['keybinds'] as Record<string, ReadonlyArray<string> | undefined>,
@@ -218,6 +230,9 @@ export function migrateSettingsPayload(
 
   return {
     settingsVersion: CURRENT_SETTINGS_VERSION,
+    keybindRevision: CURRENT_KEYBIND_REVISION,
+    debugModeEnabled:
+      typeof raw['debugModeEnabled'] === 'boolean' ? raw['debugModeEnabled'] : (defaults.debugModeEnabled ?? false),
     keybindPreset: presetId,
     keybinds: mergedLegacyKeybinds,
     commandBindings,
@@ -285,6 +300,20 @@ export function getSettings(): PlayerSettings {
 }
 
 /**
+ * Returns whether Developer Debug Mode is currently enabled.
+ */
+export function getDebugModeEnabled(): boolean {
+  return currentSettings.debugModeEnabled === true;
+}
+
+/**
+ * Enables or disables Developer Debug Mode and persists the setting.
+ */
+export function setDebugModeEnabled(enabled: boolean): void {
+  updateSettings({ debugModeEnabled: enabled });
+}
+
+/**
  * Returns the active v2 KeyChord dictionary merged with registered command defaults.
  */
 export function getCommandBindings(): Readonly<Record<string, ReadonlyArray<KeyChord>>> {
@@ -318,6 +347,11 @@ export function updateSettings(newSettings: Partial<PlayerSettings>): void {
   const projected = nextCommandBindings ? projectV2BindingsToLegacyStrings(nextCommandBindings) : {};
   currentSettings = {
     settingsVersion: CURRENT_SETTINGS_VERSION,
+    keybindRevision: CURRENT_KEYBIND_REVISION,
+    debugModeEnabled:
+      newSettings.debugModeEnabled !== undefined
+        ? newSettings.debugModeEnabled
+        : (currentSettings.debugModeEnabled ?? false),
     keybindPreset: newSettings.keybindPreset ?? currentSettings.keybindPreset ?? 'modern',
     keybinds: { ...currentSettings.keybinds, ...projected, ...(newSettings.keybinds || {}) },
     ...(nextCommandBindings !== undefined ? { commandBindings: nextCommandBindings } : {}),

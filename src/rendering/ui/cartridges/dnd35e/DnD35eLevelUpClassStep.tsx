@@ -156,12 +156,19 @@ export function DnD35eLevelUpClassStep({
                   .filter(Boolean)
                   .join(' ')}
                 onClick={() => {
-                  if (!isEligible) return;
+                  if (!isEligible || cls.id === draft.classId) return;
                   onUpdateDraft({
-                    ...draft,
                     classId: cls.id,
+                    hpMethod: draft.hpMethod,
+                    ...(draft.abilityScoreIncrease !== undefined
+                      ? { abilityScoreIncrease: draft.abilityScoreIncrease }
+                      : {}),
+                    addedSkillRanks: {},
+                    selectedFeats: [],
                     selectedAcfs: [],
-                    advancedSpellcastingClassIds: []
+                    learnedSpells: [],
+                    advancedSpellcastingClassIds: [],
+                    learnedSpellsByClass: {}
                   });
                 }}
               >

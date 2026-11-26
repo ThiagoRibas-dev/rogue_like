@@ -1,6 +1,7 @@
 import { addComponent, createEntity, spawnEntity, spawnItem, withEcsBatchState } from '../../core/ecs.ts';
 import { generateArea } from '../../map/generator.ts';
 import { getTileIdAt, isInMapBounds } from '../../map/map_accessor.ts';
+import type { AreaConnection } from '../../types/campaign.types.ts';
 import type { RoomBounds } from '../../types/encounter.types.ts';
 import {
   ComponentType,
@@ -22,6 +23,9 @@ import { buildAreaDirectorContext } from './map_wake_respawn.ts';
 
 /** Safety cap on BFS frontier nodes when resolving a walkable spawn tile. */
 const MAX_SAFE_PLACEMENT_BFS_NODES = 1024;
+
+/** Default open-doorway sprite ID used for horizontal `'edge'` and `'portal'` area transitions without a template override. */
+const DEFAULT_HORIZONTAL_PASSAGE_SPRITE_ID = 'tile_framed_door_1_open';
 
 const PLACEMENT_NEIGHBOR_OFFSETS: ReadonlyArray<readonly [number, number]> = [
   [0, -1],
@@ -78,6 +82,116 @@ function resolveSafePlacedCoords(
     }
   }
   return null;
+}
+
+/**
+ * Instantiates a single area-connection portal or stair entity into `state` with direction-appropriate
+ * sprite/glyph visuals (`stairs_up`/`stairs_down` for vertical Z links, open archway passage for horizontal
+ * `edge` connections, and portal visuals or template overrides for `portal` links).
+ *
+ * @param state Current GameState.
+ * @param portal Generated portal placement coordinate and connection metadata.
+ * @returns Updated GameState and created portal EntityId.
+ */
+export function spawnAreaPortalEntity(
+  state: GameState,
+  portal: {
+    readonly x: number;
+    readonly y: number;
+    readonly z?: number | undefined;
+    readonly connection: AreaConnection;
+  }
+): { readonly state: GameState; readonly entityId: EntityId } {
+  let nextState = state;
+  let portalEntityId: EntityId;
+  const pz = portal.z ?? portal.connection.placementZ ?? 0;
+
+  const portalComp: PortalComponent = {
+    type: ComponentType.Portal,
+    targetAreaId: portal.connection.targetAreaId,
+    targetX: portal.connection.targetX,
+    targetY: portal.connection.targetY,
+    ...(portal.connection.targetZ !== undefined ? { targetZ: portal.connection.targetZ } : {}),
+    ...(portal.connection.preserveCoords !== undefined ? { preserveCoords: portal.connection.preserveCoords } : {})
+  };
+
+  if (
+    (portal.connection.direction === 'portal' || portal.connection.direction === 'edge') &&
+    portal.connection.portalTemplateId
+  ) {
+    if (state.campaign.entities[portal.connection.portalTemplateId]) {
+      [nextState, portalEntityId] = spawnEntity(
+        nextState,
+        portal.connection.portalTemplateId,
+        portal.x,
+        portal.y,
+        undefined,
+        undefined,
+        pz
+      );
+      nextState = addComponent(nextState, portalEntityId, portalComp);
+      return { state: nextState, entityId: portalEntityId };
+    }
+    if (state.campaign.items[portal.connection.portalTemplateId]) {
+      [nextState, portalEntityId] = spawnItem(nextState, portal.connection.portalTemplateId, portal.x, portal.y, pz);
+      nextState = addComponent(nextState, portalEntityId, portalComp);
+      return { state: nextState, entityId: portalEntityId };
+    }
+    console.warn(`Portal template ${portal.connection.portalTemplateId} not found.`);
+    [nextState, portalEntityId] = createEntity(nextState);
+    const pos: PositionComponent = {
+      type: ComponentType.Position,
+      x: portal.x,
+      y: portal.y,
+      ...(pz !== 0 ? { z: pz } : {})
+    };
+    nextState = addComponent(addComponent(nextState, portalEntityId, pos), portalEntityId, portalComp);
+    return { state: nextState, entityId: portalEntityId };
+  }
+
+  const direction = portal.connection.direction;
+  const isHorizontal = direction === 'edge' || direction === 'portal';
+  const stairTileKey = direction === 'up' ? 'stairs_up' : 'stairs_down';
+  const spriteId = isHorizontal
+    ? (state.campaign.tiles[direction]?.spriteId ??
+      state.campaign.tiles['passage']?.spriteId ??
+      DEFAULT_HORIZONTAL_PASSAGE_SPRITE_ID)
+    : (state.campaign.tiles[stairTileKey]?.spriteId ?? stairTileKey);
+  const glyph =
+    direction === 'edge'
+      ? '∩'
+      : direction === 'portal'
+        ? 'O'
+        : direction === 'up'
+          ? (state.campaign.theme.glyphs.stairsUp ?? '<')
+          : (state.campaign.theme.glyphs.stairsDown ?? '>');
+
+  const pos: PositionComponent = {
+    type: ComponentType.Position,
+    x: portal.x,
+    y: portal.y,
+    ...(pz !== 0 ? { z: pz } : {})
+  };
+  const render: RenderableComponent = {
+    type: ComponentType.Renderable,
+    glyph,
+    fg: state.campaign.theme.colors.stairsFg ?? '#ffffff',
+    bg: state.campaign.theme.colors.transparent ?? 'transparent',
+    spriteId
+  };
+  const tags: TagsComponent = {
+    type: ComponentType.Tags,
+    tags: ['portal']
+  };
+
+  nextState = withEcsBatchState(nextState, (batch) => {
+    portalEntityId = batch.createEntity();
+    batch.addComponent(portalEntityId, pos);
+    batch.addComponent(portalEntityId, render);
+    batch.addComponent(portalEntityId, portalComp);
+    batch.addComponent(portalEntityId, tags);
+  });
+  return { state: nextState, entityId: portalEntityId! };
 }
 
 /**
@@ -147,81 +261,7 @@ export function generateAndPopulateAreaFloor(
   };
 
   for (const portal of generated.portals) {
-    let stairId: EntityId;
-    const pz = portal.z ?? portal.connection.placementZ ?? 0;
-
-    const portalComp: PortalComponent = {
-      type: ComponentType.Portal,
-      targetAreaId: portal.connection.targetAreaId,
-      targetX: portal.connection.targetX,
-      targetY: portal.connection.targetY,
-      ...(portal.connection.targetZ !== undefined ? { targetZ: portal.connection.targetZ } : {}),
-      ...(portal.connection.preserveCoords !== undefined ? { preserveCoords: portal.connection.preserveCoords } : {})
-    };
-
-    if (
-      (portal.connection.direction === 'portal' || portal.connection.direction === 'edge') &&
-      portal.connection.portalTemplateId
-    ) {
-      if (state.campaign.entities[portal.connection.portalTemplateId]) {
-        [tempState, stairId] = spawnEntity(
-          tempState,
-          portal.connection.portalTemplateId,
-          portal.x,
-          portal.y,
-          undefined,
-          undefined,
-          pz
-        );
-        tempState = addComponent(tempState, stairId, portalComp);
-      } else if (state.campaign.items[portal.connection.portalTemplateId]) {
-        [tempState, stairId] = spawnItem(tempState, portal.connection.portalTemplateId, portal.x, portal.y, pz);
-        tempState = addComponent(tempState, stairId, portalComp);
-      } else {
-        console.warn(`Portal template ${portal.connection.portalTemplateId} not found.`);
-        [tempState, stairId] = createEntity(tempState);
-        const pos: PositionComponent = {
-          type: ComponentType.Position,
-          x: portal.x,
-          y: portal.y,
-          ...(pz !== 0 ? { z: pz } : {})
-        };
-        tempState = addComponent(addComponent(tempState, stairId, pos), stairId, portalComp);
-      }
-    } else {
-      const stairTileKey = portal.connection.direction === 'up' ? 'stairs_up' : 'stairs_down';
-      const pos: PositionComponent = {
-        type: ComponentType.Position,
-        x: portal.x,
-        y: portal.y,
-        ...(pz !== 0 ? { z: pz } : {})
-      };
-      const render: RenderableComponent = {
-        type: ComponentType.Renderable,
-        glyph:
-          portal.connection.direction === 'portal' || portal.connection.direction === 'edge'
-            ? 'O'
-            : portal.connection.direction === 'up'
-              ? (state.campaign.theme.glyphs.stairsUp ?? '<')
-              : (state.campaign.theme.glyphs.stairsDown ?? '>'),
-        fg: state.campaign.theme.colors.stairsFg ?? '#ffffff',
-        bg: state.campaign.theme.colors.transparent ?? 'transparent',
-        spriteId: state.campaign.tiles[stairTileKey]?.spriteId ?? stairTileKey
-      };
-
-      const tags: TagsComponent = {
-        type: ComponentType.Tags,
-        tags: ['portal']
-      };
-
-      tempState = withEcsBatchState(tempState, (batch) => {
-        stairId = batch.createEntity();
-        batch.addComponent(stairId, pos);
-        batch.addComponent(stairId, render);
-        batch.addComponent(stairId, portalComp);
-        batch.addComponent(stairId, tags);
-      });
-    }
+    tempState = spawnAreaPortalEntity(tempState, portal).state;
   }
 
   if (generated.placedEntities) {

@@ -274,12 +274,17 @@ export function applyRaceToActorChassis(
   const feats = Array.from(new Set([...(base.feats ?? []), ...racialBonusFeats]));
 
   const ecl = totalHd + (race.levelAdjustment ?? 0);
+  const mergedLanguages =
+    (base.languages?.length ?? 0) > 0 || (race.automaticLanguages?.length ?? 0) > 0
+      ? Array.from(new Set([...(base.languages ?? []), ...(race.automaticLanguages ?? [])]))
+      : undefined;
 
   const updatedEntityData: DnD35EntityData = {
     ...base,
     raceId: race.id,
     creatureType: race.creatureType,
     subtypes,
+    ...(mergedLanguages !== undefined ? { languages: mergedLanguages } : {}),
     sizeCategory: race.size,
     abilityScores: nextScores as unknown as DnD35EntityData['abilityScores'],
     tracks: nextTracks,

@@ -27,10 +27,9 @@
     " "
   ],
   "interact": [
-    "<",
-    ">",
-    ",",
-    "."
+    "e",
+    ".",
+    ","
   ],
   "pick_up": [
     "g"
@@ -48,12 +47,12 @@
     "x"
   ],
   "debug_reveal_map": [
-    "r"
+    "Alt+r"
   ],
   "debug_god_mode": [
-    "o"
+    "Alt+g"
   ],
   "debug_spawn_entity": [
-    "e"
+    "Alt+e"
   ]
 }

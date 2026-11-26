@@ -458,6 +458,11 @@
             "nextNodeId": "ask_about_node"
           },
           {
+            "id": "opt_elven_passage",
+            "text": "Recite the ancient Elven inscription from the ruins.",
+            "nextNodeId": "elven_passage_node"
+          },
+          {
             "id": "opt_leave",
             "text": "Farewell. (Leave)"
           }
@@ -536,6 +541,18 @@
           {
             "id": "opt_back",
             "text": "I see. (Go back)",
+            "nextNodeId": "start"
+          }
+        ]
+      },
+      "elven_passage_node": {
+        "id": "elven_passage_node",
+        "languageId": "elven",
+        "text": "Beneath the silver boughs the wardstone sleeps; only tongues of starlight may wake the ancient seal.",
+        "options": [
+          {
+            "id": "opt_elven_back",
+            "text": "Remarkable. Let us speak in Common again.",
             "nextNodeId": "start"
           }
         ]

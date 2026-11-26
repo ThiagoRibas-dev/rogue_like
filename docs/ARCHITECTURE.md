@@ -1071,6 +1071,30 @@ Per `AGENTS.md` Rule 21 (Zero Content-ID or Bespoke-Property Branching) and [`do
 3. **Multi-Z Area Painter, Domain Editors & Preact Simulation Labs (`src/rendering/ui/editor/{views,labs}/*`)**:
    - `<AreaStaticPainter />` provides interactive Multi-Z slice management (`staticMap.zLevels`, Z-filtered `placedEntities[].z`, 3D `(x, y, z)` context-menu playtest spawning consumed by `bootstrap.ts`), paired with `<AreaEditor />`, `<WorldGraph />`, `<DialogueEditor />` + `<DialogueSimulatorPanel />`, `<FactionMatrixEditor />`, `<TriggerComposer />`, and unified `<SimulationLab />` (`AiArena`, `DirectorSandbox`, `KnowledgeSimulator`, `NarrativeFuzzer`, `BalanceLab`).
 
+### 9.37 Zero-Dependency 3D Multi-Z Automap & Holistic Campaign Atlas (Phase 49, Milestones 187–189)
+
+1. **Shared Declarative Voxel Scene & Holistic Layout Solver (`src/rendering/automap3d/{automap3d_scene,automap3d_holistic}.ts`, `src/types/automap3d.types.ts`)**:
+   - `buildAreaVoxelScene3D` inspects `MapAccessor` (`tiles`, `zSlices`, `chunkGrid`) and declarative `TileDefinition` flags (`verticalLink`, `isClimbable`, `isOpenAir`, `isSolidObstacle`, `walkable`, `liquidDepth`) plus fluid bytes and `LightEmitterComponent` sources to emit hollow-shell corridor walls, walkable floor slabs, 3D stair/ramp prisms, fluid volumes, glowing embers, and vertical red/green/gold plumb-line beacons with zero Rule 21 content-ID branching.
+   - `buildCampaignHolisticScene3D` synthesizes every area in a `CampaignData` under a deterministic fixed seed (`DEFAULT_ATLAS_PREVIEW_SEED = 1337`, preserving `ROT.RNG.getState()` cleanly in `try/finally`), positions 3D area clusters via BFS along declarative `connections[].direction` with collision-free 3D AABB packing, and links inter-area transitions via 3D portal splines.
+2. **Zero-Dependency `<canvas>` 3D Projector & Reusable Viewport (`src/rendering/automap3d/automap3d_renderer.ts`, `src/rendering/ui/primitives/Automap3DViewport.tsx`)**:
+   - Implements perspective & isometric camera projection, back-to-front depth sorting, directional face lighting, `'ghost_above' | 'isolate_z' | 'full_stack'` cutaway modes, and screen-space voxel/beacon hit-testing (`pickAutomapVoxelAtScreenPoint`).
+3. **Gameplay Modal, Editor Views & Standalone Offline HTML Atlas (`Automap3DModal.tsx`, `AreaEditor.tsx`, `WorldGraph.tsx`, `scripts/visualize-campaign.ts`)**:
+   - `<Automap3DModal />` (`UIMode.Automap`, `panel.automap` on `M` with `action.verb_menu` shifted to `Enter` + `Shift+M` via lossless v1/v2 migration) enforces explored fog-of-war with optional God-Mode reveal and persists player map pins (`GameState.automapNotes` / `SerializedGameState.automapNotes`).
+   - `<AreaEditor />` adds a `2D Slice | 3D Dungeon View` toggle (with fixed/rerollable seed preview), `<WorldGraph />` adds a `2D Topology Graph | 3D Campaign Atlas` toggle, and `bun run map:campaign --write` generates `docs/campaign_atlas_3d.html` alongside `docs/CAMPAIGN_TOPOLOGIES.md`.
+
+### 9.38 Dual-Pane Modal Scrolling, Content Provenance, Language Cipher, Social/Shove Verbs & 3-Tier Command Architecture (Phase 50, Milestones 190–192)
+
+1. **Dual-Pane Independent Scrollbars & Content Provenance (`ModalShell.tsx`, `src/types/campaign/meta.ts`, `src/utils/fuzzy_match.ts`)**:
+   - `ModalShell` `scrollMode="panes"` locks outer modal body scrolling so two-column wizards, spellbooks, sheets, trade, and dossier panels maintain independent per-pane scrollbars.
+   - `ContentSourceOriginSchema` (`'srd' | 'non_srd' | 'second_party' | 'third_party' | 'homebrew'`, default `'srd'`) annotates feats, spells, classes, races, items, and templates declaratively without Rule 21 ID branches, while `scoreFuzzyTextMatch` powers unified fuzzy filtering in `VerbMenuPopover`, Feats, and Skills steps.
+2. **Scoped Procedural Door Framing & Gateway Edge Portals (`src/map/generator_stages.ts`, `src/systems/map/map_generation_spawner.ts`)**:
+   - `generateDigger` enforces opposing solid wall frames (`W+E` or `N+S`) and blocks orthogonally adjacent doors strictly inside `ROT.Map.Digger`'s `r.getDoors()` loop, leaving magical portals, *Gate* spells, and area-edge transitions completely unconstrained.
+3. **Console Language System, D&D 3.5e Creature Speech & Stationary Shove (`src/systems/language.system.ts`, `src/rulesets/dnd35e/skills/language_comprehension.ts`, `src/systems/apply.system.ts`, `src/systems/movement_displacement.ts`)**:
+   - `evaluateActorDialogueComprehension` checks shared languages and delegates to `RulesetContract.evaluateLanguageComprehension` (`evaluateDnD35eLanguageComprehension`), deterministically rendering language-flavored phonetic ciphers (`obfuscateDialogueText`) in `DialogueModal` when uncomprehended while recognizing declarative `lang:speak_all`, `lang:comprehend_all`, `lang:speak_creature_type:<type>`, and `trait:telepathy` tags.
+   - `VERBS` exposes `'talk'`, `'attack'`, and `'shove'`, `isEntityImmovable` (`EntityTemplate.immovable` / `trait:immovable`) blocks forced displacement, and hostile `shove` delegates to stationary Bull Rush knockback via `RulesetContract.resolveShove`.
+4. **3-Tier Command Taxonomy & Default-Off Developer Debug Mode (`src/types/input.types.ts`, `src/core/settings.ts`, `src/core/input/command_catalog.ts`, `shortcut_input.ts`, `keybind_migration.ts`, `HelpModal.tsx`, `CommandDockCard.tsx`)**:
+   - Every command carries `tier: 'primary' | 'secondary' | 'tertiary'` plus optional `requiresDebugMode: true`, hiding Debug controls (`Alt+R`, `Alt+G`, `Alt+E`, `Alt+\``, and Omniscient 3D Automap reveal) unless `PlayerSettings.debugModeEnabled` is enabled in `SettingsModal`, with conflict-free `modern` and `classic_vi` presets and lossless `keybindRevision = 3` migration.
+
 ---
 
 ## 10. Key Design Decisions

@@ -28,6 +28,7 @@ export type DialogueOption = z.infer<typeof DialogueOptionSchema>;
 export const DialogueNodeSchema = z.object({
   id: z.string(),
   text: z.string(),
+  languageId: z.string().optional(),
   dynamicType: z.enum(['ask_about', 'gossip', 'trade', 'inject_rumor']).optional(),
   injectRumorId: z.string().optional(),
   onKnownNodeId: z.string().optional(),
@@ -42,6 +43,7 @@ export type DialogueNode = z.infer<typeof DialogueNodeSchema>;
 export const DialogueTreeSchema = z.object({
   id: z.string(),
   startNodeId: z.string(),
+  languageId: z.string().optional(),
   nodes: z.record(z.string(), DialogueNodeSchema)
 });
 

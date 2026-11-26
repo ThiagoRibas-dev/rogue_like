@@ -653,6 +653,39 @@ export interface RulesetContract {
     targetY: number,
     targetZ: number
   ): { readonly allowed: boolean; readonly reason?: string | undefined };
+
+  /**
+   * Optional hook evaluating whether `listenerId` can comprehend and speak with `speakerId`
+   * in `effectiveLanguageIds` (accounting for race languages, Speak Language ranks, and active
+   * communication spells/telepathy).
+   */
+  evaluateLanguageComprehension?(
+    state: Readonly<GameState>,
+    listenerId: EntityId,
+    speakerId: EntityId,
+    effectiveLanguageIds: ReadonlyArray<string>
+  ): LanguageComprehensionResult;
+
+  /**
+   * Optional hook resolving a hostile or forceful `shove` maneuver (e.g. stationary Bull Rush knockback in D&D 3.5e).
+   */
+  resolveShove?(state: GameState, actorId: EntityId, targetEntityId: EntityId): ShoveResolutionResult;
+}
+
+/** Result of evaluating language comprehension between a listener and speaker/text source. */
+export interface LanguageComprehensionResult {
+  readonly understood: boolean;
+  readonly canSpeakBack: boolean;
+  readonly activeLanguageId: string;
+  readonly comprehendedViaMagic?: boolean | undefined;
+  readonly comprehensionReason?: string | undefined;
+}
+
+/** Result of resolving a ruleset-driven shove/knockback action. */
+export interface ShoveResolutionResult {
+  readonly state: GameState;
+  readonly success: boolean;
+  readonly pushedSquares?: number | undefined;
 }
 
 /**

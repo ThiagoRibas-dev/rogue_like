@@ -7,11 +7,12 @@ import {
   clearCommandSlot,
   getBindingsForCommand,
   getCommandBindings,
+  getDebugModeEnabled,
   getSettings,
   rebindCommandSlot,
   resetCommandBindings
 } from '../../../core/settings.ts';
-import type { KeybindPresetId, KeyChord } from '../../../types/input.types.ts';
+import type { CommandTier, KeybindPresetId, KeyChord } from '../../../types/input.types.ts';
 import { useUiSelector } from '../core/ui_store.ts';
 import { Button } from '../primitives/Button.tsx';
 import { Badge, Chip } from '../primitives/DataDisplay.tsx';
@@ -41,6 +42,12 @@ const PRESET_OPTIONS: ReadonlyArray<SelectOption> = [
   { value: 'classic_vi', label: 'Classic Vi Preset (HJKL + YUBN)' }
 ];
 
+const TIER_LABELS: Readonly<Record<CommandTier, string>> = {
+  primary: 'Primary',
+  secondary: 'Secondary',
+  tertiary: 'Tertiary'
+};
+
 function isClearKeyChord(chord: KeyChord): boolean {
   const k = (chord.key ?? '').toLowerCase();
   return !chord.ctrl && !chord.alt && !chord.shift && !chord.meta && (k === 'backspace' || k === 'delete');
@@ -52,6 +59,8 @@ function isClearKeyChord(chord: KeyChord): boolean {
  */
 export function KeybindMatrix(): JSX.Element {
   const settingsVersion = useUiSelector((s) => s.settingsVersion);
+  const gameState = useUiSelector((s) => s.gameState);
+  const selectedRulesetId = useUiSelector((s) => s.selectedRulesetId);
   void settingsVersion;
 
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -85,9 +94,10 @@ export function KeybindMatrix(): JSX.Element {
 
   const settings = getSettings();
   const activePreset: KeybindPresetId = settings.keybindPreset ?? 'modern';
-  const allCommands = commandRegistry.getAllCommands();
+  const activeRulesetId = gameState?.campaign?.manifest?.rulesetId ?? (selectedRulesetId || undefined);
+  const allCommands = commandRegistry.getAllCommands(activeRulesetId);
   const allBindings = getCommandBindings();
-  const conflicts = commandRegistry.detectConflicts(allBindings);
+  const conflicts = commandRegistry.detectConflicts(allBindings, activeRulesetId);
 
   const conflictCommandSet = new Set<string>();
   for (const c of conflicts) {
@@ -206,6 +216,8 @@ export function KeybindMatrix(): JSX.Element {
         {filteredCommands.map((cmd) => {
           const slots = getBindingsForCommand(cmd.id);
           const hasConflict = conflictCommandSet.has(cmd.id);
+          const tier = cmd.tier ?? 'secondary';
+          const isDebugLocked = cmd.requiresDebugMode === true && !getDebugModeEnabled();
           return (
             <div
               key={cmd.id}
@@ -214,8 +226,10 @@ export function KeybindMatrix(): JSX.Element {
               data-conflict={hasConflict ? 'true' : undefined}
             >
               <div className="ui-keybind-info">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                   <span className="ui-keybind-label">{cmd.label}</span>
+                  <Badge tone={tier === 'primary' ? 'accent' : 'neutral'}>{TIER_LABELS[tier]}</Badge>
+                  {isDebugLocked ? <Badge tone="warning">Debug Mode Off</Badge> : null}
                   {hasConflict ? <Badge tone="warning">Conflict</Badge> : null}
                 </div>
                 <span className="ui-keybind-desc">{cmd.description}</span>

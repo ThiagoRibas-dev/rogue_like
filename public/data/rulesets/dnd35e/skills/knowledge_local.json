@@ -2,6 +2,7 @@
   "knowledge_local": {
     "id": "knowledge_local",
     "name": "Knowledge (Local)",
+    "skillGroup": "knowledge",
     "keyAbility": "int",
     "trainedOnly": true,
     "acpMultiplier": 0,

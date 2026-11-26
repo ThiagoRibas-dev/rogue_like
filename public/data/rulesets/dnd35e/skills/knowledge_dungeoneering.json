@@ -2,6 +2,7 @@
   "knowledge_dungeoneering": {
     "id": "knowledge_dungeoneering",
     "name": "Knowledge (Dungeoneering)",
+    "skillGroup": "knowledge",
     "keyAbility": "int",
     "trainedOnly": true,
     "acpMultiplier": 0,

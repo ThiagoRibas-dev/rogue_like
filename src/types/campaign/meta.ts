@@ -2,6 +2,33 @@ import { z } from 'zod';
 import { RulesetIdSchema } from '../ruleset.types.ts';
 import { AreaIlluminationEnum, FieldInteractionRuleSchema, RestPressureConfigSchema } from './world.ts';
 
+/**
+ * Canonical provenance tag identifying whether content originates from the SRD 3.5e,
+ * official non-SRD publications, 2nd-party supplements, 3rd-party OGL releases, or homebrew.
+ */
+export const ContentSourceOriginSchema = z.enum(['srd', 'non_srd', 'second_party', 'third_party', 'homebrew']);
+/** Inferred type for content provenance classification. */
+export type ContentSourceOrigin = z.infer<typeof ContentSourceOriginSchema>;
+
+/** Human-readable display labels for each {@link ContentSourceOrigin}. */
+export const CONTENT_SOURCE_ORIGIN_LABELS: Readonly<Record<ContentSourceOrigin, string>> = {
+  srd: 'SRD 3.5e',
+  non_srd: 'Non-SRD Official',
+  second_party: '2nd Party',
+  third_party: '3rd Party',
+  homebrew: 'Homebrew'
+};
+
+/**
+ * Formats a content provenance identifier into a human-readable badge label.
+ *
+ * @param origin Optional provenance identifier (defaults to `'srd'`).
+ * @returns Human-readable badge label.
+ */
+export function formatContentSourceOrigin(origin?: ContentSourceOrigin): string {
+  return CONTENT_SOURCE_ORIGIN_LABELS[origin ?? 'srd'];
+}
+
 /** Zod schema for the campaign manifest. */
 export const CampaignManifestSchema = z.object({
   id: z.string().regex(/^[a-z0-9-]+$/),

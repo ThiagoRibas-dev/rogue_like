@@ -51,8 +51,8 @@ export function SplitPane({
       className={className ? `ui-split-pane ${className}` : 'ui-split-pane'}
       style={{ gridTemplateColumns: `${leftWidth} ${rightWidth}` }}
     >
-      <div style={{ minWidth: 0, minHeight: 0, overflow: 'auto' }}>{left}</div>
-      <div style={{ minWidth: 0, minHeight: 0, overflow: 'auto' }}>{right}</div>
+      <div style={{ minWidth: 0, minHeight: 0 }}>{left}</div>
+      <div style={{ minWidth: 0, minHeight: 0 }}>{right}</div>
     </div>
   );
 }

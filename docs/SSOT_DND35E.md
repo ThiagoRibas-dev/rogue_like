@@ -7,6 +7,7 @@
 - [D&D 3.5e: Cartridge Adapters, Core & Validation (38 files)](#d-d-3-5e-cartridge-adapters-core-validation)
 - [D&D 3.5e: Character Builder, Progression & Ledger (24 files)](#d-d-3-5e-character-builder-progression-ledger)
 - [D&D 3.5e: Layer 1 — Math, Bonus Stacking & Stat DAG (8 files)](#d-d-3-5e-layer-1-math-bonus-stacking-stat-dag)
+- [D&D 3.5e: Layer 3 — Skills & Social Systems (1 files)](#d-d-3-5e-layer-3-skills-social-systems)
 - [D&D 3.5e: Layer 3 — Spatial Geometry & Senses (8 files)](#d-d-3-5e-layer-3-spatial-geometry-senses)
 - [D&D 3.5e: Layer 5 — Combat, Maneuvers & Damage (24 files)](#d-d-3-5e-layer-5-combat-maneuvers-damage)
 - [D&D 3.5e: Layer 6 — Vancian Magic & Fields (18 files)](#d-d-3-5e-layer-6-vancian-magic-fields)
@@ -106,6 +107,14 @@
 | `src/rulesets/dnd35e/modifiers/dag_resolver.ts` | `tier2_cartridge` | Orchestrates the 4-Stage Topological Actor Stat DAG (Size -> Abilities -> AC/Saves/HP/Speed -> Attack Routine & Skills). | `evaluateDnD35ActorStatDAG` | **Includes:** Pure implementation and exports for src/rulesets/dnd35e/modifiers/dag_resolver.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rulesets/dnd35e/modifiers/dag_resolver.ts. |
 | `src/rulesets/dnd35e/modifiers/provenance.ts` | `tier2_cartridge` | Hierarchical sourcePath provenance indexing, prefix revocation, and tag/condition matching for StatModifiers. | `getModifierSourcePath`, `appendSourcePath`, `buildEffectProvenanceIndex`, `revokeModifiersByPathPrefix` | **Includes:** Pure implementation and exports for src/rulesets/dnd35e/modifiers/provenance.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rulesets/dnd35e/modifiers/provenance.ts. |
 | `src/rulesets/dnd35e/modifiers/stacking_engine.ts` | `tier2_cartridge` | Resolves D&D 3.5e 18-type bonus stacking rules (stacking Dodge/Circumstance/Racial/Untyped vs. highest-wins named bonuses) with full audit breakdowns. | `resolveTypedModifiers`, `resolveTypedModifiersWithBreakdown` | **Includes:** Pure implementation and exports for src/rulesets/dnd35e/modifiers/stacking_engine.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rulesets/dnd35e/modifiers/stacking_engine.ts. |
+
+## D&D 3.5e: Layer 3 — Skills & Social Systems
+
+**Modules in this domain:** 1
+
+| File | Tier | Responsibility | Canonical Entry Points | Ownership Boundary (Includes / Excludes) | Anti-Patterns |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `src/rulesets/dnd35e/skills/language_comprehension.ts` | `tier2_cartridge` | Evaluates D&D 3.5e language comprehension across spoken tongues, non-speaking creature types (animal/plant/vermin/ooze/dead), and declarative spell/trait tags. | `evaluateDnD35eLanguageComprehension` | **Includes:** Pure D&D 3.5e language comprehension and creature-type speech evaluation.<br>**Excludes:** Console phonetic ciphering or DialogueModal DOM state. | • Do not branch on specific spell IDs instead of declarative lang:* and trait:* tags. |
 
 ## D&D 3.5e: Layer 3 — Spatial Geometry & Senses
 

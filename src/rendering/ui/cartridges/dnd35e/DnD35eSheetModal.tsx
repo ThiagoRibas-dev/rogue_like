@@ -114,6 +114,7 @@ export function DnD35eSheetModal({ state }: DnD35eSheetModalProps): JSX.Element 
       title={sheetModel.name || 'Character Sheet'}
       subtitle={`${sheetModel.raceName} • ${sheetModel.levelSummary}`}
       size="xl"
+      scrollMode="panes"
       showHelpHint
       onClose={handleClose}
     >

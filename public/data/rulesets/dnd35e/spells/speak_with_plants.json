@@ -1,0 +1,59 @@
+{
+  "speak_with_plants": {
+    "id": "speak_with_plants",
+    "name": "Speak with Plants",
+    "sourceOrigin": "srd",
+    "description": "You can comprehend and communicate with plants, including both normal plants and plant creatures.",
+    "level": 3,
+    "levelByClass": {
+      "bard": 4,
+      "druid": 3,
+      "ranger": 2
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "divination",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "personal",
+    "duration": "1 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectBundle": {
+      "bundleId": "speak_with_plants_bundle",
+      "name": "Speak with Plants",
+      "category": "trait",
+      "usageMode": "passive",
+      "modifiers": [],
+      "ruleOverrides": [],
+      "grantedTags": [
+        "lang:speak_creature_type:plant"
+      ],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": [],
+      "classSkillsAdded": [],
+      "grantedFeats": [],
+      "virtualFeatGrants": []
+    },
+    "tags": [
+      "divine",
+      "divination",
+      "language",
+      "plant"
+    ]
+  }
+}

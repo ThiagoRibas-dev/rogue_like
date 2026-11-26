@@ -2,6 +2,7 @@
   "knowledge_geography": {
     "id": "knowledge_geography",
     "name": "Knowledge (Geography)",
+    "skillGroup": "knowledge",
     "keyAbility": "int",
     "trainedOnly": true,
     "acpMultiplier": 0,

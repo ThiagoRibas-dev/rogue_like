@@ -1,8 +1,11 @@
 import type { JSX } from 'preact';
-import { useEffect, useRef, useState } from 'preact/hooks';
+import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
+import { DEFAULT_ATLAS_PREVIEW_SEED } from '../../../../constants/automap3d.constants.ts';
 import { rng } from '../../../../core/rng.ts';
 import type { CampaignData } from '../../../../types/campaign.types.ts';
-import { Checkbox } from '../../primitives/FormControls.tsx';
+import { buildCampaignHolisticScene3D } from '../../../automap3d/automap3d_holistic.ts';
+import { Automap3DViewport } from '../../primitives/Automap3DViewport.tsx';
+import { Checkbox, NumberInput } from '../../primitives/FormControls.tsx';
 import { drawWorldGraph, type GraphEdge, type GraphNode, stepWorldGraphSimulation } from '../../world_graph_canvas.ts';
 
 const DRAG_CLICK_THRESHOLD_PX = 4;
@@ -14,9 +17,12 @@ export interface WorldGraphProps {
 }
 
 /**
- * Interactive force-directed World Graph previewing Area portal topology and Social Overlays.
+ * Interactive force-directed World Graph & Holistic Fixed-Seed 3D Campaign Atlas
+ * previewing Area portal topology, multi-Z depth stacking, and Social Overlays.
  */
 export function WorldGraph({ doc, onSelectNode }: WorldGraphProps): JSX.Element {
+  const [viewMode, setViewMode] = useState<'2d_graph' | '3d_atlas'>('2d_graph');
+  const [atlasSeed, setAtlasSeed] = useState<number>(DEFAULT_ATLAS_PREVIEW_SEED);
   const [showSocialGraph, setShowSocialGraph] = useState<boolean>(false);
   const showSocialRef = useRef<boolean>(false);
   showSocialRef.current = showSocialGraph;
@@ -27,7 +33,13 @@ export function WorldGraph({ doc, onSelectNode }: WorldGraphProps): JSX.Element 
   const wrapperRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
+  const holisticScene = useMemo(() => {
+    if (viewMode !== '3d_atlas') return null;
+    return buildCampaignHolisticScene3D(doc, { seed: atlasSeed });
+  }, [doc, viewMode, atlasSeed]);
+
   useEffect(() => {
+    if (viewMode !== '2d_graph') return;
     const wrapper = wrapperRef.current;
     const canvas = canvasRef.current;
     if (!wrapper || !canvas) return;
@@ -192,22 +204,67 @@ export function WorldGraph({ doc, onSelectNode }: WorldGraphProps): JSX.Element 
       canvas.removeEventListener('mouseup', onMouseUp);
       canvas.removeEventListener('mouseleave', onMouseLeave);
     };
-  }, [doc]);
+  }, [doc, viewMode]);
 
   return (
     <div className="ui-editor-world-graph">
       <div className="ui-editor-world-graph__header">
         <div>
-          <h3>Overworld Topology</h3>
+          <h3>{viewMode === '3d_atlas' ? 'Holistic 3D Campaign Atlas' : 'Overworld Topology'}</h3>
           <p className="ui-editor-muted">
-            Nodes represent areas. Lines represent portal connections. Red nodes are unreachable from spawn.
+            {viewMode === '3d_atlas'
+              ? 'All campaign areas stacked deterministically in 3D space. Double-click any area cluster to open it in AreaEditor.'
+              : 'Nodes represent areas. Lines represent portal connections. Red nodes are unreachable from spawn.'}
           </p>
         </div>
-        <Checkbox label="Show Social Overlay" checked={showSocialGraph} onChange={setShowSocialGraph} />
+
+        <div className="ui-editor-row">
+          <button
+            type="button"
+            className="ui-chip"
+            aria-pressed={viewMode === '2d_graph'}
+            onClick={() => setViewMode('2d_graph')}
+          >
+            2D Topology Graph
+          </button>
+          <button
+            type="button"
+            className="ui-chip"
+            aria-pressed={viewMode === '3d_atlas'}
+            onClick={() => setViewMode('3d_atlas')}
+          >
+            3D Campaign Atlas
+          </button>
+
+          {viewMode === '2d_graph' ? (
+            <Checkbox label="Show Social Overlay" checked={showSocialGraph} onChange={setShowSocialGraph} />
+          ) : (
+            <div className="ui-editor-row">
+              <span className="ui-editor-muted">Seed:</span>
+              <NumberInput
+                ariaLabel="Holistic atlas preview seed"
+                value={atlasSeed}
+                step={1}
+                onChange={(val) => setAtlasSeed(Math.floor(val))}
+              />
+            </div>
+          )}
+        </div>
       </div>
-      <div ref={wrapperRef} className="ui-editor-canvas-stage ui-editor-stage--tall">
-        <canvas ref={canvasRef} className="ui-editor-stage__canvas" />
-      </div>
+
+      {viewMode === '3d_atlas' && holisticScene ? (
+        <Automap3DViewport
+          scene={holisticScene}
+          initialCutaway="full_stack"
+          heightPx={540}
+          onActivateCluster={onSelectNode}
+          dataTestId="editor-world-atlas-3d"
+        />
+      ) : (
+        <div ref={wrapperRef} className="ui-editor-canvas-stage ui-editor-stage--tall">
+          <canvas ref={canvasRef} className="ui-editor-stage__canvas" />
+        </div>
+      )}
     </div>
   );
 }

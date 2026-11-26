@@ -1,0 +1,59 @@
+{
+  "speak_with_animals": {
+    "id": "speak_with_animals",
+    "name": "Speak with Animals",
+    "sourceOrigin": "srd",
+    "description": "You can comprehend and communicate with animals, able to ask questions of and receive answers from them.",
+    "level": 1,
+    "levelByClass": {
+      "bard": 3,
+      "druid": 1,
+      "ranger": 1
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "divination",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "personal",
+    "duration": "1 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectBundle": {
+      "bundleId": "speak_with_animals_bundle",
+      "name": "Speak with Animals",
+      "category": "trait",
+      "usageMode": "passive",
+      "modifiers": [],
+      "ruleOverrides": [],
+      "grantedTags": [
+        "lang:speak_creature_type:animal"
+      ],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": [],
+      "classSkillsAdded": [],
+      "grantedFeats": [],
+      "virtualFeatGrants": []
+    },
+    "tags": [
+      "divine",
+      "divination",
+      "language",
+      "animal"
+    ]
+  }
+}

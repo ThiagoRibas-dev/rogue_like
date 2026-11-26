@@ -10,7 +10,14 @@ import {
   triggerSaveExportDownload,
   triggerTelemetryDownload
 } from '../../../core/session/session_settings.ts';
-import { getSettings, resetSettings, updateAutoPause, updateSettings } from '../../../core/settings.ts';
+import {
+  getDebugModeEnabled,
+  getSettings,
+  resetSettings,
+  setDebugModeEnabled,
+  updateAutoPause,
+  updateSettings
+} from '../../../core/settings.ts';
 import type { SpritePackCatalog } from '../../../types/campaign.types.ts';
 import { UIMode } from '../../../types/game-state.types.ts';
 import { DEFAULT_PREFERRED_SPRITE_PACK } from '../../../utils/sprite_pack.ts';
@@ -272,40 +279,58 @@ export function SettingsModal(): JSX.Element | null {
         ) : null}
 
         {activeTab === 'data' ? (
-          <Panel title="Save Files, Replay Logs & Diagnostics">
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-              <Button
-                variant="secondary"
-                size="md"
-                disabled={!hasSave}
-                onClick={(): void => triggerSaveExportDownload()}
-              >
-                Export Save JSON
-              </Button>
-              <Button variant="secondary" size="md" onClick={(): void => fileInputRef.current?.click()}>
-                Import Save JSON
-              </Button>
-              {hasActiveRun ? (
-                <Button variant="secondary" size="md" onClick={(): void => triggerReplayDownload()}>
-                  Download Active Replay
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <Panel title="Save Files, Replay Logs & Diagnostics">
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                <Button
+                  variant="secondary"
+                  size="md"
+                  disabled={!hasSave}
+                  onClick={(): void => triggerSaveExportDownload()}
+                >
+                  Export Save JSON
                 </Button>
-              ) : null}
-              <Button variant="secondary" size="md" onClick={(): void => triggerTelemetryDownload()}>
-                Export Telemetry Snapshot
-              </Button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".json"
-                style={{ display: 'none' }}
-                onChange={(e): void => {
-                  const target = e.currentTarget;
-                  const file = target.files?.[0];
-                  if (file) void importSaveFromFile(file).finally(() => (target.value = ''));
-                }}
-              />
-            </div>
-          </Panel>
+                <Button variant="secondary" size="md" onClick={(): void => fileInputRef.current?.click()}>
+                  Import Save JSON
+                </Button>
+                {hasActiveRun ? (
+                  <Button variant="secondary" size="md" onClick={(): void => triggerReplayDownload()}>
+                    Download Active Replay
+                  </Button>
+                ) : null}
+                <Button variant="secondary" size="md" onClick={(): void => triggerTelemetryDownload()}>
+                  Export Telemetry Snapshot
+                </Button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".json"
+                  style={{ display: 'none' }}
+                  onChange={(e): void => {
+                    const target = e.currentTarget;
+                    const file = target.files?.[0];
+                    if (file) void importSaveFromFile(file).finally(() => (target.value = ''));
+                  }}
+                />
+              </div>
+            </Panel>
+
+            <Panel title="Developer & Debug Mode">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <Checkbox
+                  id="setting-debug-mode"
+                  checked={getDebugModeEnabled()}
+                  label="Enable Developer Debug Mode (Alt+R Reveal Map, Alt+G God Mode, Alt+E Spawn Entity, Alt+` Telemetry, Omniscient Automap)"
+                  onChange={(checked): void => {
+                    setDebugModeEnabled(checked);
+                  }}
+                />
+                <span className="ui-field__hint">
+                  Disabled by default so regular play never accidentally triggers map reveal or cheat shortcuts.
+                </span>
+              </div>
+            </Panel>
+          </div>
         ) : null}
 
         {activeTab === 'credits' ? (

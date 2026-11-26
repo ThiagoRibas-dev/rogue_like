@@ -2,6 +2,7 @@
   "knowledge_nobility": {
     "id": "knowledge_nobility",
     "name": "Knowledge (Nobility and Royalty)",
+    "skillGroup": "knowledge",
     "keyAbility": "int",
     "trainedOnly": true,
     "acpMultiplier": 0,

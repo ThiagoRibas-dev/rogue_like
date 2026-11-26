@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { EquipmentSlotEnum } from './item.ts';
+import { ContentSourceOriginSchema } from './meta.ts';
 import { KnowledgeItemSchema, RumorItemSchema, LeverageTypeEnum } from './social.ts';
 
 /** Zod schema describing entity template configs. */
@@ -10,8 +11,12 @@ export const EntityTemplateSchema = z.object({
   fg: z.string(),
   bg: z.string(),
   spriteId: z.string().optional(),
+  sourceOrigin: ContentSourceOriginSchema.optional(),
   isActor: z.boolean(),
   speed: z.number().int().positive().optional(),
+  languages: z.array(z.string()).optional(),
+  primaryLanguage: z.string().optional(),
+  immovable: z.boolean().optional(),
   fighter: z
     .object({
       maxHp: z.number().int().positive(),

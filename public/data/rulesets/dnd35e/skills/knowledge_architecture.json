@@ -2,6 +2,7 @@
   "knowledge_architecture": {
     "id": "knowledge_architecture",
     "name": "Knowledge (Architecture and Engineering)",
+    "skillGroup": "knowledge",
     "keyAbility": "int",
     "trainedOnly": true,
     "acpMultiplier": 0,

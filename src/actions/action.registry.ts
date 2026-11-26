@@ -126,6 +126,34 @@ export function dispatchAction(
       return { state: toggleModal(state, UIMode.Ledger), success: false };
     case IntentType.ToggleLegends:
       return { state: toggleModal(state, UIMode.Legends), success: false };
+    case IntentType.ToggleAutomap:
+      return { state: toggleModal(state, UIMode.Automap), success: false };
+    case IntentType.SetAutomapNote: {
+      const existing = state.automapNotes ?? [];
+      const trimmed = intent.label?.trim() ?? '';
+      const filtered = existing.filter(
+        (n) => !(n.areaId === intent.areaId && n.x === intent.x && n.y === intent.y && n.z === intent.z)
+      );
+      const nextNotes =
+        trimmed.length === 0
+          ? filtered
+          : [
+              ...filtered,
+              {
+                id: `note_${intent.areaId}_${intent.x}_${intent.y}_${intent.z}`,
+                areaId: intent.areaId,
+                x: intent.x,
+                y: intent.y,
+                z: intent.z,
+                label: trimmed,
+                createdTurn: state.globalTurn
+              }
+            ];
+      return {
+        state: { ...state, automapNotes: nextNotes },
+        success: false
+      };
+    }
     case IntentType.ToggleCartridgeModal:
       return { state: toggleModal(state, UIMode.CartridgeModal, intent.modalId), success: false };
 

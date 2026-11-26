@@ -250,17 +250,60 @@ export function carveRoomsAndPortals(
       });
     }
 
+    const portalCoordKeys = new Set<string>(portals.map((p) => `${p.x},${p.y}`));
+    const isWallAt = (x: number, y: number): boolean => {
+      if (x < 0 || y < 0 || x >= width || y >= height) return true;
+      return tiles[coordToIndex(x, y, width)]?.tileId === palette.wall;
+    };
+    const diggerDoorCandidates: Array<{ readonly x: number; readonly y: number }> = [];
+    const seenCandidateKeys = new Set<string>();
+    for (const r of diggerRooms) {
+      r.getDoors((dx: number, dy: number) => {
+        const key = `${dx},${dy}`;
+        if (seenCandidateKeys.has(key)) return;
+        seenCandidateKeys.add(key);
+        diggerDoorCandidates.push({ x: dx, y: dy });
+      });
+    }
+
+    const acceptedDiggerDoorKeys = new Set<string>();
+    for (const candidate of diggerDoorCandidates) {
+      const { x: dx, y: dy } = candidate;
+      if (dx <= 0 || dx >= width - 1 || dy <= 0 || dy >= height - 1) continue;
+      const key = `${dx},${dy}`;
+      if (portalCoordKeys.has(key)) continue;
+
+      const hasHorizontalWallFrame =
+        isWallAt(dx - 1, dy) && isWallAt(dx + 1, dy) && !isWallAt(dx, dy - 1) && !isWallAt(dx, dy + 1);
+      const hasVerticalWallFrame =
+        isWallAt(dx, dy - 1) && isWallAt(dx, dy + 1) && !isWallAt(dx - 1, dy) && !isWallAt(dx + 1, dy);
+      if (!hasHorizontalWallFrame && !hasVerticalWallFrame) continue;
+
+      const hasAdjacentDoor =
+        acceptedDiggerDoorKeys.has(`${dx - 1},${dy}`) ||
+        acceptedDiggerDoorKeys.has(`${dx + 1},${dy}`) ||
+        acceptedDiggerDoorKeys.has(`${dx},${dy - 1}`) ||
+        acceptedDiggerDoorKeys.has(`${dx},${dy + 1}`);
+      if (hasAdjacentDoor) continue;
+
+      acceptedDiggerDoorKeys.add(key);
+    }
+
+    for (const doorKey of acceptedDiggerDoorKeys) {
+      const [dxStr, dyStr] = doorKey.split(',');
+      const dx = Number(dxStr);
+      const dy = Number(dyStr);
+      const idx = coordToIndex(dx, dy, width);
+      const tile = tiles[idx];
+      if (tile) {
+        tiles[idx] = { ...tile, tileId: palette.floor };
+        finalPlacedEntities.push({ templateId: palette.door, x: dx, y: dy });
+      }
+    }
+
     const subBiomeEntries = areaDef.subBiomes ? Object.entries(areaDef.subBiomes) : [];
     parsedRooms = diggerRooms.map((r, index) => {
       const isSafe = index === 0;
-      r.getDoors((dx: number, dy: number) => {
-        const idx = coordToIndex(dx, dy, width);
-        const tile = tiles[idx];
-        if (tile) {
-          tiles[idx] = { ...tile, tileId: palette.floor };
-          finalPlacedEntities.push({ templateId: palette.door, x: dx, y: dy });
-        }
-      });
 
       const roomTags: string[] = [];
       if (!isSafe && subBiomeEntries.length > 0) {

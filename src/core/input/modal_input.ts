@@ -1,9 +1,10 @@
 import { type EntityId, type GameState, UIMode } from '../../types/game-state.types.ts';
-import { isAction, getCommandBindings, type ActionType } from '../settings.ts';
+import { isAction, getCommandBindings, getDebugModeEnabled, type ActionType } from '../settings.ts';
 import { queuePlayerIntent, setGameState } from '../game-loop.ts';
 import { commandRegistry, matchesChord } from './command_registry.ts';
 import { createApplyAction } from '../../actions/interaction.actions.ts';
 import {
+  createToggleAutomapAction,
   createToggleCartridgeModalAction,
   createToggleDebugAction,
   createToggleDossierAction,
@@ -16,6 +17,7 @@ import {
 } from '../../actions/core.actions.ts';
 import { getActiveCartridgeUI } from '../../rendering/ui/cartridge_ui_registry.ts';
 import { resolveDialogueTree } from '../../systems/dialogue.system.ts';
+import { evaluateActorDialogueComprehension } from '../../systems/language.system.ts';
 import { evaluateCondition } from '../../systems/trigger.system.ts';
 import { GameEventType, type DialogueSelectedEvent } from '../../types/events.types.ts';
 import { IntentType } from '../../types/intents/intent.enum.ts';
@@ -42,15 +44,36 @@ const MAX_NUMERIC_DIALOGUE_SHORTCUT = 9;
  * `Inventory`, `VerbMenu`, `Dialogue`, `Trade`, and `Services` are handled by dedicated branches below.
  */
 const MODAL_BINDINGS: ReadonlyArray<ModalBinding> = [
-  { mode: UIMode.Debug, buildToggleIntent: createToggleDebugAction },
+  { mode: UIMode.Debug, buildToggleIntent: createToggleDebugAction, commandId: 'panel.debug' },
   { mode: UIMode.Settings, buildToggleIntent: createToggleSettingsAction },
   { mode: UIMode.Factions, buildToggleIntent: createToggleFactionsAction, shortcut: 'factions' },
   { mode: UIMode.Quests, buildToggleIntent: createToggleQuestsAction, shortcut: 'quests' },
   { mode: UIMode.Investigation, buildToggleIntent: createToggleInvestigationAction, shortcut: 'investigation' },
   { mode: UIMode.Dossier, buildToggleIntent: createToggleDossierAction, shortcut: 'dossier' },
   { mode: UIMode.Ledger, buildToggleIntent: createToggleLedgerAction, shortcut: 'ledger' },
-  { mode: UIMode.Legends, buildToggleIntent: createToggleLegendsAction, commandId: 'panel.legends' }
+  { mode: UIMode.Legends, buildToggleIntent: createToggleLegendsAction, commandId: 'panel.legends' },
+  {
+    mode: UIMode.Automap,
+    buildToggleIntent: createToggleAutomapAction,
+    shortcut: 'automap',
+    commandId: 'panel.automap'
+  }
 ];
+
+function matchesModalBinding(event: KeyboardEvent, candidate: ModalBinding): boolean {
+  if (candidate.commandId !== undefined) {
+    const cmdDef = commandRegistry.getCommand(candidate.commandId);
+    if (cmdDef?.requiresDebugMode === true && !getDebugModeEnabled()) {
+      return false;
+    }
+  }
+  if (candidate.shortcut !== undefined && isAction(event, candidate.shortcut)) return true;
+  if (candidate.commandId !== undefined) {
+    const chords = commandRegistry.getEffectiveBindings(candidate.commandId, getCommandBindings());
+    return chords.some((chord) => matchesChord(event, chord));
+  }
+  return false;
+}
 
 /**
  * Reports whether a UI mode is a modal overlay that captures all keyboard input.
@@ -139,8 +162,8 @@ export function handleModalKey(event: KeyboardEvent, state: GameState, playerEnt
       }
     }
 
-    const hasModifierKey = event.shiftKey || event.altKey || event.ctrlKey || event.metaKey;
-    if (!hasModifierKey && cartridgeUI?.dockCommands) {
+    const hasSystemModifierKey = event.altKey || event.ctrlKey || event.metaKey;
+    if (!hasSystemModifierKey && cartridgeUI?.dockCommands) {
       const overrides = getCommandBindings();
       const match = cartridgeUI.dockCommands.find((cmd) => {
         const cmdId = cmd.commandId ?? cmd.id;
@@ -148,7 +171,7 @@ export function handleModalKey(event: KeyboardEvent, state: GameState, playerEnt
         if (registeredChords.length > 0) {
           return registeredChords.some((chord) => matchesChord(event, chord));
         }
-        return event.key.toLowerCase() === cmd.defaultKey.toLowerCase();
+        return !event.shiftKey && event.key.toLowerCase() === cmd.defaultKey.toLowerCase();
       });
       if (match) {
         if (match.modalId !== activeModalId && match.isAvailable && !match.isAvailable(state, playerEntityId)) {
@@ -164,22 +187,11 @@ export function handleModalKey(event: KeyboardEvent, state: GameState, playerEnt
       }
     }
 
-    const matchNestedModalShortcut = (candidate: ModalBinding): boolean => {
-      if (candidate.shortcut !== undefined && isAction(event, candidate.shortcut)) return true;
-      if (candidate.commandId !== undefined) {
-        const chords = commandRegistry.getEffectiveBindings(candidate.commandId, getCommandBindings());
-        return chords.some((chord) => matchesChord(event, chord));
-      }
-      return false;
-    };
-
-    if (!event.altKey && !event.ctrlKey && !event.metaKey) {
-      const nestedBinding = MODAL_BINDINGS.find(matchNestedModalShortcut);
-      if (nestedBinding !== undefined) {
-        event.preventDefault();
-        queuePlayerIntent(nestedBinding.buildToggleIntent(playerEntityId));
-        return;
-      }
+    const nestedBinding = MODAL_BINDINGS.find((candidate) => matchesModalBinding(event, candidate));
+    if (nestedBinding !== undefined) {
+      event.preventDefault();
+      queuePlayerIntent(nestedBinding.buildToggleIntent(playerEntityId));
+      return;
     }
 
     if (handlesInventoryHotkeys) {
@@ -199,14 +211,7 @@ export function handleModalKey(event: KeyboardEvent, state: GameState, playerEnt
 
   // Another modal's shortcut opens it on top of the current one, enabling true
   // LIFO nesting (e.g. Dossier opened from the Investigation board).
-  const nestedBinding = MODAL_BINDINGS.find((candidate) => {
-    if (candidate.shortcut !== undefined && isAction(event, candidate.shortcut)) return true;
-    if (candidate.commandId !== undefined) {
-      const chords = commandRegistry.getEffectiveBindings(candidate.commandId, getCommandBindings());
-      return chords.some((chord) => matchesChord(event, chord));
-    }
-    return false;
-  });
+  const nestedBinding = MODAL_BINDINGS.find((candidate) => matchesModalBinding(event, candidate));
   if (nestedBinding === undefined) return;
 
   event.preventDefault();
@@ -239,6 +244,18 @@ function handleDialogueKey(event: KeyboardEvent, state: GameState, playerEntityI
   const tree = resolveDialogueTree(state, treeId, npcEntityId);
   const node = tree?.nodes[currentNodeId];
   if (!node) return;
+
+  const comprehension = evaluateActorDialogueComprehension(
+    state,
+    playerEntityId,
+    npcEntityId,
+    node.languageId,
+    tree?.languageId,
+    treeId
+  );
+  if (!comprehension.understood || !comprehension.canSpeakBack) {
+    return;
+  }
 
   const visibleOptions = node.options.filter((option) => {
     if (!option.conditions || option.conditions.length === 0) return true;

@@ -306,7 +306,8 @@ export function serializeGameState(state: GameState): SerializedGameState {
     dramaTracker: sanitized.dramaTracker,
     telemetry: getTelemetryStore(),
     ...(sanitized.colonyState !== undefined ? { colonyState: sanitized.colonyState } : {}),
-    ...(sanitized.macroWorld !== undefined ? { macroWorld: sanitized.macroWorld } : {})
+    ...(sanitized.macroWorld !== undefined ? { macroWorld: sanitized.macroWorld } : {}),
+    ...(sanitized.automapNotes && sanitized.automapNotes.length > 0 ? { automapNotes: sanitized.automapNotes } : {})
   };
 }
 
@@ -521,7 +522,8 @@ export function deserializeGameState(
             lastDispatchedTick: Math.min(sState.macroWorld.lastDispatchedTick, sState.macroWorld.currentTick)
           }
         }
-      : {})
+      : {}),
+    ...(sState.automapNotes && sState.automapNotes.length > 0 ? { automapNotes: sState.automapNotes } : {})
   };
 
   setTelemetryStore(stateWithoutIndex.telemetry);

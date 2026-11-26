@@ -10,6 +10,7 @@ import type { RoomBounds } from './encounter.types.ts';
 import type { ColonySimulationState } from './colony.types.ts';
 import type { MacroWorldState } from './macro_world.types.ts';
 import type { ChunkedWorldGrid, SerializedStreamingWorldState } from './world-chunk.types.ts';
+import type { AutomapNote } from './automap3d.types.ts';
 
 /**
  * Enum defining the engine mode.
@@ -44,6 +45,7 @@ export const enum UIMode {
   Services = 'services',
   Ledger = 'ledger',
   Legends = 'legends',
+  Automap = 'automap',
   CartridgeModal = 'cartridge_modal'
 }
 
@@ -321,6 +323,8 @@ export interface GameState {
   readonly telemetry: TelemetryMetrics;
   readonly colonyState?: ColonySimulationState | undefined;
   readonly macroWorld?: MacroWorldState | undefined;
+  /** Player-pinned 3D automap notes stored across areas and Z-levels. */
+  readonly automapNotes?: ReadonlyArray<AutomapNote> | undefined;
 }
 
 /**
@@ -411,4 +415,5 @@ export interface SerializedGameState {
   readonly streamingState?: SerializedStreamingWorldState | undefined;
   readonly colonyState?: ColonySimulationState | undefined;
   readonly macroWorld?: MacroWorldState | undefined;
+  readonly automapNotes?: ReadonlyArray<AutomapNote> | undefined;
 }

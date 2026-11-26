@@ -266,6 +266,7 @@ function DnD35eCharBuilderWizardInner({ state }: DnD35eCharBuilderModalProps): J
       title="⚔️ D&D 3.5e Character Creation"
       subtitle="Build your Level 1 adventurer across Race, Class, Abilities, Skills, Feats, Spells & Equipment"
       size="xl"
+      scrollMode="panes"
       showCloseButton={false}
       closeOnBackdrop={false}
       footer={footer}

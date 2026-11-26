@@ -129,14 +129,20 @@ export function DnD35eLevelUpModal({ state }: DnD35eLevelUpModalProps): JSX.Elem
 
   const tabsMeta: Array<{ readonly id: LevelUpTabId; readonly label: string }> = [
     { id: 'class', label: `1. Class & HP (HD ${nextCharLevel})` },
-    { id: 'skills', label: `2. Skills (${skillRemaining}/${skillBudget} pts)` },
-    { id: 'feats', label: `3. Feats (${effectiveDraft.selectedFeats.length}/${totalFeatSlots})` }
+    { id: 'skills', label: `2. Skills (${skillRemaining}/${skillBudget} pts)` }
   ];
-  spellTabs.forEach((st, idx) => {
+  if (totalFeatSlots > 0) {
+    tabsMeta.push({
+      id: 'feats',
+      label: `3. Feats (${effectiveDraft.selectedFeats.length}/${totalFeatSlots})`
+    });
+  }
+  spellTabs.forEach((st) => {
     const pickedCount =
       effectiveDraft.learnedSpellsByClass?.[st.classId]?.length ??
       (st.classId === activeCls.id ? (effectiveDraft.learnedSpells ?? []).length : 0);
-    tabsMeta.push({ id: st.tabId, label: `${4 + idx}. ${st.className} Spells (${pickedCount})` });
+    const stepNum = tabsMeta.length + 1;
+    tabsMeta.push({ id: st.tabId, label: `${stepNum}. ${st.className} Spells (${pickedCount})` });
   });
 
   const resolvedTab: LevelUpTabId = tabsMeta.some((t) => t.id === activeTab) ? activeTab : 'class';
@@ -247,8 +253,13 @@ export function DnD35eLevelUpModal({ state }: DnD35eLevelUpModalProps): JSX.Elem
   return (
     <ModalShell
       title={`⭐ Level Up Advancement (Hit Die ${nextCharLevel})`}
-      subtitle="Choose advancing class track, skill ranks, feats, and new spells"
+      subtitle={
+        totalFeatSlots > 0
+          ? 'Choose advancing class track, skill ranks, feats, and new spells'
+          : 'Choose advancing class track, skill ranks, and new spells'
+      }
       size="xl"
+      scrollMode="panes"
       onClose={handleClose}
       footer={footer}
     >

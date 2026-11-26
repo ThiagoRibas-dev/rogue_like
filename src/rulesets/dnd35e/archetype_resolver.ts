@@ -170,6 +170,9 @@ export function hydrateArchetypeData(
     skillRanks: archetype.skillRanks,
     ...(archetype.creatureType !== undefined ? { creatureType: archetype.creatureType } : {}),
     subtypes,
+    ...(raceDef?.automaticLanguages && raceDef.automaticLanguages.length > 0
+      ? { languages: [...raceDef.automaticLanguages] }
+      : {}),
     levelAdjustment: archetype.levelAdjustment ?? 0,
     ...(scalingPools !== undefined ? { scalingPools } : {}),
     ...(activeClassFeatures !== undefined ? { activeClassFeatures } : {}),

@@ -1,15 +1,20 @@
 import type { JSX } from 'preact';
-import { useEffect, useRef, useState } from 'preact/hooks';
+import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type * as ROT from 'rot-js';
+import { DEFAULT_ATLAS_PREVIEW_SEED } from '../../../../constants/automap3d.constants.ts';
 import type { EditorController } from '../../../../editor/campaign_editor.ts';
 import type { ValidationError } from '../../../../editor/validator/validator.types.ts';
 import type { GeneratedArea } from '../../../../map/generator.ts';
 import { getMapZBounds, getTileAt } from '../../../../map/map_accessor.ts';
+import { parseStaticMap } from '../../../../map/static-parser.ts';
 import { type AreaDefinition, AreaDefinitionSchema } from '../../../../types/campaign.types.ts';
+import { buildAreaVoxelScene3D } from '../../../automap3d/automap3d_scene.ts';
 import { createDisplay, drawCell } from '../../../display.ts';
 import { isEffectiveSpriteMode } from '../../../procedural_sprites.ts';
+import { Automap3DViewport } from '../../primitives/Automap3DViewport.tsx';
 import { Button } from '../../primitives/Button.tsx';
 import { Badge } from '../../primitives/DataDisplay.tsx';
+import { NumberInput } from '../../primitives/FormControls.tsx';
 import { ZodFormRenderer } from '../forms/ZodFormRenderer.tsx';
 import { AreaStaticPainter } from './AreaStaticPainter.tsx';
 
@@ -23,10 +28,14 @@ export interface AreaEditorProps {
 
 /**
  * Split-pane Area Editor pairing `<ZodFormRenderer schema={AreaDefinitionSchema} />`
- * with either Multi-Z `<AreaStaticPainter />` or Multi-Z Live Generator Sandbox.
+ * with either Multi-Z `<AreaStaticPainter />` / Live Generator Sandbox (2D Slice)
+ * or an interactive Daggerfall-style 3D Dungeon View across all Z-strata.
  */
 export function AreaEditor({ controller, area, basePath, errors }: AreaEditorProps): JSX.Element {
   const doc = controller.getDocument();
+  const [viewMode, setViewMode] = useState<'2d' | '3d'>('2d');
+  const [previewSeed, setPreviewSeed] = useState<number>(DEFAULT_ATLAS_PREVIEW_SEED);
+  const [isCustomSeed, setIsCustomSeed] = useState<boolean>(false);
   const [seedTick, setSeedTick] = useState<number>(0);
   const [displayReadyTick, setDisplayReadyTick] = useState<number>(0);
   const [previewZ, setPreviewZ] = useState<number>(0);
@@ -42,7 +51,7 @@ export function AreaEditor({ controller, area, basePath, errors }: AreaEditorPro
   const height = doc.rules.map.height || 20;
 
   useEffect(() => {
-    if (area.generatorType === 'static') return;
+    if (area.generatorType === 'static' || viewMode !== '2d') return;
     const container = sandboxContainerRef.current;
     if (!container) return;
 
@@ -62,9 +71,9 @@ export function AreaEditor({ controller, area, basePath, errors }: AreaEditorPro
       displayRef.current = null;
       container.replaceChildren();
     };
-  }, [area.generatorType, area.id, basePath, width, height]);
+  }, [area.generatorType, area.id, basePath, width, height, viewMode]);
 
-  // Effect 1: Generate procedural sandbox area (only when area/seedTick changes, never on Z-slice step)
+  // Effect 1: Generate procedural sandbox area (only when area/seed changes, never on Z-slice step)
   useEffect(() => {
     if (area.generatorType === 'static') {
       setGeneratedArea(null);
@@ -72,7 +81,11 @@ export function AreaEditor({ controller, area, basePath, errors }: AreaEditorPro
     }
 
     try {
-      const generated = controller.generateSandboxArea(area.id);
+      const effectiveSeed = previewSeed + seedTick;
+      const generated =
+        isCustomSeed && controller.generateSandboxAreaWithSeed
+          ? controller.generateSandboxAreaWithSeed(area.id, effectiveSeed)
+          : controller.generateSandboxArea(area.id);
       const bounds = getMapZBounds(generated.map);
       setGeneratedArea(generated);
       setZBounds(bounds);
@@ -123,12 +136,12 @@ export function AreaEditor({ controller, area, basePath, errors }: AreaEditorPro
       setGeneratedArea(null);
       setGenError(e instanceof Error ? e.message : 'Unknown error generating map.');
     }
-  }, [area, controller, doc, width, height, seedTick]);
+  }, [area, controller, doc, width, height, seedTick, previewSeed, isCustomSeed]);
 
   // Effect 2: Render the requested Z slice of the currently generated map without rerolling
   useEffect(() => {
     const display = displayRef.current;
-    if (!display || !generatedArea || area.generatorType === 'static') return;
+    if (!display || !generatedArea || area.generatorType === 'static' || viewMode !== '2d') return;
 
     display.clear();
     const clampedZ = Math.max(zBounds.minZ, Math.min(zBounds.maxZ, previewZ));
@@ -164,7 +177,49 @@ export function AreaEditor({ controller, area, basePath, errors }: AreaEditorPro
         spriteId: 'stairs_down'
       });
     }
-  }, [area.generatorType, generatedArea, zBounds, previewZ, doc, width, height, displayReadyTick]);
+  }, [area.generatorType, generatedArea, zBounds, previewZ, doc, width, height, displayReadyTick, viewMode]);
+
+  const local3DScene = useMemo(() => {
+    if (viewMode !== '3d') return null;
+
+    if (area.generatorType === 'static' && area.staticMap) {
+      const { map, parsedEntities } = parseStaticMap(area.staticMap);
+      const portals = (area.connections ?? []).map((conn, idx) => ({
+        x: conn.placementX ?? 1 + idx,
+        y: conn.placementY ?? 1,
+        ...(conn.placementZ !== undefined ? { z: conn.placementZ } : {}),
+        connection: conn
+      }));
+      return buildAreaVoxelScene3D({
+        areaId: area.id,
+        areaName: area.name,
+        generatorType: area.generatorType,
+        dangerRating: area.dangerRating,
+        map,
+        tiles: doc.tiles,
+        entities: doc.entities,
+        visibilityMode: 'full_omniscient',
+        portals,
+        placedEntities: [...(area.placedEntities ?? []), ...parsedEntities]
+      });
+    }
+
+    if (!generatedArea) return null;
+    return buildAreaVoxelScene3D({
+      areaId: area.id,
+      areaName: area.name,
+      generatorType: area.generatorType,
+      dangerRating: area.dangerRating,
+      map: generatedArea.map,
+      tiles: doc.tiles,
+      entities: doc.entities,
+      visibilityMode: 'full_omniscient',
+      startPos: generatedArea.startPos,
+      portals: generatedArea.portals,
+      placedEntities: generatedArea.placedEntities,
+      seed: previewSeed + seedTick
+    });
+  }, [viewMode, area, doc.tiles, doc.entities, generatedArea, previewSeed, seedTick]);
 
   const areaErrors = (errors ?? []).filter((e) => e.path.startsWith(basePath));
 
@@ -191,7 +246,48 @@ export function AreaEditor({ controller, area, basePath, errors }: AreaEditorPro
       </div>
 
       <div className="ui-editor-split__right">
-        {area.generatorType === 'static' ? (
+        <div className="ui-editor-z-toolbar" data-testid="editor-area-view-toggle">
+          <button type="button" className="ui-chip" aria-pressed={viewMode === '2d'} onClick={() => setViewMode('2d')}>
+            2D Slice
+          </button>
+          <button type="button" className="ui-chip" aria-pressed={viewMode === '3d'} onClick={() => setViewMode('3d')}>
+            3D Dungeon View
+          </button>
+          {area.generatorType !== 'static' ? (
+            <div className="ui-editor-row" style={{ marginLeft: 'auto' }}>
+              <span className="ui-editor-muted">Seed:</span>
+              <NumberInput
+                ariaLabel="Area preview seed"
+                value={previewSeed}
+                step={1}
+                onChange={(val) => {
+                  setPreviewSeed(Math.floor(val));
+                  setIsCustomSeed(true);
+                  setSeedTick(0);
+                }}
+              />
+              <Button
+                size="sm"
+                variant="primary"
+                onClick={() => {
+                  setIsCustomSeed(true);
+                  setSeedTick((t) => t + 1);
+                }}
+              >
+                Reroll Seed
+              </Button>
+            </div>
+          ) : null}
+        </div>
+
+        {viewMode === '3d' && local3DScene ? (
+          <Automap3DViewport
+            scene={local3DScene}
+            initialCutaway="ghost_above"
+            heightPx={480}
+            dataTestId="editor-area-local-3d"
+          />
+        ) : area.generatorType === 'static' ? (
           <AreaStaticPainter controller={controller} doc={doc} area={area} basePath={basePath} />
         ) : (
           <div className="ui-editor-sandbox-pane">
@@ -214,9 +310,6 @@ export function AreaEditor({ controller, area, basePath, errors }: AreaEditorPro
                   onClick={() => setPreviewZ((z) => Math.min(zBounds.maxZ, z + 1))}
                 >
                   Z+
-                </Button>
-                <Button size="sm" variant="primary" onClick={() => setSeedTick((t) => t + 1)}>
-                  Reroll Seed
                 </Button>
               </div>
             </div>

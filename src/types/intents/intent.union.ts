@@ -33,6 +33,8 @@ import type {
   GossipIntent,
   ToggleLedgerIntent,
   ToggleLegendsIntent,
+  ToggleAutomapIntent,
+  SetAutomapNoteIntent,
   ToggleCartridgeModalIntent
 } from './ui.intents.ts';
 
@@ -94,6 +96,8 @@ export type Intent =
   | SayIntent
   | ToggleLedgerIntent
   | ToggleLegendsIntent
+  | ToggleAutomapIntent
+  | SetAutomapNoteIntent
   | ToggleCartridgeModalIntent;
 
 /** Structure representing the result of executing an action handler. */

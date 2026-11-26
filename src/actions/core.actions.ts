@@ -22,6 +22,8 @@ import {
   type ToggleDossierIntent,
   type ToggleLedgerIntent,
   type ToggleLegendsIntent,
+  type ToggleAutomapIntent,
+  type SetAutomapNoteIntent,
   type ToggleCartridgeModalIntent
 } from '../types/intents/ui.intents.ts';
 
@@ -219,6 +221,40 @@ export function createToggleLegendsAction(entityId: EntityId): ToggleLegendsInte
   return {
     type: IntentType.ToggleLegends,
     entityId,
+    isImmediate: true
+  };
+}
+
+/**
+ * Creates a toggle 3D dungeon automap intent.
+ */
+export function createToggleAutomapAction(entityId: EntityId): ToggleAutomapIntent {
+  return {
+    type: IntentType.ToggleAutomap,
+    entityId,
+    isImmediate: true
+  };
+}
+
+/**
+ * Creates an intent to pin, update, or remove a persistent player note on the 3D automap.
+ */
+export function createSetAutomapNoteAction(
+  entityId: EntityId,
+  areaId: string,
+  x: number,
+  y: number,
+  z: number,
+  label: string | null
+): SetAutomapNoteIntent {
+  return {
+    type: IntentType.SetAutomapNote,
+    entityId,
+    areaId,
+    x,
+    y,
+    z,
+    label,
     isImmediate: true
   };
 }

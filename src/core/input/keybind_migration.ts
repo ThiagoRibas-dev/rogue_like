@@ -1,6 +1,6 @@
 import type { KeyChord, KeybindPresetId } from '../../types/input.types.ts';
 import { getKeybindPresetPatch } from './command_catalog.ts';
-import { commandRegistry, normalizeChord, parseLegacyKeyString } from './command_registry.ts';
+import { areChordsEqual, commandRegistry, normalizeChord, parseLegacyKeyString } from './command_registry.ts';
 
 /**
  * Legacy v1 ActionType strings mapped to canonical v2 CommandDefinition IDs.
@@ -26,6 +26,7 @@ export const ACTION_TO_COMMAND_ID: Readonly<Record<string, string>> = {
   verb_menu: 'action.verb_menu',
   dossier: 'panel.dossier',
   ledger: 'panel.ledger',
+  automap: 'panel.automap',
   character_sheet: 'panel.inventory',
   spellbook: 'dnd35e:spellbook',
   level_up: 'dnd35e:level_up'
@@ -34,12 +35,40 @@ export const ACTION_TO_COMMAND_ID: Readonly<Record<string, string>> = {
 /**
  * Stock v1 default key arrays used to detect untouched boilerplate entries during v1 -> v2 migration.
  */
-const STOCK_V1_DEFAULTS: Readonly<Record<string, ReadonlyArray<string>>> = {
-  move_north: ['arrowup', 'w', 'k', '8'],
-  move_south: ['arrowdown', 's', 'j', '2'],
-  move_west: ['arrowleft', 'a', 'h', '4'],
-  move_east: ['arrowright', 'd', 'l', '6'],
-  ledger: ['l']
+const STOCK_V1_DEFAULT_VARIANTS: Readonly<Record<string, ReadonlyArray<ReadonlyArray<string>>>> = {
+  move_north: [['arrowup', 'w', 'k', '8']],
+  move_south: [['arrowdown', 's', 'j', '2']],
+  move_west: [['arrowleft', 'a', 'h', '4']],
+  move_east: [['arrowright', 'd', 'l', '6']],
+  interact: [
+    ['<', '>', ',', '.'],
+    [',', '.']
+  ],
+  debug_reveal_map: [['r']],
+  debug_god_mode: [['o']],
+  debug_spawn_entity: [['e']],
+  factions: [['y'], ['l']],
+  investigation: [['v'], ['k']],
+  ledger: [['l']],
+  verb_menu: [['m'], ['m', 'enter'], ['enter', 'shift+m']],
+  level_up: [['l'], ['u']]
+};
+
+/**
+ * Untouched stock v2 bindings from pre-Phase 50 releases that would collide with revised
+ * Phase 50 defaults (`R` Rest, `E` Interact, `V` Verb Menu, `J` Factions, `Alt+*` Debug).
+ */
+const PRE_PHASE50_STOCK_V2_VARIANTS: Readonly<Record<string, ReadonlyArray<ReadonlyArray<KeyChord>>>> = {
+  'action.interact': [[{ key: ',' }, { key: '.' }]],
+  'combat.target_toggle': [[{ key: 'r' }]],
+  'action.verb_menu': [[{ code: 'Enter' }, { key: 'm', shift: true }], [{ key: 'm' }]],
+  'panel.investigation': [[{ key: 'v' }]],
+  'panel.factions': [[{ key: 'y' }], [{ key: 'f' }]],
+  'panel.debug': [[{ key: '`' }], [{ code: 'Backquote' }]],
+  'debug.reveal_map': [[{ key: 'r' }]],
+  'debug.god_mode': [[{ key: 'o' }]],
+  'debug.spawn_entity': [[{ key: 'e' }]],
+  'dnd35e:rest_8h': [[{ key: 't' }]]
 };
 
 function arraysEqualCaseInsensitive(a: ReadonlyArray<string>, b: ReadonlyArray<string>): boolean {
@@ -48,6 +77,38 @@ function arraysEqualCaseInsensitive(a: ReadonlyArray<string>, b: ReadonlyArray<s
     if ((a[i] ?? '').toLowerCase() !== (b[i] ?? '').toLowerCase()) return false;
   }
   return true;
+}
+
+function chordListsEqual(a: ReadonlyArray<KeyChord>, b: ReadonlyArray<KeyChord>): boolean {
+  if (a.length !== b.length) return false;
+  return a.every((chord, idx) => {
+    const other = b[idx];
+    return other !== undefined && areChordsEqual(chord, other);
+  });
+}
+
+/**
+ * Upgrades persisted v2 command bindings created prior to Phase 50 (`keybindRevision < 3`),
+ * replacing untouched stock defaults while preserving user-customized bindings.
+ */
+export function upgradePrePhase50CommandBindings(
+  bindings: Readonly<Record<string, ReadonlyArray<KeyChord>>>,
+  presetId: KeybindPresetId = 'modern'
+): Record<string, KeyChord[]> {
+  const defaults = buildDefaultCommandBindings(presetId);
+  const upgraded: Record<string, KeyChord[]> = {};
+  for (const [cmdId, chords] of Object.entries(bindings)) {
+    const stockVariants = PRE_PHASE50_STOCK_V2_VARIANTS[cmdId];
+    if (stockVariants !== undefined && stockVariants.some((variant) => chordListsEqual(chords, variant))) {
+      const replacement = defaults[cmdId];
+      if (replacement !== undefined) {
+        upgraded[cmdId] = replacement.map((c) => normalizeChord(c));
+        continue;
+      }
+    }
+    upgraded[cmdId] = chords.map((c) => normalizeChord(c));
+  }
+  return upgraded;
 }
 
 /**
@@ -87,9 +148,9 @@ export function migrateV1KeybindsToV2(
     if (!Array.isArray(rawKeys)) continue;
     const cmdId = ACTION_TO_COMMAND_ID[legacyAction] ?? legacyAction;
 
-    // Skip untouched stock v1 boilerplate entries that caused collisions (e.g. ledger=['l'], move_east=['...','l','6'])
-    const stockDefault = STOCK_V1_DEFAULTS[legacyAction];
-    if (stockDefault !== undefined && arraysEqualCaseInsensitive(rawKeys, stockDefault)) {
+    // Skip untouched stock v1 boilerplate entries that caused collisions (e.g. ledger=['l'], verb_menu=['m'])
+    const stockVariants = STOCK_V1_DEFAULT_VARIANTS[legacyAction];
+    if (stockVariants !== undefined && stockVariants.some((variant) => arraysEqualCaseInsensitive(rawKeys, variant))) {
       continue;
     }
 

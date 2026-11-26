@@ -1,115 +1,116 @@
-# Research Notes — Phase 44 (Milestones 169–172): Campaign Editor Rewrite on Shared Preact Primitives, Schema Auto-Discovery, Scoped Input & Unified Themes
+# Research Notes — UX Polish, Language & Social Verbs, Map Bug Fixes, and 3-Tier Command/Keybind Overhaul
 
-## 1. Rules & Architectural Standards Acknowledgement (`AGENTS.md` & `docs/ARCHITECTURE.md`)
-
-1. **Three-Tier Placement Heuristic (`AGENTS.md` Rule 16)**:
-   - **Tier 1 — Core Console Engine (`src/core/`, `src/editor/`, `src/rendering/ui/`, `src/types/`)**: The Campaign Editor (`src/editor/` pure controller + `src/rendering/ui/editor/` Preact presentation layer) is a Tier 1 Console facility that authors and validates any campaign regardless of ruleset (`classic` or `dnd35e`), querying `RulesetContract.getEditorViewGroups` / `getSystemContentFiles` / `validateCampaignRuleset` for cartridge extensions.
-2. **Zero Content-ID or Bespoke-Property Branching (`AGENTS.md` Rule 21 — The "New Content Mod" Litmus Test)**:
-   - Never hardcode parallel lists of campaign categories, foreign-key dropdowns, or per-category `"Where Used"` loops that require editing multiple `.ts` files whenever a schema property is added.
-   - Instead, derive `CampaignCategorySchemas`, `panelType` (`'dictionary'` vs `'singleton'`), foreign-key reference options, and `ReferenceIndex` (`"Where Used"`) directly from `CampaignDataSchema` (`src/types/campaign.types.ts`) and a single compile-time exhaustive `Record<keyof CampaignData, CampaignCategoryMeta>` registry.
-3. **Strict TypeScript & Zero `any` (`AGENTS.md` Rules 11, 12, 14 & §3)**:
-   - `exactOptionalPropertyTypes: true`, explicit return types on all functions, `readonly` properties, no magic numbers, flat control flow, and JSDoc on all exported symbols.
-4. **Unified Preact Primitive Kit, `--ui-*` Semantic Tokens, Scoped Input & `DialogService` (`docs/ARCHITECTURE.md` §4 & §9.30)**:
-   - All Campaign Editor views must render inside `<AppUiRoot />` (`#ui-root`) under `[data-ui-density="compact"]` using Phase 43 shared primitives (`src/rendering/ui/primitives/*`) and `--ui-*` semantic CSS tokens (`Obsidian & Brass`, `Parchment`, `Retro CRT`).
-   - Zero `.innerHTML`, zero leaked `document`/`window` listeners, and zero native `alert()`/`confirm()`/`prompt()` or legacy `showPromptModal()` calls.
+*Compiled per `AGENTS.md` Kickoff Flow Steps 1–3 before drafting `implementation_plan.md` or modifying code.*
 
 ---
 
-## 2. Codebase Audit & Discovery Across Milestones 169–172
-
-### 2.1 Why the Legacy Campaign Editor Drifted Out of Sync
-An audit of `src/types/campaign.types.ts`, `src/constants/campaign.constants.ts`, `src/rendering/editor/editor_config.ts`, `src/rendering/ui/ui_utils.ts`, and `src/editor/reference_index.ts` revealed five manual synchronization bottlenecks:
-
-1. **11 Missing `CampaignData` Categories in `VIEW_GROUPS` (`src/rendering/editor/editor_config.ts`)**:
-   - `CampaignDataSchema` defines **33** top-level keys (`manifest`, `rules`, `theme`, `advancement`, `areas`, `items`, `effects`, `entities`, `status`, `tiles`, `factions`, `ai`, `dialogues`, `quests`, `questTemplates`, `triggers`, `triggerTemplates`, `triggerBuckets`, `villains`, `schemeRecipes`, `phaseBlocks`, `agreements`, `tagRegistry`, `reactions`, `fields`, `spawnPools`, `encounterProfiles`, `traitRegistry`, `identityGeneration`, `personalityGeneration`, `nemesisHierarchies`, `knowledgePropagation`, `rumorPropagation`, `relationshipThresholds`, `worldEvents`, `systemContent`).
-   - `VIEW_GROUPS` in `src/rendering/editor/editor_config.ts` only listed **21** tabs, leaving `tagRegistry`, `reactions`, `triggerTemplates`, `triggerBuckets`, `phaseBlocks`, `identityGeneration`, `personalityGeneration`, `knowledgePropagation`, `rumorPropagation`, `relationshipThresholds`, `worldEvents`, and `systemContent` unreachable in the Editor UI.
-2. **Duplicate Hand-Rolled `CampaignCategorySchemas` (`src/types/campaign.types.ts:105-142`)**:
-   - Manually unwraps `z.record(z.string(), ItemSchema)` to `ItemSchema` for dictionary categories while keeping `z.object(...)` / `z.array(...)` for singletons. This can be derived automatically by inspecting `CampaignDataSchema.shape[key]` (unwrapping `ZodOptional` and `ZodDefault`).
-3. **`ZodRecord` & `ZodDiscriminatedUnion` Fallback to Raw `<textarea>` (`src/rendering/ui/zod_form_renderer.ts:128-132`)**:
-   - `renderFormForZodSchema` currently falls back to `renderRawJsonField` for every `z.ZodRecord`, `z.ZodUnion`, and `z.ZodDiscriminatedUnion`.
-   - Phases 40–48 added structured `ZodRecord` and union properties inside `rules.json`, `areas.json`, `dialogues.json`, `quests.json`, `triggers.json`, and `theme.json`:
-     - `rules.materials` (`z.record(z.string(), MaterialDefinitionSchema)`)
-     - `rules.blueprints` (`z.record(z.string(), ConstructionBlueprintSchema)`)
-     - `rules.craftingRecipes` (`z.record(z.string(), CraftingRecipeSchema)`)
-     - `rules.psychology.thoughtDefinitions` (`z.record(z.string(), ThoughtRuleDefinitionSchema)`)
-     - `rules.psychology.needDecayMultipliers` (`z.record(z.string(), z.number())`)
-     - `rules.macroWorld.areaSiteBindings` (`z.record(z.string(), z.string())`)
-     - `rules.spawning.spawnWeights` & `lootTable` (`z.record(z.string(), z.number())`)
-     - `area.subBiomes` (`z.record(z.string(), z.number())`)
-     - `DialogueConditionSchema`, `DialogueEffectSchema`, `TriggerConditionSchema`, `TriggerConsequenceSchema`, `QuestObjectiveSchema`, `QuestRewardSchema`, `SpritePackRefSchema`.
-4. **Disconnected Foreign-Key Dropdowns (`src/rendering/ui/ui_utils.ts`) & `"Where Used"` Indexer (`src/editor/reference_index.ts`)**:
-   - `getReferenceOptions(key, doc)` in `ui_utils.ts` only checks 16 hardcoded property names and misses Phase 40–48 foreign keys (`floor`, `wall`, `door`, `water`, `shore`, `plains`, `forest`, `ridge`, `road`, `openAir`, `underground`, `ramp`, `targetTileId`, `minedTileId`, `burnedTileId`, `obsidianTileId`, `materialId`, `boulderItemId`, `mineYieldItemId`, `collapseDropItemId`, `spawnFieldType`, `statusEffectId`, `portalTemplateId`, `thoughtOverride`, `baseUnitId`, `defaultValueDenominationId`).
-   - `buildReferenceIndex(data)` in `src/editor/reference_index.ts` manually iterates over only 5 categories (`areas`, `entities`, `items`, `dialogues`, `quests`) and is currently ignored in `knip.json` because `<WhereUsedDrawer />` was never mounted into the Editor workspace.
-5. **Single-Z Static Area Painter (`src/rendering/ui/area_static_painter.ts`)**:
-   - Phase 46 added `staticMap.zLevels: Record<string, string[]>` (vertical slices such as `"-1"`, `"1"`, `"2"`) and `placedEntities[].z?: number`, and Phase 45 added `generatorType: 'streaming_overworld'`.
-   - `area_static_painter.ts` only reads/writes `staticMap.layout` (`Z = 0`) and ignores `zLevels` and `placedEntities[].z`.
-
-### 2.2 Inventory of Legacy Imperative Editor Files & Call Sites
-- **Entry & Presenter Hook**:
-  - `src/rendering/presenter.ts:10,63-76`: Currently toggles `#game-layout` / `#editor-layout` and calls `renderEditorUI(state, globalCampaignEditor)`.
-  - `src/rendering/ui/core/AppUiRoot.tsx`: Mounts all gameplay HUD, menus, modals, `<DialogHost />`, `<ToastHost />`, `<TooltipHost />`, `<HelpModal />`, and `<LoadingOverlay />` into `#ui-root`.
-  - Storing a reference to `globalCampaignEditor` (`EditorController`) in `uiStore` (or passing it via `uiStore.setEditorController(globalCampaignEditor)` in `initSession`) allows `<EditorShell />` to render directly inside `<AppUiRoot />` when `gameState?.uiMode === UIMode.Editor`, sharing `<DialogHost />`, `<ToastHost />`, `<TooltipHost />`, and `<HelpModal />` with zero duplicate overlays.
-- **26 Legacy Imperative Editor Modules to Replace & Evict**:
-  - Shell & Orchestration (7 files):
-    1. `src/rendering/editor_ui.ts`
-    2. `src/rendering/editor/editor_state.ts` (replaced by reactive `editorStore` / `uiStore` slice)
-    3. `src/rendering/editor/editor_toolbar.ts`
-    4. `src/rendering/editor/editor_sidebar.ts`
-    5. `src/rendering/editor/editor_workspace.ts`
-    6. `src/rendering/editor/editor_splash.ts`
-    7. `src/rendering/editor/new_campaign_modal.ts`
-  - Forms & Inspectors (7 files):
-    8. `src/rendering/ui/zod_form_renderer.ts`
-    9. `src/rendering/ui/zod_form_containers.ts`
-    10. `src/rendering/ui/zod_form_primitives.ts`
-    11. `src/rendering/ui/editor_forms.ts`
-    12. `src/rendering/ui/editor_object_renderer.ts`
-    13. `src/rendering/ui/where_used.ui.ts`
-    14. `src/rendering/ui/validation_panel.ui.ts`
-  - Visual & Domain Editors (7 files):
-    15. `src/rendering/ui/area_editor.ts`
-    16. `src/rendering/ui/area_static_painter.ts`
-    17. `src/rendering/ui/area_playtest_menu.ui.ts`
-    18. `src/rendering/ui/world_graph.ts` (while keeping pure `src/rendering/ui/world_graph_canvas.ts` physics/canvas draw helpers)
-    19. `src/rendering/ui/dialogue_editor.ts`
-    20. `src/rendering/ui/dialogue_simulator_panel.ts`
-    21. `src/rendering/ui/faction_matrix_editor.ts`
-    22. `src/rendering/ui/trigger_composer.ui.ts`
-  - Simulation Labs (5 files + 1 DOM helper):
-    23. `src/rendering/ui/ai_arena.ui.ts`
-    24. `src/rendering/ui/director_sandbox.ui.ts` (plus refactoring `src/rendering/ui/director/director_controls.ts` & `director_telemetry_view.ts` into pure data helpers + Preact view)
-    25. `src/rendering/ui/knowledge_simulator.ui.ts` (while keeping pure `src/rendering/ui/knowledge_sim_canvas.ts` physics/canvas draw helpers)
-    26. `src/rendering/ui/narrative_fuzzer.ui.ts`
-    27. `src/rendering/ui/balance_lab.ui.ts`
-  - Legacy Prompt Modal & Stylesheet (2 files):
-    28. `src/rendering/ui/modal.ui.ts` (only imported by `editor_sidebar.ts`, `dialogue_editor.ts`, `faction_matrix_editor.ts`)
-    29. `src/styles/editor.css` (replaced by compact semantic token rules in `src/styles/views/editor.css` using `--ui-*` tokens).
-
-### 2.3 DialogService & Toast Migration Audit in `src/editor/campaign_editor.ts`
-- `src/editor/campaign_editor.ts` currently calls native `alert()` and `confirm()` in 5 methods:
-  - `loadFromIDB` (line 142: `alert(...)`)
-  - `saveWorkspace` (line 157: `alert('Workspace saved successfully!')`, line 160: `alert(...)`)
-  - `importZipWorkspace` (line 179: `alert(...)`)
-  - `exportZipWorkspace` (line 192: `confirm('Campaign has validation errors. Export anyway?')`, line 207: `alert(...)`)
-- Updating `CampaignEditor` to use `dialogService.alert` / `dialogService.confirm` and `uiStore.pushToast` eliminates blocking browser dialogs from the controller as well.
+## 1. Architectural Rules & Standards Reiteration
+- **ECS & State Purity (`AGENTS.md` §4):** Plain JSON-serializable components (no `Map`/`Set` inside components), immutable `GameState` updates.
+- **Three-Tier Placement (`AGENTS.md` Rule 16):**
+  - Tier 1 Console: Modal pane scrolling, top-bar Z coordinate display, Digger door/edge-portal fixes, Console Language & Text Obfuscation engine, Look/Verb Menu `talk`/`attack`/`shove` verbs, Debug Mode toggle, and 3-tier Command/Keybind taxonomy.
+  - Tier 2 Cartridge (`dnd35e`): Feat/Skill wizard filters & fuzzy search, conditional Level-Up Feats step, spell/creature-type language comprehension hooks (*Speak with Animals*, *Tongues*, *Comprehend Languages*, etc.), and D&D 3.5e Overrun/Bull Rush delegation for `shove`.
+  - Tier 3 System Content / Campaign Data: Declarative feat/skill category metadata, communication spells, creature language/immovable flags, and Shroudgarde edge portal visuals.
+- **Rule 21 (Zero Content-ID Branching):** All feat/skill categories, language comprehension effects, and creature shove/immovable flags must be modeled declaratively in Zod schemas & JSON, never hardcoded by content ID in `.ts`.
+- **Rule 17 (Baseline Rules + Declarative Overrides):** D&D 3.5e communication overrides (e.g. `comprehend_all_languages`, `speak_all_languages`, `communicate_creature_type:<type>`) and Overrun/Shove modifiers flow through `StatModifier` / `RuleOverride` bundles.
 
 ---
 
-## 3. Cascading Effects Matrix (`AGENTS.md` Rule 15)
+## 2. Detailed Findings by Issue
 
-| Change | Upstream (Callers / Producers / Events) | Downstream (Consumers / Renderers / Validators) | Lateral (Sibling Configs / Tests / SSOT) |
+### 2.1 Two-Pane Modal Independent Scrollbars
+- **Affected Files:** `src/styles/primitives.css`, `src/styles/views/dnd35e.css`, `src/rendering/ui/primitives/ModalShell.tsx`, plus two-pane modals (`DnD35eCharBuilderModal.tsx`, `DnD35eLevelUpModal.tsx`, `DnD35eSpellbookModal.tsx`, `DnD35eSheetModal.tsx`, `QuestsModal.tsx`, `InvestigationModal.tsx`, `NemesisDossierModal.tsx`, `LegendsModal.tsx`, `TradeModal.tsx`).
+- **Root Cause:**
+  1. `.ui-modal` has `max-height: 90vh; overflow: hidden;` (`primitives.css:516-521`), while `.ui-modal__body` has `overflow: auto; flex: 1 1 auto;` (`primitives.css:563-567`) and is **not** a flex column (`display: flex; flex-direction: column; min-height: 0;`).
+  2. Multi-pane modals do not pass `fullHeight` (or a locked-body layout mode) to `<ModalShell />`. Consequently, `.ui-dnd-sheet-body`, `.ui-dnd-wizard-stage`, and `.ui-split-pane` expand to their unconstrained content height, causing `.ui-modal__body` (the parent) to scroll as one block rather than letting the left and right panes scroll independently.
+- **Fix Direction:** Add a declarative `scrollMode?: 'body' | 'panes'` prop (default `'body'`) on `<ModalShell />`. When `scrollMode="panes"`, apply a bounded modal height (`height: min(90vh, 880px)` / `fullHeight`) and `.ui-modal__body--panes { display: flex; flex-direction: column; overflow: hidden; min-height: 0; }`, while ensuring every child two-pane wrapper (`.ui-split-pane`, `.ui-dnd-wizard-stage`, `.ui-dnd-sheet-2col`, `.ui-dnd-sheet-3col`) has `flex: 1 1 auto; min-height: 0; overflow: hidden;` and each sub-pane (`.ui-dnd-wizard-pane`, `.ui-dnd-col`, `.ui-split-pane > *`) has `min-height: 0; overflow-y: auto;`.
+
+### 2.2 D&D 3.5e Character Creation Feats: `[Fighter]` Suffix, Fuzzy Search & Expanded Category Filters
+- **Affected Files:** `src/rendering/ui/cartridges/dnd35e/DnD35eSharedFeatsStep.tsx`, `src/rendering/ui/cartridges/dnd35e/DnD35eInspector.tsx`, `src/rulesets/dnd35e/types/dnd35e_system.types.ts`, `src/utils/fuzzy_match.ts` (new shared helper extracted from `VerbMenuPopover.tsx`).
+- **Findings:**
+  - `DnD35eSharedFeatsStep.tsx:285` explicitly appends `${cat.isFighterBonus ? ' [Fighter]' : ''}` to every Fighter bonus feat title even though the `Fighter Bonus` filter chip and right-pane Inspector badge already communicate it.
+  - Currently only 5 filter chips exist (`All`, `Eligible`, `Fighter Bonus`, `Combat`, `Metamagic / Magic`) and there is no search input.
+  - `classifyDnD35eFeatCategory` (`DnD35eInspector.tsx:35-72`) lumps Metamagic and general Magic together and relies on string heuristics (`descLower.includes(...)`). Separating **Metamagic** (`feat.metamagicDescriptor !== undefined`), **Combat**, **Fighter Bonus**, **Magic / Spellcasting**, **Skill & Utility**, **Proficiency**, and **Monster / Natural** (plus optional declarative `featCategories` in `DnD35FeatDefinitionSchema`) makes filtering crisp and Rule 21 compliant.
+
+### 2.3 Origin of "Judicious Spell" Feat
+- **Exact Source Found:**
+  - File: `public/data/rulesets/dnd35e/feats/judicious_spell.json`
+  - Engine wiring: `src/rulesets/dnd35e/magic/spell_cast_helpers.ts:85,129`, `src/rulesets/dnd35e/magic/spell_cast_resolver.ts:290,409`, `src/rulesets/dnd35e/magic/metamagic_dispel.ts:14`, `src/rulesets/dnd35e/system_content_feat_ids.ts:72`.
+  - Historical origin (`docs/incursion/INCURSION_FEATURES_AND_MECHANICS.md:92`, `docs/MILESTONES.md:2092`): Ported from the roguelike **Incursion: Halls of the Goblin King** (`MM_JUDICIOUS` — +1 spell level metamagic that excludes allies inside offensive AoEs). Added in Milestone 136 alongside *Reach Spell* to showcase declarative `target_category_filter.ts`.
+
+### 2.4 D&D 3.5e Skills Filters (Knowledge + Governing Attribute + Search)
+- **Affected Files:** `src/rendering/ui/cartridges/dnd35e/DnD35eSharedSkillsStep.tsx`, `src/rulesets/dnd35e/types/dnd35e_system.types.ts`.
+- **Findings:**
+  - Currently only 4 chips exist: `All`, `Class`, `Trained-Only`, `Invested`.
+  - Every `DnD35SkillDefinition` already exposes `keyAbility: 'str' | 'dex' | 'con' | 'int' | 'wis' | 'cha'` (`dnd35e_system.types.ts:122`) and Knowledge skills expose `studiedCreatureTags` (10 Knowledge skills exist: Arcana, Architecture, Dungeoneering, Geography, History, Local, Nature, Nobility, Planes, Religion).
+  - Adding a declarative `skillGroup?: 'knowledge' | 'craft' | 'perform' | 'profession' | 'general'` (or filtering Knowledge via `skillGroup` + governing attribute chip row `Any | STR | DEX | CON | INT | WIS | CHA` + fuzzy search) satisfies Rule 21 cleanly.
+
+### 2.5 Look Menu Interactions (`talk`, `attack`, `shove`), Console Language System & Cartridge Communication Rules
+- **Affected Files:**
+  - `src/constants/verbs.constants.ts`, `src/systems/apply.system.ts`, `src/core/input/gameplay_input.ts`, `src/systems/movement.system.ts`, `src/systems/targeting.system.ts`.
+  - New Tier 1 Language module: `src/systems/language.system.ts`, `src/types/language.types.ts` (or in `campaign.types.ts` / `components.types.ts`), wired into `src/systems/dialogue.system.ts`, `src/rendering/ui/modals/DialogueModal.tsx`, and speech barks.
+  - Tier 2 Cartridge hooks on `IRuleset` (`src/types/ruleset.types.ts`) implemented in `src/rulesets/dnd35e/` (comprehension via spells/tags/creature types + `overrun` / `bull_rush` delegation for `shove`).
+- **Findings:**
+  1. **Why Look/VerbMenu has no `talk`**: `'talk'` is absent from `VERBS` (`verbs.constants.ts`) and `collectRawValidVerbsForTarget` (`apply.system.ts:591`). Bumping an NPC with `DialogueComponent` triggers `processInteractIntent` directly (`movement.system.ts:421`). Adding `'talk'` as a Console verb (valid on entities with `DialogueComponent` or `Speech`/actor identity) exposes it seamlessly in Look (`X` -> `Enter`) and right-click Context Verb Menus.
+  2. **Console Language System (Tier 1)**: No language obfuscation system currently exists (`speak_language.json` exists only as a D&D 3.5e skill stub). A clean Console design stores `languages?: string[]` (spoken/understood) and `primaryLanguage?: string` on actors/templates, optional `languageId` on dialogue trees/nodes/barks, and a deterministic phonetic/syllable obfuscator (`obfuscateTextForLanguage(text, languageId, proficiency)`).
+  3. **Cartridge Comprehension (Tier 2)**: Console invokes `ruleset.evaluateLanguageComprehension?.(state, listenerId, speakerId, languageId)` which checks D&D 3.5e `Speak Language` ranks, racial/bonus languages, and declarative Layer B effect overrides/tags (`comprehend_all_languages`, `speak_all_languages`, `communicate_creature_type:animal|plant|undead|vermin`, `telepathy_range`). Communication spells (*Speak with Animals*, *Speak with Plants*, *Speak with Dead*, *Comprehend Languages*, *Tongues*) are not yet in `public/data/rulesets/dnd35e/spells/` and can be authored cleanly in JSON.
+  4. **Attack Friendly (Look vs Aim)**:
+     - Currently bump-movement refuses to attack non-hostiles (`movement.system.ts:336`), `VerbMenu` has no `'attack'` verb, and Aim (`targeting.system.ts`) cycles only hostiles (`gameplay_input.ts:116`) and has no generic ranged/melee attack resolution for neutral/friendly targets outside spell/throw contexts.
+     - Exposing `'attack'` in Look/VerbMenu (for adjacent melee or armed ranged attack, marking target hostile / logging assault) AND allowing Aim (`combat.target_toggle`) to target non-hostile actors directly cleanly supports both melee and ranged friendly fire without accidental bump attacks.
+  5. **Shove (Console) -> Overrun / Bull Rush (D&D 3.5e)**:
+     - `'shove'` added to `VERBS` (Console level). On willing/friendly actors it displaces/swaps them; on enemies it delegates to `ruleset.resolveShove?.(...)` (D&D 3.5e Overrun/Bull Rush using `maneuvers_conditions.ts` / `bull_rush_resolver.ts` with `Improved Overrun` / `Improved Bull Rush` declarative modifiers).
+     - **Open Question (cut-off user sentence):** The user wrote *"with a flag we can enable on creature to make it "* — needs clarification on the exact creature flag behavior (e.g., `unshovable` / `immovable` / `anchored`, or `allowBumpShove`, or `hostileOnShove`).
+
+### 2.6 D&D 3.5e Level-Up: Hide Feats Tab When `totalFeatSlots === 0`
+- **Affected Files:** `src/rendering/ui/cartridges/dnd35e/DnD35eLevelUpModal.tsx` (lines 130–145).
+- **Root Cause:** `tabsMeta` unconditionally inserts `{ id: 'feats', label: ... }` even when `totalFeatSlots === 0` (levels 2, 4, 5, 7, 8, etc. without class bonus feat slots).
+- **Fix:** Conditionally include `'feats'` in `tabsMeta` only when `totalFeatSlots > 0`, dynamically numbering subsequent tabs (`1., 2., 3., ...`) and resetting `activeTab` safely if switching classes removes the feat slot.
+
+### 2.7 Top Bar Coordinates Always Display `Z`
+- **Affected Files:** `src/rendering/ui/hud/ChronosStrip.tsx` (lines 61–69).
+- **Root Cause:** Line 63 gates `Z:${playerZ}` behind `multiZ ? ... : 'X:${pos.x} Y:${pos.y}'`, hiding `Z:0` on single-Z areas.
+- **Fix:** Always render `X:${pos.x} Y:${pos.y} Z:${playerZ}` (appending ` (View:${viewZ})` whenever `zOffset !== 0`).
+
+### 2.8 Shroudgarde Southern Gate: Adjacent & Floating Doors Bug
+- **Affected Files:** `src/map/generator_stages.ts` (lines 254–264).
+- **Root Cause:**
+  - `shroudgarde_gate` uses `"generatorType": "digger"`.
+  - In `generator_stages.ts:256-263`, `diggerRooms.map((r) => r.getDoors((dx, dy) => ...))` places a `wooden_door` entity at every coordinate emitted by `ROT.Map.Digger` room perimeters with **zero validation**:
+    1. Does not verify the cell has a valid opposing wall frame (`(W solid && E solid && N walkable && S walkable)` OR `(N solid && S solid && W walkable && E walkable)`). When corridors widen or rooms kiss along an edge, `ROT.Map.Digger` emits door cells protruding into open space (`d` directly above `wwwdwww`).
+    2. Does not deduplicate `(dx, dy)` across adjacent rooms or prevent orthogonally adjacent doors (`(dx±1, dy)` / `(dx, dy±1)`).
+    3. Does not skip tiles already occupied by portals.
+- **Fix:** Collect all `r.getDoors()` candidates into a deduplicated set after rooms & portals are carved, filter strictly to cells with a valid opposing wall frame (two opposite solid walls + two opposite walkable floors), exclude portal tiles, and enforce minimum orthogonal separation (no two doors adjacent).
+
+### 2.9 Shroudgarde Southern Gate <-> Town Square Transition Shown as `stairs_down`
+- **Affected Files:** `src/systems/map/map_generation_spawner.ts` (lines 191–210), `src/core/bootstrap.ts` (lines 217–255), `public/data/campaigns/realms-of-shroudgarde/areas.json` & `entities.json` & `tiles.json`.
+- **Root Cause:**
+  1. In `realms-of-shroudgarde/areas.json`, `shroudgarde_courtyard` <-> `shroudgarde_gate` uses `"direction": "edge"` (`placementSide: "bottom"` / `"top"`) with **no** `portalTemplateId`. It is a flat street/gate exit, NOT stairs.
+  2. `map_generation_spawner.ts:192` computes `const stairTileKey = portal.connection.direction === 'up' ? 'stairs_up' : 'stairs_down';` for all portals without `portalTemplateId`, assigning `spriteId: tile_staircase_down` to EVERY `'edge'` and `'portal'` connection on both sides!
+  3. `bootstrap.ts:221-238` (used on the starting area) has an even older duplicate of that loop that ignores `portalTemplateId` completely and hardcodes `stairs_up` / `stairs_down` glyphs AND `tile_staircase_down` sprites!
+- **Fix:** Unify portal entity spawning between `bootstrap.ts` and `map_generation_spawner.ts` into a single helper, properly distinguish `'up'` (stairs up), `'down'` (stairs down), `'edge'` (gate/archway/road transition sprite & glyph), and `'portal'` (portal sprite & glyph), and ensure Shroudgarde's edge connections render as horizontal passages/gates rather than downward stairs.
+
+### 2.10 Command Dock `Aim (R)` Bug, Debug Mode Gate, and 3-Tier Command/Keybind Overhaul
+- **Affected Files:** `src/rendering/ui/hud_dock.ui.ts`, `src/core/input/command_catalog.ts`, `src/core/input/shortcut_input.ts`, `src/core/input/keybind_migration.ts`, `src/core/settings.ts`, `src/rendering/ui/menus/SettingsModal.tsx`, `src/rendering/ui/hud/CommandDockCard.tsx`, `src/rendering/ui/cartridges/dnd35e/dnd35e_ui_registration.tsx`, `src/rendering/ui/cartridges/classic/classic_ui_registration.tsx`, `src/rendering/ui/modals/HelpModal.tsx`.
+- **Root Cause of `Aim (R)` vs Reveal All (`R`):**
+  - `hud_dock.ui.ts:65-66` references stale `commandId: 'action.target_toggle'` instead of `'combat.target_toggle'` (`F`), causing `<Keycap />` to display `fallbackBadge: 'R'`, which collided visually with `debug.reveal_map` (`R`).
+  - Stale IDs also exist on `dock-btn-wait` (`move.wait` vs `action.wait`) and `dock-btn-settings` (`system.open_settings` vs `system.escape_or_pause`), plus outdated `classic_ui_registration.tsx` help text (`press R to aim`, `Press V for context interactions`) and `TacticalScannerCard.tsx` (`Right-click or [V] for verbs`).
+- **Debug Mode Switch:**
+  - Add `debugModeEnabled: boolean` (default `false`) to `PlayerSettings` (and a toggle in Settings -> Gameplay/Developer).
+  - Gate `debug.reveal_map`, `debug.god_mode`, `debug.spawn_entity` (and optionally `panel.debug` & Automap God-Mode reveal) behind `debugModeEnabled`, moving them to `Alt+` chords (`Alt+R`, `Alt+G`, `Alt+E`, `Alt+\``).
+- **Complete Command Inventory (Console + Cartridges) for 3-Tier Reclassification:**
+  - **Console (32 commands):** Movement (8 directions + `<`/`>` Z-climb), Wait (`Space`), Smart Interact (`.`/`,`/`E`), Pick Up (`G`), Look (`X`), Verb Menu (`Enter`/`V`), Aim (`F`), Target Confirm (`Enter`), Target Next/Prev (`Tab`/`Shift+Tab`), Shove (new), Hotbar (`1–0`, `Shift+Up`/`Shift+Down`), Camera Z-Peek (`[`/`]`/`PgUp`/`PgDn`/`Home`), Fold HUD (`\`), HUD Focus (`F6`), Help (`F1`), Escape/Pause (`Esc`), Panels (Inventory, Quests, Factions, Investigation, Dossier, Ledger, Legends, 3D Automap), Debug (`panel.debug`, `debug.reveal_map`, `debug.god_mode`, `debug.spawn_entity`).
+  - **D&D 3.5e Cartridge (5 commands):** Character Sheet (`C`), Quickcast (`Z`), Spellbook (`B`), Rest 8h (`T` -> can become `R` once Reveal All moves to `Alt+R`!), Level Up (`U`).
+  - **Classic Cartridge (2 commands):** Profile (`C`), Pack (`I`).
+
+---
+
+## 3. Preliminary Cascading Effects Matrix (`AGENTS.md` Rule 15)
+
+| Change | Upstream | Downstream | Lateral |
 | :--- | :--- | :--- | :--- |
-| **1. Schema-Driven Category & Reference Unification (`editor_config.ts`, `campaign.types.ts`, `reference_index.ts`, `ui_utils.ts`)** | `CampaignDataSchema` (`src/types/campaign.types.ts`), `RulesetContract.getEditorViewGroups` & `getSystemContentFiles` | `EditorActivityBar`, `EditorSidebar`, `EditorWorkspace`, `ZodFormRenderer`, `WhereUsedDrawer`, `buildReferenceIndex` | `tests/ruleset_invariants.test.ts` (imports `VIEW_GROUPS`), `src/constants/campaign.constants.ts` (`AUTHORING_LEVELS`), `knip.json` (un-ignore `reference_index.ts`) |
-| **2. Preact `<EditorShell />` Mounted in `<AppUiRoot />` (`AppUiRoot.tsx`, `presenter.ts`, `ui_store.ts`, `input_scope_manager.ts`)** | `initSession` (`session_controller.ts`), `renderPresenterFrame` (`presenter.ts`), `inputScopeManager.setEditorHook` | `<EditorToolbar />`, `<EditorActivityBar />`, `<EditorSidebar />`, `<EditorSplash />`, `<NewCampaignModal />`, `<ValidationDock />`, `<DialogHost />`, `<ToastHost />` | `index.html` (`#editor-layout` / `#ui-root`), `src/styles/views/editor.css` (`--ui-*` tokens across `Obsidian & Brass`, `Parchment`, `Retro CRT`) |
-| **3. Preact Recursive `ZodFormRenderer` (`ZodRecordEditor`, `ZodUnionEditor`, `WhereUsedDrawer`)** | `EditorWorkspace`, `AreaEditor`, `DialogueEditor` (`DialogueOptionSchema`), `CampaignCategorySchemas` | `EditorController.applyOperations`, `validation_navigator.ts` (`isPathExpanded`, `togglePath`, `revealField`), `WhereUsedDrawer` | All 33 `CampaignData` categories + nested `rules.{materials,blueprints,craftingRecipes,psychology,reputation,macroWorld}` |
-| **4. Multi-Z Visual & Domain Editors (`AreaEditor`, `AreaStaticPainter`, `WorldGraph`, `DialogueEditor`, `FactionMatrixEditor`, `TriggerComposer`)** | `EditorWorkspace` routing for `areas`, `dialogues`, `factions`, `triggerComposer` | `createDisplay` / `drawCell` (`display.ts`), `getTileAt` (`map_accessor.ts`), `compileTrigger` (`trigger-composer.system.ts`), `evaluateCondition` (`trigger.system.ts`), `world_graph_canvas.ts` | `sessionStorage` (`editor_playtest_spawn` with optional `z`, `editor_active_document`, `editor_playtest`), `bootstrap.ts` playtest spawn reader |
-| **5. Preact Simulation Labs & Legacy Eviction (`AiArena`, `DirectorSandbox`, `KnowledgeSimulator`, `NarrativeFuzzer`, `BalanceLab`)** | `EditorWorkspace` routing for `simulation` tab | `runAIArena`, `runEncounterArena`, `runEncounterDirector`, `runFuzzerOffload` (`worker_bridge.ts`), `runBalanceSimulations`, `knowledge_sim_canvas.ts` | Delete 28 legacy imperative files, remove 3 `knip.json` ignores, update `docs/ssot/ssot_console.json` & `docs/SSOT_CONSOLE.md` |
-
----
-
-## 4. Mapping Tasks to Architecture & Design Rules
-
-- **Milestone 169** maps to `docs/ARCHITECTURE.md` §4 (Preact UI Architecture & Scoped Input) and `AGENTS.md` Rule 21 (Schema-Driven Category Auto-Discovery).
-- **Milestone 170** maps to `AGENTS.md` §5 (Data-Driven & JSON Rules: `z.discriminatedUnion` & `z.record` schema mirroring) and Milestone 76 Decision D1/D2 (`ReferenceIndex` WeakMap cache + persistent `ValidationDock`).
-- **Milestone 171** maps to `docs/ARCHITECTURE.md` §9.32–9.33 (Phase 45 `MapAccessor` / `streaming_overworld` and Phase 46 Multi-Z `staticMap.zLevels` & 3D `placedEntities[].z`).
-- **Milestone 172** maps to `docs/ARCHITECTURE.md` §4 (Eviction of legacy imperative DOM views, zero `knip.json` ignores, and 100% SSOT registry parity).
+| **Two-pane `ModalShell` `scrollMode="panes"`** | All two-pane Preact modals | `primitives.css`, `dnd35e.css`, viewport resize behavior | Mobile/narrow `@media` stacked fallback |
+| **Feat & Skill Filters + Fuzzy Search** | `DnD35FeatDefinitionSchema` / `DnD35SkillDefinitionSchema`, `src/utils/fuzzy_match.ts` | `DnD35eSharedFeatsStep`, `DnD35eSharedSkillsStep`, `DnD35eInspector`, `VerbMenuPopover` | Character Creation & Level-Up tests |
+| **Console Language & Cartridge Comprehension** | `CampaignData` / `EntityTemplate` / `DialogueTree`, D&D 3.5e spells/tags | `dialogue.system.ts`, `DialogueModal`, speech barks, `IRuleset` | Campaign JSONs, `save.ts`, Editor Zod forms |
+| **`talk`, `attack`, `shove` Verbs & Friendly Aim** | `VERBS`, `apply.system.ts`, `targeting.system.ts`, `gameplay_input.ts` | `VerbMenuPopover`, `movement.system.ts`, `dnd35e` Overrun/Bull Rush | `input_scope_and_keymap.test.ts`, verb tests |
+| **Conditional Level-Up Feats Tab & Top-Bar Z** | `DnD35eLevelUpModal`, `ChronosStrip` | Level-Up tab index/validation, HUD layout | Phase 43/44 HUD & Level-Up tests |
+| **Digger Door Framing & Edge Portal Spawner** | `generator_stages.ts`, `bootstrap.ts`, `map_generation_spawner.ts` | All procedural digger areas & edge transitions | Shroudgarde JSONs, `visualize-campaign.ts` |
+| **Debug Mode Gate & 3-Tier Keybinds** | `PlayerSettings`, `command_catalog.ts`, `dnd35e_ui_registration.tsx`, `classic_ui_registration.tsx` | `shortcut_input.ts`, `hud_dock.ui.ts`, `CommandDockCard`, `HelpModal`, `SettingsModal`, `keybind_migration.ts` | `classic_vi` preset, `public/data/campaigns/*/keybinds.json`, `tests/input_scope_and_keymap.test.ts` |

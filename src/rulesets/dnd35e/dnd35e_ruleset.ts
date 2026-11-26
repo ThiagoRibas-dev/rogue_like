@@ -19,6 +19,7 @@ import {
   initiateDnD35eChargeTargeting,
   validateChargeLine
 } from './combat/charge_resolver.ts';
+import { resolveBullRushImpact } from './combat/bull_rush_resolver.ts';
 import { resolveSavingThrow } from './combat/damage_vitality.ts';
 import {
   evaluateDnD35eAltitudeAdjustment,
@@ -52,6 +53,7 @@ import {
   getDnD35eTradeSocialActions,
   resolveDnD35eTradeSocialSkill
 } from './skills/trade_social_checks.ts';
+import { evaluateDnD35eLanguageComprehension } from './skills/language_comprehension.ts';
 import { getDnD35EntityData, setDnD35EntityData } from './srd_registry.ts';
 import { executeAbruptJauntTeleport } from './combat/immediate_reactions.ts';
 import { executeDnD35eResourcePoolAbility } from './combat/pool_ability_resolver.ts';
@@ -112,7 +114,7 @@ function grantDnD35eXp(state: GameState, entityId: EntityId, amount: number): Ga
   if (newXp >= nextThreshold) {
     nextState = addMessage(
       nextState,
-      '[D&D 3.5e] Level Up Available! Press [L] or click the ribbon to advance your character.',
+      '[D&D 3.5e] Level Up Available! Press [U] or click the ribbon to advance your character.',
       MessageLogCategory.System
     );
   }
@@ -431,5 +433,17 @@ export const dnd35eRulesetContract: RulesetContract = {
   measureDistance3DFt: measureDnD35Distance3DFt,
   evaluateElevationCombatModifiers: evaluateDnD35eElevationCombat,
   onEntityFallLanded: resolveDnD35eFallLanded,
-  canActorAdjustAltitude: evaluateDnD35eAltitudeAdjustment
+  canActorAdjustAltitude: evaluateDnD35eAltitudeAdjustment,
+  evaluateLanguageComprehension: evaluateDnD35eLanguageComprehension,
+  resolveShove(state, actorId, targetEntityId) {
+    const res = resolveBullRushImpact(state, {
+      attackerId: actorId,
+      defenderId: targetEntityId
+    });
+    return {
+      state: res.state,
+      success: res.success,
+      pushedSquares: res.pushedSquares
+    };
+  }
 };

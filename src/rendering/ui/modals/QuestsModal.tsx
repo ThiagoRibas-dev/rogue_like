@@ -61,6 +61,7 @@ export function QuestsModal(): JSX.Element | null {
       title="Quest Journal"
       subtitle="Active leads, tasks, and completed deeds"
       size="lg"
+      scrollMode="panes"
       onClose={handleClose}
       footer={
         <Button variant="primary" size="sm" onClick={handleClose}>
@@ -68,7 +69,16 @@ export function QuestsModal(): JSX.Element | null {
         </Button>
       }
     >
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--ui-space-3)' }}>
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 'var(--ui-space-3)',
+          flex: 1,
+          minHeight: 0,
+          overflow: 'hidden'
+        }}
+      >
         <Tabs
           tabs={QUEST_TABS}
           activeTabId={activeTab}

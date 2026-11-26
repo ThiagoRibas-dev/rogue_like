@@ -2,6 +2,7 @@
   "knowledge_nature": {
     "id": "knowledge_nature",
     "name": "Knowledge (Nature)",
+    "skillGroup": "knowledge",
     "keyAbility": "int",
     "trainedOnly": true,
     "acpMultiplier": 0,

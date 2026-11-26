@@ -3,6 +3,7 @@ import { Window } from 'happy-dom';
 import { getGameState, setGameState } from '../src/core/game-loop.ts';
 import { clearInputQueue, dequeueIntent, getInputQueueSize } from '../src/core/input_queue.ts';
 import { clearModals } from '../src/core/modal_manager.ts';
+import { initEngine } from '../src/core/scheduler.ts';
 import { commandRegistry, chordFromKeyboardEvent, formatKeyChord, matchesChord } from '../src/core/input/command_registry.ts';
 import { resetMoveThrottle } from '../src/core/input/gameplay_input.ts';
 import { InputScopeManager } from '../src/core/input/input_scope_manager.ts';
@@ -129,6 +130,7 @@ function makeKeyEvent(
 
 describe('Milestone 158: Scoped InputScopeManager, TextInputGuard & Keymap Engine', () => {
   beforeEach(() => {
+    initEngine();
     resetSettings();
     clearInputQueue();
     clearModals();
@@ -136,6 +138,7 @@ describe('Milestone 158: Scoped InputScopeManager, TextInputGuard & Keymap Engin
   });
 
   afterEach(() => {
+    initEngine();
     clearInputQueue();
     clearModals();
     resetMoveThrottle();

@@ -97,6 +97,7 @@ export function NemesisDossierModal(): JSX.Element | null {
       title="Chronicle & Nemesis Dossier"
       subtitle="Power hierarchies, personal timeline, and notable figures"
       size="xl"
+      scrollMode="panes"
       onClose={handleClose}
       footer={
         <div style={{ display: 'flex', gap: 'var(--ui-space-2)' }}>

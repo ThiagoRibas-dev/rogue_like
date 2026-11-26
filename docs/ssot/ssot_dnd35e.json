@@ -3183,5 +3183,20 @@
     "antiPatterns": [
       "Do not duplicate D&D 3.5e falling damage, Fly override, or high-ground bonuses outside dnd35e_spatial_3d.ts."
     ]
+  },
+  "src/rulesets/dnd35e/skills/language_comprehension.ts": {
+    "domain": "D&D 3.5e: Layer 3 — Skills & Social Systems",
+    "tier": "tier2_cartridge",
+    "responsibility": "Evaluates D&D 3.5e language comprehension across spoken tongues, non-speaking creature types (animal/plant/vermin/ooze/dead), and declarative spell/trait tags.",
+    "canonicalEntryPoints": [
+      "evaluateDnD35eLanguageComprehension"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure D&D 3.5e language comprehension and creature-type speech evaluation.",
+      "excludes": "Console phonetic ciphering or DialogueModal DOM state."
+    },
+    "antiPatterns": [
+      "Do not branch on specific spell IDs instead of declarative lang:* and trait:* tags."
+    ]
   }
 }

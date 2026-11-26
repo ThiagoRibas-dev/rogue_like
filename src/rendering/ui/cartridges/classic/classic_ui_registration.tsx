@@ -70,6 +70,7 @@ function ClassicSheetModal({ state }: ClassicSheetModalProps): JSX.Element {
       title={sheetData.name || 'Character Sheet'}
       subtitle={`${sheetData.raceName} • ${sheetData.levelSummary}`}
       size="xl"
+      scrollMode="panes"
       showHelpHint
       onClose={handleClose}
     >
@@ -109,18 +110,9 @@ export const classicUIDefinition: CartridgeUIDefinition = {
       label: 'Profile',
       description: 'Open or close the character dossier.',
       category: 'cartridge',
+      tier: 'secondary',
       scopes: ['world_gameplay', 'active_modal'],
       defaultBindings: [{ key: 'c' }],
-      preventDefault: true,
-      source: 'cartridge:classic'
-    },
-    {
-      id: 'classic:inventory',
-      label: 'Pack',
-      description: 'Open or close inventory and equipped gear.',
-      category: 'cartridge',
-      scopes: ['world_gameplay', 'active_modal'],
-      defaultBindings: [{ key: 'i' }],
       preventDefault: true,
       source: 'cartridge:classic'
     }
@@ -135,7 +127,7 @@ export const classicUIDefinition: CartridgeUIDefinition = {
         {
           title: 'Melee & Ranged Engagement',
           summary:
-            'Move into an adjacent hostile to strike in melee, or press R to aim ranged weapons and Enter/F to fire.'
+            'Move into an adjacent hostile to strike in melee, or press F to aim ranged weapons and Enter/F to fire.'
         },
         {
           title: 'Context Verbs & RTwP',
@@ -170,14 +162,6 @@ export const classicUIDefinition: CartridgeUIDefinition = {
       icon: '👤',
       modalId: 'character_sheet',
       defaultKey: 'c'
-    },
-    {
-      id: 'classic_inventory',
-      commandId: 'classic:inventory',
-      label: 'Pack',
-      icon: '🎒',
-      modalId: 'character_sheet',
-      defaultKey: 'i'
     }
   ],
 

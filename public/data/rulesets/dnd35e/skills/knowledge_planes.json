@@ -2,6 +2,7 @@
   "knowledge_planes": {
     "id": "knowledge_planes",
     "name": "Knowledge (The Planes)",
+    "skillGroup": "knowledge",
     "keyAbility": "int",
     "trainedOnly": true,
     "acpMultiplier": 0,

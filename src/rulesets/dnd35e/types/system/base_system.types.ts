@@ -1,4 +1,12 @@
 import { z } from 'zod';
+import {
+  CONTENT_SOURCE_ORIGIN_LABELS,
+  type ContentSourceOrigin,
+  ContentSourceOriginSchema,
+  formatContentSourceOrigin
+} from '../../../../types/campaign/meta.ts';
+
+export { CONTENT_SOURCE_ORIGIN_LABELS, type ContentSourceOrigin, ContentSourceOriginSchema, formatContentSourceOrigin };
 
 /** Zod schema for a 6-ability score map where `null` represents a Nonability (`—`). */
 export const RawAbilityScoresSchema = z.object({

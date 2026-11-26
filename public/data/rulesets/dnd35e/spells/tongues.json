@@ -1,0 +1,61 @@
+{
+  "tongues": {
+    "id": "tongues",
+    "name": "Tongues",
+    "sourceOrigin": "srd",
+    "description": "This spell grants the creature touched the ability to speak and understand the language of any intelligent creature.",
+    "level": 3,
+    "levelByClass": {
+      "bard": 2,
+      "cleric": 4,
+      "sorcerer": 3,
+      "wizard": 3
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "divination",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "10 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": false,
+      "material": true,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectBundle": {
+      "bundleId": "tongues_bundle",
+      "name": "Tongues",
+      "category": "trait",
+      "usageMode": "passive",
+      "modifiers": [],
+      "ruleOverrides": [],
+      "grantedTags": [
+        "lang:speak_all",
+        "lang:comprehend_all"
+      ],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": [],
+      "classSkillsAdded": [],
+      "grantedFeats": [],
+      "virtualFeatGrants": []
+    },
+    "tags": [
+      "arcane",
+      "divine",
+      "divination",
+      "language"
+    ]
+  }
+}

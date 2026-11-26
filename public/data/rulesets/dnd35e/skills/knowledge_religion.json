@@ -2,6 +2,7 @@
   "knowledge_religion": {
     "id": "knowledge_religion",
     "name": "Knowledge (Religion)",
+    "skillGroup": "knowledge",
     "keyAbility": "int",
     "trainedOnly": true,
     "acpMultiplier": 0,

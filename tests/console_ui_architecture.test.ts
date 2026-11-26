@@ -15,13 +15,14 @@ import { createAbilityScoreState } from '../src/rulesets/dnd35e/abilities.ts';
 import { applyCharacterCreationToPlayer } from '../src/rulesets/dnd35e/builder/builder_hydrator_creation.ts';
 import { applyPermanentLevelDrainToActor } from '../src/rulesets/dnd35e/level_ledger.ts';
 import { getDnD35EntityData } from '../src/rulesets/dnd35e/srd_registry.ts';
+import { getDnD35SystemContent } from '../src/rulesets/dnd35e/types/dnd35e_system.types.ts';
 import { type DnD35ExtendedActorData, DnD35UIAdapter } from '../src/rulesets/dnd35e/ui/dnd35e_ui_adapter.ts';
 import { ComponentType } from '../src/types/components.types.ts';
 import { buildGameState, loadCampaignFromDisk } from './helpers.ts';
 
 describe('Console UI Architecture & Cartridge Adapter Suite', () => {
   beforeAll(() => {
-    loadCampaignFromDisk('dnd35e-crypt');
+    getDnD35SystemContent(loadCampaignFromDisk('dnd35e-crypt'));
   });
   it('toggles ConsoleThemeMode and updates skin tokens dynamically across all 3 unified themes', () => {
     setConsoleThemeMode('parchment');

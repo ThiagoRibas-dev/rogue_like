@@ -2,6 +2,7 @@
   "knowledge_arcana": {
     "id": "knowledge_arcana",
     "name": "Knowledge (Arcana)",
+    "skillGroup": "knowledge",
     "keyAbility": "int",
     "trainedOnly": true,
     "acpMultiplier": 0,

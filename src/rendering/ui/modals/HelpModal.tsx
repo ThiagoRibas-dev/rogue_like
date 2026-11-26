@@ -3,10 +3,10 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import { commandRegistry, formatKeyChord } from '../../../core/input/command_registry.ts';
 import { inputScopeManager } from '../../../core/input/input_scope_manager.ts';
 import { openSettingsModal } from '../../../core/session/session_dom.ts';
-import { getBindingsForCommand } from '../../../core/settings.ts';
+import { getBindingsForCommand, getDebugModeEnabled } from '../../../core/settings.ts';
 import { getRuleset } from '../../../rulesets/registry.ts';
 import { type GameState, UIMode } from '../../../types/game-state.types.ts';
-import type { CommandDefinition, InputScopeId, UIHelpSection } from '../../../types/input.types.ts';
+import type { CommandDefinition, CommandTier, InputScopeId, UIHelpSection } from '../../../types/input.types.ts';
 import { getActiveCartridgeUI, getCartridgeUI } from '../cartridge_ui_registry.ts';
 import { uiStore, useUiSelector } from '../core/ui_store.ts';
 import { Button } from '../primitives/Button.tsx';
@@ -29,11 +29,20 @@ const HELP_CATEGORY_LABELS: Readonly<Record<string, string>> = {
   hotbar: 'Hotbar & Banks',
   panels: 'Menus & Panels',
   cartridge: 'Character & Abilities',
-  hud_camera: 'Camera & RTwP',
+  hud_camera: 'Camera & HUD',
   navigation: 'UI Navigation',
   system: 'System & Help',
   editor: 'Editor'
 };
+
+const HELP_TIER_GROUPS: ReadonlyArray<{
+  readonly tier: CommandTier;
+  readonly title: string;
+}> = [
+  { tier: 'primary', title: 'Primary Controls (Core Movement, Combat & Verbs)' },
+  { tier: 'secondary', title: 'Secondary Panels & Mechanics' },
+  { tier: 'tertiary', title: 'Tertiary / Rare & Debug' }
+];
 
 function describeActiveScreen(state: GameState | null): { readonly title: string; readonly summary: string } {
   if (!state) {
@@ -102,6 +111,12 @@ function describeActiveScreen(state: GameState | null): { readonly title: string
         summary:
           'Author campaigns, maps, dialogues, factions, and simulation tests. Use Undo/Redo, Save, Play Test, or Escape to exit.'
       };
+    case UIMode.Automap:
+      return {
+        title: '3D Dungeon Automap',
+        summary:
+          'Drag to orbit, Shift+drag or right-drag to pan, scroll to zoom, use [ / ] to step Z-strata, and click any explored voxel to pin custom notes.'
+      };
     default:
       return {
         title: `Active Screen (${state.uiMode})`,
@@ -137,17 +152,22 @@ function filterCommandsForScopes(
   return commands.filter((cmd) => cmd.scopes.some((s) => scopeSet.has(s)));
 }
 
+/** Optional props for `<HelpModal />`. */
+export interface HelpModalProps {
+  readonly initialTab?: 'context' | 'keybinds' | 'ruleset' | undefined;
+}
+
 /**
  * Contextual and Cartridge-Aware `F1` Help Modal (`HelpOverlayScope`).
  */
-export function HelpModal(): JSX.Element | null {
+export function HelpModal({ initialTab = 'context' }: HelpModalProps = {}): JSX.Element | null {
   const helpOpen = useUiSelector((s) => s.helpOpen);
   const gameState = useUiSelector((s) => s.gameState);
   const selectedRulesetId = useUiSelector((s) => s.selectedRulesetId);
   const settingsVersion = useUiSelector((s) => s.settingsVersion);
   void settingsVersion;
 
-  const [activeTab, setActiveTab] = useState<string>('context');
+  const [activeTab, setActiveTab] = useState<string>(initialTab);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -175,13 +195,17 @@ export function HelpModal(): JSX.Element | null {
   const activeScopes: ReadonlyArray<InputScopeId> = gameState
     ? inputScopeManager.getActiveScopes(gameState)
     : ['help_overlay', 'active_modal'];
-  const allCommands = commandRegistry.getAllCommands();
-  const contextCommands = filterCommandsForScopes(allCommands, activeScopes);
+  const activeRulesetId = gameState?.campaign?.manifest?.rulesetId ?? (selectedRulesetId || undefined);
+  const debugEnabled = getDebugModeEnabled();
+  const visibleCommands = commandRegistry
+    .getAllCommands(activeRulesetId)
+    .filter((cmd) => cmd.requiresDebugMode !== true || debugEnabled);
+  const contextCommands = filterCommandsForScopes(visibleCommands, activeScopes);
   const screenInfo = describeActiveScreen(gameState);
   const rulesetSections = getFallbackRulesetSections(gameState, selectedRulesetId);
 
   const normalizedQuery = searchQuery.trim().toLowerCase();
-  const filteredAllCommands = allCommands.filter((cmd) => {
+  const filteredAllCommands = visibleCommands.filter((cmd) => {
     if (!normalizedQuery) return true;
     const bindings = getBindingsForCommand(cmd.id)
       .map((c) => formatKeyChord(c).toLowerCase())
@@ -190,6 +214,7 @@ export function HelpModal(): JSX.Element | null {
       cmd.label.toLowerCase().includes(normalizedQuery) ||
       cmd.description.toLowerCase().includes(normalizedQuery) ||
       cmd.category.toLowerCase().includes(normalizedQuery) ||
+      (cmd.tier ?? 'secondary').includes(normalizedQuery) ||
       bindings.includes(normalizedQuery)
     );
   });
@@ -259,23 +284,39 @@ export function HelpModal(): JSX.Element | null {
               inputRef={searchInputRef}
               type="search"
               value={searchQuery}
-              placeholder="Filter commands by name, category, or key (press / to focus)..."
+              placeholder="Filter commands by name, tier, category, or key (press / to focus)..."
               ariaLabel="Filter commands"
               onInput={setSearchQuery}
             />
-            <div className="ui-help-command-grid" role="list" aria-label="All registered keybindings">
-              {filteredAllCommands.map((cmd) => (
-                <div key={cmd.id} className="ui-help-command-card" role="listitem">
-                  <div className="ui-keybind-info">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span className="ui-keybind-label">{cmd.label}</span>
-                      <Chip>{HELP_CATEGORY_LABELS[cmd.category] ?? cmd.category}</Chip>
+            <div className="ui-help-guide-sections" aria-label="All registered keybindings">
+              {HELP_TIER_GROUPS.map((group) => {
+                const groupCommands = filteredAllCommands.filter((cmd) => (cmd.tier ?? 'secondary') === group.tier);
+                if (groupCommands.length === 0) return null;
+                return (
+                  <Panel key={group.tier} title={group.title}>
+                    <div className="ui-help-command-grid ui-help-command-grid--unbounded" role="list">
+                      {groupCommands.map((cmd) => (
+                        <div key={cmd.id} className="ui-help-command-card" role="listitem">
+                          <div className="ui-keybind-info">
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span className="ui-keybind-label">{cmd.label}</span>
+                              <Chip>{HELP_CATEGORY_LABELS[cmd.category] ?? cmd.category}</Chip>
+                            </div>
+                            <span className="ui-keybind-desc">{cmd.description}</span>
+                          </div>
+                          <Keycap commandId={cmd.id} />
+                        </div>
+                      ))}
                     </div>
-                    <span className="ui-keybind-desc">{cmd.description}</span>
-                  </div>
-                  <Keycap commandId={cmd.id} />
-                </div>
-              ))}
+                  </Panel>
+                );
+              })}
+              {!debugEnabled ? (
+                <span className="ui-field__hint">
+                  Developer debug shortcuts (Alt+R, Alt+G, Alt+E, Alt+`) are hidden until Debug Mode is enabled in
+                  Settings.
+                </span>
+              ) : null}
             </div>
           </div>
         ) : null}

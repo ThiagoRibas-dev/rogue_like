@@ -212,6 +212,7 @@ export interface DnD35EntityData {
   readonly skillRanks: Readonly<Record<string, number>>;
   readonly creatureType?: string | undefined;
   readonly subtypes?: ReadonlyArray<string> | undefined;
+  readonly languages?: ReadonlyArray<string> | undefined;
   readonly levelAdjustment?: number | undefined;
   readonly spellResistance?: number | undefined;
   readonly senses?: SensoryProfile | undefined;

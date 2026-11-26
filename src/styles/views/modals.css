@@ -28,14 +28,22 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--ui-space-3);
-  min-height: 320px;
+  min-height: 0;
   max-height: 55vh;
+  flex: 1 1 auto;
+  overflow: hidden;
+}
+
+.ui-modal__body--panes .ui-trade-columns {
+  max-height: none;
+  height: 100%;
 }
 
 @media (max-width: 820px) {
   .ui-trade-columns {
     grid-template-columns: 1fr;
     max-height: none;
+    overflow-y: auto;
   }
 }
 
@@ -44,6 +52,7 @@
   flex-direction: column;
   gap: var(--ui-space-2);
   min-height: 0;
+  overflow: hidden;
   padding: var(--ui-space-2);
   background: var(--ui-bg-surface);
   border: 1px solid var(--ui-border-subtle);
@@ -61,8 +70,9 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
+  min-height: 0;
   overflow-y: auto;
-  flex: 1;
+  flex: 1 1 auto;
 }
 
 .ui-trade-row {
@@ -98,6 +108,16 @@
 }
 
 /* ---- Dialogue ---- */
+.ui-dialogue-lang-notice {
+  margin: 0 0 var(--ui-space-2) 0;
+  padding: 6px 10px;
+  background: rgba(212, 175, 55, 0.08);
+  border: 1px solid rgba(212, 175, 55, 0.28);
+  border-radius: var(--ui-radius-sm);
+  font-size: var(--ui-font-xs);
+  color: var(--ui-text-secondary);
+}
+
 .ui-dialogue-speech {
   margin: 0 0 var(--ui-space-3) 0;
   padding: var(--ui-space-3);
@@ -151,8 +171,14 @@
   display: flex;
   flex-direction: column;
   gap: var(--ui-space-2);
+  min-height: 0;
   max-height: 60vh;
   overflow-y: auto;
+}
+
+.ui-modal__body--panes .ui-card-stack {
+  flex: 1 1 auto;
+  max-height: none;
 }
 
 .ui-quest-card {
@@ -208,13 +234,20 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--ui-space-3);
-  min-height: 260px;
+  min-height: 0;
   max-height: 55vh;
+  flex: 1 1 auto;
+  overflow: hidden;
+}
+
+.ui-modal__body--panes .ui-two-col {
+  max-height: none;
 }
 
 @media (max-width: 780px) {
   .ui-two-col {
     grid-template-columns: 1fr;
+    overflow-y: auto;
   }
 }
 

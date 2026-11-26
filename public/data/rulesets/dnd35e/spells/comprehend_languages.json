@@ -1,0 +1,60 @@
+{
+  "comprehend_languages": {
+    "id": "comprehend_languages",
+    "name": "Comprehend Languages",
+    "sourceOrigin": "srd",
+    "description": "You can understand the spoken words of creatures or read otherwise incomprehensible written messages.",
+    "level": 1,
+    "levelByClass": {
+      "bard": 1,
+      "cleric": 1,
+      "sorcerer": 1,
+      "wizard": 1
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "divination",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "personal",
+    "duration": "10 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectBundle": {
+      "bundleId": "comprehend_languages_bundle",
+      "name": "Comprehend Languages",
+      "category": "trait",
+      "usageMode": "passive",
+      "modifiers": [],
+      "ruleOverrides": [],
+      "grantedTags": [
+        "lang:comprehend_all"
+      ],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": [],
+      "classSkillsAdded": [],
+      "grantedFeats": [],
+      "virtualFeatGrants": []
+    },
+    "tags": [
+      "arcane",
+      "divine",
+      "divination",
+      "language"
+    ]
+  }
+}

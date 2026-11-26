@@ -52,6 +52,11 @@ export interface KeyChord {
 export type CommandSource = 'console' | 'editor' | `cartridge:${string}`;
 
 /**
+ * Usability frequency tier for command keybinding priority and Help grouping.
+ */
+export type CommandTier = 'primary' | 'secondary' | 'tertiary';
+
+/**
  * Declarative keyboard command contract shared across Console, Cartridges, Settings, and Help.
  */
 export interface CommandDefinition {
@@ -59,6 +64,8 @@ export interface CommandDefinition {
   readonly label: string;
   readonly description: string;
   readonly category: CommandCategory;
+  readonly tier?: CommandTier | undefined;
+  readonly requiresDebugMode?: boolean | undefined;
   readonly scopes: ReadonlyArray<InputScopeId>;
   readonly defaultBindings: ReadonlyArray<KeyChord>;
   /** When true, command still fires inside editable text fields (restricted to Escape, F1, Ctrl+S, etc.). */

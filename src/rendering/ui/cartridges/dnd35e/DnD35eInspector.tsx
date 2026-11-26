@@ -12,12 +12,14 @@ import {
 } from '../../../../rulesets/dnd35e/prerequisites.ts';
 import { computeSkillSynergyBonus, getSkillsGrantedSynergyBy } from '../../../../rulesets/dnd35e/skills.ts';
 import { ALL_ABILITY_IDS } from '../../../../rulesets/dnd35e/types/dnd35e.types.ts';
-import type {
-  DnD35FeatDefinition,
-  DnD35RaceDefinition,
-  DnD35SkillDefinition,
-  DnD35SpellDefinition,
-  DnD35SystemContent
+import {
+  type ContentSourceOrigin,
+  type DnD35FeatDefinition,
+  type DnD35RaceDefinition,
+  type DnD35SkillDefinition,
+  type DnD35SpellDefinition,
+  type DnD35SystemContent,
+  formatContentSourceOrigin
 } from '../../../../rulesets/dnd35e/types/dnd35e_system.types.ts';
 import { assertNever } from '../../../../utils/assert.ts';
 import { Badge } from '../../primitives/DataDisplay.tsx';
@@ -27,48 +29,131 @@ function formatSigned(n: number): string {
 }
 
 /**
- * Classifies a D&D 3.5e feat into Fighter Bonus, Combat, and Magic/Metamagic filter buckets.
+ * Renders a provenance badge indicating whether a rule entity comes from SRD 3.5e,
+ * official non-SRD material, 2nd/3rd-party sources, or homebrew.
+ *
+ * @param origin Optional provenance identifier (defaults to `'srd'`).
+ * @returns Styled `<Badge />` element.
+ */
+export function renderSourceOriginBadge(origin?: ContentSourceOrigin): JSX.Element {
+  const resolved: ContentSourceOrigin = origin ?? 'srd';
+  const tone =
+    resolved === 'homebrew'
+      ? 'warning'
+      : resolved === 'third_party' || resolved === 'second_party'
+        ? 'info'
+        : resolved === 'non_srd'
+          ? 'danger'
+          : 'neutral';
+  return <Badge tone={tone}>{`Source: ${formatContentSourceOrigin(resolved)}`}</Badge>;
+}
+
+/** Declarative category flags derived for filtering D&D 3.5e feats. */
+export interface DnD35eFeatCategoryFlags {
+  readonly isFighterBonus: boolean;
+  readonly isCombat: boolean;
+  readonly isMetamagic: boolean;
+  readonly isItemCreation: boolean;
+  readonly isSpellcasting: boolean;
+  readonly isMagic: boolean;
+  readonly isSkillUtility: boolean;
+  readonly isProficiency: boolean;
+  readonly isMonster: boolean;
+  readonly isNonSrd: boolean;
+}
+
+/**
+ * Classifies a D&D 3.5e feat into declarative filter buckets using schema properties
+ * without branching on specific feat IDs.
  *
  * @param feat Feat definition from System Content.
  * @returns Classification flags.
  */
-export function classifyDnD35eFeatCategory(feat: DnD35FeatDefinition): {
-  readonly isFighterBonus: boolean;
-  readonly isCombat: boolean;
-  readonly isMagic: boolean;
-} {
+export function classifyDnD35eFeatCategory(feat: DnD35FeatDefinition): DnD35eFeatCategoryFlags {
+  const explicitCat = feat.featCategory;
   const isFighterBonus = feat.isFighterBonusFeat === true;
   const prereqJson = feat.prerequisites ? JSON.stringify(feat.prerequisites) : '';
   const descLower = feat.description.toLowerCase();
+  const allModifiers = [...(feat.modifiers ?? []), ...(feat.effectBundle?.modifiers ?? [])];
+  const allGrantedTags = feat.effectBundle?.grantedTags ?? [];
 
-  const isMagic =
-    feat.metamagicDescriptor !== undefined ||
-    (feat.modifiers !== undefined &&
-      feat.modifiers.some((m) =>
-        ['caster_level', 'spell_resistance', 'spell_penetration', 'spells_per_day', 'turn_undead'].some((t) =>
-          m.target.includes(t)
+  const isMetamagic = explicitCat === 'metamagic' || feat.metamagicDescriptor !== undefined;
+
+  const isProficiency =
+    explicitCat === 'proficiency' ||
+    feat.effectBundle?.category === 'proficiency' ||
+    allGrantedTags.some((t) => t.startsWith('proficiency:')) ||
+    descLower.includes('proficient with') ||
+    descLower.includes('apply a shield') ||
+    descLower.includes('armor check penalty');
+
+  const isMonster =
+    explicitCat === 'monster' ||
+    feat.repeatable?.targetCategory === 'natural_weapon' ||
+    prereqJson.includes('min_natural_') ||
+    prereqJson.includes('min_fly_speed') ||
+    prereqJson.includes('min_hands') ||
+    prereqJson.includes('min_sla_caster_level') ||
+    prereqJson.includes('size_in');
+
+  const isSkillUtility =
+    explicitCat === 'skill' ||
+    feat.skillCheckCombatBonus !== undefined ||
+    feat.repeatable?.targetCategory === 'skill' ||
+    allModifiers.some((m) => m.target.startsWith('skill:'));
+
+  const isSpellcasting =
+    !isMetamagic &&
+    (explicitCat === 'spellcasting' ||
+      explicitCat === 'item_creation' ||
+      feat.repeatable?.targetCategory === 'school' ||
+      allModifiers.some((m) =>
+        ['caster_level', 'spell_resistance', 'spell_penetration', 'spells_per_day', 'turn_undead', 'spell_dc'].some(
+          (t) => m.target.includes(t)
         )
-      )) ||
-    prereqJson.includes('caster_level') ||
-    prereqJson.includes('spells') ||
-    descLower.includes('metamagic') ||
-    descLower.includes('caster level') ||
-    descLower.includes('turn undead') ||
-    descLower.includes('spell');
+      ) ||
+      prereqJson.includes('caster_level') ||
+      prereqJson.includes('min_spell_level') ||
+      descLower.includes('caster level') ||
+      descLower.includes('turn undead') ||
+      descLower.includes('spell slot') ||
+      descLower.includes('cast spells'));
+
+  const isMagic = isMetamagic || isSpellcasting;
 
   const isCombat =
+    explicitCat === 'combat' ||
     isFighterBonus ||
-    (feat.ruleOverrides !== undefined && feat.ruleOverrides.length > 0) ||
+    (feat.ruleOverrides !== undefined && feat.ruleOverrides.length > 0 && !isProficiency) ||
     (feat.activatedAbilities !== undefined && feat.activatedAbilities.length > 0) ||
-    (feat.modifiers !== undefined &&
-      feat.modifiers.some((m) =>
-        ['attack', 'damage', 'crit_threat_doubling', 'ac', 'initiative', 'grapple', 'trip', 'disarm'].some((t) =>
-          m.target.includes(t)
-        )
-      )) ||
+    allModifiers.some((m) =>
+      ['attack', 'damage', 'crit_threat_doubling', 'ac', 'initiative', 'grapple', 'trip', 'disarm'].some((t) =>
+        m.target.includes(t)
+      )
+    ) ||
     prereqJson.includes('min_bab');
 
-  return { isFighterBonus, isCombat, isMagic };
+  const isItemCreation =
+    explicitCat === 'item_creation' ||
+    descLower.includes('create magic') ||
+    descLower.includes('scribe a scroll') ||
+    descLower.includes('brew a potion') ||
+    descLower.includes('forge a magic');
+
+  const isNonSrd = (feat.sourceOrigin ?? 'srd') !== 'srd';
+
+  return {
+    isFighterBonus,
+    isCombat,
+    isMetamagic,
+    isItemCreation,
+    isSpellcasting,
+    isMagic,
+    isSkillUtility,
+    isProficiency,
+    isMonster,
+    isNonSrd
+  };
 }
 
 /**
@@ -190,6 +275,7 @@ export function DnD35eRaceInspector({ race }: DnD35eRaceInspectorProps): JSX.Ele
     <div className="ui-dnd-inspector">
       <h3 className="ui-dnd-inspector__title">{race.name}</h3>
       <div className="ui-dnd-chip-row">
+        {renderSourceOriginBadge(race.sourceOrigin)}
         <Badge>{`Size: ${race.size.toUpperCase()}`}</Badge>
         <Badge>{`Type: ${race.creatureType}`}</Badge>
         {race.subtypes.length > 0 ? <Badge>{`Subtypes: ${race.subtypes.join(', ')}`}</Badge> : null}
@@ -260,6 +346,7 @@ export function DnD35eSkillInspector({
     <div className="ui-dnd-inspector">
       <h3 className="ui-dnd-inspector__title">{`${skill.name} (${skill.keyAbility.toUpperCase()})`}</h3>
       <div className="ui-dnd-chip-row">
+        {renderSourceOriginBadge(skill.sourceOrigin)}
         <Badge tone={isClassSkill ? 'success' : 'warning'}>
           {isClassSkill ? 'Class Skill (1 pt/rank)' : 'Cross-Class (2 pts/rank)'}
         </Badge>
@@ -352,9 +439,9 @@ export function DnD35eFeatInspector({ feat, prereqCtx }: DnD35eFeatInspectorProp
     <div className="ui-dnd-inspector">
       <h3 className="ui-dnd-inspector__title">{feat.name}</h3>
       <div className="ui-dnd-chip-row">
-        <Badge tone={feat.isFighterBonusFeat ? 'warning' : 'info'}>
-          {feat.isFighterBonusFeat ? 'Fighter Bonus Feat' : 'General Feat'}
-        </Badge>
+        {renderSourceOriginBadge(feat.sourceOrigin)}
+        {feat.isFighterBonusFeat ? <Badge tone="warning">Fighter Bonus Feat</Badge> : null}
+        {feat.metamagicDescriptor !== undefined ? <Badge tone="info">Metamagic</Badge> : null}
       </div>
       <p className="ui-dnd-inspector__desc">{feat.description}</p>
 
@@ -412,6 +499,7 @@ export function DnD35eSpellInspector({ spell, classId, domainIds }: DnD35eSpellI
     <div className="ui-dnd-inspector">
       <h3 className="ui-dnd-inspector__title">{spell.name}</h3>
       <div className="ui-dnd-chip-row">
+        {renderSourceOriginBadge(spell.sourceOrigin)}
         <Badge tone="info">{`School: ${schoolLabel}`}</Badge>
         {(spell.descriptors ?? []).map((tag) => (
           <Badge key={tag} tone="info">{`[${tag.toUpperCase()}]`}</Badge>

@@ -4,6 +4,7 @@ import { UIMode, type GameState } from '../types/game-state.types.ts';
 import type { ApplyIntent } from '../types/intents/interaction.intents.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import { processProjectileThrow } from './projectile.system.ts';
+import { processMeleeAttackIntent } from './combat.system.ts';
 import { processWandZap } from './zap.system.ts';
 import { executeBuyItem, executeSellItem, executeTradeSocialAction } from './shop.system.ts';
 import { processSocialIntent } from './social.system.ts';
@@ -12,20 +13,31 @@ import { VERBS, type Verb } from '../constants/verbs.constants.ts';
 import {
   ComponentType,
   type EquipmentComponent,
+  type FighterComponent,
   type InventoryComponent,
   type ItemComponent,
   type PositionComponent,
+  type StructuralComponent,
   type TagsComponent,
   type TemplateComponent
 } from '../types/components.types.ts';
-import { addComponent, getComponent, removeEntity, resolveEntityDisplayName } from '../core/ecs.ts';
+import {
+  addComponent,
+  getComponent,
+  getEntitiesAtPosition,
+  removeEntity,
+  resolveEntityDisplayName
+} from '../core/ecs.ts';
 import { getActiveRuleset } from '../rulesets/registry.ts';
 import { REACH_PROBE_ITEM_TAG, REACH_PROBE_MAX_RANGE_TILES } from './durability.system.ts';
 import { applyItemEffect } from './effects.system.ts';
+import { displaceEntityStep, isEntityImmovable } from './movement_displacement.ts';
 import { computeRectDistanceTiles, getEntitySpatialProfile } from './movement_footprint.ts';
 import { processQuestEvent } from './quest.system.ts';
 import type { EntityId } from '../types/game-state.types.ts';
+import { IntentType } from '../types/intents/intent.enum.ts';
 import type { ApplyIntentTarget, VerbOption } from '../types/intents/interaction.intents.ts';
+import { isHostile, provokeActorHostility } from '../utils/faction.ts';
 import {
   COMPANION_ORDERS_DIALOGUE_ID,
   getValidCompanionVerbsForTarget,
@@ -33,6 +45,7 @@ import {
   processCompanionVerbIntent
 } from './companion_commands.system.ts';
 import { startDialogue } from './dialogue.system.ts';
+import { processInteractIntent } from './intent.system.ts';
 import { canIgniteLightEmitterItem, igniteLightEmitter, refuelLightEmitter } from './light_emitter.system.ts';
 import { canHarvestCorpseEntity, harvestCorpseEntity } from './corpse.system.ts';
 import { isAltarOrShrineEntity, prayAtAltarOrShrine } from './religion.system.ts';
@@ -63,7 +76,10 @@ export const TOUCH_INTERACTION_VERBS: ReadonlySet<Verb> = new Set<Verb>([
   'mine',
   'chop',
   'build',
-  'craft'
+  'craft',
+  'talk',
+  'attack',
+  'shove'
 ]);
 
 const REACH_PROBE_VERBS: ReadonlySet<Verb> = new Set<Verb>(['search', 'disarm']);
@@ -263,6 +279,171 @@ export function processApplyIntent(
     return {
       state: addMessage(state, 'You can only command your own companions.', MessageLogCategory.System),
       success: false
+    };
+  }
+
+  if (intent.verb === 'talk') {
+    const targetEntityId =
+      intent.target.type === 'entity'
+        ? intent.target.entityId
+        : intent.target.type === 'tile'
+          ? getEntitiesAtPosition(state, intent.target.x, intent.target.y, intent.target.z ?? 0).find(
+              (id) =>
+                id !== intent.entityId &&
+                (getComponent(state, id, ComponentType.Dialogue) !== undefined ||
+                  isPlayerControlledCompanion(state, intent.entityId, id))
+            )
+          : undefined;
+    if (targetEntityId === undefined) {
+      return {
+        state: addMessage(state, 'There is no one there to talk to.', MessageLogCategory.System),
+        success: false
+      };
+    }
+    return processInteractIntent(state, {
+      type: IntentType.Interact,
+      entityId: intent.entityId,
+      targetId: targetEntityId
+    });
+  }
+
+  if (intent.verb === 'attack') {
+    const actorPos = getComponent(state, intent.entityId, ComponentType.Position) as PositionComponent | undefined;
+    const tileZ = actorPos?.z ?? 0;
+    const targetEntityId =
+      intent.target.type === 'entity'
+        ? intent.target.entityId
+        : intent.target.type === 'tile'
+          ? getEntitiesAtPosition(state, intent.target.x, intent.target.y, intent.target.z ?? tileZ).find((id) => {
+              if (id === intent.entityId) return false;
+              const f = getComponent(state, id, ComponentType.Fighter) as FighterComponent | undefined;
+              const s = getComponent(state, id, ComponentType.Structural) as StructuralComponent | undefined;
+              return (f !== undefined && f.hp > 0) || (s !== undefined && s.ruined !== true);
+            })
+          : undefined;
+    if (targetEntityId === undefined || targetEntityId === intent.entityId) {
+      return {
+        state: addMessage(state, 'There is nothing there to attack.', MessageLogCategory.System),
+        success: false
+      };
+    }
+    const targetFighter = getComponent(state, targetEntityId, ComponentType.Fighter) as FighterComponent | undefined;
+    const nextState =
+      targetFighter !== undefined && targetFighter.hp > 0
+        ? provokeActorHostility(state, targetEntityId, intent.entityId)
+        : state;
+    const attackRes = processMeleeAttackIntent(nextState, {
+      type: IntentType.MeleeAttack,
+      entityId: intent.entityId,
+      defenderId: targetEntityId
+    });
+    const resolvedEvent: ApplyResolvedEvent = {
+      type: GameEventType.ApplyResolved,
+      entityId: intent.entityId,
+      verb: intent.verb,
+      target: intent.target,
+      toolEntityId: intent.toolEntityId
+    };
+    return attackRes.success ? { ...attackRes, events: [resolvedEvent] } : attackRes;
+  }
+
+  if (intent.verb === 'shove') {
+    const actorPos = getComponent(state, intent.entityId, ComponentType.Position) as PositionComponent | undefined;
+    const tileZ = actorPos?.z ?? 0;
+    const targetEntityId =
+      intent.target.type === 'entity'
+        ? intent.target.entityId
+        : intent.target.type === 'tile'
+          ? getEntitiesAtPosition(state, intent.target.x, intent.target.y, intent.target.z ?? tileZ).find((id) => {
+              if (id === intent.entityId) return false;
+              const f = getComponent(state, id, ComponentType.Fighter) as FighterComponent | undefined;
+              return getComponent(state, id, ComponentType.Actor) !== undefined || (f !== undefined && f.hp > 0);
+            })
+          : undefined;
+    if (targetEntityId === undefined || targetEntityId === intent.entityId) {
+      return {
+        state: addMessage(state, 'There is no one there to shove.', MessageLogCategory.System),
+        success: false
+      };
+    }
+
+    const targetName = resolveEntityDisplayName(state, targetEntityId, 'them');
+    if (isEntityImmovable(state, targetEntityId)) {
+      return {
+        state: addMessage(state, `${targetName} is immovable and refuses to budge!`, MessageLogCategory.CombatMiss),
+        success: false
+      };
+    }
+
+    const targetWasHostile =
+      isHostile(state, targetEntityId, intent.entityId) || isHostile(state, intent.entityId, targetEntityId);
+
+    const activeRulesetForShove = getActiveRuleset(state);
+    if (targetWasHostile && activeRulesetForShove.resolveShove) {
+      const shoveRes = activeRulesetForShove.resolveShove(state, intent.entityId, targetEntityId);
+      const resolvedEvent: ApplyResolvedEvent = {
+        type: GameEventType.ApplyResolved,
+        entityId: intent.entityId,
+        verb: intent.verb,
+        target: intent.target,
+        toolEntityId: intent.toolEntityId
+      };
+      return shoveRes.success
+        ? { state: shoveRes.state, success: true, events: [resolvedEvent] }
+        : { state: shoveRes.state, success: false };
+    }
+
+    const targetPos = getComponent(state, targetEntityId, ComponentType.Position) as PositionComponent | undefined;
+    if (!actorPos || !targetPos) {
+      return { state, success: false };
+    }
+    const dx = Math.sign(targetPos.x - actorPos.x);
+    const dy = Math.sign(targetPos.y - actorPos.y);
+    if (dx === 0 && dy === 0) {
+      return {
+        state: addMessage(state, `You cannot get leverage to shove ${targetName}.`, MessageLogCategory.System),
+        success: false
+      };
+    }
+
+    const dispRes = displaceEntityStep({
+      state,
+      entityId: targetEntityId,
+      targetX: targetPos.x + dx,
+      targetY: targetPos.y + dy,
+      targetZ: targetPos.z ?? 0,
+      context: {
+        mode: 'forced_push',
+        isForced: true,
+        provokesAoO: false,
+        sourceEntityId: intent.entityId
+      }
+    });
+    let nextState = dispRes.state;
+    const msg = targetWasHostile
+      ? dispRes.moved
+        ? `You shove ${targetName} back!`
+        : `${targetName} cannot be pushed back further.`
+      : dispRes.moved
+        ? `You shove ${targetName} aside.`
+        : `${targetName} has nowhere to step aside.`;
+    const logCategory = targetWasHostile
+      ? dispRes.moved
+        ? MessageLogCategory.CombatHit
+        : MessageLogCategory.CombatMiss
+      : MessageLogCategory.System;
+    nextState = addMessage(nextState, msg, logCategory);
+    const resolvedEvent: ApplyResolvedEvent = {
+      type: GameEventType.ApplyResolved,
+      entityId: intent.entityId,
+      verb: intent.verb,
+      target: intent.target,
+      toolEntityId: intent.toolEntityId
+    };
+    return {
+      state: nextState,
+      success: dispRes.moved,
+      ...(dispRes.moved ? { events: [resolvedEvent] } : {})
     };
   }
 
@@ -597,6 +778,26 @@ function collectRawValidVerbsForTarget(
     }
     if (state.colonyState?.workshops[String(target.entityId)] !== undefined) {
       validVerbs.add('craft');
+    }
+    if (target.entityId !== sourceEntityId) {
+      const targetDialogue = getComponent(state, target.entityId, ComponentType.Dialogue);
+      const isCompanion = isPlayerControlledCompanion(state, sourceEntityId, target.entityId);
+      if ((targetDialogue !== undefined || isCompanion) && !isHostile(state, target.entityId, sourceEntityId)) {
+        validVerbs.add('talk');
+      }
+      const targetFighter = getComponent(state, target.entityId, ComponentType.Fighter) as FighterComponent | undefined;
+      const targetStructural = getComponent(state, target.entityId, ComponentType.Structural) as
+        StructuralComponent | undefined;
+      if (
+        (targetFighter !== undefined && targetFighter.hp > 0) ||
+        (targetStructural !== undefined && targetStructural.ruined !== true)
+      ) {
+        validVerbs.add('attack');
+      }
+      const targetActor = getComponent(state, target.entityId, ComponentType.Actor);
+      if (targetActor !== undefined || (targetFighter !== undefined && targetFighter.hp > 0)) {
+        validVerbs.add('shove');
+      }
     }
   } else if (target.type === 'tile') {
     const tileDef = getTileDefAt(state, target.x, target.y, target.z ?? 0);

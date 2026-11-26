@@ -6,7 +6,10 @@ import {
   type CrossingComponent,
   type MovementModes,
   type PositionComponent,
-  type PropertyOverlayComponent
+  type PropertyOverlayComponent,
+  type TagsComponent,
+  type TemplateComponent,
+  type TraitsComponent
 } from '../types/components.types.ts';
 import type { CardinalFacing } from '../types/components/world_components.types.ts';
 import { type GameEvent, GameEventType } from '../types/events.types.ts';
@@ -45,6 +48,36 @@ const NORMAL_TILE_MOVEMENT_COST = 100;
 
 /** Minimum multiplier applied to difficult terrain (`2`). */
 const DIFFICULT_TERRAIN_MIN_MULTIPLIER = 2;
+
+const IMMOVABLE_TAG_IDS: ReadonlySet<string> = new Set(['immovable', 'trait:immovable']);
+
+/**
+ * Checks whether an entity is immovable via `EntityTemplate.immovable`, `TagsComponent`,
+ * `TraitsComponent`, or `PropertyOverlayComponent.grantedTags` (`immovable` / `trait:immovable`).
+ *
+ * @param state Current readonly GameState.
+ * @param entityId Target entity ID.
+ * @returns True if the entity resists all forced displacement (`shove`, `Bull Rush`, `forced_push`, `forced_pull`).
+ */
+export function isEntityImmovable(state: Readonly<GameState>, entityId: EntityId): boolean {
+  const templateComp = getComponent(state, entityId, ComponentType.Template) as TemplateComponent | undefined;
+  if (templateComp && state.campaign.entities[templateComp.templateId]?.immovable === true) {
+    return true;
+  }
+  const tagsComp = getComponent(state, entityId, ComponentType.Tags) as TagsComponent | undefined;
+  if (tagsComp?.tags.some((t) => IMMOVABLE_TAG_IDS.has(t))) {
+    return true;
+  }
+  const traitsComp = getComponent(state, entityId, ComponentType.Traits) as TraitsComponent | undefined;
+  if (traitsComp?.traits.some((t) => IMMOVABLE_TAG_IDS.has(t))) {
+    return true;
+  }
+  const overlay = getComponent(state, entityId, ComponentType.PropertyOverlay) as PropertyOverlayComponent | undefined;
+  if (overlay?.grantedTags?.some((t) => IMMOVABLE_TAG_IDS.has(t))) {
+    return true;
+  }
+  return false;
+}
 
 function findActiveCrossingAtPosition(
   state: Readonly<GameState> | undefined,
@@ -439,6 +472,18 @@ export function displaceEntityStep(params: {
       stepsMoved: 0,
       finalPos: { x: targetX, y: targetY },
       stopReason: 'out_of_bounds',
+      events: []
+    };
+  }
+
+  if (context.isForced && isEntityImmovable(state, entityId)) {
+    return {
+      state,
+      moved: false,
+      anchorMoved: false,
+      stepsMoved: 0,
+      finalPos: { x: fromPos.x, y: fromPos.y },
+      stopReason: 'solid_obstacle',
       events: []
     };
   }

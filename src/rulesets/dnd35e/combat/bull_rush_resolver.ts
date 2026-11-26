@@ -1,6 +1,6 @@
 import { addComponent, getComponent, resolveEntityDisplayName } from '../../../core/ecs.ts';
 import { addMessage, MessageLogCategory } from '../../../systems/message.system.ts';
-import { displaceEntityAlongVector } from '../../../systems/movement_displacement.ts';
+import { displaceEntityAlongVector, isEntityImmovable } from '../../../systems/movement_displacement.ts';
 import { ComponentType, type DamageComponent, type PositionComponent } from '../../../types/components.types.ts';
 import type { EntityId, GameState } from '../../../types/game-state.types.ts';
 import { evaluateDnD35eEntityDAG } from '../cartridge/dnd35e_dag_adapter.ts';
@@ -12,6 +12,12 @@ import { resolveCombatManeuver } from './maneuvers_conditions.ts';
 
 /** Margin of victory step (every `5` points) adding an extra `5 ft` (1 square) to Bull Rush push distance. */
 const BULL_RUSH_EXTRA_SQUARE_STEP = 5;
+
+/** Baseline Improved Bull Rush bonus (`+4`) used only when explicitly forced via caller override without DAG modifiers. */
+const IMPROVED_BULL_RUSH_FALLBACK_BONUS = 4;
+
+/** Baseline racial/structural stability bonus (`+4`) against Bull Rush checks (`trait:stability`). */
+const BULL_RUSH_STABILITY_BONUS = 4;
 
 /** Dungeon Crasher Tier 1 wall-slam damage dice count (`4d6`) and STR multiplier (`2x`). */
 const DUNGEON_CRASHER_T1_DICE = 4;
@@ -98,12 +104,45 @@ export function resolveBullRushImpact(
     };
   }
 
+  const defName = resolveEntityDisplayName(state, defenderId, 'Defender');
+  if (
+    isEntityImmovable(state, defenderId) ||
+    defenderEval.selfTags.includes('trait:immovable') ||
+    defenderEval.selfTags.includes('immovable')
+  ) {
+    const immState = addMessage(
+      state,
+      `[Bull Rush] ${defName} is immovable and cannot be pushed back!`,
+      MessageLogCategory.CombatMiss
+    );
+    return {
+      state: immState,
+      success: false,
+      attackerTotal: 0,
+      defenderTotal: 0,
+      pushedSquares: 0,
+      collidedWithWall: false,
+      wallCrashDamage: 0,
+      finalPosition: { x: defenderPos.x, y: defenderPos.y }
+    };
+  }
+
   const atkStrMod = attackerEval.dagResult.effectiveAbilityModifiers.str;
   const defStrMod = defenderEval.dagResult.effectiveAbilityModifiers.str;
-  const hasImpBullRush =
+  const bullRushMods = (attackerEval.statModifiers ?? []).filter((m) => m.targetStat === 'bull_rush');
+  const declarativeBullRushBonus =
+    bullRushMods.length > 0
+      ? resolveTypedModifiersWithBreakdown(bullRushMods, { selfTags: attackerEval.selfTags }).total
+      : 0;
+  const resolvedBullRushBonus =
+    params.hasImprovedBullRush === true && declarativeBullRushBonus === 0
+      ? IMPROVED_BULL_RUSH_FALLBACK_BONUS
+      : params.hasImprovedBullRush === false
+        ? 0
+        : declarativeBullRushBonus;
+  const suppressesAoO =
     params.hasImprovedBullRush ??
-    (attackerEval.dndData.feats.includes('improved_bull_rush') ||
-      attackerEval.selfTags.includes('feat:improved_bull_rush'));
+    attackerEval.ruleOverrides?.some((r) => r.ruleKey === 'bull_rush_no_aoo' && r.value === true) === true;
 
   const maneuverRes = resolveCombatManeuver({
     maneuver: 'bull_rush',
@@ -115,13 +154,16 @@ export function resolveBullRushImpact(
     defenderStrOrDexMod: defStrMod,
     attackerTouchAttackBonus: attackerEval.dagResult.attackBonus,
     defenderTouchAC: defenderEval.dagResult.acBreakdown.touchAC,
-    hasImprovedManeuverFeat: hasImpBullRush,
-    defenderStabilityBonus: defenderEval.selfTags.includes('trait:stability') ? 4 : 0,
+    hasImprovedManeuverFeat: false,
+    overrides: {
+      opposedBonus: resolvedBullRushBonus,
+      provokesAoO: !suppressesAoO
+    },
+    defenderStabilityBonus: defenderEval.selfTags.includes('trait:stability') ? BULL_RUSH_STABILITY_BONUS : 0,
     ...(params.forcedOpposedRolls !== undefined ? { forcedOpposedRolls: params.forcedOpposedRolls } : {})
   });
 
   const atkName = resolveEntityDisplayName(state, attackerId, 'Attacker');
-  const defName = resolveEntityDisplayName(state, defenderId, 'Defender');
 
   if (!maneuverRes.opposedSuccess) {
     const missState = addMessage(

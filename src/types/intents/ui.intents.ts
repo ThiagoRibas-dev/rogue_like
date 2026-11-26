@@ -97,6 +97,23 @@ export interface ToggleLegendsIntent extends BaseIntent {
   readonly isImmediate: true;
 }
 
+/** Intent to toggle the 3D Daggerfall-style dungeon automap modal overlay. */
+export interface ToggleAutomapIntent extends BaseIntent {
+  readonly type: IntentType.ToggleAutomap;
+  readonly isImmediate: true;
+}
+
+/** Intent to add, update, or remove a persistent player note pinned on the 3D automap. */
+export interface SetAutomapNoteIntent extends BaseIntent {
+  readonly type: IntentType.SetAutomapNote;
+  readonly areaId: string;
+  readonly x: number;
+  readonly y: number;
+  readonly z: number;
+  readonly label: string | null;
+  readonly isImmediate: true;
+}
+
 /** Intent to toggle a cartridge-contributed modal overlay by modal ID. */
 export interface ToggleCartridgeModalIntent extends BaseIntent {
   readonly type: IntentType.ToggleCartridgeModal;

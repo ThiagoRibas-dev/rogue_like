@@ -36,6 +36,10 @@ export interface ActorComponent {
   readonly movementModes?: MovementModes | undefined;
   /** Energy accumulated since the actor's last 100-energy full-round turn-start tick. */
   readonly rtwpRoundEnergyElapsed?: number | undefined;
+  /** Canonical language IDs spoken and understood by this actor (Console Tier 1 default: `['common']`). */
+  readonly languages?: ReadonlyArray<string> | undefined;
+  /** Primary spoken language ID used when rendering dialogue trees without an explicit node override. */
+  readonly primaryLanguage?: string | undefined;
 }
 
 /**

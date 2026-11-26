@@ -2,6 +2,7 @@
   "judicious_spell": {
     "id": "judicious_spell",
     "name": "Judicious Spell",
+    "sourceOrigin": "homebrew",
     "description": "You shape your area spells so they spare your companions. Allies within the area of an offensive spell cast with this feat are unaffected by its harmful effects. A judicious spell uses up a spell slot one level higher than the spell's actual level.",
     "isFighterBonusFeat": false,
     "metamagicDescriptor": {

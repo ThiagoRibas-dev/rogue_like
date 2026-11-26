@@ -2,6 +2,7 @@ import type { JSX } from 'preact';
 import { createToggleCartridgeModalAction } from '../../../actions/core.actions.ts';
 import { queuePlayerIntent } from '../../../core/game-loop.ts';
 import { markDomainDirty, PresentationDomain } from '../../../core/presentation_queue.ts';
+import { getDebugModeEnabled } from '../../../core/settings.ts';
 import { type EntityId, type GameState, UIMode } from '../../../types/game-state.types.ts';
 import { isEffectiveSpriteMode } from '../../procedural_sprites.ts';
 import { getActiveCartridgeUI } from '../cartridge_ui_registry.ts';
@@ -36,7 +37,10 @@ export function CommandDockCard({ state, playerId, isHudFocused }: CommandDockCa
       [cmd.commandId, cmd.replacesCommandId].filter((id): id is string => id !== undefined)
     )
   );
-  const consoleDockCommands = DOCK_COMMANDS.filter((spec) => !replacedCommandIds.has(spec.commandId));
+  const debugEnabled = getDebugModeEnabled();
+  const consoleDockCommands = DOCK_COMMANDS.filter(
+    (spec) => !replacedCommandIds.has(spec.commandId) && (!spec.requiresDebugMode || debugEnabled)
+  );
 
   return (
     <section
@@ -75,7 +79,7 @@ export function CommandDockCard({ state, playerId, isHudFocused }: CommandDockCa
             {consoleDockCommands.map((spec) => {
               const isActive =
                 (spec.activeMode !== undefined && state.uiMode === spec.activeMode) ||
-                (spec.commandId === 'action.target_toggle' && Boolean(state.targetingMode?.active)) ||
+                (spec.commandId === 'combat.target_toggle' && Boolean(state.targetingMode?.active)) ||
                 (spec.commandId === 'action.inspect' && Boolean(state.inspectMode?.active));
               return (
                 <button

@@ -1,0 +1,59 @@
+{
+  "speak_with_dead": {
+    "id": "speak_with_dead",
+    "name": "Speak with Dead",
+    "sourceOrigin": "srd",
+    "description": "You grant the semblance of life and intellect to a corpse or silent spirit, allowing it to answer questions.",
+    "level": 3,
+    "levelByClass": {
+      "cleric": 3
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "necromancy",
+    "descriptors": [
+      "language_dependent"
+    ],
+    "classification": "spell",
+    "castingTime": "10_minutes",
+    "range": "personal",
+    "duration": "1 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectBundle": {
+      "bundleId": "speak_with_dead_bundle",
+      "name": "Speak with Dead",
+      "category": "trait",
+      "usageMode": "passive",
+      "modifiers": [],
+      "ruleOverrides": [],
+      "grantedTags": [
+        "lang:speak_creature_type:undead"
+      ],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": [],
+      "classSkillsAdded": [],
+      "grantedFeats": [],
+      "virtualFeatGrants": []
+    },
+    "tags": [
+      "divine",
+      "necromancy",
+      "language",
+      "undead"
+    ]
+  }
+}

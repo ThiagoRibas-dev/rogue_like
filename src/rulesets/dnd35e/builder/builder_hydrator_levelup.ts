@@ -12,6 +12,7 @@ import { getDnD35EntityData, setDnD35EntityData } from '../srd_registry.ts';
 import type { DnD35CharacterLevelRecord } from '../types/dnd35e.types.ts';
 import { getDnD35SystemContent } from '../types/dnd35e_system.types.ts';
 import type { LevelUpChoice } from './builder_core.ts';
+import { computeLevelUpFeatSlots } from './builder_feats.ts';
 import { buildPrerequisiteContextForActor } from './builder_validation.ts';
 
 /**
@@ -85,6 +86,16 @@ export function applyLevelUpToActor(
   const conMod = computeAbilityModifier(computeEffectiveAbilityScore(dndData.abilityScores.con));
   const prevChassis = aggregateProgressionChassis(dndData.tracks, conMod, dndData.levelAdjustment ?? 0);
   const nextCharLevel = prevChassis.totalHD + 1;
+
+  const combinedAcfs = [...(dndData.selectedAcfs ?? []), ...(choice.selectedAcfs ?? [])];
+  const allowedFeatSlots = computeLevelUpFeatSlots(classDef, nextClassLevel, nextCharLevel, combinedAcfs);
+  if (choice.selectedFeats.length > allowedFeatSlots.length) {
+    return {
+      state,
+      success: false,
+      errorReason: `${classDef.name} level ${nextClassLevel} (HD ${nextCharLevel}) grants ${allowedFeatSlots.length} feat slot(s), but ${choice.selectedFeats.length} feat(s) were supplied.`
+    };
+  }
 
   const rawRoll =
     choice.hpMethod === 'roll'

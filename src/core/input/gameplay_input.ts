@@ -107,17 +107,22 @@ function cycleVisibleTarget(state: GameState, playerEntityId: EntityId, delta: n
   const targeting = state.targetingMode;
   if (!targeting?.active) return false;
 
-  const candidates: Array<{ readonly id: EntityId; readonly x: number; readonly y: number }> = [];
+  const hostileCandidates: Array<{ readonly id: EntityId; readonly x: number; readonly y: number }> = [];
+  const allLivingCandidates: Array<{ readonly id: EntityId; readonly x: number; readonly y: number }> = [];
   for (const id of state.entities) {
     if (id === playerEntityId) continue;
     const fighter = getComponent(state, id, ComponentType.Fighter) as FighterComponent | undefined;
     const pos = getComponent(state, id, ComponentType.Position) as PositionComponent | undefined;
     if (!fighter || fighter.hp <= 0 || !pos) continue;
-    if (!isHostile(state, playerEntityId, id)) continue;
     if (!isTileKeyInFov(state, pos.x, pos.y)) continue;
-    candidates.push({ id, x: pos.x, y: pos.y });
+    const entry = { id, x: pos.x, y: pos.y };
+    allLivingCandidates.push(entry);
+    if (isHostile(state, playerEntityId, id)) {
+      hostileCandidates.push(entry);
+    }
   }
 
+  const candidates = hostileCandidates.length > 0 ? hostileCandidates : allLivingCandidates;
   if (candidates.length === 0) return false;
   candidates.sort((a, b) => (a.y !== b.y ? a.y - b.y : a.x - b.x));
 

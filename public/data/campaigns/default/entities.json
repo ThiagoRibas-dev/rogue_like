@@ -33,6 +33,10 @@
     "tags": [
       "actor"
     ],
+    "primaryLanguage": "common",
+    "languages": [
+      "common"
+    ],
     "faction": "player"
   },
   "orc": {
@@ -508,6 +512,7 @@
     "fg": "#f1c40f",
     "bg": "transparent",
     "isActor": true,
+    "immovable": true,
     "speed": 80,
     "fighter": {
       "maxHp": 50,
@@ -644,6 +649,8 @@
     "isActor": true,
     "speed": 95,
     "tags": ["actor", "town"],
+    "primaryLanguage": "common",
+    "languages": ["common", "elven", "draconic"],
     "faction": "town",
     "memory": {
       "factionStandings": {},

@@ -244,7 +244,7 @@ export function LegendsModal(): JSX.Element | null {
       title={`${macro.legends.worldName} — World Legends`}
       subtitle={`Year ${macro.legends.simulatedYears + calendar.year}, ${calendar.season.toUpperCase()} Day ${calendar.dayOfSeason} · Ring 2 Tick ${macro.currentTick}`}
       size="xl"
-      fullHeight
+      scrollMode="panes"
       onClose={handleClose}
       footer={
         <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
@@ -282,7 +282,7 @@ export function LegendsModal(): JSX.Element | null {
           />
         </div>
 
-        <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden' }}>
           {activeTab === 'map' ? (
             <SplitPane
               leftWidth="minmax(320px, 1.3fr)"
@@ -548,57 +548,61 @@ export function LegendsModal(): JSX.Element | null {
           ) : null}
 
           {activeTab === 'chronicle' ? (
-            <Panel
-              title="World Historical Chronicle"
-              headerActions={
-                <div style={{ display: 'flex', gap: 'var(--ui-space-1)', flexWrap: 'wrap' }}>
-                  <Button
-                    size="sm"
-                    variant={selectedEraFilter === 'all' ? 'primary' : 'secondary'}
-                    onClick={(): void => setSelectedEraFilter('all')}
-                  >
-                    All Eras
-                  </Button>
-                  {macro.legends.eras.map((era) => (
+            <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+              <Panel
+                title="World Historical Chronicle"
+                headerActions={
+                  <div style={{ display: 'flex', gap: 'var(--ui-space-1)', flexWrap: 'wrap' }}>
                     <Button
-                      key={era.id}
                       size="sm"
-                      variant={selectedEraFilter === era.id ? 'primary' : 'secondary'}
-                      onClick={(): void => setSelectedEraFilter(era.id)}
+                      variant={selectedEraFilter === 'all' ? 'primary' : 'secondary'}
+                      onClick={(): void => setSelectedEraFilter('all')}
                     >
-                      {era.name}
+                      All Eras
                     </Button>
-                  ))}
-                </div>
-              }
-            >
-              <div className="ui-card-stack">
-                {filteredEvents.length === 0 ? (
-                  <p className="ui-field__hint">No chronicle events match the current filter.</p>
-                ) : (
-                  filteredEvents.slice(0, 100).map((evt) => (
-                    <div key={evt.id} className="ui-ledger-entry">
-                      <div
-                        style={{ display: 'flex', gap: 'var(--ui-space-2)', alignItems: 'center', flexWrap: 'wrap' }}
+                    {macro.legends.eras.map((era) => (
+                      <Button
+                        key={era.id}
+                        size="sm"
+                        variant={selectedEraFilter === era.id ? 'primary' : 'secondary'}
+                        onClick={(): void => setSelectedEraFilter(era.id)}
                       >
-                        <strong>{`Year ${evt.year} (${evt.season})`}</strong>
-                        <Badge
-                          tone={evt.importance === 'epic' ? 'warning' : evt.importance === 'major' ? 'info' : 'neutral'}
+                        {era.name}
+                      </Button>
+                    ))}
+                  </div>
+                }
+              >
+                <div className="ui-card-stack">
+                  {filteredEvents.length === 0 ? (
+                    <p className="ui-field__hint">No chronicle events match the current filter.</p>
+                  ) : (
+                    filteredEvents.slice(0, 100).map((evt) => (
+                      <div key={evt.id} className="ui-ledger-entry">
+                        <div
+                          style={{ display: 'flex', gap: 'var(--ui-space-2)', alignItems: 'center', flexWrap: 'wrap' }}
                         >
-                          {evt.kind}
-                        </Badge>
-                        {evt.siteId ? (
-                          <Button size="sm" variant="secondary" onClick={(): void => navigateToSite(evt.siteId!)}>
-                            {macro.sites[evt.siteId]?.name ?? evt.siteId}
-                          </Button>
-                        ) : null}
+                          <strong>{`Year ${evt.year} (${evt.season})`}</strong>
+                          <Badge
+                            tone={
+                              evt.importance === 'epic' ? 'warning' : evt.importance === 'major' ? 'info' : 'neutral'
+                            }
+                          >
+                            {evt.kind}
+                          </Badge>
+                          {evt.siteId ? (
+                            <Button size="sm" variant="secondary" onClick={(): void => navigateToSite(evt.siteId!)}>
+                              {macro.sites[evt.siteId]?.name ?? evt.siteId}
+                            </Button>
+                          ) : null}
+                        </div>
+                        <span>{evt.summary}</span>
                       </div>
-                      <span>{evt.summary}</span>
-                    </div>
-                  ))
-                )}
-              </div>
-            </Panel>
+                    ))
+                  )}
+                </div>
+              </Panel>
+            </div>
           ) : null}
         </div>
       </div>

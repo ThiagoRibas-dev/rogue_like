@@ -19,6 +19,7 @@ import { LedgerModal } from '../modals/LedgerModal.tsx';
 import { LegendsModal } from '../modals/LegendsModal.tsx';
 import { NemesisDossierModal } from '../modals/NemesisDossierModal.tsx';
 import { QuestsModal } from '../modals/QuestsModal.tsx';
+import { Automap3DModal } from '../modals/Automap3DModal.tsx';
 import { TradeModal } from '../modals/TradeModal.tsx';
 import { DialogHost } from '../primitives/DialogHost.tsx';
 import { ToastHost } from '../primitives/ToastHost.tsx';
@@ -52,6 +53,7 @@ export function AppUiRoot(): JSX.Element {
       <NemesisDossierModal />
       <LedgerModal />
       <LegendsModal />
+      <Automap3DModal />
       <DebugOverlay />
       <ConsoleModalHost />
       <HelpModal />

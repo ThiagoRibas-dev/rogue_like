@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { DnD35DamageTypeSchema } from './base_system.types.ts';
+import { ContentSourceOriginSchema, DnD35DamageTypeSchema } from './base_system.types.ts';
 import {
   DnD35EffectBundleSchema,
   DnD35ModifierTagConditionSchema,
@@ -269,6 +269,7 @@ export type DnD35SpellEffectUnit = z.infer<typeof DnD35SpellEffectUnitSchema>;
 export const DnD35SpellDefinitionSchema = z.object({
   id: z.string(),
   name: z.string(),
+  sourceOrigin: ContentSourceOriginSchema.default('srd'),
   description: z.string().default(''),
   level: z.number().int().min(0).max(9),
   levelByClass: z.record(z.string(), z.number().int().min(0).max(9)).default({}),

@@ -81,6 +81,7 @@ export function InvestigationModal(): JSX.Element | null {
       title="Investigation Board"
       subtitle="Known persons of interest and discovered evidence"
       size="lg"
+      scrollMode="panes"
       onClose={handleClose}
       footer={
         <Button variant="primary" size="sm" onClick={handleClose}>
@@ -88,7 +89,16 @@ export function InvestigationModal(): JSX.Element | null {
         </Button>
       }
     >
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--ui-space-3)' }}>
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 'var(--ui-space-3)',
+          flex: 1,
+          minHeight: 0,
+          overflow: 'hidden'
+        }}
+      >
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }} role="group" aria-label="Filter evidence">
           {INVESTIGATION_FILTERS.map((f) => (
             <Chip key={f.id} active={filterId === f.id} onClick={(): void => setFilterId(f.id)}>

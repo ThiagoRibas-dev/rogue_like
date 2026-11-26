@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ContentSourceOriginSchema } from './meta.ts';
 import { FactionRelationEnum } from './world.ts';
 
 /** Zod enum for categories of items. */
@@ -42,6 +43,7 @@ export const ItemDefinitionSchema = z.object({
   fg: z.string(),
   bg: z.string(),
   spriteId: z.string().optional(),
+  sourceOrigin: ContentSourceOriginSchema.optional(),
   category: ItemCategoryEnum,
   tags: z.array(z.string()).default([]),
   weight: z.number().nonnegative(),

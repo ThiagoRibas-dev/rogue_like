@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { ItemDefinitionSchema } from '../../../../types/campaign/item.ts';
-import { DnD35DamageTypeSchema, OnHitRiderDescriptorSchema } from './base_system.types.ts';
+import { ContentSourceOriginSchema, DnD35DamageTypeSchema, OnHitRiderDescriptorSchema } from './base_system.types.ts';
 import { DnD35EffectBundleSchema, DnD35ModifierTagConditionSchema } from './effect_system.types.ts';
 
 /** Canonical D&D 3.5e special material types. */
@@ -107,6 +107,7 @@ export type DnD35MagicalProperties = z.infer<typeof DnD35MagicalPropertiesSchema
 
 /** Complete D&D 3.5e Item Definition schema (`public/data/rulesets/dnd35e/items/<id>.json`). */
 export const DnD35ItemDefinitionSchema = ItemDefinitionSchema.extend({
+  sourceOrigin: ContentSourceOriginSchema.default('srd'),
   weaponStats: DnD35WeaponStatsSchema.optional(),
   armorStats: DnD35ArmorStatsSchema.optional(),
   specialMaterial: DnD35SpecialMaterialSchema.optional(),

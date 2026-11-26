@@ -4,6 +4,11 @@ import { getComponent } from '../../../core/ecs.ts';
 import { queuePlayerIntent } from '../../../core/game-loop.ts';
 import { PresentationDomain } from '../../../core/presentation_queue.ts';
 import { resolveDialogueTree } from '../../../systems/dialogue.system.ts';
+import {
+  evaluateActorDialogueComprehension,
+  getLanguageDisplayName,
+  obfuscateDialogueText
+} from '../../../systems/language.system.ts';
 import { evaluateCondition } from '../../../systems/trigger.system.ts';
 import { ComponentType, type MemoryComponent } from '../../../types/components.types.ts';
 import { type DialogueSelectedEvent, GameEventType } from '../../../types/events.types.ts';
@@ -57,6 +62,15 @@ export function DialogueModal(): JSX.Element | null {
   const npcName = resolveEntityDisplayName(state, npcEntityId);
   const npcMemory = getComponent(state, npcEntityId, ComponentType.Memory) as MemoryComponent | undefined;
 
+  const comprehension = evaluateActorDialogueComprehension(
+    state,
+    playerId,
+    npcEntityId,
+    node.languageId,
+    tree.languageId,
+    treeId
+  );
+
   let textToRender = state.activeDialogue.textOverride ?? node.text;
   if (!state.activeDialogue.textOverride && npcMemory?.rumorPool && npcMemory.rumorPool.length > 0) {
     const rumor = npcMemory.rumorPool[0];
@@ -64,6 +78,10 @@ export function DialogueModal(): JSX.Element | null {
       textToRender = `"${rumor.text}"\n\n${textToRender}`;
     }
   }
+  const activeLanguageId = comprehension.activeLanguageId || 'common';
+  const renderedSpeech = comprehension.understood
+    ? textToRender
+    : obfuscateDialogueText(textToRender, activeLanguageId);
 
   const rows: DialogueActionRow[] = [];
 
@@ -137,6 +155,18 @@ export function DialogueModal(): JSX.Element | null {
     });
   }
 
+  const displayedRows: ReadonlyArray<DialogueActionRow> = rows.map((row, idx) =>
+    comprehension.understood
+      ? row
+      : {
+          ...row,
+          text: obfuscateDialogueText(row.text, activeLanguageId, idx + 1),
+          isWiki: false
+        }
+  );
+
+  const canRespond = comprehension.understood && comprehension.canSpeakBack;
+
   const handleClose = (): void => {
     const intent: CloseDialogueIntent = {
       type: IntentType.CloseDialogue,
@@ -151,8 +181,9 @@ export function DialogueModal(): JSX.Element | null {
     if (!buttons || buttons.length === 0) return;
 
     if (event.key >= '1' && event.key <= String(MAX_QUICK_PICK_DIGITS)) {
+      if (!canRespond) return;
       const idx = Number(event.key) - 1;
-      const target = rows[idx];
+      const target = displayedRows[idx];
       if (target) {
         event.preventDefault();
         target.onSelect();
@@ -170,31 +201,62 @@ export function DialogueModal(): JSX.Element | null {
     }
   };
 
+  const languageLabel = comprehension.activeLanguageId
+    ? getLanguageDisplayName(comprehension.activeLanguageId)
+    : undefined;
+  const languageSubtitle = !comprehension.understood
+    ? `Unintelligible (${languageLabel ?? 'Unknown Tongue'}) — ${comprehension.comprehensionReason ?? 'Use Comprehend Languages, Tongues, or Walk Away'}`
+    : comprehension.comprehendedViaMagic
+      ? `Language: ${languageLabel ?? 'Translated'} [${comprehension.comprehensionReason ?? 'Magic'}${!comprehension.canSpeakBack ? ' — Listen Only' : ''}]`
+      : 'Use Arrow keys + Enter or keys 1–9 to respond';
+
   return (
     <ModalShell
       title={npcName}
-      subtitle="Use Arrow keys + Enter or keys 1–9 to respond"
+      subtitle={languageSubtitle}
       size="md"
       onClose={handleClose}
       footer={
         <Button variant="ghost" size="sm" onClick={handleClose}>
-          Leave Conversation
+          {comprehension.understood ? 'Leave Conversation' : 'Walk Away'}
         </Button>
       }
     >
       <div onKeyDown={handleOptionsKeyDown}>
+        {(!comprehension.understood || comprehension.comprehendedViaMagic) && (
+          <div className="ui-dialogue-lang-notice" role="status">
+            {!comprehension.understood ? (
+              <span>
+                <strong>Unknown Tongue ({languageLabel ?? 'Unfamiliar'}):</strong>{' '}
+                {comprehension.comprehensionReason ?? 'You cannot make out what they are saying.'}
+              </span>
+            ) : (
+              <span>
+                <strong>Comprehended via {comprehension.comprehensionReason ?? 'Magic'}</strong>
+                {languageLabel ? ` (${languageLabel})` : ''}
+                {!comprehension.canSpeakBack ? ' — you understand their words, though you cannot speak back.' : '.'}
+              </span>
+            )}
+          </div>
+        )}
+
         <p className="ui-dialogue-speech">
-          <WikiText text={textToRender} />
+          {comprehension.understood ? <WikiText text={renderedSpeech} /> : renderedSpeech}
         </p>
 
         <div ref={listRef} className="ui-dialogue-options" role="group" aria-label="Dialogue responses">
-          {rows.map((row, idx) => (
+          {displayedRows.map((row, idx) => (
             <button
               key={row.key}
               type="button"
               className="ui-dialogue-option"
               data-dialogue-option="true"
-              onClick={row.onSelect}
+              disabled={!canRespond}
+              aria-disabled={!canRespond}
+              onClick={(): void => {
+                if (!canRespond) return;
+                row.onSelect();
+              }}
             >
               <span className="ui-dialogue-option__index">{idx < MAX_QUICK_PICK_DIGITS ? `[${idx + 1}]` : '›'}</span>
               <span>{row.isWiki ? <WikiText text={row.text} /> : row.text}</span>

@@ -4,6 +4,7 @@
 
 import type * as ROT from 'rot-js';
 import {
+  createToggleAutomapAction,
   createToggleDebugAction,
   createToggleDossierAction,
   createToggleFactionsAction,
@@ -35,6 +36,7 @@ export interface DockCommandSpec {
   readonly commandId: string;
   readonly fallbackBadge?: string | undefined;
   readonly activeMode?: UIMode | undefined;
+  readonly requiresDebugMode?: boolean | undefined;
   readonly onTrigger: (state: GameState, playerEntityId: EntityId) => void;
 }
 
@@ -61,8 +63,8 @@ export const DOCK_COMMANDS: ReadonlyArray<DockCommandSpec> = [
     id: 'dock-btn-aim',
     label: 'Aim',
     icon: '🎯',
-    commandId: 'action.target_toggle',
-    fallbackBadge: 'R',
+    commandId: 'combat.target_toggle',
+    fallbackBadge: 'F',
     onTrigger: (_s, pId) => queuePlayerIntent(createToggleTargetingAction(pId))
   },
   {
@@ -77,7 +79,7 @@ export const DOCK_COMMANDS: ReadonlyArray<DockCommandSpec> = [
     id: 'dock-btn-wait',
     label: 'Wait',
     icon: '⏳',
-    commandId: 'move.wait',
+    commandId: 'action.wait',
     fallbackBadge: 'Space',
     onTrigger: (_s, pId) => queuePlayerIntent(createWaitAction(pId))
   },
@@ -95,7 +97,7 @@ export const DOCK_COMMANDS: ReadonlyArray<DockCommandSpec> = [
     label: 'Factions',
     icon: '⚑',
     commandId: 'panel.factions',
-    fallbackBadge: 'L',
+    fallbackBadge: 'J',
     activeMode: UIMode.Factions,
     onTrigger: (_s, pId) => queuePlayerIntent(createToggleFactionsAction(pId))
   },
@@ -136,19 +138,29 @@ export const DOCK_COMMANDS: ReadonlyArray<DockCommandSpec> = [
     onTrigger: (_s, pId) => queuePlayerIntent(createToggleLegendsAction(pId))
   },
   {
+    id: 'dock-btn-automap',
+    label: '3D Map',
+    icon: '🧭',
+    commandId: 'panel.automap',
+    fallbackBadge: 'M',
+    activeMode: UIMode.Automap,
+    onTrigger: (_s, pId) => queuePlayerIntent(createToggleAutomapAction(pId))
+  },
+  {
     id: 'dock-btn-debug',
     label: 'Debug',
     icon: '⚡',
     commandId: 'panel.debug',
-    fallbackBadge: '`',
+    fallbackBadge: 'Alt+`',
     activeMode: UIMode.Debug,
+    requiresDebugMode: true,
     onTrigger: (_s, pId) => queuePlayerIntent(createToggleDebugAction(pId))
   },
   {
     id: 'dock-btn-settings',
     label: 'Config',
     icon: '⚙️',
-    commandId: 'system.open_settings',
+    commandId: 'system.escape_or_pause',
     fallbackBadge: 'Esc',
     activeMode: UIMode.Settings,
     onTrigger: (_s, pId) => queuePlayerIntent(createToggleSettingsAction(pId))

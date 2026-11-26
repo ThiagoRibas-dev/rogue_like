@@ -1,14 +1,17 @@
-import { getComponent, getEntitiesAtPosition } from '../core/ecs.ts';
+import { getComponent, getEntitiesAtPosition, resolveEntityDisplayName } from '../core/ecs.ts';
 import { getRuleset } from '../rulesets/registry.ts';
-import { ComponentType } from '../types/components.types.ts';
+import { ComponentType, type FighterComponent } from '../types/components.types.ts';
 import { type GameState } from '../types/game-state.types.ts';
 import {
   type FireAimedIntent,
   type MoveTargetIntent,
   type ToggleTargetingIntent
 } from '../types/intents/combat.intents.ts';
-import { isHostile } from '../utils/faction.ts';
+import { IntentType } from '../types/intents/intent.enum.ts';
+import { isHostile, provokeActorHostility } from '../utils/faction.ts';
 import { isInMapBounds } from '../map/map_accessor.ts';
+import { computeInteractionTargetDistanceTiles, resolveActorInteractionReachTiles } from './apply.system.ts';
+import { processMeleeAttackIntent } from './combat.system.ts';
 import { assignCompanionCommandTarget } from './companion_commands.system.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 
@@ -137,13 +140,40 @@ export function processFireAimedIntent(
     return ruleset.resolveAimedAction(restState as GameState, intent.entityId, { x: targetX, y: targetY }, context);
   }
 
-  const stateWithMsg = addMessage(
-    state,
-    `You target the tile at ${targetX}, ${targetY}.`,
-    MessageLogCategory.CombatHit
-  );
+  const entitiesAtTarget = getEntitiesAtPosition(state, targetX, targetY, targetZ);
+  const livingTargets = entitiesAtTarget.filter((id) => {
+    if (id === intent.entityId) return false;
+    const f = getComponent(state, id, ComponentType.Fighter) as FighterComponent | undefined;
+    return f !== undefined && f.hp > 0;
+  });
+  const chosenTargetId = livingTargets.find((id) => isHostile(state, intent.entityId, id)) ?? livingTargets[0];
 
-  // Turn off targeting
+  if (chosenTargetId !== undefined) {
+    const { targetingMode: _targetingMode, ...restState } = state;
+    const cleanState = restState as GameState;
+    const dist = computeInteractionTargetDistanceTiles(cleanState, intent.entityId, {
+      type: 'entity',
+      entityId: chosenTargetId
+    });
+    const reach = resolveActorInteractionReachTiles(cleanState, intent.entityId, 'attack');
+    if (dist !== null && dist > reach) {
+      const targetName = resolveEntityDisplayName(cleanState, chosenTargetId, 'Target');
+      return {
+        state: addMessage(cleanState, `${targetName} is out of melee reach.`, MessageLogCategory.System),
+        success: false
+      };
+    }
+    const provokedState = provokeActorHostility(cleanState, chosenTargetId, intent.entityId);
+    return processMeleeAttackIntent(provokedState, {
+      type: IntentType.MeleeAttack,
+      entityId: intent.entityId,
+      defenderId: chosenTargetId
+    });
+  }
+
+  const stateWithMsg = addMessage(state, `There is no target at (${targetX}, ${targetY}).`, MessageLogCategory.System);
+
+  // Turn off targeting without consuming a turn
   const { targetingMode: _targetingMode, ...restState } = stateWithMsg;
-  return { state: restState as GameState, success: true };
+  return { state: restState as GameState, success: false };
 }

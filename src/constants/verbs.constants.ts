@@ -3,8 +3,11 @@
  */
 export type Verb =
   | 'apply'
+  | 'attack'
   | 'throw'
   | 'kick'
+  | 'shove'
+  | 'talk'
   | 'open'
   | 'close'
   | 'lock'
@@ -54,8 +57,11 @@ export type Verb =
  */
 export const VERBS: ReadonlyArray<Verb> = [
   'apply',
+  'attack',
   'throw',
   'kick',
+  'shove',
+  'talk',
   'open',
   'close',
   'lock',

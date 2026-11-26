@@ -60,11 +60,7 @@ export function ChronosStrip({ state, playerId, isHudFocused }: ChronosStripProp
       <Badge tone="neutral">{clockText}</Badge>
       {pos ? (
         <Badge tone={zOffset !== 0 ? 'warning' : 'neutral'}>
-          {multiZ
-            ? zOffset !== 0
-              ? `X:${pos.x} Y:${pos.y} Z:${playerZ} (View:${viewZ})`
-              : `X:${pos.x} Y:${pos.y} Z:${playerZ}`
-            : `X:${pos.x} Y:${pos.y}`}
+          {zOffset !== 0 ? `X:${pos.x} Y:${pos.y} Z:${playerZ} (View:${viewZ})` : `X:${pos.x} Y:${pos.y} Z:${playerZ}`}
         </Badge>
       ) : null}
       {multiZ && zBounds ? (

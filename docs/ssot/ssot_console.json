@@ -7114,5 +7114,200 @@
     "antiPatterns": [
       "Do not hardcode faction standing combat penalties inside individual ruleset cartridges."
     ]
+  },
+  "src/types/automap3d.types.ts": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Pure data contracts for Daggerfall-style 3D multi-Z dungeon automaps, holistic campaign 3D atlases, camera projection, and persistent player map notes.",
+    "canonicalEntryPoints": [
+      "AutomapNote",
+      "AutomapVoxelKind",
+      "AutomapBeaconKind",
+      "AutomapVoxelEntityMarker",
+      "AutomapVoxelCell3D",
+      "AutomapBeacon3D",
+      "AutomapPortalSpline3D",
+      "AutomapAreaCluster3D",
+      "AutomapSceneBounds3D",
+      "AutomapScene3D",
+      "AutomapZCutawayMode",
+      "AutomapProjectionMode",
+      "AutomapCameraState3D",
+      "AutomapHitResult3D",
+      "AutomapVisibilityMode"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure TypeScript interfaces for 3D voxels, beacons, splines, area clusters, camera state, and notes.",
+      "excludes": "Canvas drawing calls, RNG mutation, or upward imports."
+    },
+    "antiPatterns": [
+      "Do not duplicate 3D automap voxel or note interfaces outside src/types/automap3d.types.ts."
+    ]
+  },
+  "src/constants/automap3d.constants.ts": {
+    "domain": "Core Console: Constants & Dictionaries",
+    "tier": "tier1_console",
+    "responsibility": "Named constants for 3D automap camera bounds, projection depth, cutaway opacity, beacon colors, and deterministic preview seeds.",
+    "canonicalEntryPoints": [
+      "DEFAULT_ATLAS_PREVIEW_SEED",
+      "AUTOMAP_DEFAULT_YAW_RAD",
+      "AUTOMAP_DEFAULT_PITCH_RAD",
+      "AUTOMAP_MIN_PITCH_RAD",
+      "AUTOMAP_MAX_PITCH_RAD",
+      "AUTOMAP_DEFAULT_ZOOM",
+      "AUTOMAP_MIN_ZOOM",
+      "AUTOMAP_MAX_ZOOM",
+      "AUTOMAP_PERSPECTIVE_DISTANCE",
+      "AUTOMAP_PERSPECTIVE_FOCAL",
+      "AUTOMAP_Z_VERTICAL_SCALE",
+      "AUTOMAP_WALL_HEIGHT_RATIO",
+      "AUTOMAP_FLOOR_SLAB_HEIGHT",
+      "AUTOMAP_STAIR_HEIGHT_RATIO",
+      "AUTOMAP_GHOST_ABOVE_ALPHA",
+      "AUTOMAP_LOWER_Z_DIM_STEP",
+      "AUTOMAP_LOWER_Z_MIN_ALPHA",
+      "AUTOMAP_HOLISTIC_AREA_GAP",
+      "AUTOMAP_HOLISTIC_VERTICAL_STEP_Z",
+      "AUTOMAP_HOLISTIC_STREAMING_PREVIEW_RADIUS",
+      "AUTOMAP_DEFAULT_CANVAS_WIDTH",
+      "AUTOMAP_DEFAULT_CANVAS_HEIGHT",
+      "AUTOMAP_BEACON_PLUMB_HALF_SPAN_Z",
+      "AUTOMAP_BEACON_COLORS",
+      "AUTOMAP_FALLBACK_COLORS",
+      "AUTOMAP_CUTAWAY_LABELS",
+      "createDefaultAutomapCamera"
+    ],
+    "ownershipBoundary": {
+      "includes": "Named projection/cutaway/beacon constants and default camera factory.",
+      "excludes": "Runtime GameState inspection or Canvas rendering."
+    },
+    "antiPatterns": [
+      "Do not hardcode camera angles, alpha values, or preview seeds outside automap3d.constants.ts."
+    ]
+  },
+  "src/rendering/automap3d/automap3d_scene.ts": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Declarative multi-Z 3D voxel extraction, hollow corridor wall-shell culling, live GameState automap extraction, and fixed-seed RNG wrapper.",
+    "canonicalEntryPoints": [
+      "AutomapPlacedEntityHint",
+      "AutomapPortalHint",
+      "BuildAreaSceneOptions",
+      "classifyTileVoxelKind",
+      "computeSceneBounds3D",
+      "buildAreaVoxelScene3D",
+      "buildLiveGameAutomapScene3D",
+      "withFixedRotSeed"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure 3D voxel/beacon extraction from finite maps, chunkGrid worlds, and live GameState with explored fog-of-war enforcement.",
+      "excludes": "Tile-ID hardcoding (Rule 21) or direct DOM/Canvas drawing."
+    },
+    "antiPatterns": [
+      "Never branch on content tile IDs or entity template IDs inside automap3d_scene.ts."
+    ]
+  },
+  "src/rendering/automap3d/automap3d_holistic.ts": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Fixed-seed multi-area campaign 3D atlas compilation with BFS 3D AABB collision-free packing and inter-area portal splines.",
+    "canonicalEntryPoints": [
+      "BuildHolisticAtlasOptions",
+      "buildCampaignHolisticScene3D"
+    ],
+    "ownershipBoundary": {
+      "includes": "Deterministic holistic multi-area generation, 3D offset packing, and cross-area portal spline construction.",
+      "excludes": "Direct DOM manipulation or live GameState mutation."
+    },
+    "antiPatterns": [
+      "Never call generateArea without preserving/restoring ROT.RNG state via withFixedRotSeed."
+    ]
+  },
+  "src/rendering/automap3d/automap3d_renderer.ts": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Zero-dependency HTML5 Canvas 3D projector with back-to-front depth sorting, Z-cutaway ghosting, vertical plumb-line beacons, and 3D hit-testing.",
+    "canonicalEntryPoints": [
+      "ProjectedPoint3D",
+      "RenderAutomapOptions3D",
+      "projectAutomapPoint3D",
+      "fitCameraToScene3D",
+      "renderAutomapScene3D",
+      "pickAutomapVoxelAtScreenPoint"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure 2D-context 3D projection, drawing, and screen-space voxel/beacon picking.",
+      "excludes": "Preact component state or external 3D WebGL libraries."
+    },
+    "antiPatterns": [
+      "Do not allocate per-voxel ctx.save/restore or mutate scene voxels during rendering."
+    ]
+  },
+  "src/rendering/ui/primitives/Automap3DViewport.tsx": {
+    "domain": "Core Console: Presentation & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Shared Preact interactive 3D dungeon canvas viewport primitive with orbit/pan/zoom controls, Z-cutaway toolbar, area filter, and inspector.",
+    "canonicalEntryPoints": [
+      "Automap3DViewportProps",
+      "Automap3DViewport"
+    ],
+    "ownershipBoundary": {
+      "includes": "Reusable interactive Canvas 3D host shared across gameplay Automap3DModal and Campaign Editor views.",
+      "excludes": "Ruleset-specific logic or direct GameState mutations."
+    },
+    "antiPatterns": [
+      "Do not duplicate interactive 3D viewport controls in separate gameplay and editor views."
+    ]
+  },
+  "src/rendering/ui/modals/Automap3DModal.tsx": {
+    "domain": "Core Console: Presentation & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "In-game Daggerfall-style 3D multi-Z dungeon automap modal (UIMode.Automap) with fog-of-war, God-Mode reveal toggle, and persistent map notes.",
+    "canonicalEntryPoints": [
+      "Automap3DModal"
+    ],
+    "ownershipBoundary": {
+      "includes": "Live GameState 3D automap modal presentation and SetAutomapNote/ToggleAutomap intent dispatching.",
+      "excludes": "Direct state mutation outside action intents."
+    },
+    "antiPatterns": [
+      "Never expose unexplored tiles outside explicit God Mode omniscient toggle."
+    ]
+  },
+  "src/utils/fuzzy_match.ts": {
+    "domain": "Core Console: Engine Foundations & Utilities",
+    "tier": "tier1_console",
+    "responsibility": "Deterministic fuzzy text matching and scoring helper shared by UI search inputs.",
+    "canonicalEntryPoints": [
+      "scoreFuzzyTextMatch"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/utils/fuzzy_match.ts.",
+      "excludes": "Ruleset-specific filtering or React/Preact state."
+    },
+    "antiPatterns": [
+      "Do not duplicate fuzzy string scoring loops inside individual UI modals."
+    ]
+  },
+  "src/systems/language.system.ts": {
+    "domain": "Core Console: Narrative, Quests & Social Systems",
+    "tier": "tier1_console",
+    "responsibility": "Console language registry, deterministic phonetic dialogue obfuscation cipher, and RulesetContract language comprehension delegation.",
+    "canonicalEntryPoints": [
+      "DEFAULT_SHARED_LANGUAGE_ID",
+      "LANGUAGE_DISPLAY_NAMES",
+      "getLanguageDisplayName",
+      "getActorKnownLanguages",
+      "obfuscateDialogueText",
+      "evaluateActorDialogueComprehension"
+    ],
+    "ownershipBoundary": {
+      "includes": "Console language lookups, phonetic ciphering, and generic comprehension delegation.",
+      "excludes": "Ruleset-specific creature-type or spell comprehension math."
+    },
+    "antiPatterns": [
+      "Do not hardcode ruleset spell IDs or creature-type exceptions inside Console language helpers."
+    ]
   }
 }
+

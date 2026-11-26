@@ -16,6 +16,7 @@ import {
 import type { GameState } from '../../../../types/game-state.types.ts';
 import { Chip } from '../../primitives/DataDisplay.tsx';
 import { CharBuilderClassOptions } from './CharBuilderClassOptions.tsx';
+import { renderSourceOriginBadge } from './DnD35eInspector.tsx';
 
 /** Resolves a human-readable D&D 3.5e class feature display name from `featureDetails` or `feats`. */
 export function resolveClassFeatureLabel(
@@ -110,6 +111,7 @@ export function CharBuilderClassStep({
         {activeCls ? (
           <>
             <h3 className="ui-dnd-inspector__title">{`${activeCls.name} (d${activeCls.hitDieSides} Hit Die)`}</h3>
+            <div className="ui-dnd-chip-row">{renderSourceOriginBadge(activeCls.sourceOrigin)}</div>
 
             <div className="ui-dnd-card">
               {activeCls.progression.slice(0, 5).map((row) => {

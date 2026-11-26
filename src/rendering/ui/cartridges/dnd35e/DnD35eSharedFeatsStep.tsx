@@ -22,12 +22,24 @@ import {
 } from '../../../../rulesets/dnd35e/types/dnd35e_system.types.ts';
 import { ComponentType } from '../../../../types/components.types.ts';
 import type { GameState } from '../../../../types/game-state.types.ts';
+import { scoreFuzzyTextMatch } from '../../../../utils/fuzzy_match.ts';
 import { Button } from '../../primitives/Button.tsx';
 import { Badge, Chip } from '../../primitives/DataDisplay.tsx';
-import { Select } from '../../primitives/FormControls.tsx';
+import { Select, TextInput } from '../../primitives/FormControls.tsx';
 import { classifyDnD35eFeatCategory, DnD35eFeatInspector } from './DnD35eInspector.tsx';
 
-type FeatFilterMode = 'all' | 'eligible' | 'fighter' | 'combat' | 'magic';
+type FeatFilterMode =
+  | 'all'
+  | 'eligible'
+  | 'fighter'
+  | 'combat'
+  | 'metamagic'
+  | 'item_creation'
+  | 'spellcasting'
+  | 'skill'
+  | 'proficiency'
+  | 'monster'
+  | 'non_srd';
 
 const TARGETED_SCHOOLS: ReadonlyArray<string> = [
   'abjuration',
@@ -151,7 +163,7 @@ export interface DnD35eSharedFeatsStepProps {
 }
 
 /**
- * Shared 2-pane Feat Selection step with category filter chips and repeatable target pickers.
+ * Shared 2-pane Feat Selection step with fuzzy search, category filter chips, and repeatable target pickers.
  */
 export function DnD35eSharedFeatsStep({
   sys,
@@ -164,23 +176,110 @@ export function DnD35eSharedFeatsStep({
   onUpdateSelectedFeats
 }: DnD35eSharedFeatsStepProps): JSX.Element {
   const [filterMode, setFilterMode] = useState<FeatFilterMode>('all');
-  const [inspectedFeatId, setInspectedFeatId] = useState<string>('power_attack');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [inspectedFeatId, setInspectedFeatId] = useState<string>('');
   const [selectedTargetByFeatId, setSelectedTargetByFeatId] = useState<Record<string, string>>({});
 
-  const allFeats = Object.values(sys.feats);
+  const allFeats = Object.values(sys.feats).sort((a, b) => a.name.localeCompare(b.name));
+  const hasNonSrdFeats = allFeats.some((f) => (f.sourceOrigin ?? 'srd') !== 'srd');
   const resolvedInspectedId = sys.feats[inspectedFeatId] ? inspectedFeatId : (allFeats[0]?.id ?? '');
   const activeFeat = sys.feats[resolvedInspectedId] ?? allFeats[0];
 
   const activeSlot = slots?.[selectedFeatIds.length];
   const chainedFeats = Array.from(new Set([...prereqCtx.feats, ...selectedFeatIds]));
 
-  const featModes: ReadonlyArray<{ readonly id: FeatFilterMode; readonly label: string }> = [
+  const featModes: Array<{ readonly id: FeatFilterMode; readonly label: string }> = [
     { id: 'all', label: 'All' },
     { id: 'eligible', label: 'Eligible' },
     { id: 'fighter', label: 'Fighter Bonus' },
     { id: 'combat', label: 'Combat' },
-    { id: 'magic', label: 'Metamagic / Magic' }
+    { id: 'metamagic', label: 'Metamagic' },
+    { id: 'item_creation', label: 'Item Creation' },
+    { id: 'spellcasting', label: 'Spellcasting' },
+    { id: 'skill', label: 'Skill & Utility' },
+    { id: 'proficiency', label: 'Proficiency' },
+    { id: 'monster', label: 'Monster / Natural' }
   ];
+  if (hasNonSrdFeats) {
+    featModes.push({ id: 'non_srd', label: 'Homebrew / Non-SRD' });
+  }
+
+  const trimmedQuery = searchQuery.trim();
+  const evaluatedFeats = allFeats
+    .map((feat) => {
+      const matchingSelected = selectedFeatIds.filter((f) => f === feat.id || f.startsWith(`${feat.id}:`));
+      const isSelected = matchingSelected.length > 0;
+      const isTargeted = feat.repeatable?.mode === 'targeted';
+      const isStacking = feat.repeatable?.mode === 'stacking';
+
+      const targetOpts = isTargeted ? getFeatTargetOptions(sys, feat, prereqCtx) : [];
+      const curTarget = isTargeted
+        ? selectedTargetByFeatId[feat.id] && targetOpts.includes(selectedTargetByFeatId[feat.id]!)
+          ? selectedTargetByFeatId[feat.id]
+          : targetOpts[0]
+        : undefined;
+
+      const candidateId = isTargeted && curTarget ? `${feat.id}:${curTarget}` : feat.id;
+      const evalCtx: PrerequisiteEvalContext = {
+        ...prereqCtx,
+        feats: chainedFeats,
+        ...(curTarget ? { targetId: curTarget } : {})
+      };
+
+      const alreadyOwned = isStacking
+        ? false
+        : isTargeted
+          ? alreadyOwnedFeatIds.includes(candidateId)
+          : alreadyOwnedFeatIds.includes(feat.id);
+      const alreadyPickedCurrentTarget = isTargeted && selectedFeatIds.includes(candidateId);
+      const allowedInSlot = activeSlot ? isFeatAllowedInSlot(feat, activeSlot) : true;
+      const meets = activeSlot?.ignorePrerequisites
+        ? true
+        : feat.prerequisites
+          ? evaluatePrerequisiteAST(feat.prerequisites, evalCtx)
+          : true;
+      const cat = classifyDnD35eFeatCategory(feat);
+
+      let matchesCategory = true;
+      if (filterMode === 'eligible') matchesCategory = meets && !alreadyOwned && allowedInSlot;
+      else if (filterMode === 'fighter') matchesCategory = cat.isFighterBonus;
+      else if (filterMode === 'combat') matchesCategory = cat.isCombat;
+      else if (filterMode === 'metamagic') matchesCategory = cat.isMetamagic;
+      else if (filterMode === 'item_creation') matchesCategory = cat.isItemCreation;
+      else if (filterMode === 'spellcasting') matchesCategory = cat.isSpellcasting;
+      else if (filterMode === 'skill') matchesCategory = cat.isSkillUtility;
+      else if (filterMode === 'proficiency') matchesCategory = cat.isProficiency;
+      else if (filterMode === 'monster') matchesCategory = cat.isMonster;
+      else if (filterMode === 'non_srd') matchesCategory = cat.isNonSrd;
+
+      let fuzzyScore: number | null = 0;
+      if (trimmedQuery.length > 0) {
+        const searchCandidate = `${feat.name} ${feat.description} ${feat.sourceOrigin ?? 'srd'}`;
+        fuzzyScore = scoreFuzzyTextMatch(trimmedQuery, searchCandidate);
+      }
+
+      return {
+        feat,
+        matchingSelected,
+        isSelected,
+        isTargeted,
+        isStacking,
+        targetOpts,
+        curTarget,
+        candidateId,
+        alreadyOwned,
+        alreadyPickedCurrentTarget,
+        allowedInSlot,
+        meets,
+        matchesCategory,
+        fuzzyScore
+      };
+    })
+    .filter((entry) => entry.matchesCategory && (trimmedQuery.length === 0 || entry.fuzzyScore !== null));
+
+  if (trimmedQuery.length > 0) {
+    evaluatedFeats.sort((a, b) => (b.fuzzyScore ?? 0) - (a.fuzzyScore ?? 0) || a.feat.name.localeCompare(b.feat.name));
+  }
 
   const activeFeatTarget = activeFeat ? selectedTargetByFeatId[activeFeat.id] : undefined;
 
@@ -189,6 +288,13 @@ export function DnD35eSharedFeatsStep({
       <div className="ui-dnd-wizard-pane">
         <div className="ui-dnd-filter-bar">
           <Badge tone={selectedFeatIds.length >= totalSlots ? 'success' : 'warning'}>{slotSummaryLabel}</Badge>
+          <TextInput
+            type="search"
+            ariaLabel="Search feats"
+            placeholder="Fuzzy search feats by name or effect..."
+            value={searchQuery}
+            onInput={setSearchQuery}
+          />
           <div className="ui-dnd-chip-row">
             {featModes.map((fm) => (
               <Chip key={fm.id} active={filterMode === fm.id} onClick={() => setFilterMode(fm.id)}>
@@ -199,44 +305,24 @@ export function DnD35eSharedFeatsStep({
         </div>
 
         <div className="ui-dnd-card-list">
-          {allFeats.map((feat) => {
-            const matchingSelected = selectedFeatIds.filter((f) => f === feat.id || f.startsWith(`${feat.id}:`));
-            const isSelected = matchingSelected.length > 0;
-            const isTargeted = feat.repeatable?.mode === 'targeted';
-            const isStacking = feat.repeatable?.mode === 'stacking';
-
-            const targetOpts = isTargeted ? getFeatTargetOptions(sys, feat, prereqCtx) : [];
-            const curTarget = isTargeted
-              ? selectedTargetByFeatId[feat.id] && targetOpts.includes(selectedTargetByFeatId[feat.id]!)
-                ? selectedTargetByFeatId[feat.id]
-                : targetOpts[0]
-              : undefined;
-
-            const candidateId = isTargeted && curTarget ? `${feat.id}:${curTarget}` : feat.id;
-            const evalCtx: PrerequisiteEvalContext = {
-              ...prereqCtx,
-              feats: chainedFeats,
-              ...(curTarget ? { targetId: curTarget } : {})
-            };
-
-            const alreadyOwned = isStacking
-              ? false
-              : isTargeted
-                ? alreadyOwnedFeatIds.includes(candidateId)
-                : alreadyOwnedFeatIds.includes(feat.id);
-            const alreadyPickedCurrentTarget = isTargeted && selectedFeatIds.includes(candidateId);
-            const allowedInSlot = activeSlot ? isFeatAllowedInSlot(feat, activeSlot) : true;
-            const meets = activeSlot?.ignorePrerequisites
-              ? true
-              : feat.prerequisites
-                ? evaluatePrerequisiteAST(feat.prerequisites, evalCtx)
-                : true;
-            const cat = classifyDnD35eFeatCategory(feat);
-
-            if (filterMode === 'eligible' && (!meets || alreadyOwned || !allowedInSlot)) return null;
-            if (filterMode === 'fighter' && !cat.isFighterBonus) return null;
-            if (filterMode === 'combat' && !cat.isCombat) return null;
-            if (filterMode === 'magic' && !cat.isMagic) return null;
+          {evaluatedFeats.length === 0 ? (
+            <div className="ui-dnd-card__sub">No feats match the active search or category filter.</div>
+          ) : null}
+          {evaluatedFeats.map((entry) => {
+            const {
+              feat,
+              matchingSelected,
+              isSelected,
+              isTargeted,
+              isStacking,
+              targetOpts,
+              curTarget,
+              candidateId,
+              alreadyOwned,
+              alreadyPickedCurrentTarget,
+              allowedInSlot,
+              meets
+            } = entry;
 
             const canAddMore =
               !alreadyOwned &&
@@ -281,9 +367,7 @@ export function DnD35eSharedFeatsStep({
                 }}
               >
                 <div className="ui-dnd-list-row__main">
-                  <span className="ui-dnd-card__title">
-                    {`${statusPrefix} ${feat.name}${targetBadge}${cat.isFighterBonus ? ' [Fighter]' : ''}`}
-                  </span>
+                  <span className="ui-dnd-card__title">{`${statusPrefix} ${feat.name}${targetBadge}`}</span>
                 </div>
 
                 <div className="ui-dnd-list-row__actions" onClick={(e) => e.stopPropagation()}>

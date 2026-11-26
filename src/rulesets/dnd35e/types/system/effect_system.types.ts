@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import {
+  ContentSourceOriginSchema,
   DnD35AlignmentSchema,
   DnD35DamageReductionSchema,
   DnD35DamageTypeSchema,
@@ -298,6 +299,7 @@ export type DnD35AcfSwap = z.infer<typeof DnD35AcfSwapSchema>;
 export const DnD35DomainDefinitionSchema = z.object({
   id: z.string(),
   name: z.string(),
+  sourceOrigin: ContentSourceOriginSchema.default('srd'),
   grantedPowerDescription: z.string(),
   allowedAlignments: z.array(DnD35AlignmentSchema).optional(),
   grantsDeityFavoredWeaponProficiencyAndFocus: z.boolean().optional(),

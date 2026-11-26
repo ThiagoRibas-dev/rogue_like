@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import {
   BabCurveIdSchema,
+  ContentSourceOriginSchema,
   DnD35AdvancementRangeSchema,
   DnD35AlignmentSchema,
   DnD35DamageReductionSchema,
@@ -86,6 +87,7 @@ export type DnD35TemplateHdTier = z.infer<typeof DnD35TemplateHdTierSchema>;
 export const DnD35TemplateSchema = z.object({
   templateId: z.string(),
   name: z.string(),
+  sourceOrigin: ContentSourceOriginSchema.default('srd'),
   kind: z.enum(['inherited', 'acquired']),
   targetCreatureTypes: z.array(z.string()).optional(),
   allowedAlignments: z.array(DnD35AlignmentSchema).optional(),
@@ -180,6 +182,7 @@ export type DnD35RhdProgression = z.infer<typeof DnD35RhdProgressionSchema>;
 export const DnD35RaceDefinitionSchema = z.object({
   id: z.string(),
   name: z.string(),
+  sourceOrigin: ContentSourceOriginSchema.default('srd'),
   isPlayableRace: z.boolean().default(false),
   creatureType: z.string().default('humanoid'),
   subtypes: z.array(z.string()).default([]),

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { CampaignData } from '../../../types/campaign.types.ts';
-import { DnD35AlignmentSchema } from './system/base_system.types.ts';
+import { ContentSourceOriginSchema, DnD35AlignmentSchema } from './system/base_system.types.ts';
 import {
   DnD35AcfSwapSchema,
   DnD35ActivatedAbilityDescriptorSchema,
@@ -60,6 +60,7 @@ export type DnD35ClassLevelRow = z.infer<typeof DnD35ClassLevelRowSchema>;
 export const DnD35ClassDefinitionSchema = z.object({
   id: z.string(),
   name: z.string(),
+  sourceOrigin: ContentSourceOriginSchema.default('srd'),
   isPrestige: z.boolean().default(false),
   isNpcClass: z.boolean().default(false),
   maxLevel: z.number().int().positive().default(20),
@@ -119,6 +120,8 @@ export type DnD35SkillRankThresholdGrant = z.infer<typeof DnD35SkillRankThreshol
 export const DnD35SkillDefinitionSchema = z.object({
   id: z.string(),
   name: z.string(),
+  sourceOrigin: ContentSourceOriginSchema.default('srd'),
+  skillGroup: z.enum(['general', 'knowledge', 'craft', 'perform', 'profession']).optional(),
   keyAbility: z.enum(['str', 'dex', 'con', 'int', 'wis', 'cha']),
   trainedOnly: z.boolean().default(false),
   acpMultiplier: z.union([z.literal(0), z.literal(1), z.literal(2)]).default(0),
@@ -185,6 +188,10 @@ export type DnD35SkillCheckCombatBonus = z.infer<typeof DnD35SkillCheckCombatBon
 export const DnD35FeatDefinitionSchema = z.object({
   id: z.string(),
   name: z.string(),
+  sourceOrigin: ContentSourceOriginSchema.default('srd'),
+  featCategory: z
+    .enum(['general', 'combat', 'metamagic', 'spellcasting', 'skill', 'proficiency', 'monster', 'item_creation'])
+    .optional(),
   description: z.string(),
   isFighterBonusFeat: z.boolean().default(false),
   repeatable: DnD35FeatRepeatableSchema.optional(),
@@ -240,6 +247,22 @@ export function getLastLoadedDnD35SystemContent(): DnD35SystemContent | null {
   return lastLoadedSystemContent;
 }
 
+function hasNonEmptySystemContent(sys: DnD35SystemContent): boolean {
+  return (
+    Object.keys(sys.classes).length > 0 ||
+    Object.keys(sys.skills).length > 0 ||
+    Object.keys(sys.feats).length > 0 ||
+    Object.keys(sys.spells).length > 0 ||
+    Object.keys(sys.races).length > 0
+  );
+}
+
+function recordLastLoadedSystemContent(parsed: DnD35SystemContent): void {
+  if (lastLoadedSystemContent === null || hasNonEmptySystemContent(parsed)) {
+    lastLoadedSystemContent = parsed;
+  }
+}
+
 /**
  * Safely parses raw system content records into a validated DnD35SystemContent structure.
  * @param raw Raw system content record dictionary.
@@ -249,17 +272,17 @@ export function parseDnD35SystemContent(raw: unknown): DnD35SystemContent {
   if (typeof raw === 'object' && raw !== null) {
     const cached = systemContentCache.get(raw);
     if (cached) {
-      lastLoadedSystemContent = cached;
+      recordLastLoadedSystemContent(cached);
       return cached;
     }
     const parsed = DnD35SystemContentSchema.parse(raw);
     systemContentCache.set(raw, parsed);
     systemContentCache.set(parsed, parsed);
-    lastLoadedSystemContent = parsed;
+    recordLastLoadedSystemContent(parsed);
     return parsed;
   }
   const parsed = DnD35SystemContentSchema.parse(raw ?? {});
-  lastLoadedSystemContent = parsed;
+  recordLastLoadedSystemContent(parsed);
   return parsed;
 }
 
@@ -274,7 +297,7 @@ export function getDnD35SystemContent(campaign: CampaignData): DnD35SystemConten
   const rawRef = campaign.systemContent;
   if (systemContentCache.has(rawRef)) {
     const cached = systemContentCache.get(rawRef) ?? null;
-    if (cached) lastLoadedSystemContent = cached;
+    if (cached) recordLastLoadedSystemContent(cached);
     return cached;
   }
   const result = DnD35SystemContentSchema.safeParse(rawRef);
@@ -282,7 +305,7 @@ export function getDnD35SystemContent(campaign: CampaignData): DnD35SystemConten
   systemContentCache.set(rawRef, parsed);
   if (parsed) {
     systemContentCache.set(parsed, parsed);
-    lastLoadedSystemContent = parsed;
+    recordLastLoadedSystemContent(parsed);
   }
   return parsed;
 }

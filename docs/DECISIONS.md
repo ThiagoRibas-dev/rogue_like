@@ -826,6 +826,22 @@ This document records architectural decisions whose rationale is **non-obvious o
   - Replaced raw JSON `<textarea>` fallbacks for `z.ZodRecord` / `z.ZodUnion` / `z.ZodDiscriminatedUnion` with structured Preact editors honoring `z.ZodDefault`, eliminated `#editor-layout` and all 29 legacy imperative `.ts` editor modules plus `modal.ui.ts`, and unified editor styling under `src/styles/views/editor.css` (`--ui-*` semantic tokens + `data-ui-density="compact"`).
   - *Rationale*: Removes leaked document key/mouse handlers, brings the editor under `InputScopeManager` (`TextInputGuard`) and `dialogService`, and shares all 3 console themes automatically.
 
+---
+
+### Language Comprehension, Scoped Procedural Doors, Immovable Guardians & 3-Tier Keybind Governance (Phase 50, Milestones 190–192)
+
+- **Decision 1: Console Phonetic Cipher + Cartridge Declarative Tag Comprehension (`language.system.ts`, `language_comprehension.ts`)**:
+  - Placed deterministic language-profiled phonetic cipher generation (`obfuscateDialogueText`) and baseline language matching in Tier 1 Console (`language.system.ts`), while routing creature-type rules (animals, plants, vermin, oozes, mindless/dead undead) and tabletop spell tags (`lang:comprehend_all`, `lang:speak_all`, `lang:speak_creature_type:<type>`, `trait:telepathy`) through `RulesetContract.evaluateLanguageComprehension`.
+  - *Rationale*: Keeps foreign dialogue unreadable/garbled across every ruleset without spoiling meaning, while adhering strictly to Rule 21 (any future spell or item emitting `lang:*` tags unlocks speech without modifying TypeScript).
+
+- **Decision 2: Digger-Scoped Door Framing & Declarative `immovable` Flag (`generator_stages.ts`, `movement_displacement.ts`, `apply.system.ts`)**:
+  - Applied opposing-wall-frame and orthogonal-spacing validation exclusively inside `ROT.Map.Digger`'s `r.getDoors()` loop rather than global entity-placement validation, and added `EntityTemplate.immovable` + `trait:immovable` checked by `isEntityImmovable` while routing D&D 3.5e hostile `shove` to stationary Bull Rush knockback.
+  - *Rationale*: Fixes ugly double/freestanding procedural dungeon doors without breaking side-by-side magical portals or *Gate* spells, and lets guardians resist shoves declaratively.
+
+- **Decision 3: 3-Tier Command Taxonomy, Default-Off `debugModeEnabled` & Non-Breaking `keybindRevision = 3` (`settings.ts`, `command_catalog.ts`, `keybind_migration.ts`)**:
+  - Retained `settingsVersion = 2` while bumping `keybindRevision = 3` so existing v2 schema assertions stay intact while `upgradePrePhase50CommandBindings` migrates untouched legacy stock bindings (`R` -> `F`/`dnd35e:rest_8h`, `T` -> `R`, `V` -> `K` for Investigation and `V` for Verb Menu, `J` for Factions, `Alt+*` for Debug) without overwriting custom user rebinds, and gated all Debug shortcuts/UI behind `debugModeEnabled: false`.
+  - *Rationale*: Prevents accidental map spoilers (`R` revealing the whole map instead of aiming or resting), preserves player customizations across upgrades, and cleanly separates Primary combat/movement keys from Secondary panels and Tertiary/Debug commands.
+
 
 
 

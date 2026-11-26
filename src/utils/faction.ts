@@ -11,7 +11,8 @@ import {
   type MemoryComponent,
   type TemplateComponent
 } from '../types/components.types.ts';
-import { getComponent } from '../core/ecs.ts';
+import { addComponent, createDefaultMemoryComponent, getComponent, resolveEntityDisplayName } from '../core/ecs.ts';
+import { addMessage, MessageLogCategory } from '../systems/message.system.ts';
 
 function resolveActualBaselineRelation(
   state: Readonly<GameState>,
@@ -192,4 +193,46 @@ export function getFactionRelation(
  */
 export function isHostile(state: GameState, subject: EntityId, target: EntityId): boolean {
   return getFactionRelation(state, subject, target) === 'hostile';
+}
+
+/**
+ * Turns `targetId` mutually hostile toward `attackerId` after an unprovoked attack or shove
+ * by adding a personal grudge in `MemoryComponent` and updating player-facing `AttitudeComponent`.
+ *
+ * @param state Current GameState.
+ * @param targetId Actor being attacked or shoved.
+ * @param attackerId Initiating actor (typically the player).
+ * @returns Updated GameState.
+ */
+export function provokeActorHostility(state: GameState, targetId: EntityId, attackerId: EntityId): GameState {
+  if (targetId === attackerId) return state;
+  const alreadyMutuallyHostile = isHostile(state, targetId, attackerId) && isHostile(state, attackerId, targetId);
+  if (alreadyMutuallyHostile) return state;
+
+  let nextState = state;
+  const targetMemory =
+    (getComponent(nextState, targetId, ComponentType.Memory) as MemoryComponent | undefined) ??
+    createDefaultMemoryComponent();
+  const attackerKey = String(attackerId);
+  if (!targetMemory.grudges.includes(attackerKey)) {
+    nextState = addComponent(nextState, targetId, {
+      ...targetMemory,
+      grudges: [...targetMemory.grudges, attackerKey]
+    });
+  }
+
+  const isAttackerPlayer = getComponent(nextState, attackerId, ComponentType.Player) !== undefined;
+  if (isAttackerPlayer) {
+    const existingAttitude = getComponent(nextState, targetId, ComponentType.Attitude) as AttitudeComponent | undefined;
+    if (existingAttitude?.attitude !== 'hostile') {
+      nextState = addComponent(nextState, targetId, {
+        type: ComponentType.Attitude,
+        attitude: 'hostile'
+      });
+    }
+    const targetName = resolveEntityDisplayName(nextState, targetId, 'They');
+    nextState = addMessage(nextState, `${targetName} turns hostile!`, MessageLogCategory.CombatHit);
+  }
+
+  return nextState;
 }

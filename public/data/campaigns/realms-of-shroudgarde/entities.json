@@ -196,6 +196,7 @@
     "bg": "transparent",
     "spriteId": "actor_knight",
     "isActor": true,
+    "immovable": true,
     "speed": 100,
     "fighter": {
       "maxHp": 55,
@@ -312,6 +313,11 @@
       "wanders": false
     },
     "faction": "citizens",
+    "primaryLanguage": "common",
+    "languages": [
+      "common",
+      "dwarven"
+    ],
     "tags": [
       "actor",
       "npc",
@@ -373,6 +379,11 @@
       "wanders": false
     },
     "faction": "citizens",
+    "primaryLanguage": "common",
+    "languages": [
+      "common",
+      "celestial"
+    ],
     "tags": [
       "actor",
       "npc",
@@ -432,6 +443,11 @@
       "wanders": false
     },
     "faction": "citizens",
+    "primaryLanguage": "common",
+    "languages": [
+      "common",
+      "elven"
+    ],
     "tags": [
       "actor",
       "npc",

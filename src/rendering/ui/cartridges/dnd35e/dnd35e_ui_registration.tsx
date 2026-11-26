@@ -65,6 +65,7 @@ export const dnd35eUIDefinition: CartridgeUIDefinition = {
       label: 'Quickcast Spells',
       description: 'Open or close the spell quickcast bar.',
       category: 'cartridge',
+      tier: 'primary',
       scopes: ['world_gameplay', 'active_modal'],
       defaultBindings: [{ key: 'z' }],
       preventDefault: true,
@@ -75,6 +76,7 @@ export const dnd35eUIDefinition: CartridgeUIDefinition = {
       label: 'Spellbook',
       description: 'Open or close the Vancian spellbook and preparation slots.',
       category: 'cartridge',
+      tier: 'secondary',
       scopes: ['world_gameplay', 'active_modal'],
       defaultBindings: [{ key: 'b' }],
       preventDefault: true,
@@ -85,8 +87,9 @@ export const dnd35eUIDefinition: CartridgeUIDefinition = {
       label: 'Rest (8 Hours)',
       description: 'Rest for 8 hours to recover HP, daily pools, and prepared spells.',
       category: 'cartridge',
+      tier: 'secondary',
       scopes: ['world_gameplay'],
-      defaultBindings: [{ key: 't' }],
+      defaultBindings: [{ key: 'r' }],
       preventDefault: true,
       source: 'cartridge:dnd35e'
     },
@@ -95,6 +98,7 @@ export const dnd35eUIDefinition: CartridgeUIDefinition = {
       label: 'Level Up',
       description: 'Open the level advancement modal when enough XP is earned.',
       category: 'cartridge',
+      tier: 'secondary',
       scopes: ['world_gameplay', 'active_modal'],
       defaultBindings: [{ key: 'u' }],
       preventDefault: true,
@@ -133,7 +137,7 @@ export const dnd35eUIDefinition: CartridgeUIDefinition = {
         {
           title: '8-Hour Camp Rest',
           summary:
-            'Press T when safe to rest for 8 hours, recovering HP, daily resource pools, and prepared spell slots.'
+            'Press R when safe to rest for 8 hours, recovering HP, daily resource pools, and prepared spell slots.'
         }
       ]
     }
@@ -174,7 +178,7 @@ export const dnd35eUIDefinition: CartridgeUIDefinition = {
       commandId: 'dnd35e:rest_8h',
       label: 'Rest (8h)',
       icon: '💤',
-      defaultKey: 't',
+      defaultKey: 'r',
       onTrigger: (state: GameState, playerId: EntityId): void => {
         void applyRestActionAsync(state, playerId);
       }

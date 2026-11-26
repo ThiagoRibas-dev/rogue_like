@@ -17,18 +17,20 @@ import {
 } from '../../../../rulesets/dnd35e/character_builder.ts';
 import { computeSkillSynergyBonus } from '../../../../rulesets/dnd35e/skills.ts';
 import { getDnD35EntityData } from '../../../../rulesets/dnd35e/srd_registry.ts';
-import type { AbilityId } from '../../../../rulesets/dnd35e/types/dnd35e.types.ts';
+import { ALL_ABILITY_IDS, type AbilityId } from '../../../../rulesets/dnd35e/types/dnd35e.types.ts';
 import {
   type DnD35SystemContent,
   getDnD35SystemContent
 } from '../../../../rulesets/dnd35e/types/dnd35e_system.types.ts';
 import { ComponentType } from '../../../../types/components.types.ts';
 import type { GameState } from '../../../../types/game-state.types.ts';
+import { scoreFuzzyTextMatch } from '../../../../utils/fuzzy_match.ts';
 import { Button } from '../../primitives/Button.tsx';
 import { Badge, Chip } from '../../primitives/DataDisplay.tsx';
+import { TextInput } from '../../primitives/FormControls.tsx';
 import { DnD35eSkillInspector } from './DnD35eInspector.tsx';
 
-type SkillFilterMode = 'all' | 'class' | 'trained' | 'invested';
+type SkillFilterMode = 'all' | 'class' | 'knowledge' | 'trained' | 'invested';
 
 /** Props for `<DnD35eSharedSkillsStep />`. */
 export interface DnD35eSharedSkillsStepProps {
@@ -49,7 +51,7 @@ function formatSigned(n: number): string {
 }
 
 /**
- * Shared 2-pane Skill Allocation step for Character Creation and Level-Up Advancement.
+ * Shared 2-pane Skill Allocation step with fuzzy search, Knowledge & attribute filters.
  */
 export function DnD35eSharedSkillsStep({
   sys,
@@ -64,6 +66,8 @@ export function DnD35eSharedSkillsStep({
   onUpdateAddedRanks
 }: DnD35eSharedSkillsStepProps): JSX.Element {
   const [filterMode, setFilterMode] = useState<SkillFilterMode>('all');
+  const [abilityFilter, setAbilityFilter] = useState<AbilityId | 'all'>('all');
+  const [searchQuery, setSearchQuery] = useState<string>('');
   const [inspectedSkillId, setInspectedSkillId] = useState<string>('tumble');
 
   const spent = calculateSkillAllocationCost(addedSkillRanks, activeLevelClassSkillIds);
@@ -81,9 +85,55 @@ export function DnD35eSharedSkillsStep({
   const modes: ReadonlyArray<{ readonly id: SkillFilterMode; readonly label: string }> = [
     { id: 'all', label: `All (${allSkills.length})` },
     { id: 'class', label: 'Class' },
+    { id: 'knowledge', label: 'Knowledge' },
     { id: 'trained', label: 'Trained-Only' },
     { id: 'invested', label: 'Invested' }
   ];
+
+  const trimmedQuery = searchQuery.trim();
+  const filteredSkills = allSkills
+    .map((skill) => {
+      const isActiveClass = activeLevelClassSkillIds.includes(skill.id);
+      const isEverClass = everClassSkillIds.includes(skill.id);
+      const priorRanks = priorSkillRanks[skill.id] ?? 0;
+      const addedDelta = addedSkillRanks[skill.id] ?? 0;
+      const totalRanks = Math.round((priorRanks + addedDelta) * 10) / 10;
+      const isKnowledge = skill.skillGroup === 'knowledge' || skill.studiedCreatureTags.length > 0;
+
+      let matchesCategory = true;
+      if (filterMode === 'class') matchesCategory = isEverClass;
+      else if (filterMode === 'knowledge') matchesCategory = isKnowledge;
+      else if (filterMode === 'trained') matchesCategory = skill.trainedOnly;
+      else if (filterMode === 'invested') matchesCategory = totalRanks > 0;
+
+      const matchesAttr = abilityFilter === 'all' || skill.keyAbility === abilityFilter;
+      let fuzzyScore: number | null = 0;
+      if (trimmedQuery.length > 0) {
+        const searchCandidate = `${skill.name} ${skill.keyAbility} ${skill.synergyNotes ?? ''}`;
+        fuzzyScore = scoreFuzzyTextMatch(trimmedQuery, searchCandidate);
+      }
+
+      return {
+        skill,
+        isActiveClass,
+        isEverClass,
+        priorRanks,
+        addedDelta,
+        totalRanks,
+        matchesCategory,
+        matchesAttr,
+        fuzzyScore
+      };
+    })
+    .filter(
+      (entry) => entry.matchesCategory && entry.matchesAttr && (trimmedQuery.length === 0 || entry.fuzzyScore !== null)
+    );
+
+  if (trimmedQuery.length > 0) {
+    filteredSkills.sort(
+      (a, b) => (b.fuzzyScore ?? 0) - (a.fuzzyScore ?? 0) || a.skill.name.localeCompare(b.skill.name)
+    );
+  }
 
   return (
     <div className="ui-dnd-wizard-stage">
@@ -92,6 +142,13 @@ export function DnD35eSharedSkillsStep({
           <Badge tone={remaining > 0 ? 'warning' : 'success'}>
             {`Points Remaining: ${remaining} / ${budget} (Spent: ${spent})`}
           </Badge>
+          <TextInput
+            type="search"
+            ariaLabel="Search skills"
+            placeholder="Fuzzy search skills by name or synergy..."
+            value={searchQuery}
+            onInput={setSearchQuery}
+          />
           <div className="ui-dnd-chip-row">
             {modes.map((m) => (
               <Chip key={m.id} active={filterMode === m.id} onClick={() => setFilterMode(m.id)}>
@@ -99,19 +156,24 @@ export function DnD35eSharedSkillsStep({
               </Chip>
             ))}
           </div>
+          <div className="ui-dnd-chip-row">
+            <Chip active={abilityFilter === 'all'} onClick={() => setAbilityFilter('all')}>
+              Any Attr
+            </Chip>
+            {ALL_ABILITY_IDS.map((ab) => (
+              <Chip key={ab} active={abilityFilter === ab} onClick={() => setAbilityFilter(ab)}>
+                {ab.toUpperCase()}
+              </Chip>
+            ))}
+          </div>
         </div>
 
         <div className="ui-dnd-card-list">
-          {allSkills.map((skill) => {
-            const isActiveClass = activeLevelClassSkillIds.includes(skill.id);
-            const isEverClass = everClassSkillIds.includes(skill.id);
-            const priorRanks = priorSkillRanks[skill.id] ?? 0;
-            const addedDelta = addedSkillRanks[skill.id] ?? 0;
-            const totalRanks = Math.round((priorRanks + addedDelta) * 10) / 10;
-
-            if (filterMode === 'class' && !isEverClass) return null;
-            if (filterMode === 'trained' && !skill.trainedOnly) return null;
-            if (filterMode === 'invested' && totalRanks <= 0) return null;
+          {filteredSkills.length === 0 ? (
+            <div className="ui-dnd-card__sub">No skills match the active search or filter criteria.</div>
+          ) : null}
+          {filteredSkills.map((entry) => {
+            const { skill, isActiveClass, isEverClass, priorRanks, addedDelta, totalRanks } = entry;
 
             const maxRanks = getSkillMaxRanks(totalHd, isEverClass);
             const rankStep = isActiveClass ? 1 : 0.5;

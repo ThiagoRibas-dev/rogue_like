@@ -299,6 +299,12 @@
   padding-right: var(--ui-space-1);
 }
 
+.ui-help-command-grid--unbounded {
+  max-height: none;
+  overflow-y: visible;
+  padding-right: 0;
+}
+
 .ui-help-command-card {
   display: flex;
   align-items: center;

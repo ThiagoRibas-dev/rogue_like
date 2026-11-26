@@ -11,6 +11,9 @@ export type ModalSize = 'sm' | 'md' | 'lg' | 'xl';
 /** Z-layer preset for ModalShell (`modal`, `help`, or `dialog`). */
 export type ModalLayer = 'modal' | 'help' | 'dialog';
 
+/** Scroll container mode for ModalShell body (`body` = default single scroller; `panes` = fixed body with independent child pane scrollbars). */
+export type ModalScrollMode = 'body' | 'panes';
+
 /** Props for accessible `<ModalShell />`. */
 export interface ModalShellProps {
   readonly title: string;
@@ -18,6 +21,7 @@ export interface ModalShellProps {
   readonly isOpen?: boolean | undefined;
   readonly size?: ModalSize | undefined;
   readonly fullHeight?: boolean | undefined;
+  readonly scrollMode?: ModalScrollMode | undefined;
   readonly layer?: ModalLayer | undefined;
   readonly showCloseButton?: boolean | undefined;
   readonly showHelpHint?: boolean | undefined;
@@ -40,6 +44,7 @@ export function ModalShell({
   isOpen = true,
   size = 'md',
   fullHeight = false,
+  scrollMode = 'body',
   layer = 'modal',
   showCloseButton = true,
   showHelpHint = true,
@@ -56,6 +61,9 @@ export function ModalShell({
 
   if (!isOpen) return null;
 
+  const isPaneScroll = scrollMode === 'panes';
+  const effectiveFullHeight = fullHeight || isPaneScroll;
+
   const backdropClasses = [
     'ui-modal-backdrop',
     layer === 'dialog' ? 'ui-modal-backdrop--dialog' : layer === 'help' ? 'ui-modal-backdrop--help' : ''
@@ -66,11 +74,13 @@ export function ModalShell({
   const modalClasses = [
     'ui-modal',
     size !== 'md' ? `ui-modal--${size}` : '',
-    fullHeight ? 'ui-modal--full-height' : '',
+    effectiveFullHeight ? 'ui-modal--full-height' : '',
     className ?? ''
   ]
     .filter(Boolean)
     .join(' ');
+
+  const bodyClasses = isPaneScroll ? 'ui-modal__body ui-modal__body--panes' : 'ui-modal__body';
 
   const handleBackdropMouseDown = (event: TargetedMouseEvent<HTMLDivElement>): void => {
     if (closeOnBackdrop && onClose && event.target === event.currentTarget) {
@@ -104,7 +114,7 @@ export function ModalShell({
           </div>
         </header>
 
-        <div className="ui-modal__body">{children}</div>
+        <div className={bodyClasses}>{children}</div>
 
         {(footer || showHelpHint) && (
           <footer className="ui-modal__footer">

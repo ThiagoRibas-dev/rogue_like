@@ -418,6 +418,11 @@ export function resolveDnD35eActionEnergyCost(
       if (isFreeTradeModeIntent(state, intent)) {
         return { state, energyCost: 0 };
       }
+      if (intent.type === IntentType.Apply && intent.verb === 'talk') {
+        return hasAnyRoundActionsRemaining(currentBudget)
+          ? { state, energyCost: 0 }
+          : clearBudgetAndEndRound(state, intent.entityId, dndData);
+      }
       if (budgetAlreadyMutated) {
         return finalizeBudgetForEngineMode(state, intent.entityId, dndData, preActionBudget, currentBudget);
       }
@@ -495,6 +500,8 @@ export function resolveDnD35eActionEnergyCost(
     case IntentType.Gossip:
     case IntentType.ToggleLedger:
     case IntentType.ToggleLegends:
+    case IntentType.ToggleAutomap:
+    case IntentType.SetAutomapNote:
     case IntentType.ToggleCartridgeModal:
       return hasAnyRoundActionsRemaining(currentBudget)
         ? { state, energyCost: 0 }
@@ -533,7 +540,7 @@ export function canDnD35eActorPerformIntent(state: GameState, intent: Intent): b
     case IntentType.MeleeAttack:
       return budget.standardRemaining >= 1;
     case IntentType.Apply:
-      if (isFreeTradeModeIntent(state, intent)) {
+      if (isFreeTradeModeIntent(state, intent) || intent.verb === 'talk') {
         return true;
       }
       if (intent.verb === 'charge') {
@@ -596,6 +603,8 @@ export function canDnD35eActorPerformIntent(state: GameState, intent: Intent): b
     case IntentType.Gossip:
     case IntentType.ToggleLedger:
     case IntentType.ToggleLegends:
+    case IntentType.ToggleAutomap:
+    case IntentType.SetAutomapNote:
     case IntentType.ToggleCartridgeModal:
       return true;
     default:

@@ -8,19 +8,21 @@
 - [Core Console: Action Pipeline & Commands (10 files)](#core-console-action-pipeline-commands)
 - [Core Console: App Entry & Wiring (2 files)](#core-console-app-entry-wiring)
 - [Core Console: Campaign Editor Subsystem (27 files)](#core-console-campaign-editor-subsystem)
-- [Core Console: Constants & Dictionaries (18 files)](#core-console-constants-dictionaries)
+- [Core Console: Constants & Dictionaries (19 files)](#core-console-constants-dictionaries)
 - [Core Console: Constants & World Chunk Layout (1 files)](#core-console-constants-world-chunk-layout)
 - [Core Console: ECS & State Management (1 files)](#core-console-ecs-state-management)
 - [Core Console: ECS Systems & Simulation (91 files)](#core-console-ecs-systems-simulation)
 - [Core Console: ECS, Loop, RNG & Loader (44 files)](#core-console-ecs-loop-rng-loader)
+- [Core Console: Engine Foundations & Utilities (1 files)](#core-console-engine-foundations-utilities)
 - [Core Console: Engine Types & Schemas (42 files)](#core-console-engine-types-schemas)
 - [Core Console: Map & Spatial Simulation (1 files)](#core-console-map-spatial-simulation)
 - [Core Console: Map Generation & Director (11 files)](#core-console-map-generation-director)
 - [Core Console: Map Generation & Spatial Math (2 files)](#core-console-map-generation-spatial-math)
 - [Core Console: Map Generation & Spatial Plane (7 files)](#core-console-map-generation-spatial-plane)
+- [Core Console: Narrative, Quests & Social Systems (1 files)](#core-console-narrative-quests-social-systems)
 - [Core Console: Persistence & Delta Storage (1 files)](#core-console-persistence-delta-storage)
-- [Core Console: Presentation & UI Views (32 files)](#core-console-presentation-ui-views)
-- [Core Console: Rendering & UI Views (82 files)](#core-console-rendering-ui-views)
+- [Core Console: Presentation & UI Views (34 files)](#core-console-presentation-ui-views)
+- [Core Console: Rendering & UI Views (86 files)](#core-console-rendering-ui-views)
 - [Core Console: Ruleset Cartridge Registry (1 files)](#core-console-ruleset-cartridge-registry)
 - [Core Console: Types & World Chunk Contracts (1 files)](#core-console-types-world-chunk-contracts)
 - [Core Console: Utility Helpers (11 files)](#core-console-utility-helpers)
@@ -107,10 +109,11 @@
 
 ## Core Console: Constants & Dictionaries
 
-**Modules in this domain:** 18
+**Modules in this domain:** 19
 
 | File | Tier | Responsibility | Canonical Entry Points | Ownership Boundary (Includes / Excludes) | Anti-Patterns |
 | :--- | :--- | :--- | :--- | :--- | :--- |
+| `src/constants/automap3d.constants.ts` | `tier1_console` | Named constants for 3D automap camera bounds, projection depth, cutaway opacity, beacon colors, and deterministic preview seeds. | `DEFAULT_ATLAS_PREVIEW_SEED`, `AUTOMAP_DEFAULT_YAW_RAD`, `AUTOMAP_DEFAULT_PITCH_RAD`, `AUTOMAP_MIN_PITCH_RAD`, `AUTOMAP_MAX_PITCH_RAD`, `AUTOMAP_DEFAULT_ZOOM`, `AUTOMAP_MIN_ZOOM`, `AUTOMAP_MAX_ZOOM`, `AUTOMAP_PERSPECTIVE_DISTANCE`, `AUTOMAP_PERSPECTIVE_FOCAL`, `AUTOMAP_Z_VERTICAL_SCALE`, `AUTOMAP_WALL_HEIGHT_RATIO`, `AUTOMAP_FLOOR_SLAB_HEIGHT`, `AUTOMAP_STAIR_HEIGHT_RATIO`, `AUTOMAP_GHOST_ABOVE_ALPHA`, `AUTOMAP_LOWER_Z_DIM_STEP`, `AUTOMAP_LOWER_Z_MIN_ALPHA`, `AUTOMAP_HOLISTIC_AREA_GAP`, `AUTOMAP_HOLISTIC_VERTICAL_STEP_Z`, `AUTOMAP_HOLISTIC_STREAMING_PREVIEW_RADIUS`, `AUTOMAP_DEFAULT_CANVAS_WIDTH`, `AUTOMAP_DEFAULT_CANVAS_HEIGHT`, `AUTOMAP_BEACON_PLUMB_HALF_SPAN_Z`, `AUTOMAP_BEACON_COLORS`, `AUTOMAP_FALLBACK_COLORS`, `AUTOMAP_CUTAWAY_LABELS`, `createDefaultAutomapCamera` | **Includes:** Named projection/cutaway/beacon constants and default camera factory.<br>**Excludes:** Runtime GameState inspection or Canvas rendering. | • Do not hardcode camera angles, alpha values, or preview seeds outside automap3d.constants.ts. |
 | `src/constants/autopause.constants.ts` | `tier1_console` | Configuration and thresholds governing automatic RTwP pausing. | `AutoPauseReason`, `AutoPauseSettings`, `DEFAULT_AUTO_PAUSE_SETTINGS`, `MIN_LOW_HEALTH_PERCENT`, `MAX_LOW_HEALTH_PERCENT`, `PERCENT_SCALE`, `AUTOPAUSE_REASON_LABELS` | **Includes:** Pure implementation and exports for src/constants/autopause.constants.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/constants/autopause.constants.ts. |
 | `src/constants/campaign.constants.ts` | `tier1_console` | Current schema version of the CampaignData structure. Bump on breaking changes. | `CURRENT_SCHEMA_VERSION`, `CAMPAIGN_DB_NAME`, `CAMPAIGN_DB_VERSION`, `INSTALLED_CAMPAIGNS_STORE`, `EDITOR_WORKSPACES_STORE`, `AUTHORING_LEVELS` | **Includes:** Pure implementation and exports for src/constants/campaign.constants.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/constants/campaign.constants.ts. |
 | `src/constants/display.constants.ts` | `tier1_console` | The target width multiplier/scaling for the game aspect ratio. | `GAME_ASPECT_RATIO_WIDTH`, `GAME_ASPECT_RATIO_HEIGHT`, `GAME_ASPECT_RATIO`, `GAME_ASPECT_RATIO_STRING`, `DEFAULT_ZOOM_LEVEL`, `RESIZE_DEBOUNCE_MS` | **Includes:** Pure implementation and exports for src/constants/display.constants.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/constants/display.constants.ts. |
@@ -295,6 +298,14 @@
 | `src/core/state_stabilizer.ts` | `tier1_console` | Iteratively drains pending damage, death reactions, and global triggers | `resolveStateStabilization` | **Includes:** Pure implementation and exports for src/core/state_stabilizer.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/core/state_stabilizer.ts. |
 | `src/core/telemetry.ts` | `tier1_console` | Retrieves the current metrics in the background telemetry store. | `getTelemetryStore`, `setTelemetryStore`, `pushTelemetryEvents` | **Includes:** Pure implementation and exports for src/core/telemetry.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/core/telemetry.ts. |
 
+## Core Console: Engine Foundations & Utilities
+
+**Modules in this domain:** 1
+
+| File | Tier | Responsibility | Canonical Entry Points | Ownership Boundary (Includes / Excludes) | Anti-Patterns |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `src/utils/fuzzy_match.ts` | `tier1_console` | Deterministic fuzzy text matching and scoring helper shared by UI search inputs. | `scoreFuzzyTextMatch` | **Includes:** Pure implementation and exports for src/utils/fuzzy_match.ts.<br>**Excludes:** Ruleset-specific filtering or React/Preact state. | • Do not duplicate fuzzy string scoring loops inside individual UI modals. |
+
 ## Core Console: Engine Types & Schemas
 
 **Modules in this domain:** 42
@@ -393,6 +404,14 @@
 | `src/map/tile_palette.ts` | `tier1_console` | Builds deterministic bidirectional flyweight mappings between string campaign tile IDs and Uint16Array indices. | `buildTilePaletteRegistry`, `getTileIdFromPaletteIndex`, `getPaletteIndexForTileId` | **Includes:** Deterministic lexicographic palette construction and index lookup.<br>**Excludes:** Hardcoded tile ID enums or content-specific branching. | • Do not hardcode numeric tile IDs for campaign tiles; resolve via buildTilePaletteRegistry(). |
 | `src/map/world_chunk.ts` | `tier1_console` | Allocates, clones, and binary-serializes/deserializes Structure-of-Arrays (SoA) TypedArray WorldChunks into transferable ArrayBuffers. | `createEmptyWorldChunk`, `cloneWorldChunk`, `serializeWorldChunkToBuffer`, `deserializeWorldChunkFromBuffer` | **Includes:** SoA TypedArray buffer allocation, copy-on-write chunk cloning, and RLCK binary framing.<br>**Excludes:** Biome synthesis, IndexedDB I/O, and entity sleep/wake orchestration. | • Do not serialize WorldChunks as bloated JSON tile arrays; use serializeWorldChunkToBuffer(). |
 
+## Core Console: Narrative, Quests & Social Systems
+
+**Modules in this domain:** 1
+
+| File | Tier | Responsibility | Canonical Entry Points | Ownership Boundary (Includes / Excludes) | Anti-Patterns |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `src/systems/language.system.ts` | `tier1_console` | Console language registry, deterministic phonetic dialogue obfuscation cipher, and RulesetContract language comprehension delegation. | `DEFAULT_SHARED_LANGUAGE_ID`, `LANGUAGE_DISPLAY_NAMES`, `getLanguageDisplayName`, `getActorKnownLanguages`, `obfuscateDialogueText`, `evaluateActorDialogueComprehension` | **Includes:** Console language lookups, phonetic ciphering, and generic comprehension delegation.<br>**Excludes:** Ruleset-specific creature-type or spell comprehension math. | • Do not hardcode ruleset spell IDs or creature-type exceptions inside Console language helpers. |
+
 ## Core Console: Persistence & Delta Storage
 
 **Modules in this domain:** 1
@@ -403,7 +422,7 @@
 
 ## Core Console: Presentation & UI Views
 
-**Modules in this domain:** 32
+**Modules in this domain:** 34
 
 | File | Tier | Responsibility | Canonical Entry Points | Ownership Boundary (Includes / Excludes) | Anti-Patterns |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -424,6 +443,7 @@
 | `src/rendering/ui/menus/MainMenu.tsx` | `tier1_console` | Declarative Preact Main Menu screen with keyboard focus trapping and save file import/export. | `MainMenu` | **Includes:** Pure implementation and exports for src/rendering/ui/menus/MainMenu.tsx.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rendering/ui/menus/MainMenu.tsx. |
 | `src/rendering/ui/menus/RulesetSelectModal.tsx` | `tier1_console` | Declarative Ruleset Selection modal with roving keyboard ListBox navigation and ruleset capability inspection. | `RulesetSelectModal` | **Includes:** Pure implementation and exports for src/rendering/ui/menus/RulesetSelectModal.tsx.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rendering/ui/menus/RulesetSelectModal.tsx. |
 | `src/rendering/ui/menus/SettingsModal.tsx` | `tier1_console` | Tabbed Settings modal containing KeybindMatrix, 3-Theme selector, accessibility toggles, RTwP auto-pause, and attributions. | `SettingsModal` | **Includes:** Pure implementation and exports for src/rendering/ui/menus/SettingsModal.tsx.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rendering/ui/menus/SettingsModal.tsx. |
+| `src/rendering/ui/modals/Automap3DModal.tsx` | `tier1_console` | In-game Daggerfall-style 3D multi-Z dungeon automap modal (UIMode.Automap) with fog-of-war, God-Mode reveal toggle, and persistent map notes. | `Automap3DModal` | **Includes:** Live GameState 3D automap modal presentation and SetAutomapNote/ToggleAutomap intent dispatching.<br>**Excludes:** Direct state mutation outside action intents. | • Never expose unexplored tiles outside explicit God Mode omniscient toggle. |
 | `src/rendering/ui/modals/CompactStashWidget.tsx` | `tier1_console` | 2D keyboard-navigable shared stash grid with category filters, sort controls, and item action bar. | `CompactStashWidget`, `CompactStashWidgetProps` | **Includes:** Pure implementation and exports for src/rendering/ui/modals/CompactStashWidget.tsx.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rendering/ui/modals/CompactStashWidget.tsx. |
 | `src/rendering/ui/modals/ConsoleDossierView.tsx` | `tier1_console` | Reusable Tier 1 Console 3-column Master Dossier view combining attributes, paperdoll, attack ledger, skills, and stash. | `ConsoleDossierView`, `ConsoleDossierViewProps` | **Includes:** Pure implementation and exports for src/rendering/ui/modals/ConsoleDossierView.tsx.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rendering/ui/modals/ConsoleDossierView.tsx. |
 | `src/rendering/ui/modals/DebugOverlay.tsx` | `tier1_console` | Developer Debug Overlay displaying rolling performance telemetry, trigger/reaction event ledger, and cursor spatial fields. | `DebugOverlay` | **Includes:** Pure implementation and exports for src/rendering/ui/modals/DebugOverlay.tsx.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rendering/ui/modals/DebugOverlay.tsx. |
@@ -439,13 +459,17 @@
 | `src/rendering/ui/modals/QuestsModal.tsx` | `tier1_console` | Filterable Quest Journal modal showing Active, Completed, and Failed quests, objectives, and rewards. | `QuestsModal` | **Includes:** Pure implementation and exports for src/rendering/ui/modals/QuestsModal.tsx.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rendering/ui/modals/QuestsModal.tsx. |
 | `src/rendering/ui/modals/TradeModal.tsx` | `tier1_console` | Dual-pane Trade & Barter modal with multi-denomination currency, disposition pricing, and social haggle actions. | `TradeModal` | **Includes:** Pure implementation and exports for src/rendering/ui/modals/TradeModal.tsx.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rendering/ui/modals/TradeModal.tsx. |
 | `src/rendering/ui/modals/WikiText.tsx` | `tier1_console` | Declarative JSX renderer for inline wiki tooltip links across Dialogue and Quest modals. | `WikiText`, `WikiTextProps` | **Includes:** Pure implementation and exports for src/rendering/ui/modals/WikiText.tsx.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rendering/ui/modals/WikiText.tsx. |
+| `src/rendering/ui/primitives/Automap3DViewport.tsx` | `tier1_console` | Shared Preact interactive 3D dungeon canvas viewport primitive with orbit/pan/zoom controls, Z-cutaway toolbar, area filter, and inspector. | `Automap3DViewportProps`, `Automap3DViewport` | **Includes:** Reusable interactive Canvas 3D host shared across gameplay Automap3DModal and Campaign Editor views.<br>**Excludes:** Ruleset-specific logic or direct GameState mutations. | • Do not duplicate interactive 3D viewport controls in separate gameplay and editor views. |
 
 ## Core Console: Rendering & UI Views
 
-**Modules in this domain:** 82
+**Modules in this domain:** 86
 
 | File | Tier | Responsibility | Canonical Entry Points | Ownership Boundary (Includes / Excludes) | Anti-Patterns |
 | :--- | :--- | :--- | :--- | :--- | :--- |
+| `src/rendering/automap3d/automap3d_holistic.ts` | `tier1_console` | Fixed-seed multi-area campaign 3D atlas compilation with BFS 3D AABB collision-free packing and inter-area portal splines. | `BuildHolisticAtlasOptions`, `buildCampaignHolisticScene3D` | **Includes:** Deterministic holistic multi-area generation, 3D offset packing, and cross-area portal spline construction.<br>**Excludes:** Direct DOM manipulation or live GameState mutation. | • Never call generateArea without preserving/restoring ROT.RNG state via withFixedRotSeed. |
+| `src/rendering/automap3d/automap3d_renderer.ts` | `tier1_console` | Zero-dependency HTML5 Canvas 3D projector with back-to-front depth sorting, Z-cutaway ghosting, vertical plumb-line beacons, and 3D hit-testing. | `ProjectedPoint3D`, `RenderAutomapOptions3D`, `projectAutomapPoint3D`, `fitCameraToScene3D`, `renderAutomapScene3D`, `pickAutomapVoxelAtScreenPoint` | **Includes:** Pure 2D-context 3D projection, drawing, and screen-space voxel/beacon picking.<br>**Excludes:** Preact component state or external 3D WebGL libraries. | • Do not allocate per-voxel ctx.save/restore or mutate scene voxels during rendering. |
+| `src/rendering/automap3d/automap3d_scene.ts` | `tier1_console` | Declarative multi-Z 3D voxel extraction, hollow corridor wall-shell culling, live GameState automap extraction, and fixed-seed RNG wrapper. | `AutomapPlacedEntityHint`, `AutomapPortalHint`, `BuildAreaSceneOptions`, `classifyTileVoxelKind`, `computeSceneBounds3D`, `buildAreaVoxelScene3D`, `buildLiveGameAutomapScene3D`, `withFixedRotSeed` | **Includes:** Pure 3D voxel/beacon extraction from finite maps, chunkGrid worlds, and live GameState with explored fog-of-war enforcement.<br>**Excludes:** Tile-ID hardcoding (Rule 21) or direct DOM/Canvas drawing. | • Never branch on content tile IDs or entity template IDs inside automap3d_scene.ts. |
 | `src/rendering/camera.ts` | `tier1_console` | Interface representing the top-left coordinate offsets of the camera viewport. | `CameraOffset`, `getCameraOffset`, `resolveActiveViewZ`, `resolveRenderedCellZAt` | **Includes:** Pure implementation and exports for src/rendering/camera.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rendering/camera.ts. |
 | `src/rendering/display.ts` | `tier1_console` | Internal interface representing a ROT.js rectangular layout backend | `drawCell`, `syncDisplayLayout` | **Includes:** Coordinating facade and primary orchestration exports declared directly in src/rendering/display.ts.<br>**Excludes:** Underlying primitive symbols re-exported from leaf modules (e.g. src/rendering/sprite_atlas.ts). | • Do not duplicate or bypass exports from src/rendering/display.ts. |
 | `src/rendering/editor/editor_config.ts` | `tier1_console` | Auto-discovers Campaign Editor Activity Bar view groups and panel types directly from CampaignDataSchema.shape. | `EditorGroupId`, `CampaignCategoryMeta`, `CAMPAIGN_CATEGORY_META`, `resolveCategoryPanelType`, `getCategoryAuthoringLevel`, `VIEW_GROUPS` | **Includes:** Compile-time exhaustive category metadata and schema-derived VIEW_GROUPS builder.<br>**Excludes:** Hardcoded manual lists of CampaignData category schemas. | • Never add top-level CampaignData categories without a matching CAMPAIGN_CATEGORY_META entry. |
@@ -528,6 +552,7 @@
 | `src/rendering/ui/world_graph_canvas.ts` | `tier1_console` | Draws the node-link force-directed canvas and edge arrows for the World Graph Editor. | `GraphNode`, `GraphEdge`, `stepWorldGraphSimulation`, `drawWorldGraph` | **Includes:** Pure implementation and exports for src/rendering/ui/world_graph_canvas.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rendering/ui/world_graph_canvas.ts. |
 | `src/rendering/viewport_snapshot.ts` | `tier1_console` | Module implementation for src/rendering/viewport_snapshot.ts | `buildViewportSnapshot` | **Includes:** Pure implementation and exports for src/rendering/viewport_snapshot.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rendering/viewport_snapshot.ts. |
 | `src/rendering/viewport_snapshot.types.ts` | `tier1_console` | Module implementation for src/rendering/viewport_snapshot.types.ts | `EntityRenderDTO`, `ViewportCellDTO`, `VisualEffectDTO`, `InspectSectionType`, `InspectSectionDTO`, `InspectTooltipDTO`, `FogOverlayCellDTO`, `GlyphOverlayDTO` | **Includes:** Pure implementation and exports for src/rendering/viewport_snapshot.types.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rendering/viewport_snapshot.types.ts. |
+| `src/types/automap3d.types.ts` | `tier1_console` | Pure data contracts for Daggerfall-style 3D multi-Z dungeon automaps, holistic campaign 3D atlases, camera projection, and persistent player map notes. | `AutomapNote`, `AutomapVoxelKind`, `AutomapBeaconKind`, `AutomapVoxelEntityMarker`, `AutomapVoxelCell3D`, `AutomapBeacon3D`, `AutomapPortalSpline3D`, `AutomapAreaCluster3D`, `AutomapSceneBounds3D`, `AutomapScene3D`, `AutomapZCutawayMode`, `AutomapProjectionMode`, `AutomapCameraState3D`, `AutomapHitResult3D`, `AutomapVisibilityMode` | **Includes:** Pure TypeScript interfaces for 3D voxels, beacons, splines, area clusters, camera state, and notes.<br>**Excludes:** Canvas drawing calls, RNG mutation, or upward imports. | • Do not duplicate 3D automap voxel or note interfaces outside src/types/automap3d.types.ts. |
 
 ## Core Console: Ruleset Cartridge Registry
 

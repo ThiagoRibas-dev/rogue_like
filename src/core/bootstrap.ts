@@ -6,17 +6,12 @@ import { addMessage, MessageLogCategory } from '../systems/message.system.ts';
 import { clearModals } from './modal_manager.ts';
 import { resetAutoPauseTracking } from './auto_pause.ts';
 import type { ActorComponent, SchemeComponent } from '../types/components.types.ts';
-import {
-  ComponentType,
-  type PortalComponent,
-  type PositionComponent,
-  type RenderableComponent,
-  type TagsComponent
-} from '../types/components.types.ts';
+import { ComponentType } from '../types/components.types.ts';
 import { type EntityId, type GameState, UIMode } from '../types/game-state.types.ts';
-import { addComponent, createEntity, getComponent, spawnEntity, spawnItem } from './ecs.ts';
+import { getComponent, spawnEntity, spawnItem } from './ecs.ts';
 import { loadCampaign } from './loader.ts';
 import { compilePhases } from '../systems/scheme_compiler.ts';
+import { spawnAreaPortalEntity } from '../systems/map/map_generation_spawner.ts';
 import { initRNG } from './rng.ts';
 import { startRecording } from './replay.ts';
 import { clearChunkStoreScope, resolveDefaultChunkScopeKey } from './chunk_store.ts';
@@ -215,43 +210,7 @@ export async function startNewGame(
   }
 
   for (const portal of portals) {
-    let stairId: EntityId;
-    [state, stairId] = createEntity(state);
-
-    const stairTileKey = portal.connection.direction === 'up' ? 'stairs_up' : 'stairs_down';
-    const pz = portal.z ?? portal.connection.placementZ ?? 0;
-    const pos: PositionComponent = {
-      type: ComponentType.Position,
-      x: portal.x,
-      y: portal.y,
-      ...(pz !== 0 ? { z: pz } : {})
-    };
-    const renderCmp: RenderableComponent = {
-      type: ComponentType.Renderable,
-      glyph:
-        portal.connection.direction === 'up'
-          ? (state.campaign.theme.glyphs.stairsUp ?? '<')
-          : (state.campaign.theme.glyphs.stairsDown ?? '>'),
-      fg: state.campaign.theme.colors.stairsFg ?? '#ffffff',
-      bg: state.campaign.theme.colors.transparent ?? 'transparent',
-      spriteId: state.campaign.tiles[stairTileKey]?.spriteId ?? stairTileKey
-    };
-    const portalComp: PortalComponent = {
-      type: ComponentType.Portal,
-      targetAreaId: portal.connection.targetAreaId,
-      targetX: portal.connection.targetX,
-      targetY: portal.connection.targetY,
-      ...(portal.connection.targetZ !== undefined ? { targetZ: portal.connection.targetZ } : {})
-    };
-    const tagsCmp: TagsComponent = {
-      type: ComponentType.Tags,
-      tags: ['portal']
-    };
-
-    state = addComponent(state, stairId, pos);
-    state = addComponent(state, stairId, renderCmp);
-    state = addComponent(state, stairId, portalComp);
-    state = addComponent(state, stairId, tagsCmp);
+    state = spawnAreaPortalEntity(state, portal).state;
   }
 
   if (placedEntities) {

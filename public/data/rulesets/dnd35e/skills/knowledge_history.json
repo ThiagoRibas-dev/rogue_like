@@ -2,6 +2,7 @@
   "knowledge_history": {
     "id": "knowledge_history",
     "name": "Knowledge (History)",
+    "skillGroup": "knowledge",
     "keyAbility": "int",
     "trainedOnly": true,
     "acpMultiplier": 0,

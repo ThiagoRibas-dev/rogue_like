@@ -85,6 +85,7 @@ export function TradeModal(): JSX.Element | null {
       title={`Trade & Barter — ${merchantName}`}
       subtitle={`${attitudeText} · ${rateText}${notesText}`}
       size="xl"
+      scrollMode="panes"
       onClose={handleClose}
       headerActions={<Badge tone="accent">{`Purse: ${formatCurrency(playerBalance, currencyConfig)}`}</Badge>}
       footer={
