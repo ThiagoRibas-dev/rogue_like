@@ -5,6 +5,11 @@ import type { RoomBounds } from '../types/encounter.types.ts';
 import { coordToIndex } from '../utils/grid.ts';
 import { runDLA } from './dla.ts';
 import { applyBiomesAndCull, computeHotPathDijkstra } from './stages/biome_dijkstra_stages.ts';
+import {
+  selectCellularPortalCoord,
+  selectCenteredStartCoord,
+  selectDiggerPortalCandidate
+} from './stages/portal_placement.ts';
 
 export { applyBiomesAndCull, computeHotPathDijkstra };
 
@@ -155,13 +160,13 @@ export function carveRoomsAndPortals(
         `${areaDef.generatorType === 'cellular' ? 'Cellular' : 'DLA'} generation failed: No floor tiles were created.`
       );
     }
-    const startTile = ROT.RNG.getItem(floorCoords)!;
+    const startTile = selectCenteredStartCoord(floorCoords, width, height);
     startX = startTile.x;
     startY = startTile.y;
 
     if (areaDef.connections) {
       areaDef.connections.forEach((conn) => {
-        const pt = ROT.RNG.getItem(floorCoords)!;
+        const pt = selectCellularPortalCoord(floorCoords, conn, portals, startTile, width, height);
         portals.push({ x: pt.x, y: pt.y, connection: conn });
       });
     }
@@ -234,11 +239,9 @@ export function carveRoomsAndPortals(
                 }
               }
             }
-            if (candidates.length > 0) {
-              const chosen = ROT.RNG.getItem(candidates)!;
-              px = chosen.x;
-              py = chosen.y;
-            }
+            const chosen = selectDiggerPortalCandidate(candidates, portals, { x: px, y: py });
+            px = chosen.x;
+            py = chosen.y;
           }
           const pIndex = coordToIndex(px, py, width);
           const tile = tiles[pIndex];

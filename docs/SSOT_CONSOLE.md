@@ -16,13 +16,13 @@
 - [Core Console: Engine Foundations & Utilities (1 files)](#core-console-engine-foundations-utilities)
 - [Core Console: Engine Types & Schemas (42 files)](#core-console-engine-types-schemas)
 - [Core Console: Map & Spatial Simulation (1 files)](#core-console-map-spatial-simulation)
-- [Core Console: Map Generation & Director (11 files)](#core-console-map-generation-director)
+- [Core Console: Map Generation & Director (12 files)](#core-console-map-generation-director)
 - [Core Console: Map Generation & Spatial Math (2 files)](#core-console-map-generation-spatial-math)
 - [Core Console: Map Generation & Spatial Plane (7 files)](#core-console-map-generation-spatial-plane)
 - [Core Console: Narrative, Quests & Social Systems (1 files)](#core-console-narrative-quests-social-systems)
 - [Core Console: Persistence & Delta Storage (1 files)](#core-console-persistence-delta-storage)
 - [Core Console: Presentation & UI Views (34 files)](#core-console-presentation-ui-views)
-- [Core Console: Rendering & UI Views (86 files)](#core-console-rendering-ui-views)
+- [Core Console: Rendering & UI Views (87 files)](#core-console-rendering-ui-views)
 - [Core Console: Ruleset Cartridge Registry (1 files)](#core-console-ruleset-cartridge-registry)
 - [Core Console: Types & World Chunk Contracts (1 files)](#core-console-types-world-chunk-contracts)
 - [Core Console: Utility Helpers (11 files)](#core-console-utility-helpers)
@@ -365,7 +365,7 @@
 
 ## Core Console: Map Generation & Director
 
-**Modules in this domain:** 11
+**Modules in this domain:** 12
 
 | File | Tier | Responsibility | Canonical Entry Points | Ownership Boundary (Includes / Excludes) | Anti-Patterns |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -378,6 +378,7 @@
 | `src/map/generator_stages.ts` | `tier1_console` | Procedural tile palette resolved for an area. | `ResolvedPalette`, `PlacedEntityDef`, `DiggerRoom`, `BaseCarveResult`, `RoomsAndPortalsResult`, `resolvePalette`, `carveBaseGeometry`, `carveRoomsAndPortals` | **Includes:** Pure implementation and exports for src/map/generator_stages.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/map/generator_stages.ts. |
 | `src/map/generator.ts` | `tier1_console` | Output data resulting from map generation, containing tiles, portals, rooms, and entities. | `generateArea` | **Includes:** Pure implementation and exports for src/map/generator.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/map/generator.ts. |
 | `src/map/stages/biome_dijkstra_stages.ts` | `tier1_console` | Partitions sub-biomes with Voronoi, culls non-bordering walls, scatters water, and computes Dijkstra hot paths. | `applyBiomesAndCull`, `computeHotPathDijkstra` | **Includes:** Pure implementation and exports for src/map/stages/biome_dijkstra_stages.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/map/stages/biome_dijkstra_stages.ts. |
+| `src/map/stages/portal_placement.ts` | `tier1_console` | Selects centered start positions, border-aligned separated cellular/DLA portals, and non-overlapping digger portal candidates. | `PortalGridCoord`, `selectCenteredStartCoord`, `selectCellularPortalCoord`, `selectDiggerPortalCandidate` | **Includes:** Pure implementation and exports for src/map/stages/portal_placement.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/map/stages/portal_placement.ts. |
 | `src/map/static-parser.ts` | `tier1_console` | Parses a static ASCII map layout into a GameMap. | `ParsedStaticMap`, `parseStaticMap` | **Includes:** Pure implementation and exports for src/map/static-parser.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/map/static-parser.ts. |
 | `src/map/voronoi.ts` | `tier1_console` | Noise factor added to Euclidean distance calculations to create organic, non-linear Voronoi borders. | `applyVoronoiBiomes` | **Includes:** Pure implementation and exports for src/map/voronoi.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/map/voronoi.ts. |
 
@@ -463,7 +464,7 @@
 
 ## Core Console: Rendering & UI Views
 
-**Modules in this domain:** 86
+**Modules in this domain:** 87
 
 | File | Tier | Responsibility | Canonical Entry Points | Ownership Boundary (Includes / Excludes) | Anti-Patterns |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -472,6 +473,7 @@
 | `src/rendering/automap3d/automap3d_scene.ts` | `tier1_console` | Declarative multi-Z 3D voxel extraction, hollow corridor wall-shell culling, live GameState automap extraction, and fixed-seed RNG wrapper. | `AutomapPlacedEntityHint`, `AutomapPortalHint`, `BuildAreaSceneOptions`, `classifyTileVoxelKind`, `computeSceneBounds3D`, `buildAreaVoxelScene3D`, `buildLiveGameAutomapScene3D`, `withFixedRotSeed` | **Includes:** Pure 3D voxel/beacon extraction from finite maps, chunkGrid worlds, and live GameState with explored fog-of-war enforcement.<br>**Excludes:** Tile-ID hardcoding (Rule 21) or direct DOM/Canvas drawing. | • Never branch on content tile IDs or entity template IDs inside automap3d_scene.ts. |
 | `src/rendering/camera.ts` | `tier1_console` | Interface representing the top-left coordinate offsets of the camera viewport. | `CameraOffset`, `getCameraOffset`, `resolveActiveViewZ`, `resolveRenderedCellZAt` | **Includes:** Pure implementation and exports for src/rendering/camera.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rendering/camera.ts. |
 | `src/rendering/display.ts` | `tier1_console` | Internal interface representing a ROT.js rectangular layout backend | `drawCell`, `syncDisplayLayout` | **Includes:** Coordinating facade and primary orchestration exports declared directly in src/rendering/display.ts.<br>**Excludes:** Underlying primitive symbols re-exported from leaf modules (e.g. src/rendering/sprite_atlas.ts). | • Do not duplicate or bypass exports from src/rendering/display.ts. |
+| `src/rendering/edge_arrow_sprite.ts` | `tier1_console` | Paints crisp built-in directional double-chevron edge-transition arrows onto composited and procedural sprite atlases. | `paintEdgeTransitionArrowSprite` | **Includes:** Pure implementation and exports for src/rendering/edge_arrow_sprite.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rendering/edge_arrow_sprite.ts. |
 | `src/rendering/editor/editor_config.ts` | `tier1_console` | Auto-discovers Campaign Editor Activity Bar view groups and panel types directly from CampaignDataSchema.shape. | `EditorGroupId`, `CampaignCategoryMeta`, `CAMPAIGN_CATEGORY_META`, `resolveCategoryPanelType`, `getCategoryAuthoringLevel`, `VIEW_GROUPS` | **Includes:** Compile-time exhaustive category metadata and schema-derived VIEW_GROUPS builder.<br>**Excludes:** Hardcoded manual lists of CampaignData category schemas. | • Never add top-level CampaignData categories without a matching CAMPAIGN_CATEGORY_META entry. |
 | `src/rendering/inspect_tooltip.ts` | `tier1_console` | Constructs structured InspectTooltipDTO payloads for hovered or inspected tiles and entities. | `buildInspectTooltip` | **Includes:** Pure implementation and exports for src/rendering/inspect_tooltip.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rendering/inspect_tooltip.ts. |
 | `src/rendering/presenter.ts` | `tier1_console` | Module-level cache of the last rendered ViewportSnapshot to drive dirty-cell diffing. | `invalidateViewportSnapshot`, `renderPresenterFrame` | **Includes:** Pure implementation and exports for src/rendering/presenter.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rendering/presenter.ts. |

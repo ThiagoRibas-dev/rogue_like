@@ -7,6 +7,7 @@
  * campaign validator can never disagree.
  */
 
+import { BUILTIN_SYNTHETIC_SPRITE_IDS } from '../constants/display.constants.ts';
 import type { CampaignData, ThemeConfig } from '../types/campaign.types.ts';
 import { resolveThemeSpriteSheets } from '../utils/sprite_pack.ts';
 
@@ -15,7 +16,7 @@ const availableKeysCache = new WeakMap<CampaignData, ReadonlySet<string>>();
 /**
  * Returns the set of sprite keys provided by a campaign's resolved sprite sheets
  * (every pack sheet + campaign override sheet's `tileMap` keys, merged — matching how
- * the renderer builds its composite atlas).
+ * the renderer builds its composite atlas), plus engine-synthesized indicator keys.
  *
  * @param campaign The campaign definition.
  * @param themeOverride Optional effective theme (e.g., with user pack preference applied).
@@ -31,6 +32,11 @@ export function getAvailableSpriteKeys(campaign: CampaignData, themeOverride?: T
   const resolvedSheets = resolveThemeSpriteSheets(themeOverride ?? campaign.theme);
   for (const sheet of Object.values(resolvedSheets ?? {})) {
     for (const key of Object.keys(sheet.tileMap ?? {})) keys.add(key);
+  }
+  if (keys.size > 0) {
+    for (const syntheticKey of BUILTIN_SYNTHETIC_SPRITE_IDS) {
+      keys.add(syntheticKey);
+    }
   }
 
   if (!themeOverride) {

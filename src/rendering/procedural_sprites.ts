@@ -3,6 +3,7 @@
  * graphical tile rendering on ASCII campaigns or unmapped glyphs.
  */
 
+import { EDGE_ARROW_DIRECTIONS, EDGE_ARROW_GLYPHS, EDGE_ARROW_SPRITE_IDS } from '../constants/display.constants.ts';
 import {
   getCachedSpritePack,
   getCachedSpritePackCatalog,
@@ -16,6 +17,7 @@ import {
   resolveEffectiveThemeWithPreference,
   resolveThemeSpriteSheets
 } from '../utils/sprite_pack.ts';
+import { paintEdgeTransitionArrowSprite } from './edge_arrow_sprite.ts';
 
 /** Standard pixel dimension for procedural 2D tile cells. */
 const PROCEDURAL_TILE_SIZE = 32;
@@ -227,7 +229,8 @@ export function buildProceduralSpriteAtlas(campaign: CampaignData): {
   register('X', 'X', '#00ffff', 'transparent', 'entity');
 
   const cols = 8;
-  const rows = Math.max(1, Math.ceil((entries.length + 1) / cols));
+  const totalSlots = entries.length + 1 + EDGE_ARROW_DIRECTIONS.length;
+  const rows = Math.max(1, Math.ceil(totalSlots / cols));
   const atlas = document.createElement('canvas');
   atlas.width = cols * PROCEDURAL_TILE_SIZE;
   atlas.height = rows * PROCEDURAL_TILE_SIZE;
@@ -251,6 +254,15 @@ export function buildProceduralSpriteAtlas(campaign: CampaignData): {
     ctx.fillStyle = '#0b0b0b';
     ctx.fillRect(fx, fy, PROCEDURAL_TILE_SIZE, PROCEDURAL_TILE_SIZE);
     mergedTileMap['__fallback__'] = [fx, fy];
+
+    EDGE_ARROW_DIRECTIONS.forEach((dir, offset) => {
+      const slotIdx = fallbackIdx + 1 + offset;
+      const ax = (slotIdx % cols) * PROCEDURAL_TILE_SIZE;
+      const ay = Math.floor(slotIdx / cols) * PROCEDURAL_TILE_SIZE;
+      paintEdgeTransitionArrowSprite(ctx, ax, ay, PROCEDURAL_TILE_SIZE, PROCEDURAL_TILE_SIZE, dir);
+      mergedTileMap[EDGE_ARROW_SPRITE_IDS[dir]] = [ax, ay];
+      mergedTileMap[EDGE_ARROW_GLYPHS[dir]] = [ax, ay];
+    });
   }
 
   return {

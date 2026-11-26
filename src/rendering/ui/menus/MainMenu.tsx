@@ -33,7 +33,7 @@ export function MainMenu(): JSX.Element | null {
     <div className="ui-main-menu-backdrop" role="dialog" aria-modal="true" aria-label="Main Menu">
       <div ref={cardRef} className="ui-main-menu-card">
         <div className="ui-main-menu-header">
-          <h1 className="ui-main-menu-title">Descent</h1>
+          <h1 className="ui-main-menu-title">Many Worlds Rogues</h1>
           <p className="ui-main-menu-subtitle">Tactical Roguelike RPG</p>
         </div>
 

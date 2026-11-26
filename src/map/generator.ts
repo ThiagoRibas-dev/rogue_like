@@ -77,7 +77,11 @@ export function generateArea(campaign: CampaignData, areaId: string, context?: D
   // Stage 2: Rooms and portals carving
   const portalsResult = carveRoomsAndPortals(areaDef, width, height, palette, baseCarve.tiles, baseCarve.diggerRooms);
 
-  // Stage 3: Biomes partitioning, wall culling, and water scatter
+  // Stage 3: Biomes partitioning, wall culling, and water scatter (protecting start & portal tiles)
+  const protectedCoords = new Set<string>([`${portalsResult.startPos.x},${portalsResult.startPos.y}`]);
+  for (const p of portalsResult.portals) {
+    protectedCoords.add(`${p.x},${p.y}`);
+  }
   const rooms = applyBiomesAndCull(
     areaDef,
     width,
@@ -85,7 +89,8 @@ export function generateArea(campaign: CampaignData, areaId: string, context?: D
     palette,
     baseCarve.tiles,
     portalsResult.rooms,
-    rules.waterScatterChance
+    rules.waterScatterChance,
+    protectedCoords
   );
 
   const map: GameMap = {

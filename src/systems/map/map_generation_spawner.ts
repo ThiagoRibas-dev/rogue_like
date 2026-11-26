@@ -1,3 +1,8 @@
+import {
+  EDGE_ARROW_GLYPHS,
+  EDGE_ARROW_SPRITE_IDS,
+  type EdgeTransitionDirection
+} from '../../constants/display.constants.ts';
 import { addComponent, createEntity, spawnEntity, spawnItem, withEcsBatchState } from '../../core/ecs.ts';
 import { generateArea } from '../../map/generator.ts';
 import { getTileIdAt, isInMapBounds } from '../../map/map_accessor.ts';
@@ -19,13 +24,73 @@ import {
   type GameState,
   type PersistentEntityRecord
 } from '../../types/game-state.types.ts';
+import { assertNever } from '../../utils/assert.ts';
 import { buildAreaDirectorContext } from './map_wake_respawn.ts';
 
 /** Safety cap on BFS frontier nodes when resolving a walkable spawn tile. */
 const MAX_SAFE_PLACEMENT_BFS_NODES = 1024;
 
-/** Default open-doorway sprite ID used for horizontal `'edge'` and `'portal'` area transitions without a template override. */
+/** Default open-doorway sprite ID used for non-edge `'portal'` transitions without a template override. */
 const DEFAULT_HORIZONTAL_PASSAGE_SPRITE_ID = 'tile_framed_door_1_open';
+
+/** Fallback compass direction when neither `placementSide` nor finite map bounds are available. */
+const DEFAULT_EDGE_TRANSITION_DIRECTION: EdgeTransitionDirection = 'east';
+
+/**
+ * Resolves the outward cardinal compass direction for a `direction: 'edge'` area transition.
+ * Prefers explicit `connection.placementSide` (`top`/`bottom`/`left`/`right`); when omitted or `'any'`,
+ * infers the nearest map boundary from `(x, y)` normalized against the map dimensions.
+ *
+ * @param connection Area connection metadata.
+ * @param x Portal tile X coordinate.
+ * @param y Portal tile Y coordinate.
+ * @param mapWidth Width of the containing map in tiles.
+ * @param mapHeight Height of the containing map in tiles.
+ * @returns Resolved cardinal compass direction (`north` | `south` | `west` | `east`).
+ */
+export function resolveEdgeTransitionDirection(
+  connection: AreaConnection,
+  x: number,
+  y: number,
+  mapWidth: number,
+  mapHeight: number
+): EdgeTransitionDirection {
+  const side = connection.placementSide;
+  if (side !== undefined && side !== 'any') {
+    switch (side) {
+      case 'top':
+        return 'north';
+      case 'bottom':
+        return 'south';
+      case 'left':
+        return 'west';
+      case 'right':
+        return 'east';
+      default:
+        return assertNever(side);
+    }
+  }
+
+  if (mapWidth <= 0 || mapHeight <= 0) {
+    return DEFAULT_EDGE_TRANSITION_DIRECTION;
+  }
+
+  const normalizedDistances: ReadonlyArray<{ readonly dir: EdgeTransitionDirection; readonly dist: number }> = [
+    { dir: 'north', dist: Math.max(0, y) / mapHeight },
+    { dir: 'south', dist: Math.max(0, mapHeight - 1 - y) / mapHeight },
+    { dir: 'west', dist: Math.max(0, x) / mapWidth },
+    { dir: 'east', dist: Math.max(0, mapWidth - 1 - x) / mapWidth }
+  ];
+
+  let best = normalizedDistances[0]!;
+  for (let i = 1; i < normalizedDistances.length; i++) {
+    const candidate = normalizedDistances[i]!;
+    if (candidate.dist < best.dist) {
+      best = candidate;
+    }
+  }
+  return best.dir;
+}
 
 const PLACEMENT_NEIGHBOR_OFFSETS: ReadonlyArray<readonly [number, number]> = [
   [0, -1],
@@ -150,21 +215,43 @@ export function spawnAreaPortalEntity(
   }
 
   const direction = portal.connection.direction;
-  const isHorizontal = direction === 'edge' || direction === 'portal';
-  const stairTileKey = direction === 'up' ? 'stairs_up' : 'stairs_down';
-  const spriteId = isHorizontal
-    ? (state.campaign.tiles[direction]?.spriteId ??
-      state.campaign.tiles['passage']?.spriteId ??
-      DEFAULT_HORIZONTAL_PASSAGE_SPRITE_ID)
-    : (state.campaign.tiles[stairTileKey]?.spriteId ?? stairTileKey);
-  const glyph =
-    direction === 'edge'
-      ? '∩'
-      : direction === 'portal'
-        ? 'O'
-        : direction === 'up'
-          ? (state.campaign.theme.glyphs.stairsUp ?? '<')
-          : (state.campaign.theme.glyphs.stairsDown ?? '>');
+  let spriteId: string;
+  let glyph: string;
+
+  switch (direction) {
+    case 'edge': {
+      const edgeDir = resolveEdgeTransitionDirection(
+        portal.connection,
+        portal.x,
+        portal.y,
+        state.map.width,
+        state.map.height
+      );
+      spriteId = state.campaign.tiles['edge']?.spriteId ?? EDGE_ARROW_SPRITE_IDS[edgeDir];
+      glyph = EDGE_ARROW_GLYPHS[edgeDir];
+      break;
+    }
+    case 'portal': {
+      spriteId =
+        state.campaign.tiles['portal']?.spriteId ??
+        state.campaign.tiles['passage']?.spriteId ??
+        DEFAULT_HORIZONTAL_PASSAGE_SPRITE_ID;
+      glyph = 'O';
+      break;
+    }
+    case 'up': {
+      spriteId = state.campaign.tiles['stairs_up']?.spriteId ?? 'stairs_up';
+      glyph = state.campaign.theme.glyphs.stairsUp ?? '<';
+      break;
+    }
+    case 'down': {
+      spriteId = state.campaign.tiles['stairs_down']?.spriteId ?? 'stairs_down';
+      glyph = state.campaign.theme.glyphs.stairsDown ?? '>';
+      break;
+    }
+    default:
+      return assertNever(direction);
+  }
 
   const pos: PositionComponent = {
     type: ComponentType.Position,

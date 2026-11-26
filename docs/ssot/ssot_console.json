@@ -2004,6 +2004,24 @@
       "Do not duplicate or bypass exports from src/map/stages/biome_dijkstra_stages.ts."
     ]
   },
+  "src/map/stages/portal_placement.ts": {
+    "domain": "Core Console: Map Generation & Director",
+    "tier": "tier1_console",
+    "responsibility": "Selects centered start positions, border-aligned separated cellular/DLA portals, and non-overlapping digger portal candidates.",
+    "canonicalEntryPoints": [
+      "PortalGridCoord",
+      "selectCenteredStartCoord",
+      "selectCellularPortalCoord",
+      "selectDiggerPortalCandidate"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/map/stages/portal_placement.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/map/stages/portal_placement.ts."
+    ]
+  },
   "src/map/static-parser.ts": {
     "domain": "Core Console: Map Generation & Director",
     "tier": "tier1_console",
@@ -2135,6 +2153,21 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/rendering/procedural_sprites.ts."
+    ]
+  },
+  "src/rendering/edge_arrow_sprite.ts": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Paints crisp built-in directional double-chevron edge-transition arrows onto composited and procedural sprite atlases.",
+    "canonicalEntryPoints": [
+      "paintEdgeTransitionArrowSprite"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/edge_arrow_sprite.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/edge_arrow_sprite.ts."
     ]
   },
   "src/rendering/render_debug_sampler.ts": {

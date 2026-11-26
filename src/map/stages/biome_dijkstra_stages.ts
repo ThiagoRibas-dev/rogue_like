@@ -20,7 +20,8 @@ export function applyBiomesAndCull(
   palette: ResolvedPalette,
   tiles: Tile[],
   rooms: ReadonlyArray<RoomBounds>,
-  waterScatterChance: number
+  waterScatterChance: number,
+  protectedCoords?: ReadonlySet<string>
 ): ReadonlyArray<RoomBounds> {
   const allFloorCoords: Array<{ x: number; y: number }> = [];
   for (let y = 0; y < height; y++) {
@@ -89,7 +90,7 @@ export function applyBiomesAndCull(
           tiles[idx] = { ...tile, tileId: 'empty_space' };
         }
       } else if (tile && tile.tileId === palette.floor) {
-        if (ROT.RNG.getUniform() < waterScatterChance) {
+        if (!protectedCoords?.has(`${x},${y}`) && ROT.RNG.getUniform() < waterScatterChance) {
           tiles[idx] = { ...tile, tileId: palette.water };
         }
       }

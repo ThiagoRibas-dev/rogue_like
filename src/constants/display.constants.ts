@@ -55,3 +55,40 @@ export const ZOOM_STEP_DELTA = 0.2;
  * window resize. Prevents re-laying out the display on every resize event.
  */
 export const RESIZE_DEBOUNCE_MS = 150;
+
+/**
+ * Cardinal compass directions for area edge-transition indicators.
+ */
+export type EdgeTransitionDirection = 'north' | 'south' | 'west' | 'east';
+
+/**
+ * Ordered list of cardinal edge-transition directions used when packing built-in arrow sprites.
+ */
+export const EDGE_ARROW_DIRECTIONS: ReadonlyArray<EdgeTransitionDirection> = ['north', 'south', 'west', 'east'];
+
+/**
+ * Built-in synthetic sprite atlas keys for directional area edge-transition arrows.
+ */
+export const EDGE_ARROW_SPRITE_IDS: Readonly<Record<EdgeTransitionDirection, string>> = {
+  north: '__edge_arrow_north__',
+  south: '__edge_arrow_south__',
+  west: '__edge_arrow_west__',
+  east: '__edge_arrow_east__'
+};
+
+/**
+ * ASCII/Unicode directional glyphs used for area edge transitions in ASCII render mode.
+ */
+export const EDGE_ARROW_GLYPHS: Readonly<Record<EdgeTransitionDirection, string>> = {
+  north: '↑',
+  south: '↓',
+  west: '←',
+  east: '→'
+};
+
+/**
+ * All engine-synthesized sprite keys always registered in composited and procedural atlases.
+ */
+export const BUILTIN_SYNTHETIC_SPRITE_IDS: ReadonlyArray<string> = EDGE_ARROW_DIRECTIONS.map(
+  (dir) => EDGE_ARROW_SPRITE_IDS[dir]
+);

@@ -115,7 +115,11 @@ export function* generateAreaAsync(
   yield { stage: MapGenStage.Portals, progress: 0.5, message: MAP_GEN_STAGE_LABELS[MapGenStage.Portals] };
   ROT.RNG.setState(rngState);
 
-  // Stage 4: Biomes, culling, and water scatter
+  // Stage 4: Biomes, culling, and water scatter (protecting start & portal tiles)
+  const protectedCoords = new Set<string>([`${portalsResult.startPos.x},${portalsResult.startPos.y}`]);
+  for (const p of portalsResult.portals) {
+    protectedCoords.add(`${p.x},${p.y}`);
+  }
   const rooms = applyBiomesAndCull(
     areaDef,
     width,
@@ -123,7 +127,8 @@ export function* generateAreaAsync(
     palette,
     baseCarve.tiles,
     portalsResult.rooms,
-    rules.waterScatterChance
+    rules.waterScatterChance,
+    protectedCoords
   );
   rngState = ROT.RNG.getState();
   yield { stage: MapGenStage.Biomes, progress: 0.7, message: MAP_GEN_STAGE_LABELS[MapGenStage.Biomes] };

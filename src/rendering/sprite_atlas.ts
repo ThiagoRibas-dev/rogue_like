@@ -1,5 +1,7 @@
 import * as ROT from 'rot-js';
+import { EDGE_ARROW_DIRECTIONS, EDGE_ARROW_GLYPHS, EDGE_ARROW_SPRITE_IDS } from '../constants/display.constants.ts';
 import { type CampaignData, type SpriteSheetSource } from '../types/campaign.types.ts';
+import { paintEdgeTransitionArrowSprite } from './edge_arrow_sprite.ts';
 import { isEffectiveSpriteMode } from './procedural_sprites.ts';
 
 /**
@@ -123,8 +125,9 @@ export async function compositeAtlas(
   const tileWidth = firstEntry[1].tileWidth;
   const tileHeight = firstEntry[1].tileHeight;
 
+  const utilityRowCellCount = 1 + EDGE_ARROW_DIRECTIONS.length;
   const totalHeight = images.reduce((sum, img) => sum + img.height, 0) + tileHeight;
-  const maxWidth = Math.max(tileWidth, ...images.map((img) => img.width));
+  const maxWidth = Math.max(tileWidth * utilityRowCellCount, ...images.map((img) => img.width));
 
   const atlas = document.createElement('canvas');
   atlas.width = maxWidth;
@@ -168,6 +171,15 @@ export async function compositeAtlas(
   ctx.fillStyle = '#0b0b0b';
   ctx.fillRect(0, yOffset, tileWidth, tileHeight);
   mergedTileMap['__fallback__'] = [0, yOffset];
+
+  EDGE_ARROW_DIRECTIONS.forEach((dir, idx) => {
+    const arrowX = (idx + 1) * tileWidth;
+    paintEdgeTransitionArrowSprite(ctx, arrowX, yOffset, tileWidth, tileHeight, dir);
+    mergedTileMap[EDGE_ARROW_SPRITE_IDS[dir]] = [arrowX, yOffset];
+    if (!mergedTileMap[EDGE_ARROW_GLYPHS[dir]]) {
+      mergedTileMap[EDGE_ARROW_GLYPHS[dir]] = [arrowX, yOffset];
+    }
+  });
 
   // Map common ASCII glyphs to fallback coordinate to ensure ROT.Display.Tile.draw never throws
   const fallbackGlyphs = ['#', '.', '+', '@', '?', ' ', '<', '>', '%', '^', '*', '$', '!', '/', '\\'];
