@@ -24,16 +24,19 @@ Action Intent (src/core/loop/intent_cost_resolver.ts)
   │    └─ processDirtyTemperatureChunks()  ◀────── Outdoor weather front modulation (Ring 2)
   ├─ processInvestigationEvents()  ─────────────────▶ ClueDiscovered / SchemeMutatedArea ─▶ Board & Stall
   ├─ updateStreamingWorldWindow()  ─────────────────▶ Chunk Evict / Wake ─▶ Site Materialization + Catch-Up
-  └─ processTier2LocalCadence()
-       ├─ Every action: Knowledge + Gossip queuing from GameState.events
-       └─ Every 10 turns: Pending decay ─▶ processPersonalitySystem ─▶ processActorPsychologyTick
+  └─ processTier2LocalCadence(state, false)  ───────▶ Every action: immediate Knowledge + Gossip queuing from GameState.events
 
-Player Turn Start / Global Turn Advance (src/core/simulation_cadence.ts)
-  └─ processTier3GlobalCadence()
-       ├─ Every 25 turns: processNemesisSystem() (PIS scoring, limbo returns, vacancy fill)
-       ├─ Every 50 turns: processRivalries() + processSchemeTurn()
-       ├─ Every 100 turns: processWorldEvents()
-       └─ Every turn: syncMacroWorldAtTurnBoundary() (WorldSim worker delta batch + macro rumors)
+Player Turn Start / Global Turn Advance (src/systems/lifecycle.system.ts & src/core/simulation_cadence.ts)
+  ├─ processTier2LocalCadence(state, true)  ────────▶ Immediate gossip/knowledge + every 10 turns: decay, personality, psychology
+  ├─ processTier3GlobalCadence(state, true)
+  │    ├─ Every 25 turns: processNemesisSystem() (PIS scoring, limbo returns, vacancy fill)
+  │    ├─ Every 50 turns: processRivalries()
+  │    ├─ Every 100 turns: processWorldEvents()
+  │    └─ Every turn: syncMacroWorldAtTurnBoundary() (WorldSim worker delta batch + direct pendingRumors/areaMutations)
+  └─ processLedgerSystem()
+
+Mastermind Actor Turn (src/core/game-loop.ts & src/systems/world_time_skip.ts)
+  └─ processSchemeTurn()  ──────────────────────────▶ Scheduled per mastermind entity on ROT.js turn loop (and bulk time skips)
 ```
 
 ---
@@ -162,5 +165,5 @@ Verified direct callers and shared-state contracts across `src/`:
 
 Audit of the cross-system links above resolved the unified reputation loop and declarative thought catalog (`reputation.system.ts`, `getEffectiveStandingBetween`, standing-aware `getFactionRelation`, and `resolveConfiguredThought`), leaving two deliberate architectural boundaries:
 
-1. **One-Way Decoupling Between Ring 2 Macro Events and Schemes/Rivalries**: Ring 2 raids/conquests do not spawn `PendingRivalry` duels or weaken `SchemeComponent` strength directly; coupling runs strictly via gossip rumors and site materialization.
-2. **Implicit Same-Tick Cadence Ordering**: `processTier3GlobalCadence` executes `Nemesis -> Rivalry -> WorldEvents -> MacroSync` sequentially, meaning same-tick macro deltas land after `gossip.system.ts` has queued events for that turn boundary (caught on the next turn/delivery cycle).
+1. **One-Way Decoupling Between Ring 2 Macro Events and Schemes/Rivalries**: Ring 2 raids/conquests do not spawn `PendingRivalry` duels or weaken `SchemeComponent` strength directly; Ring 2 → Ring 1 coupling runs via direct `pendingRumors` injection, site materialization (`site_materializer.ts`), `areaMutations` (`DirectorBudgetComponent.budgetModifier` and area `TagsComponent`), outdoor weather fronts, and `historicalLedger` entries.
+2. **Implicit Same-Tick Cadence Ordering**: On player turn start, `runActorTurnStart` (`src/systems/lifecycle.system.ts`) runs `processTier2LocalCadence` before `processTier3GlobalCadence` (`Nemesis -> Rivalry -> WorldEvents -> MacroSync`). Consequently, `GameState.events` emitted by Tier 3 wait until the player's next `applyIntentWithCost` pass to be queued by `gossip.system.ts`/`knowledge.system.ts`, while Ring 2 macro rumors appended directly to `state.pendingRumors` by `applyMacroTickBatchToGameState` wait for the next `LOCAL_NARRATIVE_TICK_INTERVAL` (10-turn) `tickPendingRumors` tick (in addition to async Web Worker batch latency in browser mode).
