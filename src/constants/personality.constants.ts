@@ -147,3 +147,106 @@ export const MOOD_ECSTATIC_MORALE_BONUS = 1;
 
 /** Morale penalty applied across attack, saves, and skills while breaking or catatonic. */
 export const MOOD_BREAKING_MORALE_PENALTY = -2;
+
+/** Canonical declarative thought slot key for freezing temperature discomfort. */
+export const THOUGHT_SLOT_FREEZING_COLD = 'freezing_cold';
+
+/** Canonical declarative thought slot key for scorching heat discomfort. */
+export const THOUGHT_SLOT_SWELTERING_HEAT = 'sweltering_heat';
+
+/** Canonical declarative thought slot key for critical exhaustion. */
+export const THOUGHT_SLOT_EXHAUSTED = 'exhausted';
+
+/** Canonical declarative thought slot key for high rest satisfaction. */
+export const THOUGHT_SLOT_WELL_RESTED = 'well_rested';
+
+/** Canonical declarative thought slot key for low comfort surroundings. */
+export const THOUGHT_SLOT_UNCOMFORTABLE = 'uncomfortable';
+
+/** Canonical declarative thought slot key for workshop item crafting satisfaction. */
+export const THOUGHT_SLOT_CRAFTED_ITEM = 'crafted_item';
+
+/** Canonical declarative thought slot key for survivors of raided macro sites. */
+export const THOUGHT_SLOT_SITE_RAIDED = 'site_raided';
+
+/** Canonical declarative thought slot key for survivors of burned macro sites. */
+export const THOUGHT_SLOT_SITE_BURNED = 'site_burned';
+
+/** Default duration in turns for medium-lived need-driven thoughts. */
+export const THOUGHT_DURATION_MEDIUM = 60;
+
+/** Default mood boost granted upon finishing a workshop crafting bill. */
+export const THOUGHT_MOOD_CRAFTED_ITEM = 6;
+
+/** Default duration in turns for workshop crafting satisfaction thoughts. */
+export const THOUGHT_DURATION_CRAFTED_ITEM = 40;
+
+/** Default maximum stacks allowed for workshop crafting thoughts. */
+export const THOUGHT_MAX_STACKS_CRAFTED_ITEM = 2;
+
+/** Default mood delta inflicted on traumatized survivors of a burned macro site. */
+export const THOUGHT_MOOD_SITE_BURNED = -22;
+
+/** Default mood delta inflicted on traumatized survivors of a raided macro site. */
+export const THOUGHT_MOOD_SITE_RAIDED = -14;
+
+/** Default duration in turns for macro-world site raid/burn trauma thoughts. */
+export const THOUGHT_DURATION_SITE_TRAUMA = 120;
+
+/** Default maximum stacks allowed for macro-world site raid/burn trauma thoughts. */
+export const THOUGHT_MAX_STACKS_SITE_TRAUMA = 2;
+
+/** Default situational thought descriptor used when `rules.psychology.thoughtDefinitions` omits a slot. */
+export interface DefaultThoughtDescriptor {
+  readonly thoughtId: string;
+  readonly moodDelta: number;
+  readonly durationTurns: number;
+  readonly maxStacks?: number | undefined;
+}
+
+/** Fallback declarative thought definitions used when a campaign omits `rules.psychology.thoughtDefinitions` overrides. */
+export const DEFAULT_THOUGHT_DEFINITIONS: Readonly<Record<string, DefaultThoughtDescriptor>> = {
+  [THOUGHT_SLOT_FREEZING_COLD]: {
+    thoughtId: 'freezing_cold',
+    moodDelta: THOUGHT_MOOD_EXTREME_TEMP,
+    durationTurns: THOUGHT_DURATION_MEDIUM
+  },
+  [THOUGHT_SLOT_SWELTERING_HEAT]: {
+    thoughtId: 'sweltering_heat',
+    moodDelta: THOUGHT_MOOD_EXTREME_TEMP,
+    durationTurns: THOUGHT_DURATION_MEDIUM
+  },
+  [THOUGHT_SLOT_EXHAUSTED]: {
+    thoughtId: 'exhausted',
+    moodDelta: THOUGHT_MOOD_EXHAUSTED,
+    durationTurns: THOUGHT_DURATION_MEDIUM
+  },
+  [THOUGHT_SLOT_WELL_RESTED]: {
+    thoughtId: 'well_rested',
+    moodDelta: THOUGHT_MOOD_WELL_RESTED,
+    durationTurns: THOUGHT_DURATION_MEDIUM
+  },
+  [THOUGHT_SLOT_UNCOMFORTABLE]: {
+    thoughtId: 'uncomfortable',
+    moodDelta: THOUGHT_MOOD_UNCOMFORTABLE,
+    durationTurns: THOUGHT_DURATION_MEDIUM
+  },
+  [THOUGHT_SLOT_CRAFTED_ITEM]: {
+    thoughtId: 'crafted_item',
+    moodDelta: THOUGHT_MOOD_CRAFTED_ITEM,
+    durationTurns: THOUGHT_DURATION_CRAFTED_ITEM,
+    maxStacks: THOUGHT_MAX_STACKS_CRAFTED_ITEM
+  },
+  [THOUGHT_SLOT_SITE_RAIDED]: {
+    thoughtId: 'site_raid_trauma',
+    moodDelta: THOUGHT_MOOD_SITE_RAIDED,
+    durationTurns: THOUGHT_DURATION_SITE_TRAUMA,
+    maxStacks: THOUGHT_MAX_STACKS_SITE_TRAUMA
+  },
+  [THOUGHT_SLOT_SITE_BURNED]: {
+    thoughtId: 'site_raid_trauma',
+    moodDelta: THOUGHT_MOOD_SITE_BURNED,
+    durationTurns: THOUGHT_DURATION_SITE_TRAUMA,
+    maxStacks: THOUGHT_MAX_STACKS_SITE_TRAUMA
+  }
+};

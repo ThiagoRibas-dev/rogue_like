@@ -1,9 +1,11 @@
 import { describe, expect, test } from 'bun:test';
 import { MAX_MATERIALIZED_DELTA_IDS } from '../src/constants/macro_world.constants.ts';
 import { DEFAULT_CHUNK_SIZE } from '../src/constants/world_chunk.constants.ts';
-import { getComponent, spawnEntity } from '../src/core/ecs.ts';
+import { addComponent, getComponent, spawnEntity } from '../src/core/ecs.ts';
 import { createInitialStreamingGrid } from '../src/map/chunk_generator.ts';
-import { getTemperatureAt } from '../src/map/map_accessor.ts';
+import { getTemperatureAt, setTemperatureAt } from '../src/map/map_accessor.ts';
+import { processActorNeedsTick } from '../src/systems/psychology/needs.system.ts';
+import { advanceWorkshopBillWork, enqueueCraftingBill, registerWorkshop } from '../src/systems/labor/workshop.system.ts';
 import { buildLegendsInputFromCampaign, generateLegendsWorldSync, seedGameStateFromLegends } from '../src/systems/macro/legends_simulator.ts';
 import { updateStreamingWorldWindow } from '../src/systems/map/chunk_streaming.ts';
 import { materializeMacroSitesForArea, materializeMacroSitesForChunk } from '../src/systems/map/site_materializer.ts';
@@ -13,6 +15,7 @@ import {
   type FieldComponent,
   type IdentityComponent,
   type MemoryComponent,
+  type NeedsComponent,
   type ShopComponent
 } from '../src/types/components.types.ts';
 import type { GameState } from '../src/types/game-state.types.ts';
@@ -337,5 +340,175 @@ describe('Phase 48 M186: Idempotent Chunk & Area Site Materialization', () => {
       .map((id) => getComponent(res.state, id, ComponentType.Field) as FieldComponent | undefined)
       .filter((f) => f?.fieldType === 'smoke').length;
     expect(smokeCount).toBe(0);
+  });
+
+  test('Resolves custom rules.psychology.thoughtDefinitions and MacroSiteDelta.thoughtOverride across site materializer, needs, and workshop', () => {
+    const campaign = loadCampaignFromDisk('default');
+    const customCampaign = {
+      ...campaign,
+      rules: {
+        ...campaign.rules,
+        psychology: {
+          ...campaign.rules.psychology,
+          thoughtDefinitions: {
+            site_burned: {
+              thoughtId: 'ash_bereavement',
+              moodDelta: -30,
+              durationTurns: 200,
+              maxStacks: 3,
+              summaryTemplate: 'Tragedy: {summary}'
+            },
+            freezing_cold: {
+              thoughtId: 'frostbite_chill',
+              moodDelta: -20,
+              durationTurns: 45
+            },
+            crafted_item: {
+              thoughtId: 'masterwork_pride',
+              moodDelta: 12,
+              durationTurns: 90,
+              maxStacks: 4
+            }
+          }
+        },
+        macroWorld: {
+          ...campaign.rules.macroWorld!,
+          areaSiteBindings: { safe_hub: 'site_1' }
+        }
+      }
+    };
+
+    let state = buildGameState(customCampaign, 4820);
+    const input = buildLegendsInputFromCampaign(customCampaign, 4820);
+    const macro = generateLegendsWorldSync({ ...input, historyYears: 20, siteCount: 6 });
+    state = seedGameStateFromLegends(state, {
+      ...macro,
+      pendingSiteDeltas: [
+        {
+          id: 'custom_burn_delta',
+          tick: 1,
+          siteId: 'site_1',
+          kind: 'site_burned',
+          scarText: 'ash_scar',
+          summary: 'Ashwatch burned to cinders!'
+        }
+      ]
+    });
+
+    const afterBurnMaterialize = materializeMacroSitesForArea(state, 'safe_hub');
+    const burnThoughts = afterBurnMaterialize.entities
+      .map((id) => getComponent(afterBurnMaterialize, id, ComponentType.Memory) as MemoryComponent | undefined)
+      .flatMap((m) => m?.thoughts ?? []);
+
+    expect(
+      burnThoughts.some(
+        (t) =>
+          t.thoughtId === 'ash_bereavement' &&
+          t.moodDelta === -30 &&
+          t.eventSummary === 'Tragedy: Ashwatch burned to cinders!'
+      )
+    ).toBe(true);
+
+    // Second pending delta with explicit per-delta thoughtOverride
+    const withOverrideDelta: GameState = {
+      ...afterBurnMaterialize,
+      macroWorld: {
+        ...afterBurnMaterialize.macroWorld!,
+        pendingSiteDeltas: [
+          ...afterBurnMaterialize.macroWorld!.pendingSiteDeltas,
+          {
+            id: 'override_raid_delta',
+            tick: 2,
+            siteId: 'site_1',
+            kind: 'site_raided',
+            summary: 'Bandits plundered the granary.',
+            thoughtOverride: {
+              thoughtId: 'granary_loss',
+              moodDelta: -9,
+              durationTurns: 75
+            }
+          }
+        ]
+      }
+    };
+    const afterMaterialize = materializeMacroSitesForArea(withOverrideDelta, 'safe_hub');
+    const overrideThoughts = afterMaterialize.entities
+      .map((id) => getComponent(afterMaterialize, id, ComponentType.Memory) as MemoryComponent | undefined)
+      .flatMap((m) => m?.thoughts ?? []);
+    expect(overrideThoughts.some((t) => t.thoughtId === 'granary_loss' && t.moodDelta === -9)).toBe(true);
+
+    // Needs emitter respects rules.psychology.thoughtDefinitions.freezing_cold
+    const playerId = afterMaterialize.entities.find(
+      (id) => getComponent(afterMaterialize, id, ComponentType.Player) !== undefined
+    )!;
+    const baseColdMap = {
+      width: 10,
+      height: 10,
+      tiles: Array.from({ length: 100 }, (_, idx) => ({
+        x: idx % 10,
+        y: Math.floor(idx / 10),
+        tileId: 'stone_floor',
+        explored: true
+      }))
+    };
+    const coldNeedsState: GameState = {
+      ...afterMaterialize,
+      components: new Map(afterMaterialize.components),
+      map: setTemperatureAt(baseColdMap, 1, 1, -15, 0, 0)
+    };
+    const withColdPos = addComponent(coldNeedsState, playerId, {
+      type: ComponentType.Position,
+      x: 1,
+      y: 1,
+      z: 0
+    });
+    const withNeeds = addComponent(
+      addComponent(withColdPos, playerId, {
+        type: ComponentType.Needs,
+        needs: { rest: { current: 80, max: 100, decayPerInterval: 1 } }
+      } as NeedsComponent),
+      playerId,
+      {
+        type: ComponentType.Memory,
+        factionStandings: {},
+        grudges: [],
+        facts: [],
+        knowledge: {}
+      } as MemoryComponent
+    );
+    const afterNeeds = processActorNeedsTick(withNeeds, playerId, 1);
+    const needsMem = getComponent(afterNeeds, playerId, ComponentType.Memory) as MemoryComponent;
+    expect(needsMem.thoughts?.some((t) => t.thoughtId === 'frostbite_chill' && t.moodDelta === -20)).toBe(true);
+
+    // Workshop crafting emitter respects rules.psychology.thoughtDefinitions.crafted_item
+    const [wsState, wsId] = spawnEntity(afterNeeds, 'masonry_workshop', 1, 1);
+    let craftState = registerWorkshop(wsState, wsId, 'workshop:masonry');
+    craftState = enqueueCraftingBill(craftState, wsId, {
+      billId: 'bill_stone_test',
+      recipeId: 'cut_stone_blocks',
+      targetCount: 1
+    });
+    craftState = {
+      ...craftState,
+      campaign: {
+        ...craftState.campaign,
+        rules: {
+          ...craftState.campaign.rules,
+          craftingRecipes: {
+            cut_stone_blocks: {
+              id: 'cut_stone_blocks',
+              name: 'Cut Stone Blocks',
+              workshopTag: 'workshop:masonry',
+              requiredInputs: [],
+              workUnits: 1,
+              outputs: [{ itemId: 'cut_stone_block', count: 1 }]
+            }
+          }
+        }
+      }
+    };
+    const craftRes = advanceWorkshopBillWork(craftState, playerId, wsId);
+    const craftMem = getComponent(craftRes.state, playerId, ComponentType.Memory) as MemoryComponent;
+    expect(craftMem.thoughts?.some((t) => t.thoughtId === 'masterwork_pride' && t.moodDelta === 12)).toBe(true);
   });
 });

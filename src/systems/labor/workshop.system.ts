@@ -12,13 +12,11 @@ import {
 } from '../../types/components.types.ts';
 import type { EntityId, GameState } from '../../types/game-state.types.ts';
 import { ensureColonyState, isResourceReservedByOther, entityResourceKey } from './job_blackboard.ts';
-import { addTimedThought } from '../psychology/thoughts.system.ts';
+import { addTimedThought, resolveConfiguredThought } from '../psychology/thoughts.system.ts';
+import { THOUGHT_SLOT_CRAFTED_ITEM } from '../../constants/personality.constants.ts';
 
 const INSPIRED_CRAFT_WORK_STEP = 2;
 const NORMAL_CRAFT_WORK_STEP = 1;
-const CRAFTED_ITEM_THOUGHT_MOOD = 6;
-const CRAFTED_ITEM_THOUGHT_DURATION = 40;
-const CRAFTED_ITEM_THOUGHT_MAX_STACKS = 2;
 const WORKSHOP_PROXIMITY_RADIUS = 1;
 
 /** Fallback crafting recipes active when a campaign does not specify custom recipes in `rules.json`. */
@@ -391,13 +389,11 @@ export function advanceWorkshopBillWork(
       workProgress: 0
     };
     if (memory) {
-      nextState = addTimedThought(nextState, actorId, {
-        thoughtId: 'crafted_item',
-        eventSummary: `Crafted ${recipe.name}`,
-        moodDelta: CRAFTED_ITEM_THOUGHT_MOOD,
-        durationTurns: CRAFTED_ITEM_THOUGHT_DURATION,
-        maxStacks: CRAFTED_ITEM_THOUGHT_MAX_STACKS
-      });
+      nextState = addTimedThought(
+        nextState,
+        actorId,
+        resolveConfiguredThought(nextState.campaign, THOUGHT_SLOT_CRAFTED_ITEM, `Crafted ${recipe.name}`)
+      );
     }
   } else {
     updatedBill = { ...targetBill, workProgress: nextProgress };

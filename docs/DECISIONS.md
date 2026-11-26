@@ -794,6 +794,23 @@ This document records architectural decisions whose rationale is **non-obvious o
   - Unified macro-delta materialization (`materializeMacroSitesForChunk` on chunk wake, `materializeMacroSitesForArea` on area load) using persistent `materializedDeltaIds` stamps, tag-based `smoke` field lookup (no hardcoded field IDs per Rule 21), priority-tiered survivor selection, and accessible 5-tab Preact observability (`<LegendsModal />`, `UIMode.Legends`, `Shift+H`, Command Dock `🗺️ Legends`, Ledger/Dossier cross-links).
   - *Rationale*: Guarantees revisiting an area or re-streaming an evicted chunk never double-spawns ruins, fires, relics, or merchants, while honoring Principle #1 ("Prioritize Observability") with a full interactive browser into world history.
 
+---
+
+### Unified Tier 1 Faction Reputation Loop & Declarative Thought Catalog
+
+- **Decision 1: Tier 1 Witnessed Reputation Resolver Over Ruleset-Siloed Combat Penalties (`reputation.system.ts`, `state_stabilizer.ts`, `death.system.ts`)**:
+  - Replaced `classic_combat.ts`'s melee-only `ATTACK_FACTION_STANDING_PENALTY` hack with a ruleset-agnostic Tier 1 resolver (`processReputationOnDamageEvents` and `processReputationOnKill`) configured by `rules.reputation` (`ReputationConfigSchema`). Attacks and kills against non-hostile (`friendly`/`neutral`) faction members evaluate 3D LoS witnesses (`findCrimeWitnesses`), escalate active `IdentityMaskComponent` disguise suspicion before blaming the true identity, deduct attacker `factionStandings` symmetrically (`player` or NPC), optionally ripple across allied factions, and append `grudges` onto living witnesses.
+  - *Rationale*: Ensures `classic`, `dnd35e`, spells, projectiles, traps, and multi-hop `InteractionChain` kills drive identical emergent reputation consequences without double-penalizing lethal blows or punishing combat against baseline hostile monsters.
+
+- **Decision 2: Reconciled Layer 2/3 Standing Reads & Standing-Derived Hostility (`utils/faction.ts`, `trade.ts`, `social.system.ts`, `FactionsModal.tsx`)**:
+  - Standardized `MemoryComponent.factionStandings[factionId]` as each actor's Layer 2 reputation with that faction, updated `trade.ts` and `social.system.ts` to combine Layer 2 + Layer 3 personal standing via `getEffectiveStandingBetween`, and wired `getFactionRelation` to turn `'hostile'` at `<= hostileStandingThreshold` (`-50`) and `'friendly'` at `>= friendlyStandingThreshold` (`+50`) while preserving disguise masking (pierced only by personal `grudges`).
+  - *Rationale*: Bridges quest rewards, combat crimes, `FactionsModal`, shop prices, persuasion contests, and guard hostility into one cohesive closed loop without breaking existing `relationship_thresholds.json` rules.
+
+- **Decision 3: Unified `resolveConfiguredThought` Catalog Across Tier 1 Thought Emitters (`thoughts.system.ts`, `site_materializer.ts`, `needs.system.ts`, `workshop.system.ts`)**:
+  - Replaced hardcoded `'site_raid_trauma'`, `'crafted_item'`, and 5 need thought literals with `resolveConfiguredThought(campaign, slotKey, fallbackSummary, overrides)` backed by `PsychologyRulesConfigSchema.thoughtDefinitions`, `MacroSiteDelta.thoughtOverride`, and fallback entries in `DEFAULT_THOUGHT_DEFINITIONS`.
+  - *Rationale*: Enforces Rule 21 ("New Content Mod" Litmus Test) across every Tier 1 psychology emitter with 100% backward compatibility.
+
+
 
 
 

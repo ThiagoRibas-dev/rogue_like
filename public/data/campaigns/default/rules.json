@@ -97,6 +97,34 @@
       "watchtower_overlook": "site_2"
     }
   },
+  "reputation": {
+    "enabled": true,
+    "attackStandingPenalty": 5,
+    "killStandingPenalty": 25,
+    "hostileStandingThreshold": -50,
+    "friendlyStandingThreshold": 50,
+    "requireWitness": true,
+    "witnessRadiusTiles": 10,
+    "penalizeHostileFactions": false,
+    "applyWitnessGrudge": true,
+    "alliedFactionRippleRatio": 0
+  },
+  "psychology": {
+    "thoughtDefinitions": {
+      "site_burned": {
+        "thoughtId": "site_raid_trauma",
+        "moodDelta": -22,
+        "durationTurns": 120,
+        "maxStacks": 2
+      },
+      "site_raided": {
+        "thoughtId": "site_raid_trauma",
+        "moodDelta": -14,
+        "durationTurns": 120,
+        "maxStacks": 2
+      }
+    }
+  },
   "spawning": {
     "maxMonstersPerRoom": 2,
     "maxItemsPerRoom": 2,

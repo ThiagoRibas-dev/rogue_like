@@ -456,7 +456,16 @@
       "FACET_DOMINANT_HIGH_THRESHOLD",
       "FACET_DOMINANT_LOW_THRESHOLD",
       "CORE_MEMORY_MUTATION_AMOUNT",
-      "DEFAULT_PATIENCE_THRESHOLD"
+      "DEFAULT_PATIENCE_THRESHOLD",
+      "THOUGHT_SLOT_FREEZING_COLD",
+      "THOUGHT_SLOT_SWELTERING_HEAT",
+      "THOUGHT_SLOT_EXHAUSTED",
+      "THOUGHT_SLOT_WELL_RESTED",
+      "THOUGHT_SLOT_UNCOMFORTABLE",
+      "THOUGHT_SLOT_CRAFTED_ITEM",
+      "THOUGHT_SLOT_SITE_RAIDED",
+      "THOUGHT_SLOT_SITE_BURNED",
+      "DEFAULT_THOUGHT_DEFINITIONS"
     ],
     "ownershipBoundary": {
       "includes": "Pure implementation and exports for src/constants/personality.constants.ts.",
@@ -5523,6 +5532,7 @@
     "tier": "tier1_console",
     "responsibility": "Gets the faction relation between two entities.",
     "canonicalEntryPoints": [
+      "getEffectiveStandingBetween",
       "getFactionRelation",
       "isHostile"
     ],
@@ -6647,6 +6657,8 @@
     "responsibility": "Decaying/stacking situational thoughts, facet-weighted mood tiers, Inspirations, and Mental Breaks.",
     "canonicalEntryPoints": [
       "AddThoughtInput",
+      "ThoughtResolutionOverrides",
+      "resolveConfiguredThought",
       "classifyMoodTier",
       "addTimedThought",
       "recalculateActorMood",
@@ -6955,6 +6967,50 @@
     },
     "antiPatterns": [
       "Do not use innerHTML or hardcoded dark colors inside LegendsModal.tsx."
+    ]
+  },
+  "src/constants/reputation.constants.ts": {
+    "domain": "Core Console: Constants & Dictionaries",
+    "tier": "tier1_console",
+    "responsibility": "Named default constants and clamp bounds for combat/kill faction reputation penalties and standing thresholds.",
+    "canonicalEntryPoints": [
+      "DEFAULT_ATTACK_STANDING_PENALTY",
+      "DEFAULT_KILL_STANDING_PENALTY",
+      "DEFAULT_STANDING_HOSTILE_THRESHOLD",
+      "DEFAULT_STANDING_FRIENDLY_THRESHOLD",
+      "DEFAULT_WITNESS_RADIUS_TILES",
+      "DEFAULT_DISGUISE_ATTACK_SUSPICION_GAIN",
+      "DEFAULT_DISGUISE_KILL_SUSPICION_GAIN",
+      "DEFAULT_ALLIED_FACTION_RIPPLE_RATIO",
+      "MIN_FACTION_STANDING",
+      "MAX_FACTION_STANDING"
+    ],
+    "ownershipBoundary": {
+      "includes": "Reputation penalty defaults, standing threshold constants, and disguise crime suspicion constants.",
+      "excludes": "Ruleset-specific social check math or faction matrix mutations."
+    },
+    "antiPatterns": [
+      "Do not duplicate standing thresholds or magic penalties across UI modals or ruleset combat files."
+    ]
+  },
+  "src/systems/reputation.system.ts": {
+    "domain": "Core Console: ECS Systems & Simulation",
+    "tier": "tier1_console",
+    "responsibility": "Unified Tier 1 witnessed combat/kill reputation feedback, disguise suspicion escalation, witness grudges, and allied faction standing ripples.",
+    "canonicalEntryPoints": [
+      "ResolvedReputationConfig",
+      "resolveReputationConfig",
+      "findCrimeWitnesses",
+      "applyReputationCrime",
+      "processReputationOnDamageEvents",
+      "processReputationOnKill"
+    ],
+    "ownershipBoundary": {
+      "includes": "Witness LoS checks, attacker MemoryComponent.factionStandings updates, disguise scrutiny on crimes, and witness grudge injection.",
+      "excludes": "Hardcoded faction IDs or ruleset-specific damage formulas."
+    },
+    "antiPatterns": [
+      "Do not hardcode faction standing combat penalties inside individual ruleset cartridges."
     ]
   }
 }

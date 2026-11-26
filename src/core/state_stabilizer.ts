@@ -3,11 +3,12 @@ import { ComponentType } from '../types/components.types.ts';
 import { queryEntities } from './ecs.ts';
 import { processDamageSystem } from '../systems/damage.system.ts';
 import { processDeathSystem } from '../systems/death.system.ts';
+import { processReputationOnDamageEvents } from '../systems/reputation.system.ts';
 import { processGlobalTriggers } from '../systems/trigger.system.ts';
 import { MAX_STABILIZATION_ITERATIONS } from '../constants/pacing.constants.ts';
 
 /**
- * Iteratively drains pending damage, death reactions, and global triggers
+ * Iteratively drains pending damage, reputation checks, death reactions, and global triggers
  * up to MAX_STABILIZATION_ITERATIONS so secondary consequences settle deterministically.
  *
  * @param state The game state to stabilize.
@@ -23,6 +24,7 @@ export function resolveStateStabilization(state: GameState): GameState {
     const prevEventCount = nextState.events.length;
 
     nextState = processDamageSystem(nextState);
+    nextState = processReputationOnDamageEvents(nextState, prevEventCount);
     nextState = processDeathSystem(nextState);
     const triggerResult = processGlobalTriggers(nextState, processedEventIndex);
     nextState = triggerResult.state;

@@ -29,6 +29,7 @@ import { removeActor, addActor } from '../core/scheduler.ts';
 import { deleteSave } from '../core/save.ts';
 import { processQuestEvent } from './quest.system.ts';
 import { evaluateCheatDeath } from './nemesis.system.ts';
+import { processReputationOnKill } from './reputation.system.ts';
 import { rng } from '../core/rng.ts';
 import { getEntityBarks } from './nemesis.system.ts';
 import { getActiveRuleset } from '../rulesets/registry.ts';
@@ -143,6 +144,10 @@ export function processDeathSystem(state: GameState): GameState {
       if (cheatResult.shouldCheatDeath) {
         nextState = cheatResult.state;
         continue; // Entity moves to limbo; do not remove completely or drop loot yet
+      }
+
+      if (resolvedKillerId !== undefined) {
+        nextState = processReputationOnKill(nextState, entityId, resolvedKillerId);
       }
 
       // If this entity was a nemesis and died permanently, clean up its hierarchy slot and record the vacancy

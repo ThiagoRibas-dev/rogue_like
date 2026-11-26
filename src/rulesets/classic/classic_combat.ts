@@ -14,11 +14,9 @@ import {
   type DamageInstance,
   type DeathComponent,
   type EquipmentComponent,
-  type FactionComponent,
   type FighterComponent,
   type InteractionChain,
   type ItemComponent,
-  type MemoryComponent,
   type NemesisComponent
 } from '../../types/components.types.ts';
 import { addMessage, MessageLogCategory } from '../../systems/message.system.ts';
@@ -30,9 +28,6 @@ import { promoteEntity, recordChronicleEvent } from '../../systems/chronicle.sys
 import { computeClassicEffectiveStats } from './classic_stats.ts';
 
 export { addFloatingText };
-
-/** Faction standing penalty applied when an actor attacks a member of a faction. */
-const ATTACK_FACTION_STANDING_PENALTY = 5;
 
 /** Minimum melee damage dealt on a classic attack hit. */
 const MIN_CLASSIC_MELEE_DAMAGE = 1;
@@ -94,21 +89,6 @@ export function resolveClassicMeleeAttack(
         }
       }
     }
-  }
-
-  const attackerMemory = getComponent(state, entityId, ComponentType.Memory) as MemoryComponent | undefined;
-  const defenderFaction = getComponent(state, defenderId, ComponentType.Faction) as FactionComponent | undefined;
-
-  if (attackerMemory && defenderFaction) {
-    const currentStanding = attackerMemory.factionStandings[defenderFaction.factionId] ?? 0;
-    const nextMemory: MemoryComponent = {
-      ...attackerMemory,
-      factionStandings: {
-        ...attackerMemory.factionStandings,
-        [defenderFaction.factionId]: currentStanding - ATTACK_FACTION_STANDING_PENALTY
-      }
-    };
-    nextState = addComponent(nextState, entityId, nextMemory);
   }
 
   const equipment = getComponent(state, entityId, ComponentType.Equipment) as EquipmentComponent | undefined;

@@ -179,9 +179,10 @@ For `rulesetId: "dnd35e"`, canonical conditions live in `public/data/rulesets/dn
   - `enablePsychology` (boolean): Enables 6-need decay (`nourishment`, `rest`, `shelter`, `comfort`, `social`, `safety`) and `Thought` memories driving mood thresholds and mental breaks.
   - `needs` (optional record `0..100`): Overrides starting need values (e.g., `{ "rest": 85, "comfort": 80 }`).
   - `laborPriorities` (optional `{ mining, chopping, hauling, building, harvesting, crafting }` `0..4`): Controls autonomous `laborBehavior` task selection (paired with furniture/workshop tags like `"furniture:bed"` or `"workshop:masonry"`).
-- **Crafting & Psychology Rules (`rules.json`)**:
+- **Crafting, Reputation & Psychology Rules (`rules.json`)**:
   - `craftingRecipes` (optional): Multi-step bills bound to `workshopTag`, consuming `requiredInputs`, taking `workUnits`, and producing `outputs`.
-  - `psychology` (optional): Tune `needDecayMultipliers`, `moodBreakingThreshold`, and `moodInspirationThreshold`.
+  - `reputation` (optional): Tunes automatic Tier 1 standing feedback & hostility thresholds across all rulesets (`enabled`, `attackStandingPenalty`, `killStandingPenalty`, `hostileStandingThreshold`, `friendlyStandingThreshold`, `requireWitness`, `witnessRadiusTiles`, `penalizeHostileFactions`, `applyWitnessGrudge`, `alliedFactionRippleRatio`, `disguiseAttackSuspicionGain`, `disguiseKillSuspicionGain`).
+  - `psychology` (optional): Tune `needDecayMultipliers`, `moodBreakingThreshold`, `moodInspirationThreshold`, and `thoughtDefinitions` (map of logical slot keys such as `site_burned`, `site_raided`, `freezing_cold`, `sweltering_heat`, `exhausted`, `well_rested`, `uncomfortable`, `crafted_item` to `{ thoughtId, moodDelta, stressDelta?, durationTurns, maxStacks?, summaryTemplate? }`).
 - **Macro-World & Offline Legends (`rules.json` → `macroWorld`)**:
   - Opt into Ring 2 continental simulation & multi-century pre-play Legends worldgen via `macroWorld`:
     ```json

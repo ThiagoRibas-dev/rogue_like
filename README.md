@@ -105,7 +105,7 @@ This codebase enforces strict architectural guardrails verified automatically on
   - **Tier 3 — System Content (`public/data/rulesets/dnd35e/`)**: **888** modular JSON files across 11 subfolders (plus `effects.json`, `status.json`, and `item_enhancements.json` = **891** total JSON files) parameterizing classes (26), races/bestiary (87), spells (257), conditions (31), templates (13), feats (125), items (242 + 16 enhancements), domains (22), skills (50), creature types (15), and subtypes (20).
 - **Unified Effect Providers & Hierarchical Provenance (`sourcePath`)**: Every mechanical emitter (size, creature type, subtype, race, template, class, feat, skill threshold, item enhancement, condition, armor/load, tactical stance, spatial field) projects semantic tags and emits `StatModifier`s / `RuleOverride`s carrying a slash-delimited `sourcePath` for atomic revocation.
 - **Programmatic SSOT Registries & Continuous Parity**:
-  - Every `.ts`/`.tsx` file under `src/` is registered in `docs/ssot/ssot_console.json` (**394**), `docs/ssot/ssot_dnd35e.json` (**173**), or `docs/ssot/ssot_classic.json` (**6**) (**573 source files** total) with primary responsibility, canonical exported entry points, ownership boundaries, and forbidden anti-patterns.
+  - Every `.ts`/`.tsx` file under `src/` is registered in `docs/ssot/ssot_console.json` (**396**), `docs/ssot/ssot_dnd35e.json` (**173**), or `docs/ssot/ssot_classic.json` (**6**) (**575 source files** total) with primary responsibility, canonical exported entry points, ownership boundaries, and forbidden anti-patterns.
   - Human-readable maps (`docs/SSOT_CONSOLE.md`, `docs/SSOT_DND35E.md`, and `docs/SSOT_CLASSIC.md`) are generated programmatically via `bun run map:ssot` and verified for 100% disk and export parity by `scripts/run-validator.ts` and `tests/ssot_registry_parity.test.ts`.
 
 ---
@@ -134,7 +134,7 @@ This codebase enforces strict architectural guardrails verified automatically on
 │   ├── sprite_packs/                         # Shared 32x32 sprite bundles (catalog.json, dcss/ CC0 primary, 32rogues/ fallback)
 │   └── rulesets/dnd35e/                      # Modular D&D 3.5e SRD JSON registries (classes, races, spells, feats, items, conditions)
 ├── scripts/                                  # Campaign validator, sprite packers, SSOT parity engine, and codebase mapper
-├── tests/                                    # Bun regression test suites (473 tests across 71 files)
+├── tests/                                    # Bun regression test suites (480 tests across 72 files)
 └── src/
     ├── actions/                              # Action handlers and verb dispatch registry
     ├── ai/                                   # Composable AI behaviors (hunt, ranged, spell, follow, flee, wander, labor) & HPA* / flow fields
@@ -158,6 +158,7 @@ This codebase enforces strict architectural guardrails verified automatically on
 - **[`CREDITS.md`](./CREDITS.md)** — Licenses, contributor credits, and attribution notices (`DCSS` CC0 1.0, `32rogues`, `RLTiles`, `ROT.js`).
 - **[`AGENTS.md`](./AGENTS.md)** — Golden Rules, TypeScript strictness standards, and development workflow.
 - **[`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md)** — Deep-dive system design and data flow across all engine subsystems.
+- **[`docs/EMERGENT_SYSTEMS_INTERACTION.md`](./docs/EMERGENT_SYSTEMS_INTERACTION.md)** — Systems interaction diagram, direct couplings, and emergent multi-hop feedback loops across combat, narrative, psychology, physics, and Ring 2 macro-world simulation.
 - **[`docs/DECISIONS.md`](./docs/DECISIONS.md)** — Architectural tradeoffs and rationale (Decisions 1–21 plus M112.9–M186 ADRs).
 - **[`docs/MILESTONES.md`](./docs/MILESTONES.md)** — Complete milestone history and roadmap (Milestones 1–186; Phases 1–43 & 45–48 complete, Phase 44 planned).
 - **[`docs/QUEST_AND_NARRATIVE_ARCHITECTURE.md`](./docs/QUEST_AND_NARRATIVE_ARCHITECTURE.md)** — End-to-end quest, dialogue, and procedural narrative lifecycle architecture.

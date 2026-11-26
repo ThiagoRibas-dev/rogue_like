@@ -1,5 +1,9 @@
 import type { JSX } from 'preact';
 import { createToggleFactionsAction } from '../../../actions/core.actions.ts';
+import {
+  DEFAULT_STANDING_FRIENDLY_THRESHOLD,
+  DEFAULT_STANDING_HOSTILE_THRESHOLD
+} from '../../../constants/reputation.constants.ts';
 import { getComponent } from '../../../core/ecs.ts';
 import { queuePlayerIntent } from '../../../core/game-loop.ts';
 import { PresentationDomain } from '../../../core/presentation_queue.ts';
@@ -9,9 +13,6 @@ import { useUiSelector } from '../core/ui_store.ts';
 import { Button } from '../primitives/Button.tsx';
 import { Badge, type BadgeTone } from '../primitives/DataDisplay.tsx';
 import { ModalShell } from '../primitives/ModalShell.tsx';
-
-const FRIENDLY_THRESHOLD = 50;
-const HOSTILE_THRESHOLD = -50;
 
 /**
  * Factions & Reputation modal rendering current faction standings with semantic status tones.
@@ -30,6 +31,10 @@ export function FactionsModal(): JSX.Element | null {
 
   const memory = getComponent(state, playerId, ComponentType.Memory) as MemoryComponent | undefined;
   const factionIds = Object.keys(state.campaign.factions);
+  const friendlyThreshold =
+    state.campaign.rules.reputation?.friendlyStandingThreshold ?? DEFAULT_STANDING_FRIENDLY_THRESHOLD;
+  const hostileThreshold =
+    state.campaign.rules.reputation?.hostileStandingThreshold ?? DEFAULT_STANDING_HOSTILE_THRESHOLD;
 
   const handleClose = (): void => {
     queuePlayerIntent(createToggleFactionsAction(playerId));
@@ -57,10 +62,10 @@ export function FactionsModal(): JSX.Element | null {
 
             let tone: BadgeTone = 'neutral';
             let relationText = 'Neutral';
-            if (standing >= FRIENDLY_THRESHOLD) {
+            if (standing >= friendlyThreshold) {
               tone = 'success';
               relationText = 'Friendly';
-            } else if (standing <= HOSTILE_THRESHOLD) {
+            } else if (standing <= hostileThreshold) {
               tone = 'danger';
               relationText = 'Hostile';
             } else if (standing < 0) {

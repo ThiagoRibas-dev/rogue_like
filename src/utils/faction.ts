@@ -1,5 +1,9 @@
 import { type GameState, type EntityId } from '../types/game-state.types.ts';
 import {
+  DEFAULT_STANDING_FRIENDLY_THRESHOLD,
+  DEFAULT_STANDING_HOSTILE_THRESHOLD
+} from '../constants/reputation.constants.ts';
+import {
   ComponentType,
   type FactionComponent,
   type AttitudeComponent,
@@ -10,7 +14,7 @@ import {
 import { getComponent } from '../core/ecs.ts';
 
 function resolveActualBaselineRelation(
-  state: GameState,
+  state: Readonly<GameState>,
   subject: EntityId,
   target: EntityId,
   subjectFaction: string,
@@ -48,14 +52,79 @@ function resolveActualBaselineRelation(
 }
 
 /**
+ * Computes the effective bilateral standing between an observer entity (e.g., merchant or NPC)
+ * and a target actor, combining Layer 2 actor-to-faction reputation (`actorMemory.factionStandings[observerFaction]`)
+ * with any Layer 3 personal standing override (`observerMemory.factionStandings[actorFaction]`).
+ *
+ * @param state The current readonly GameState.
+ * @param observerId Observer EntityId (merchant, speaker, or faction representative).
+ * @param actorId Target actor EntityId whose reputation is evaluated.
+ * @returns Combined integer standing score.
+ */
+export function getEffectiveStandingBetween(
+  state: Readonly<GameState>,
+  observerId: EntityId,
+  actorId: EntityId
+): number {
+  const observerFaction = (getComponent(state, observerId, ComponentType.Faction) as FactionComponent | undefined)
+    ?.factionId;
+  const actorFaction = (getComponent(state, actorId, ComponentType.Faction) as FactionComponent | undefined)?.factionId;
+
+  const actorMemory = getComponent(state, actorId, ComponentType.Memory) as MemoryComponent | undefined;
+  const observerMemory = getComponent(state, observerId, ComponentType.Memory) as MemoryComponent | undefined;
+
+  const actorReputationWithObserverFaction = observerFaction
+    ? (actorMemory?.factionStandings[observerFaction] ?? 0)
+    : 0;
+  const observerPersonalStanding = actorFaction ? (observerMemory?.factionStandings[actorFaction] ?? 0) : 0;
+
+  return actorReputationWithObserverFaction + observerPersonalStanding;
+}
+
+function resolveStandingAdjustedRelation(
+  state: Readonly<GameState>,
+  subject: EntityId,
+  target: EntityId,
+  subjectFaction: string,
+  actualTargetFaction: string,
+  subjectMemory: MemoryComponent | undefined,
+  baseline: 'hostile' | 'neutral' | 'friendly'
+): 'hostile' | 'neutral' | 'friendly' {
+  if (subject === target) return baseline;
+
+  const repCfg = state.campaign.rules.reputation;
+  const hostileThreshold = repCfg?.hostileStandingThreshold ?? DEFAULT_STANDING_HOSTILE_THRESHOLD;
+  const friendlyThreshold = repCfg?.friendlyStandingThreshold ?? DEFAULT_STANDING_FRIENDLY_THRESHOLD;
+
+  const targetMemory = getComponent(state, target, ComponentType.Memory) as MemoryComponent | undefined;
+  const targetStandingWithSubject =
+    subjectFaction !== 'neutral' ? (targetMemory?.factionStandings[subjectFaction] ?? 0) : 0;
+  const subjectStandingWithTarget =
+    actualTargetFaction !== 'neutral' ? (subjectMemory?.factionStandings[actualTargetFaction] ?? 0) : 0;
+
+  if (targetStandingWithSubject <= hostileThreshold || subjectStandingWithTarget <= hostileThreshold) {
+    return 'hostile';
+  }
+
+  if (
+    baseline !== 'hostile' &&
+    (targetStandingWithSubject >= friendlyThreshold || subjectStandingWithTarget >= friendlyThreshold)
+  ) {
+    return 'friendly';
+  }
+
+  return baseline;
+}
+
+/**
  * Gets the faction relation between two entities.
  * Precedence:
  * 1. The subject's own faction/attitude remains its actual state (never overwritten by subject's own mask).
  * 2. Personal grudges (`MemoryComponent.grudges`) on `subject` toward `target` override any disguise and return `'hostile'`.
- * 3. Actual `'friendly'` allies remain `'friendly'` even when `target` is wearing a disguise.
+ * 3. Actual `'friendly'` allies (via baseline diplomacy or high `factionStandings`) remain `'friendly'` even when `target` is wearing a disguise.
  * 4. A valid, unblown `IdentityMaskComponent` on `target` (`suspicion < maxSuspicion`) resolves `target`'s perceived
- *    faction from `targetMask.disguisedAsFactionId` and suppresses baseline faction/attitude hostility.
- * 5. Otherwise falls back to actual faction/attitude relation.
+ *    faction from `targetMask.disguisedAsFactionId` and suppresses baseline or standing-derived hostility.
+ * 5. Otherwise falls back to standing-adjusted baseline faction/attitude relation.
  *
  * @param state The current GameState.
  * @param subject The EntityId checking relation.
@@ -85,7 +154,16 @@ export function getFactionRelation(
     }
   }
 
-  const actualRelation = resolveActualBaselineRelation(state, subject, target, subjectFaction, actualTargetFaction);
+  const baselineRelation = resolveActualBaselineRelation(state, subject, target, subjectFaction, actualTargetFaction);
+  const actualRelation = resolveStandingAdjustedRelation(
+    state,
+    subject,
+    target,
+    subjectFaction,
+    actualTargetFaction,
+    subjectMemory,
+    baselineRelation
+  );
   if (actualRelation === 'friendly') {
     return 'friendly';
   }

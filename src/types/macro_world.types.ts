@@ -134,6 +134,16 @@ export interface MacroWeatherFront {
   readonly remainingTicks: number;
 }
 
+/** Optional declarative thought override carried by a `MacroSiteDelta`. */
+export interface MacroSiteDeltaThoughtOverride {
+  readonly thoughtId?: string | undefined;
+  readonly moodDelta?: number | undefined;
+  readonly stressDelta?: number | undefined;
+  readonly durationTurns?: number | undefined;
+  readonly maxStacks?: number | undefined;
+  readonly summaryTemplate?: string | undefined;
+}
+
 /** Ordered Ring 2 mutation waiting to be materialized on chunk or area wake. */
 export interface MacroSiteDelta {
   readonly id: string;
@@ -145,6 +155,7 @@ export interface MacroSiteDelta {
   readonly itemTemplateTags?: ReadonlyArray<string> | undefined;
   readonly scarText?: string | undefined;
   readonly summary: string;
+  readonly thoughtOverride?: MacroSiteDeltaThoughtOverride | undefined;
 }
 
 /** Ring 2 rumor dispatched into Tier 2/3 gossip propagation queues. */

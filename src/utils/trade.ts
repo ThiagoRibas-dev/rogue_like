@@ -5,7 +5,8 @@ export { createDefaultMemoryComponent };
 import { getActiveRuleset } from '../rulesets/registry.ts';
 import { resolveCurrencyConfig, resolveItemBaseValueInBaseUnits } from '../systems/currency.system.ts';
 import { ComponentType } from '../types/components.types.ts';
-import type { ShopComponent, MemoryComponent, FactionComponent } from '../types/components.types.ts';
+import type { ShopComponent, MemoryComponent } from '../types/components.types.ts';
+import { getEffectiveStandingBetween } from './faction.ts';
 
 /**
  * Economic penalty markup applied when a merchant's supplier hierarchy has a top-tier vacancy.
@@ -196,6 +197,16 @@ export function getTradePriceBreakdown(
     annotations.push(`Supply Shortage (+${Math.round(HIERARCHY_VACANCY_MARKUP_PENALTY * 100)}%)`);
   }
 
+  const effectiveStanding = getEffectiveStandingBetween(state, shopEntityId, buyerEntityId);
+  if (effectiveStanding !== 0) {
+    const standingModifier = -(effectiveStanding / FACTION_STANDING_PRICE_DIVISOR);
+    if (standingModifier !== 0) {
+      multiplier += standingModifier;
+      const pct = Math.round(standingModifier * 100);
+      annotations.push(`Standing (${pct >= 0 ? `+${pct}%` : `${pct}%`})`);
+    }
+  }
+
   const memory = getComponent(state, shopEntityId, ComponentType.Memory) as MemoryComponent | undefined;
   if (memory) {
     if (memory.sessionMarkupModifier !== undefined && memory.sessionMarkupModifier !== 0) {
@@ -210,17 +221,6 @@ export function getTradePriceBreakdown(
     } else if (memory.gratefulDuration && memory.gratefulDuration > 0) {
       multiplier -= GRATEFUL_DISCOUNT_MODIFIER;
       annotations.push(`Grateful (-${Math.round(GRATEFUL_DISCOUNT_MODIFIER * 100)}%)`);
-    }
-
-    const buyerFaction = getComponent(state, buyerEntityId, ComponentType.Faction) as FactionComponent | undefined;
-    if (buyerFaction) {
-      const standing = memory.factionStandings[buyerFaction.factionId] ?? 0;
-      const standingModifier = -(standing / FACTION_STANDING_PRICE_DIVISOR);
-      if (standingModifier !== 0) {
-        multiplier += standingModifier;
-        const pct = Math.round(standingModifier * 100);
-        annotations.push(`Standing (${pct >= 0 ? `+${pct}%` : `${pct}%`})`);
-      }
     }
 
     if (memory.facets) {

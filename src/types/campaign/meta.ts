@@ -165,14 +165,45 @@ export const CraftingRecipeSchema = z.object({
 /** Inferred type for a crafting recipe. */
 export type CraftingRecipe = z.infer<typeof CraftingRecipeSchema>;
 
+/** Zod schema for a declarative situational thought definition in `rules.psychology.thoughtDefinitions`. */
+export const ThoughtRuleDefinitionSchema = z.object({
+  thoughtId: z.string().min(1),
+  moodDelta: z.number().int(),
+  stressDelta: z.number().int().optional(),
+  durationTurns: z.number().int().positive(),
+  maxStacks: z.number().int().positive().optional(),
+  summaryTemplate: z.string().min(1).optional()
+});
+/** Inferred type for a declarative situational thought definition. */
+export type ThoughtRuleDefinition = z.infer<typeof ThoughtRuleDefinitionSchema>;
+
 /** Zod schema for optional campaign-level psychology tuning parameters. */
 export const PsychologyRulesConfigSchema = z.object({
   needDecayMultipliers: z.record(z.string(), z.number().nonnegative()).optional(),
   moodBreakingThreshold: z.number().int().min(0).max(100).optional(),
-  moodInspirationThreshold: z.number().int().min(0).max(100).optional()
+  moodInspirationThreshold: z.number().int().min(0).max(100).optional(),
+  thoughtDefinitions: z.record(z.string(), ThoughtRuleDefinitionSchema).optional()
 });
 /** Inferred type for psychology configuration. */
 export type PsychologyRulesConfig = z.infer<typeof PsychologyRulesConfigSchema>;
+
+/** Zod schema configuring automatic combat/kill faction reputation feedback and hostility thresholds. */
+export const ReputationConfigSchema = z.object({
+  enabled: z.boolean().default(true),
+  attackStandingPenalty: z.number().int().nonnegative().default(5),
+  killStandingPenalty: z.number().int().nonnegative().default(25),
+  hostileStandingThreshold: z.number().int().max(-1).default(-50),
+  friendlyStandingThreshold: z.number().int().min(1).default(50),
+  requireWitness: z.boolean().default(true),
+  witnessRadiusTiles: z.number().int().positive().default(10),
+  penalizeHostileFactions: z.boolean().default(false),
+  applyWitnessGrudge: z.boolean().default(true),
+  alliedFactionRippleRatio: z.number().min(0).max(1).default(0),
+  disguiseAttackSuspicionGain: z.number().int().nonnegative().default(50),
+  disguiseKillSuspicionGain: z.number().int().nonnegative().default(100)
+});
+/** Inferred type for campaign reputation configuration. */
+export type ReputationConfig = z.infer<typeof ReputationConfigSchema>;
 
 /** Zod schema for Ring 2 macro-world simulation and offline Legends worldgen configuration. */
 export const MacroWorldConfigSchema = z.object({
@@ -226,6 +257,7 @@ export const RulesConfigSchema = z.object({
   blueprints: z.record(z.string(), ConstructionBlueprintSchema).optional(),
   craftingRecipes: z.record(z.string(), CraftingRecipeSchema).optional(),
   psychology: PsychologyRulesConfigSchema.optional(),
+  reputation: ReputationConfigSchema.optional(),
   macroWorld: MacroWorldConfigSchema.optional(),
   spawning: z.object({
     maxMonstersPerRoom: z.number().int().nonnegative(),

@@ -261,18 +261,6 @@ export const LEGENDS_LEDGER_CAP = 12;
 /** Interval in simulated years between worker progress updates during Legends worldgen. */
 export const LEGENDS_PROGRESS_YIELD_YEARS = 10;
 
-/** Mood delta inflicted on traumatized survivors of a burned settlement. */
-export const SITE_BURN_TRAUMA_MOOD_DELTA = -22;
-
-/** Mood delta inflicted on traumatized survivors of a raided settlement. */
-export const SITE_RAID_TRAUMA_MOOD_DELTA = -14;
-
-/** Duration (turns) of the M182 trauma thought on site raid survivors. */
-export const SITE_RAID_TRAUMA_DURATION_TURNS = 120;
-
-/** Maximum stacks allowed for `site_raid_trauma` thoughts on survivors. */
-export const SITE_RAID_TRAUMA_MAX_STACKS = 2;
-
 /** Maximum ember voxel temperature (°C) stamped on recently burned sites. */
 export const BURNT_SITE_MAX_EMBER_TEMP_C = 250;
 

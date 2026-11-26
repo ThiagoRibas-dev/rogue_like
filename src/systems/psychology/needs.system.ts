@@ -15,10 +15,11 @@ import {
   NEED_SHELTER_INDOOR_RECOVERY,
   NEED_SOCIAL_ALLY_RECOVERY,
   NEEDS_NEIGHBORHOOD_RADIUS,
-  THOUGHT_MOOD_EXHAUSTED,
-  THOUGHT_MOOD_EXTREME_TEMP,
-  THOUGHT_MOOD_UNCOMFORTABLE,
-  THOUGHT_MOOD_WELL_RESTED
+  THOUGHT_SLOT_EXHAUSTED,
+  THOUGHT_SLOT_FREEZING_COLD,
+  THOUGHT_SLOT_SWELTERING_HEAT,
+  THOUGHT_SLOT_UNCOMFORTABLE,
+  THOUGHT_SLOT_WELL_RESTED
 } from '../../constants/personality.constants.ts';
 import { CHUNK_FLAG_OUTDOOR, DEFAULT_AMBIENT_TEMP_C } from '../../constants/world_chunk.constants.ts';
 import { addComponent, getComponent, getEntitiesAtPosition } from '../../core/ecs.ts';
@@ -36,7 +37,7 @@ import {
   type TagsComponent
 } from '../../types/components.types.ts';
 import type { EntityId, GameState } from '../../types/game-state.types.ts';
-import { addTimedThought, evaluateEntityPsychologyMood } from './thoughts.system.ts';
+import { addTimedThought, evaluateEntityPsychologyMood, resolveConfiguredThought } from './thoughts.system.ts';
 
 const DEFAULT_DECAY_PER_INTERVAL: Readonly<Record<CanonicalNeedId, number>> = {
   rest: 2,
@@ -51,7 +52,6 @@ const COMFORTABLE_TEMP_MIN_C = 12;
 const COMFORTABLE_TEMP_MAX_C = 28;
 const FREEZING_TEMP_C = 0;
 const SCORCHING_TEMP_C = 40;
-const THOUGHT_DURATION_MEDIUM = 60;
 
 /** Creates a universal `NeedsComponent` initialized across all 6 canonical needs (`rest`, `nourishment`, `shelter`, `comfort`, `social`, `safety`). */
 export function createDefaultNeedsComponent(
@@ -205,46 +205,41 @@ export function processActorNeedsTick(state: GameState, entityId: EntityId, elap
   let nextState = addComponent(state, entityId, { ...needsComp, needs: nextNeeds });
 
   if (cellTemp < FREEZING_TEMP_C) {
-    nextState = addTimedThought(nextState, entityId, {
-      thoughtId: 'freezing_cold',
-      eventSummary: 'Chilled to the bone',
-      moodDelta: THOUGHT_MOOD_EXTREME_TEMP,
-      durationTurns: THOUGHT_DURATION_MEDIUM
-    });
+    nextState = addTimedThought(
+      nextState,
+      entityId,
+      resolveConfiguredThought(nextState.campaign, THOUGHT_SLOT_FREEZING_COLD, 'Chilled to the bone')
+    );
   } else if (cellTemp > SCORCHING_TEMP_C) {
-    nextState = addTimedThought(nextState, entityId, {
-      thoughtId: 'sweltering_heat',
-      eventSummary: 'Suffering in scorching heat',
-      moodDelta: THOUGHT_MOOD_EXTREME_TEMP,
-      durationTurns: THOUGHT_DURATION_MEDIUM
-    });
+    nextState = addTimedThought(
+      nextState,
+      entityId,
+      resolveConfiguredThought(nextState.campaign, THOUGHT_SLOT_SWELTERING_HEAT, 'Suffering in scorching heat')
+    );
   }
 
   const restCur = nextNeeds['rest']?.current ?? DEFAULT_NEED_VALUE;
   if (restCur <= NEED_CRITICAL_THRESHOLD) {
-    nextState = addTimedThought(nextState, entityId, {
-      thoughtId: 'exhausted',
-      eventSummary: 'Desperately exhausted',
-      moodDelta: THOUGHT_MOOD_EXHAUSTED,
-      durationTurns: THOUGHT_DURATION_MEDIUM
-    });
+    nextState = addTimedThought(
+      nextState,
+      entityId,
+      resolveConfiguredThought(nextState.campaign, THOUGHT_SLOT_EXHAUSTED, 'Desperately exhausted')
+    );
   } else if (restCur >= NEED_HIGH_THRESHOLD) {
-    nextState = addTimedThought(nextState, entityId, {
-      thoughtId: 'well_rested',
-      eventSummary: 'Feeling well rested',
-      moodDelta: THOUGHT_MOOD_WELL_RESTED,
-      durationTurns: THOUGHT_DURATION_MEDIUM
-    });
+    nextState = addTimedThought(
+      nextState,
+      entityId,
+      resolveConfiguredThought(nextState.campaign, THOUGHT_SLOT_WELL_RESTED, 'Feeling well rested')
+    );
   }
 
   const comfortCur = nextNeeds['comfort']?.current ?? DEFAULT_NEED_VALUE;
   if (comfortCur <= NEED_LOW_THRESHOLD) {
-    nextState = addTimedThought(nextState, entityId, {
-      thoughtId: 'uncomfortable',
-      eventSummary: 'Uncomfortable surroundings',
-      moodDelta: THOUGHT_MOOD_UNCOMFORTABLE,
-      durationTurns: THOUGHT_DURATION_MEDIUM
-    });
+    nextState = addTimedThought(
+      nextState,
+      entityId,
+      resolveConfiguredThought(nextState.campaign, THOUGHT_SLOT_UNCOMFORTABLE, 'Uncomfortable surroundings')
+    );
   }
 
   return nextState;

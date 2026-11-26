@@ -6,6 +6,7 @@ import {
   DEFAULT_FACET_NEUTRAL,
   DEFAULT_INSPIRATION_DURATION_TURNS,
   DEFAULT_MENTAL_BREAK_DURATION_TURNS,
+  DEFAULT_THOUGHT_DEFINITIONS,
   INSPIRATION_FACET_CRAFT_THRESHOLD,
   INSPIRATION_FACET_VALOR_THRESHOLD,
   MAX_NEED_VALUE,
@@ -19,9 +20,11 @@ import {
   RESILIENCE_DAMPENER_BASE,
   RESILIENCE_DAMPENER_MIN,
   RESILIENCE_DAMPENER_SLOPE,
-  STRESS_MOOD_PENALTY_FACTOR
+  STRESS_MOOD_PENALTY_FACTOR,
+  THOUGHT_DURATION_MEDIUM
 } from '../../constants/personality.constants.ts';
 import { addComponent, getComponent } from '../../core/ecs.ts';
+import type { CampaignData } from '../../types/campaign.types.ts';
 import {
   ComponentType,
   type ActiveInspirationState,
@@ -44,6 +47,55 @@ export interface AddThoughtInput {
   readonly durationTurns?: number | undefined;
   readonly maxStacks?: number | undefined;
   readonly relatedEntityId?: EntityId | undefined;
+}
+
+/** Optional per-event overrides merged over campaign and fallback thought descriptors. */
+export interface ThoughtResolutionOverrides {
+  readonly thoughtId?: string | undefined;
+  readonly moodDelta?: number | undefined;
+  readonly stressDelta?: number | undefined;
+  readonly durationTurns?: number | undefined;
+  readonly maxStacks?: number | undefined;
+  readonly summaryTemplate?: string | undefined;
+  readonly relatedEntityId?: EntityId | undefined;
+}
+
+/**
+ * Resolves a declarative situational thought descriptor from `campaign.rules.psychology.thoughtDefinitions[slotKey]`,
+ * falling back to `DEFAULT_THOUGHT_DEFINITIONS[slotKey]` and merging any per-event overrides without hardcoding IDs.
+ *
+ * @param campaign Active CampaignData holding optional `rules.psychology.thoughtDefinitions`.
+ * @param slotKey Semantic slot key (e.g. `'site_burned'`, `'freezing_cold'`, `'crafted_item'`).
+ * @param fallbackSummary Default human-readable event summary interpolated into `{summary}` when templated.
+ * @param overrides Optional per-event overrides taking highest precedence.
+ * @returns Normalized `AddThoughtInput` ready for `addTimedThought`.
+ */
+export function resolveConfiguredThought(
+  campaign: Readonly<CampaignData>,
+  slotKey: string,
+  fallbackSummary: string,
+  overrides?: ThoughtResolutionOverrides
+): AddThoughtInput {
+  const configured = campaign.rules.psychology?.thoughtDefinitions?.[slotKey];
+  const base = configured ?? DEFAULT_THOUGHT_DEFINITIONS[slotKey];
+  const template = overrides?.summaryTemplate ?? configured?.summaryTemplate;
+  const eventSummary = template ? template.replace(/\{summary\}/g, fallbackSummary) : fallbackSummary;
+
+  const thoughtId = overrides?.thoughtId ?? base?.thoughtId ?? slotKey;
+  const moodDelta = overrides?.moodDelta ?? base?.moodDelta ?? 0;
+  const stressDelta = overrides?.stressDelta ?? configured?.stressDelta;
+  const durationTurns = overrides?.durationTurns ?? base?.durationTurns ?? THOUGHT_DURATION_MEDIUM;
+  const maxStacks = overrides?.maxStacks ?? base?.maxStacks;
+
+  return {
+    thoughtId,
+    eventSummary,
+    moodDelta,
+    durationTurns,
+    ...(stressDelta !== undefined ? { stressDelta } : {}),
+    ...(maxStacks !== undefined ? { maxStacks } : {}),
+    ...(overrides?.relatedEntityId !== undefined ? { relatedEntityId: overrides.relatedEntityId } : {})
+  };
 }
 
 /** Classifies a numeric mood score (`0..100`) into a discrete canonical `MoodTier`. */

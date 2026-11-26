@@ -5,12 +5,9 @@ import {
   BURNT_SITE_SMOKE_RADIUS,
   CARAVAN_DEFAULT_MARKUP,
   CARAVAN_MAX_SHOP_ITEMS,
-  MAX_MATERIALIZED_DELTA_IDS,
-  SITE_BURN_TRAUMA_MOOD_DELTA,
-  SITE_RAID_TRAUMA_DURATION_TURNS,
-  SITE_RAID_TRAUMA_MAX_STACKS,
-  SITE_RAID_TRAUMA_MOOD_DELTA
+  MAX_MATERIALIZED_DELTA_IDS
 } from '../../constants/macro_world.constants.ts';
+import { THOUGHT_SLOT_SITE_BURNED, THOUGHT_SLOT_SITE_RAIDED } from '../../constants/personality.constants.ts';
 import { CHUNK_DIRTY_PERSIST, CHUNK_DIRTY_REGION, CHUNK_DIRTY_TEMP } from '../../constants/world_chunk.constants.ts';
 import { addComponent, getComponent, removeComponent, spawnEntity, spawnItem } from '../../core/ecs.ts';
 import {
@@ -43,7 +40,7 @@ import type {
 import type { ChunkedWorldGrid, TilePaletteRegistry, WorldChunk } from '../../types/world-chunk.types.ts';
 import { packWorldCoord3D } from '../../utils/grid.ts';
 import { spawnField } from '../field.system.ts';
-import { addTimedThought } from '../psychology/thoughts.system.ts';
+import { addTimedThought, resolveConfiguredThought } from '../psychology/thoughts.system.ts';
 
 interface MaterializationTileSet {
   readonly floorTileId: string | undefined;
@@ -281,13 +278,12 @@ function spawnSiteDeltaEffects(
         coreMemories: [...(existingChron?.coreMemories ?? []), delta.summary],
         eventExcerpts: existingChron?.eventExcerpts ?? []
       });
-      nextState = addTimedThought(nextState, survId, {
-        thoughtId: 'site_raid_trauma',
-        eventSummary: delta.summary,
-        moodDelta: delta.kind === 'site_burned' ? SITE_BURN_TRAUMA_MOOD_DELTA : SITE_RAID_TRAUMA_MOOD_DELTA,
-        durationTurns: SITE_RAID_TRAUMA_DURATION_TURNS,
-        maxStacks: SITE_RAID_TRAUMA_MAX_STACKS
-      });
+      const traumaSlotKey = delta.kind === 'site_burned' ? THOUGHT_SLOT_SITE_BURNED : THOUGHT_SLOT_SITE_RAIDED;
+      nextState = addTimedThought(
+        nextState,
+        survId,
+        resolveConfiguredThought(nextState.campaign, traumaSlotKey, delta.summary, delta.thoughtOverride)
+      );
     }
 
     if (delta.kind === 'site_burned') {

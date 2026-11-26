@@ -3,7 +3,8 @@ import type { ApplyIntent } from '../types/intents/interaction.intents.ts';
 import { getComponent, addComponent } from '../core/ecs.ts';
 import { getActiveRuleset } from '../rulesets/registry.ts';
 import { ComponentType } from '../types/components.types.ts';
-import type { MemoryComponent, FactionComponent, TraitsComponent } from '../types/components.types.ts';
+import type { MemoryComponent, TraitsComponent } from '../types/components.types.ts';
+import { getEffectiveStandingBetween } from '../utils/faction.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import { applyConsequence } from './trigger.system.ts';
 import { GameEventType, type ApplyResolvedEvent, type GameEvent } from '../types/events.types.ts';
@@ -48,14 +49,11 @@ export function processSocialIntent(
     };
   }
 
-  const playerFaction = getComponent(state, playerId, ComponentType.Faction) as FactionComponent | undefined;
   const playerTraits = getComponent(state, playerId, ComponentType.Traits) as TraitsComponent | undefined;
 
   // Calculate player "power" in the contest
   let playerPower = 50; // Base score
-  if (playerFaction) {
-    playerPower += npcMemory.factionStandings[playerFaction.factionId] ?? 0;
-  }
+  playerPower += getEffectiveStandingBetween(state, npcId, playerId);
   if (playerTraits) {
     if (intent.verb === 'intimidate' && playerTraits.traits.includes('fearsome')) playerPower += 20;
     if (intent.verb === 'persuade' && playerTraits.traits.includes('charismatic')) playerPower += 20;
