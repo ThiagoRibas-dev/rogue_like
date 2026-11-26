@@ -806,9 +806,26 @@ This document records architectural decisions whose rationale is **non-obvious o
   - Standardized `MemoryComponent.factionStandings[factionId]` as each actor's Layer 2 reputation with that faction, updated `trade.ts` and `social.system.ts` to combine Layer 2 + Layer 3 personal standing via `getEffectiveStandingBetween`, and wired `getFactionRelation` to turn `'hostile'` at `<= hostileStandingThreshold` (`-50`) and `'friendly'` at `>= friendlyStandingThreshold` (`+50`) while preserving disguise masking (pierced only by personal `grudges`).
   - *Rationale*: Bridges quest rewards, combat crimes, `FactionsModal`, shop prices, persuasion contests, and guard hostility into one cohesive closed loop without breaking existing `relationship_thresholds.json` rules.
 
-- **Decision 3: Unified `resolveConfiguredThought` Catalog Across Tier 1 Thought Emitters (`thoughts.system.ts`, `site_materializer.ts`, `needs.system.ts`, `workshop.system.ts`)**:
+- **Decision 3: Idempotent `resolveConfiguredThought` Catalog Across Tier 1 Thought Emitters (`thoughts.system.ts`, `site_materializer.ts`, `needs.system.ts`, `workshop.system.ts`)**:
   - Replaced hardcoded `'site_raid_trauma'`, `'crafted_item'`, and 5 need thought literals with `resolveConfiguredThought(campaign, slotKey, fallbackSummary, overrides)` backed by `PsychologyRulesConfigSchema.thoughtDefinitions`, `MacroSiteDelta.thoughtOverride`, and fallback entries in `DEFAULT_THOUGHT_DEFINITIONS`.
   - *Rationale*: Enforces Rule 21 ("New Content Mod" Litmus Test) across every Tier 1 psychology emitter with 100% backward compatibility.
+
+---
+
+### Campaign Editor Rewrite on Preact Primitives & Schema Auto-Discovery (Phase 44, Milestones 169–172)
+
+- **Decision 1: Auto-Discovered `CampaignDataSchema` Categories & Exhaustive `CAMPAIGN_CATEGORY_META` (`campaign.types.ts`, `editor_config.ts`)**:
+  - Replaced manual `CampaignCategorySchemas` and manual `VIEW_GROUPS` tab arrays with schema introspection over `CampaignDataSchema.shape` paired with a compile-time exhaustive `Record<keyof CampaignData, CampaignCategoryMeta>` map (`z.ZodRecord -> 'dictionary'`, non-record -> `'singleton'`, explicit `customPanel` overrides for specialized editors).
+  - *Rationale*: Eliminates silent drift whenever new campaign categories are added—TypeScript fails compilation until group/label metadata is supplied, and the editor immediately renders full forms for every new category.
+
+- **Decision 2: Bidirectional `resolveFieldReferenceKind` Over Duplicated Switch Tables (`reference_index.ts`, `ui_utils.ts`, `WhereUsedDrawer.tsx`)**:
+  - Unified field-name and path foreign-key matching in `resolveFieldReferenceKind` inside `reference_index.ts`, shared by both inverted `"Where Used"` indexing and `getReferenceOptions` form `<Select />` pickers, while clearing legacy `knip.json` ignores.
+  - *Rationale*: Prevents dropdown pickers and reverse-reference diagnostics from drifting out of sync when schemas introduce new reference fields.
+
+- **Decision 3: First-Class `ZodRecordEditor`, `ZodUnionEditor`, and Single `#ui-root` Hosting (`AppUiRoot.tsx`, `EditorShell.tsx`, `ZodFormRenderer.tsx`)**:
+  - Replaced raw JSON `<textarea>` fallbacks for `z.ZodRecord` / `z.ZodUnion` / `z.ZodDiscriminatedUnion` with structured Preact editors honoring `z.ZodDefault`, eliminated `#editor-layout` and all 29 legacy imperative `.ts` editor modules plus `modal.ui.ts`, and unified editor styling under `src/styles/views/editor.css` (`--ui-*` semantic tokens + `data-ui-density="compact"`).
+  - *Rationale*: Removes leaked document key/mouse handlers, brings the editor under `InputScopeManager` (`TextInputGuard`) and `dialogService`, and shares all 3 console themes automatically.
+
 
 
 

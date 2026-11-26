@@ -1,120 +1,115 @@
-# Research Notes — Emergent Reputation / Faction Standing Loop & Declarative `site_raid_trauma`
+# Research Notes — Phase 44 (Milestones 169–172): Campaign Editor Rewrite on Shared Preact Primitives, Schema Auto-Discovery, Scoped Input & Unified Themes
 
-**Target Tasks:**
-1. **Unified Faction Standing / Reputation Feedback Loop** across combat, kills, trade, dialogue, hostility, and UI (`factionStandings`).
-2. **Rule 21 Remediation for Hardcoded `'site_raid_trauma'`** (`src/systems/map/site_materializer.ts:285`) via declarative campaign/delta schemas.
+## 1. Rules & Architectural Standards Acknowledgement (`AGENTS.md` & `docs/ARCHITECTURE.md`)
 
-**Governing Standards:** [`AGENTS.md`](../AGENTS.md) (§0 Golden Rules 11, 12, 15, 16, 17, 19, 21; §3 TypeScript Strictness; §4 ECS JSON Purity; §5 Data-Driven JSON Rules) and [`docs/ARCHITECTURE.md`](./ARCHITECTURE.md) (§2 Core Design Philosophy, §6.4, §7.1–7.4, §9.1–9.3).
-
----
-
-## 1. Reiteration of Governing Architectural Constraints
-
-- **TypeScript & ECS Strictness:** Zero `any` (Rule 11); `exactOptionalPropertyTypes: true` (never assign `undefined` explicitly to optional fields); exhaustive `switch` (`assertNever`); pure serializable ECS components (`Record`/`ReadonlyArray`, no `Map`/`Set` in `GameState` components).
-- **Zero Magic Gameplay Literals (Rule 12):** All thresholds, penalties, radii, mood deltas, and durations affecting gameplay must live in `src/constants/*.ts` or campaign JSON schemas.
-- **Three-Tier Console Placement (Rule 16):** Combat reputation feedback belongs in **Tier 1 Console** (`src/systems/` + `src/utils/`) configured by **Tier 3 Campaign JSON** (`rules.json`), never siloed inside one ruleset (`classic_combat.ts`) while ignored in `dnd35e`.
-- **Zero Content-ID Branching — Rule 21 ("New Content Mod" Litmus Test):** Engine/cartridge TypeScript code must never branch on literal content IDs (`'town'`, `'bandits'`, `'site_raid_trauma'`) or assume fixed campaign faction names. Any campaign author adding a custom faction or custom trauma/event thought in JSON must get full support with zero `.ts` edits.
+1. **Three-Tier Placement Heuristic (`AGENTS.md` Rule 16)**:
+   - **Tier 1 — Core Console Engine (`src/core/`, `src/editor/`, `src/rendering/ui/`, `src/types/`)**: The Campaign Editor (`src/editor/` pure controller + `src/rendering/ui/editor/` Preact presentation layer) is a Tier 1 Console facility that authors and validates any campaign regardless of ruleset (`classic` or `dnd35e`), querying `RulesetContract.getEditorViewGroups` / `getSystemContentFiles` / `validateCampaignRuleset` for cartridge extensions.
+2. **Zero Content-ID or Bespoke-Property Branching (`AGENTS.md` Rule 21 — The "New Content Mod" Litmus Test)**:
+   - Never hardcode parallel lists of campaign categories, foreign-key dropdowns, or per-category `"Where Used"` loops that require editing multiple `.ts` files whenever a schema property is added.
+   - Instead, derive `CampaignCategorySchemas`, `panelType` (`'dictionary'` vs `'singleton'`), foreign-key reference options, and `ReferenceIndex` (`"Where Used"`) directly from `CampaignDataSchema` (`src/types/campaign.types.ts`) and a single compile-time exhaustive `Record<keyof CampaignData, CampaignCategoryMeta>` registry.
+3. **Strict TypeScript & Zero `any` (`AGENTS.md` Rules 11, 12, 14 & §3)**:
+   - `exactOptionalPropertyTypes: true`, explicit return types on all functions, `readonly` properties, no magic numbers, flat control flow, and JSDoc on all exported symbols.
+4. **Unified Preact Primitive Kit, `--ui-*` Semantic Tokens, Scoped Input & `DialogService` (`docs/ARCHITECTURE.md` §4 & §9.30)**:
+   - All Campaign Editor views must render inside `<AppUiRoot />` (`#ui-root`) under `[data-ui-density="compact"]` using Phase 43 shared primitives (`src/rendering/ui/primitives/*`) and `--ui-*` semantic CSS tokens (`Obsidian & Brass`, `Parchment`, `Retro CRT`).
+   - Zero `.innerHTML`, zero leaked `document`/`window` listeners, and zero native `alert()`/`confirm()`/`prompt()` or legacy `showPromptModal()` calls.
 
 ---
 
-## 2. Research Findings: Task 1 — Missing & Split-Brain Faction Standing Feedback Loop
+## 2. Codebase Audit & Discovery Across Milestones 169–172
 
-### 2.1 Current Inventory of Every Reader & Writer of `factionStandings`
+### 2.1 Why the Legacy Campaign Editor Drifted Out of Sync
+An audit of `src/types/campaign.types.ts`, `src/constants/campaign.constants.ts`, `src/rendering/editor/editor_config.ts`, `src/rendering/ui/ui_utils.ts`, and `src/editor/reference_index.ts` revealed five manual synchronization bottlenecks:
 
-Inspection across `src/` and `public/data/campaigns/` revealed **three compounding bugs / asymmetries** rather than simply one missing hook:
+1. **11 Missing `CampaignData` Categories in `VIEW_GROUPS` (`src/rendering/editor/editor_config.ts`)**:
+   - `CampaignDataSchema` defines **33** top-level keys (`manifest`, `rules`, `theme`, `advancement`, `areas`, `items`, `effects`, `entities`, `status`, `tiles`, `factions`, `ai`, `dialogues`, `quests`, `questTemplates`, `triggers`, `triggerTemplates`, `triggerBuckets`, `villains`, `schemeRecipes`, `phaseBlocks`, `agreements`, `tagRegistry`, `reactions`, `fields`, `spawnPools`, `encounterProfiles`, `traitRegistry`, `identityGeneration`, `personalityGeneration`, `nemesisHierarchies`, `knowledgePropagation`, `rumorPropagation`, `relationshipThresholds`, `worldEvents`, `systemContent`).
+   - `VIEW_GROUPS` in `src/rendering/editor/editor_config.ts` only listed **21** tabs, leaving `tagRegistry`, `reactions`, `triggerTemplates`, `triggerBuckets`, `phaseBlocks`, `identityGeneration`, `personalityGeneration`, `knowledgePropagation`, `rumorPropagation`, `relationshipThresholds`, `worldEvents`, and `systemContent` unreachable in the Editor UI.
+2. **Duplicate Hand-Rolled `CampaignCategorySchemas` (`src/types/campaign.types.ts:105-142`)**:
+   - Manually unwraps `z.record(z.string(), ItemSchema)` to `ItemSchema` for dictionary categories while keeping `z.object(...)` / `z.array(...)` for singletons. This can be derived automatically by inspecting `CampaignDataSchema.shape[key]` (unwrapping `ZodOptional` and `ZodDefault`).
+3. **`ZodRecord` & `ZodDiscriminatedUnion` Fallback to Raw `<textarea>` (`src/rendering/ui/zod_form_renderer.ts:128-132`)**:
+   - `renderFormForZodSchema` currently falls back to `renderRawJsonField` for every `z.ZodRecord`, `z.ZodUnion`, and `z.ZodDiscriminatedUnion`.
+   - Phases 40–48 added structured `ZodRecord` and union properties inside `rules.json`, `areas.json`, `dialogues.json`, `quests.json`, `triggers.json`, and `theme.json`:
+     - `rules.materials` (`z.record(z.string(), MaterialDefinitionSchema)`)
+     - `rules.blueprints` (`z.record(z.string(), ConstructionBlueprintSchema)`)
+     - `rules.craftingRecipes` (`z.record(z.string(), CraftingRecipeSchema)`)
+     - `rules.psychology.thoughtDefinitions` (`z.record(z.string(), ThoughtRuleDefinitionSchema)`)
+     - `rules.psychology.needDecayMultipliers` (`z.record(z.string(), z.number())`)
+     - `rules.macroWorld.areaSiteBindings` (`z.record(z.string(), z.string())`)
+     - `rules.spawning.spawnWeights` & `lootTable` (`z.record(z.string(), z.number())`)
+     - `area.subBiomes` (`z.record(z.string(), z.number())`)
+     - `DialogueConditionSchema`, `DialogueEffectSchema`, `TriggerConditionSchema`, `TriggerConsequenceSchema`, `QuestObjectiveSchema`, `QuestRewardSchema`, `SpritePackRefSchema`.
+4. **Disconnected Foreign-Key Dropdowns (`src/rendering/ui/ui_utils.ts`) & `"Where Used"` Indexer (`src/editor/reference_index.ts`)**:
+   - `getReferenceOptions(key, doc)` in `ui_utils.ts` only checks 16 hardcoded property names and misses Phase 40–48 foreign keys (`floor`, `wall`, `door`, `water`, `shore`, `plains`, `forest`, `ridge`, `road`, `openAir`, `underground`, `ramp`, `targetTileId`, `minedTileId`, `burnedTileId`, `obsidianTileId`, `materialId`, `boulderItemId`, `mineYieldItemId`, `collapseDropItemId`, `spawnFieldType`, `statusEffectId`, `portalTemplateId`, `thoughtOverride`, `baseUnitId`, `defaultValueDenominationId`).
+   - `buildReferenceIndex(data)` in `src/editor/reference_index.ts` manually iterates over only 5 categories (`areas`, `entities`, `items`, `dialogues`, `quests`) and is currently ignored in `knip.json` because `<WhereUsedDrawer />` was never mounted into the Editor workspace.
+5. **Single-Z Static Area Painter (`src/rendering/ui/area_static_painter.ts`)**:
+   - Phase 46 added `staticMap.zLevels: Record<string, string[]>` (vertical slices such as `"-1"`, `"1"`, `"2"`) and `placedEntities[].z?: number`, and Phase 45 added `generatorType: 'streaming_overworld'`.
+   - `area_static_painter.ts` only reads/writes `staticMap.layout` (`Z = 0`) and ignores `zLevels` and `placedEntities[].z`.
 
-| File & Line | Role | Component Owner & Key | Verified Current Behavior |
+### 2.2 Inventory of Legacy Imperative Editor Files & Call Sites
+- **Entry & Presenter Hook**:
+  - `src/rendering/presenter.ts:10,63-76`: Currently toggles `#game-layout` / `#editor-layout` and calls `renderEditorUI(state, globalCampaignEditor)`.
+  - `src/rendering/ui/core/AppUiRoot.tsx`: Mounts all gameplay HUD, menus, modals, `<DialogHost />`, `<ToastHost />`, `<TooltipHost />`, `<HelpModal />`, and `<LoadingOverlay />` into `#ui-root`.
+  - Storing a reference to `globalCampaignEditor` (`EditorController`) in `uiStore` (or passing it via `uiStore.setEditorController(globalCampaignEditor)` in `initSession`) allows `<EditorShell />` to render directly inside `<AppUiRoot />` when `gameState?.uiMode === UIMode.Editor`, sharing `<DialogHost />`, `<ToastHost />`, `<TooltipHost />`, and `<HelpModal />` with zero duplicate overlays.
+- **26 Legacy Imperative Editor Modules to Replace & Evict**:
+  - Shell & Orchestration (7 files):
+    1. `src/rendering/editor_ui.ts`
+    2. `src/rendering/editor/editor_state.ts` (replaced by reactive `editorStore` / `uiStore` slice)
+    3. `src/rendering/editor/editor_toolbar.ts`
+    4. `src/rendering/editor/editor_sidebar.ts`
+    5. `src/rendering/editor/editor_workspace.ts`
+    6. `src/rendering/editor/editor_splash.ts`
+    7. `src/rendering/editor/new_campaign_modal.ts`
+  - Forms & Inspectors (7 files):
+    8. `src/rendering/ui/zod_form_renderer.ts`
+    9. `src/rendering/ui/zod_form_containers.ts`
+    10. `src/rendering/ui/zod_form_primitives.ts`
+    11. `src/rendering/ui/editor_forms.ts`
+    12. `src/rendering/ui/editor_object_renderer.ts`
+    13. `src/rendering/ui/where_used.ui.ts`
+    14. `src/rendering/ui/validation_panel.ui.ts`
+  - Visual & Domain Editors (7 files):
+    15. `src/rendering/ui/area_editor.ts`
+    16. `src/rendering/ui/area_static_painter.ts`
+    17. `src/rendering/ui/area_playtest_menu.ui.ts`
+    18. `src/rendering/ui/world_graph.ts` (while keeping pure `src/rendering/ui/world_graph_canvas.ts` physics/canvas draw helpers)
+    19. `src/rendering/ui/dialogue_editor.ts`
+    20. `src/rendering/ui/dialogue_simulator_panel.ts`
+    21. `src/rendering/ui/faction_matrix_editor.ts`
+    22. `src/rendering/ui/trigger_composer.ui.ts`
+  - Simulation Labs (5 files + 1 DOM helper):
+    23. `src/rendering/ui/ai_arena.ui.ts`
+    24. `src/rendering/ui/director_sandbox.ui.ts` (plus refactoring `src/rendering/ui/director/director_controls.ts` & `director_telemetry_view.ts` into pure data helpers + Preact view)
+    25. `src/rendering/ui/knowledge_simulator.ui.ts` (while keeping pure `src/rendering/ui/knowledge_sim_canvas.ts` physics/canvas draw helpers)
+    26. `src/rendering/ui/narrative_fuzzer.ui.ts`
+    27. `src/rendering/ui/balance_lab.ui.ts`
+  - Legacy Prompt Modal & Stylesheet (2 files):
+    28. `src/rendering/ui/modal.ui.ts` (only imported by `editor_sidebar.ts`, `dialogue_editor.ts`, `faction_matrix_editor.ts`)
+    29. `src/styles/editor.css` (replaced by compact semantic token rules in `src/styles/views/editor.css` using `--ui-*` tokens).
+
+### 2.3 DialogService & Toast Migration Audit in `src/editor/campaign_editor.ts`
+- `src/editor/campaign_editor.ts` currently calls native `alert()` and `confirm()` in 5 methods:
+  - `loadFromIDB` (line 142: `alert(...)`)
+  - `saveWorkspace` (line 157: `alert('Workspace saved successfully!')`, line 160: `alert(...)`)
+  - `importZipWorkspace` (line 179: `alert(...)`)
+  - `exportZipWorkspace` (line 192: `confirm('Campaign has validation errors. Export anyway?')`, line 207: `alert(...)`)
+- Updating `CampaignEditor` to use `dialogService.alert` / `dialogService.confirm` and `uiStore.pushToast` eliminates blocking browser dialogs from the controller as well.
+
+---
+
+## 3. Cascading Effects Matrix (`AGENTS.md` Rule 15)
+
+| Change | Upstream (Callers / Producers / Events) | Downstream (Consumers / Renderers / Validators) | Lateral (Sibling Configs / Tests / SSOT) |
 | :--- | :--- | :--- | :--- |
-| `src/rulesets/classic/classic_combat.ts:35,99–112` | **Writer (Classic Melee Only)** | `attackerMemory.factionStandings[defenderFaction.factionId]` | Hardcodes `ATTACK_FACTION_STANDING_PENALTY = 5`. Subtracts `5` on every Classic melee swing (`attackerMemory` vs `defenderFaction`), **even against already-hostile monsters**, **ignoring witnesses**, and **completely absent from `dnd35e`**, spells, projectiles, traps, and `InteractionChain` kills. |
-| `src/systems/quest.system.ts:85–102` | **Writer (Quest Rewards)** | `recipientMemory.factionStandings[reward.factionId]` (`recipientId` = player) | Increments player's `factionStandings[factionId]`. |
-| `src/rendering/ui/modals/FactionsModal.tsx:31–78` | **Reader (Player UI)** | `playerMemory.factionStandings[factionId]` | Displays standing for every faction in `state.campaign.factions`: `>= 50` Friendly, `> 0` Amicable, `< 0` Unfriendly, `<= -50` Hostile. |
-| `src/systems/reaction.system.ts:250–256` | **Reader (`contextMatcher`)** | `sourceMemory.factionStandings[factionId]` (`sourceEntityId` = actor, usually player) | Gates reactions by source actor's `factionStandings`. |
-| `src/utils/trade.ts:215–224` | **Reader (Shop Pricing)** | `shopMemory.factionStandings[buyerFaction.factionId]` | **Inverted owner!** Reads the *merchant NPC's* `MemoryComponent` keyed by `buyerFaction.factionId` (e.g., `'player'`), **ignoring** `playerMemory.factionStandings[shopFaction.factionId]`! (`-standing / FACTION_STANDING_PRICE_DIVISOR`). |
-| `src/systems/social.system.ts:56–58` | **Reader (Classic Intimidate/Persuade)** | `npcMemory.factionStandings[playerFaction.factionId]` | **Inverted owner!** Reads NPC's `factionStandings['player']` instead of player's standing with the NPC's faction! |
-| `src/systems/trigger/social.ts:27–44` (`faction_standing` condition) | **Reader (Dialogue / Trigger)** | `(_npcEntityId ?? entityId).memory.factionStandings[condition.target]` | In dialogues (`_npcEntityId` injected), reads NPC's `factionStandings[target]`; in global triggers (`entityId` fallback), reads `event.entityId`'s `factionStandings` if `condition.entityId` is unset. |
-| `src/systems/trigger/social_consequences.ts:51–65` (`modify_standing`) | **Writer (Triggers / Dialogue / Thresholds)** | `(_npcEntityId ?? entityId).memory.factionStandings[factionId]` | Used in `shroudgarde/relationship_thresholds.json:27` (`_npcEntityId` gets `factionId: "player", amount: 5`) AND in `*/trigger_templates.json:30` (`faction_bounty_reward` on `QuestCompleted`, where neither `_npcEntityId` nor `entityId` exists on `QuestCompletedEvent` unless bound at bake time!). |
-| `src/utils/faction.ts:65–106` (`getFactionRelation`) | **Hostility / AI / Combat** | Reads `grudges`, `AttitudeComponent`, `IdentityMaskComponent`, `campaign.factions` | **Never checks `factionStandings`!** Even if `playerMemory.factionStandings['town'] === -200`, town guards stay `'friendly'` (and `FactionsModal` displays `"Hostile (-200)"`). |
-| `src/core/ecs/ecs_spawner.ts:137–182` | **Entity Spawner** | `template.memory` | Only attaches `MemoryComponent` if `template.memory` is present in `entities.json` (or created lazily by `thoughts.system.ts`). Note: `player` gets `MemoryComponent` in `bootstrap.ts` / `world_entities_bootstrap.ts`. |
-
-### 2.2 Key Observations & Edge Cases Uncovered
-
-1. **Classic vs. D&D 3.5e Ruleset Gap (`dnd35e_combat_adapter.ts` & `damage_vitality.ts` & `death.system.ts`):**
-   - `dnd35e` resolves attacks through `executeCombatStrikeExchange` -> `DamageComponent` -> `resolveStateStabilization` -> `processDeathSystem`. Neither `dnd35e_combat_adapter.ts`, `spell_cast_effects.ts`, nor `death.system.ts` modifies `factionStandings` or adds witness grudges.
-   - Moving combat/kill reputation feedback into a **Tier 1 Console subscriber** running inside `resolveStateStabilization` (after `processDeathSystem` emits `EntityDied` / `processDamageSystem` handles damage — or handling `EntityDamaged` & `EntityDied` in `GameState.events`) automatically covers **both `classic` and `dnd35e`**, plus **melee, ranged, spells, traps, and multi-hop `InteractionChain` kills** (`resolvedKillerId = deathComp.killerId ?? deathComp.interaction?.originatorEntityId`).
-2. **Existing Test & Campaign Expectations:**
-   - **Zero tests currently test `ATTACK_FACTION_STANDING_PENALTY` in `classic_combat.ts`.**
-   - `tests/quest_lifecycle.test.ts:171` verifies `quest.system.ts` writes `playerMemory.factionStandings['druids'] === 15`.
-   - `tests/currency_trade_and_campaign.test.ts` tests `getEffectivePrice` with `shop` + `Memory` (`trade.ts`). Let's verify exact expectations in `currency_trade_and_campaign.test.ts` before changing `trade.ts`!
-   - `public/data/campaigns/*/entities.json` shopkeepers (`bertram`, `merchant`, etc.) already have `"memory": { "factionStandings": {}, ... }` blocks, whereas generic NPCs without `memory` in JSON won't crash if omitted.
-3. **Who Should `factionStandings` Track & What Should Happen on Attack/Kill?**
-   - **Player Reputation Model:** The player's `MemoryComponent.factionStandings[factionId]` is clearly intended as the canonical Reputation ledger (`FactionsModal.tsx`, `quest.system.ts`, `reaction.system.ts`, `classic_combat.ts`). Meanwhile `npcMemory.factionStandings[playerFaction]` was used locally by `trade.ts`, `social.system.ts`, and `shroudgarde/relationship_thresholds.json`.
-   - **Bridging Without Breaking Existing Content:** When `trade.ts` or `social.system.ts` evaluates a buyer/speaker's standing with the NPC's faction, combining/checking **both** `npcMemory.factionStandings[buyerFaction]` (local NPC override/personal standing) and `buyerMemory.factionStandings[npcFaction]` (or keeping personal `relationshipAxes` separate while checking player's `factionStandings[npcFaction]` cleanly) reconciles quest rewards + combat reputation with merchant prices and persuasion/intimidation without breaking `relationship_thresholds.json`!
-   - **Baseline Hostility vs. Friendly/Neutral Factions:** Attacking or killing an enemy whose baseline relation (`campaign.factions[killerFaction][victimFaction]`) is **already `'hostile'`** (like a goblin or bandit attacking on sight) should **either** leave standing untouched (or apply a configurable separate rule) so dungeon-crawling monsters doesn't endlessly drop `'monster'` standing unless desired by campaign config — whereas attacking or killing a **non-hostile (`'friendly'` / `'neutral'`)** faction member triggers configurable standing loss (and optionally standing shift for factions allied/hostile to the victim's faction via the `factions.json` matrix!).
-   - **Witnesses, Disguises & Stealth Kills:**
-     - Using `IdentityMaskComponent` (`suspicion < maxSuspicion`): if the killer wears an unblown disguise (`disguisedAsFactionId`), witnesses either attribute the crime to the disguised faction or blow the disguise (`suspicion = maxSuspicion`), rather than blaming the true faction invisibly.
-     - Using witnesses (living non-victim entities in the active area who can see or hear the victim/killer, or area-wide fallback when configurable): stealthy unseen assassinations needn't alert the whole town if `requireWitness: true` is configured, while witnessed murders can trigger local witness grudges/alarm + standing loss!
-   - **Closing the Loop (`getFactionRelation`):** In `src/utils/faction.ts`, `resolveActualBaselineRelation` currently checks `AttitudeComponent`, same-faction, and `campaign.factions[a][b]`. If `getFactionRelation` checks `target`'s `factionStandings[subjectFaction]` against a configurable hostility threshold (`DEFAULT_STANDING_HOSTILE_THRESHOLD = -50`, matching `FactionsModal.tsx`!), then killing allies until standing drops `<= -50` causes the surviving faction (guards, shopkeepers, townsfolk) to **turn hostile automatically**! Note: careful guard needed for `IdentityMaskComponent` precedence (if disguised, Step 4 still masks faction-level hostility unless personal grudge exists!).
+| **1. Schema-Driven Category & Reference Unification (`editor_config.ts`, `campaign.types.ts`, `reference_index.ts`, `ui_utils.ts`)** | `CampaignDataSchema` (`src/types/campaign.types.ts`), `RulesetContract.getEditorViewGroups` & `getSystemContentFiles` | `EditorActivityBar`, `EditorSidebar`, `EditorWorkspace`, `ZodFormRenderer`, `WhereUsedDrawer`, `buildReferenceIndex` | `tests/ruleset_invariants.test.ts` (imports `VIEW_GROUPS`), `src/constants/campaign.constants.ts` (`AUTHORING_LEVELS`), `knip.json` (un-ignore `reference_index.ts`) |
+| **2. Preact `<EditorShell />` Mounted in `<AppUiRoot />` (`AppUiRoot.tsx`, `presenter.ts`, `ui_store.ts`, `input_scope_manager.ts`)** | `initSession` (`session_controller.ts`), `renderPresenterFrame` (`presenter.ts`), `inputScopeManager.setEditorHook` | `<EditorToolbar />`, `<EditorActivityBar />`, `<EditorSidebar />`, `<EditorSplash />`, `<NewCampaignModal />`, `<ValidationDock />`, `<DialogHost />`, `<ToastHost />` | `index.html` (`#editor-layout` / `#ui-root`), `src/styles/views/editor.css` (`--ui-*` tokens across `Obsidian & Brass`, `Parchment`, `Retro CRT`) |
+| **3. Preact Recursive `ZodFormRenderer` (`ZodRecordEditor`, `ZodUnionEditor`, `WhereUsedDrawer`)** | `EditorWorkspace`, `AreaEditor`, `DialogueEditor` (`DialogueOptionSchema`), `CampaignCategorySchemas` | `EditorController.applyOperations`, `validation_navigator.ts` (`isPathExpanded`, `togglePath`, `revealField`), `WhereUsedDrawer` | All 33 `CampaignData` categories + nested `rules.{materials,blueprints,craftingRecipes,psychology,reputation,macroWorld}` |
+| **4. Multi-Z Visual & Domain Editors (`AreaEditor`, `AreaStaticPainter`, `WorldGraph`, `DialogueEditor`, `FactionMatrixEditor`, `TriggerComposer`)** | `EditorWorkspace` routing for `areas`, `dialogues`, `factions`, `triggerComposer` | `createDisplay` / `drawCell` (`display.ts`), `getTileAt` (`map_accessor.ts`), `compileTrigger` (`trigger-composer.system.ts`), `evaluateCondition` (`trigger.system.ts`), `world_graph_canvas.ts` | `sessionStorage` (`editor_playtest_spawn` with optional `z`, `editor_active_document`, `editor_playtest`), `bootstrap.ts` playtest spawn reader |
+| **5. Preact Simulation Labs & Legacy Eviction (`AiArena`, `DirectorSandbox`, `KnowledgeSimulator`, `NarrativeFuzzer`, `BalanceLab`)** | `EditorWorkspace` routing for `simulation` tab | `runAIArena`, `runEncounterArena`, `runEncounterDirector`, `runFuzzerOffload` (`worker_bridge.ts`), `runBalanceSimulations`, `knowledge_sim_canvas.ts` | Delete 28 legacy imperative files, remove 3 `knip.json` ignores, update `docs/ssot/ssot_console.json` & `docs/SSOT_CONSOLE.md` |
 
 ---
 
-## 3. Research Findings: Task 2 — Hardcoded `'site_raid_trauma'` & Declarative Thought Catalog
+## 4. Mapping Tasks to Architecture & Design Rules
 
-### 3.1 Exact Scope & Current Code (`src/systems/map/site_materializer.ts`)
-
-1. At `src/systems/map/site_materializer.ts:284-290`:
-   ```ts
-   nextState = addTimedThought(nextState, survId, {
-     thoughtId: 'site_raid_trauma',
-     eventSummary: delta.summary,
-     moodDelta: delta.kind === 'site_burned' ? SITE_BURN_TRAUMA_MOOD_DELTA : SITE_RAID_TRAUMA_MOOD_DELTA,
-     durationTurns: SITE_RAID_TRAUMA_DURATION_TURNS,
-     maxStacks: SITE_RAID_TRAUMA_MAX_STACKS
-   });
-   ```
-2. Paired constants in `src/constants/macro_world.constants.ts:264-274`:
-   - `SITE_BURN_TRAUMA_MOOD_DELTA = -22`
-   - `SITE_RAID_TRAUMA_MOOD_DELTA = -14`
-   - `SITE_RAID_TRAUMA_DURATION_TURNS = 120`
-   - `SITE_RAID_TRAUMA_MAX_STACKS = 2`
-3. Existing tests checking it: `tests/site_materializer.test.ts:141, 266` explicitly assert `mem?.thoughts?.some((t) => t.thoughtId === 'site_raid_trauma')`.
-4. **Sibling Literal `thoughtId`s in Tier 1 Psychology:**
-   - `needs.system.ts:209–247`: `'freezing_cold'`, `'sweltering_heat'`, `'exhausted'`, `'well_rested'`, `'uncomfortable'`
-   - `workshop.system.ts:395`: `'crafted_item'`
-   - Note: Why is `'site_raid_trauma'` especially problematic? Because macro-world deltas are campaign-authored/configured (`rules.macroWorld` + `MacroSiteDelta` + `rules.psychology`)! A campaign author cannot change the thought ID, severity (`moodDelta`), duration, maxStacks, or distinguish custom `site_burned` vs `site_raided` trauma templates without editing `site_materializer.ts`.
-
-### 3.2 Declarative Schema Options (Rule 17 & Rule 21)
-
-1. **`PsychologyRulesConfigSchema` (`src/types/campaign/meta.ts:169–175`)**:
-   - Currently supports `needDecayMultipliers`, `moodBreakingThreshold`, `moodInspirationThreshold`.
-   - Can add an optional **`thoughtDefinitions`** (or **`thoughts`**) record mapping logical keys/event hooks (`MacroSiteDeltaKind` or generic semantic keys like `'site_burned'`, `'site_raided'`, `'crafted_item'`, `'freezing_cold'`, etc.) to declarative `{ id: string, moodDelta: number, stressDelta?: number, durationTurns: number, maxStacks?: number, summaryTemplate?: string }`.
-2. **`MacroWorldConfigSchema` (`src/types/campaign/meta.ts:178–189`) & `MacroSiteDelta` (`src/types/macro_world.types.ts:138–148`)**:
-   - `MacroSiteDelta` can carry an optional `thought` override (`thoughtId`, `moodDelta`, `durationTurns`, `maxStacks`) generated by Ring 2 / campaign data when specialized deltas occur.
-   - When materializing a delta (`spawnSiteDeltaEffects`), `site_materializer.ts` resolves the thought parameters declaratively in priority order:
-     1. Explicit delta override (`delta.thoughtId` / `delta.moodDelta`, etc.)
-     2. Campaign data lookup (`campaign.rules.psychology?.thoughtDefinitions?.[delta.kind]` or `campaign.rules.macroWorld?.survivorTraumaThoughts?.[delta.kind]`)
-     3. Neutral engine schema fallback descriptor (defined in `macro_world.constants.ts` / Zod `.default(...)`, preserving `'site_raid_trauma'` behavior out-of-the-box for campaigns that omit overrides, OR explicitly configured in `default/rules.json` as showcase!).
-   - Extending the same declarative `thoughtDefinitions` registry lookup cleanly to `needs.system.ts` and `workshop.system.ts` (or starting with `site_materializer.ts` and sharing one helper `resolveConfiguredThought`) removes hardcoded magic thought parameters uniformly.
-
----
-
-## 4. Preliminary Cascading Effects Matrix (`Change | Upstream | Downstream | Lateral`)
-
-| Change | Upstream (Callers, Producers, Schemas) | Downstream (Consumers, Renderers, Saves) | Lateral (Mirrors, Sibling Campaigns, Kits, Docs) |
-| :--- | :--- | :--- | :--- |
-| **Unified Faction Reputation Resolver (`reputation.system.ts` + `RulesConfig.reputation`)** | `RulesConfigSchema` (`src/types/campaign/meta.ts`); `classic_combat.ts` (remove siloed attack penalty or route through shared resolver); `resolveStateStabilization` (`src/core/state_stabilizer.ts`) consuming `EntityDamaged` & `EntityDied` (`resolvedKillerId` / `InteractionChain`). | `getFactionRelation` (`src/utils/faction.ts`); `trade.ts` (`getEffectivePrice`); `social.system.ts`; `FactionsModal.tsx`; `reaction.system.ts`; `trigger/social.ts` (`faction_standing`); `ai.system.ts` hostility detection; `GameState.events` / `World Ledger`; `tests/m155_acoustics_light_stealth.test.ts` & `currency_trade_and_campaign.test.ts`. | All 5 built-in campaigns (`default`, `dnd35e-crypt`, `megacampaign`, `realms-of-shroudgarde`, `shroudgarde` `rules.json` + `relationship_thresholds.json` + `trigger_templates.json`); `ai-prompt-kit/` (via `generate-ai-prompt-kit.ts`); `docs/ssot/ssot_console.json` + `docs/SSOT_CONSOLE.md`; `docs/guides/MODDING.md`. |
-| **Declarative Trauma Thought Config (`PsychologyRulesConfigSchema` / `MacroSiteDelta` + `site_materializer.ts`)** | `PsychologyRulesConfigSchema` / `MacroWorldConfigSchema` (`src/types/campaign/meta.ts`); `MacroSiteDelta` (`src/types/macro_world.types.ts`); `legends_simulator.ts` / `macro_world.system.ts`. | `site_materializer.ts` (`spawnSiteDeltaEffects`); `thoughts.system.ts` (`addTimedThought`); `MemoryComponent.thoughts` + `moodTier`; `NemesisDossierModal` / UI mood tooltips; `tests/site_materializer.test.ts`. | Showcase config in `public/data/campaigns/default/rules.json`; `ai-prompt-kit/` schema contract & default-campaign mirror; `docs/guides/MODDING.md`; `docs/SSOT_CONSOLE.md`. |
-
----
-
-## 5. Open Design Questions for User Confirmation (Before Implementation Plan)
-
-Per `AGENTS.md` Rule 7 & Workflow Step 3, please confirm your preferences on these architectural choices before I draft `docs/implementation_plan.md`:
-
-1. **Scope of Automatic Standing Changes (Kill vs. Attack, Witnessing & Hostile Factions):**
-   - **(A) Recommend:** Trigger standing loss primarily on **killing or attacking non-hostile (`friendly`/`neutral`) faction members** (so fighting already-`hostile` dungeon monsters doesn't pollute faction standings unless a campaign opts in via `rules.reputation.penalizeHostileFactions: true`). Do you want combat standing penalties gated on non-hostile victims by default, and should **witnesses** (visible/audible allies or area-wide) be required when `requireWitness` is enabled?
-2. **Reputation Storage Ownership & Hostility Threshold (`getFactionRelation`):**
-   - **(A) Recommend:** Standardize **player's `MemoryComponent.factionStandings[factionId]`** as the SSOT for faction-wide reputation (matching `FactionsModal.tsx` and `quest.system.ts`), update `trade.ts` and `social.system.ts` to factor in the buyer/speaker's `factionStandings[npcFaction]` alongside any NPC-personal `npcMemory.factionStandings[buyerFaction]`, and update `getFactionRelation` so dropping a faction's standing below `hostileStandingThreshold` (default `-50`, matching `FactionsModal.tsx`) flips that faction's hostility relation to `'hostile'` (still overridden if the subject wears an unblown disguise `IdentityMaskComponent`). Agree?
-3. **Should Classic Combat's Siloed `-5` Per Hit Be Replaced by the Shared Console System?**
-   - **(A) Recommend:** Yes — remove the ad-hoc `ATTACK_FACTION_STANDING_PENALTY` block in `src/rulesets/classic/classic_combat.ts` so both `classic` and `dnd35e` (and spells/projectiles/`InteractionChain` kills) flow uniformly through the Tier 1 Console reputation resolver.
-4. **Scope of Declarative Thought Definitions:**
-   - **(A) Recommend:** Add declarative `thoughtDefinitions` inside `PsychologyRulesConfigSchema` (`rules.psychology`, keyed by logical event key such as `'site_burned'`, `'site_raided'`, and optionally reusable for `'crafted_item'`, `'freezing_cold'`, etc.) plus optional `thought` overrides on `MacroSiteDelta`, keeping schema defaults so campaigns without `rules.psychology.thoughtDefinitions` still work cleanly while showcasing custom definitions in `public/data/campaigns/default/rules.json`. Should we refactor only `site_materializer.ts` now, or resolve all 7 `thoughtId`s (`site_materializer`, `needs.system.ts`, `workshop.system.ts`) through the shared `resolveConfiguredThought` helper?
+- **Milestone 169** maps to `docs/ARCHITECTURE.md` §4 (Preact UI Architecture & Scoped Input) and `AGENTS.md` Rule 21 (Schema-Driven Category Auto-Discovery).
+- **Milestone 170** maps to `AGENTS.md` §5 (Data-Driven & JSON Rules: `z.discriminatedUnion` & `z.record` schema mirroring) and Milestone 76 Decision D1/D2 (`ReferenceIndex` WeakMap cache + persistent `ValidationDock`).
+- **Milestone 171** maps to `docs/ARCHITECTURE.md` §9.32–9.33 (Phase 45 `MapAccessor` / `streaming_overworld` and Phase 46 Multi-Z `staticMap.zLevels` & 3D `placedEntities[].z`).
+- **Milestone 172** maps to `docs/ARCHITECTURE.md` §4 (Eviction of legacy imperative DOM views, zero `knip.json` ignores, and 100% SSOT registry parity).

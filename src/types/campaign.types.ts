@@ -100,43 +100,50 @@ export const CampaignDataSchema = z.object({
 /** The inferred type for a complete campaign data structure. */
 export type CampaignData = z.infer<typeof CampaignDataSchema>;
 
-// Helper registry for editor to resolve specific schemas by category key
+/**
+ * Unwraps optional, nullable, default, and effects wrappers around a Zod schema.
+ *
+ * @param schema Arbitrary Zod schema node.
+ * @returns The unwrapped inner Zod schema.
+ */
+export function unwrapZodSchema(schema: z.ZodTypeAny): z.ZodTypeAny {
+  let curr = schema;
+  while (
+    curr instanceof z.ZodOptional ||
+    curr instanceof z.ZodNullable ||
+    curr instanceof z.ZodDefault ||
+    curr instanceof z.ZodEffects
+  ) {
+    if (curr instanceof z.ZodDefault) {
+      curr = curr.removeDefault();
+    } else if (curr instanceof z.ZodEffects) {
+      curr = curr.innerType();
+    } else {
+      curr = (curr as z.ZodOptional<z.ZodTypeAny>).unwrap();
+    }
+  }
+  return curr;
+}
+
+/**
+ * Auto-derives the item/form Zod schema for each top-level CampaignData category:
+ * - For dictionary categories (`z.record(z.string(), ItemSchema)`), returns `ItemSchema`
+ *   (except `factions`, which uses a 2D `FactionMatrixSchema` grid).
+ * - For singleton categories (`z.object(...)` or `z.array(...)`), returns the unwrapped schema.
+ */
+function buildCampaignCategorySchemas(): Record<keyof CampaignData, z.ZodTypeAny> {
+  const result = {} as Record<keyof CampaignData, z.ZodTypeAny>;
+  const shape = CampaignDataSchema.shape;
+  for (const key of Object.keys(shape) as Array<keyof CampaignData>) {
+    const raw = unwrapZodSchema(shape[key]);
+    if (key !== 'factions' && raw instanceof z.ZodRecord) {
+      result[key] = raw.valueSchema;
+    } else {
+      result[key] = raw;
+    }
+  }
+  return result;
+}
+
 /** Helper registry mapping each campaign JSON database category to its respective Zod schema for editor validation. */
-export const CampaignCategorySchemas: Record<keyof CampaignData, z.ZodTypeAny> = {
-  manifest: CampaignManifestSchema,
-  rules: RulesConfigSchema,
-  theme: ThemeConfigSchema,
-  advancement: AdvancementLevelSchema.array(),
-  areas: AreaDefinitionSchema,
-  items: ItemDefinitionSchema,
-  effects: ItemEffectDefinitionSchema,
-  entities: EntityTemplateSchema,
-  status: StatusEffectDefinitionSchema,
-  tiles: TileDefinitionSchema,
-  factions: FactionMatrixSchema,
-  ai: AIProfileSchema,
-  dialogues: DialogueTreeSchema,
-  quests: QuestSchema,
-  questTemplates: ProceduralQuestTemplateSchema,
-  triggers: TriggerDefinitionSchema,
-  triggerTemplates: TriggerTemplateSchema,
-  triggerBuckets: z.array(TriggerDefinitionSchema),
-  villains: VillainArchetypeSchema,
-  schemeRecipes: SchemeRecipeSchema,
-  phaseBlocks: PhaseBlockSchema,
-  agreements: AgreementDefinitionSchema,
-  tagRegistry: TagDefinitionSchema,
-  reactions: ReactionDefinitionSchema.array(),
-  fields: FieldDefinitionSchema,
-  spawnPools: SpawnPoolDefinitionSchema,
-  encounterProfiles: EncounterProfileSchema,
-  traitRegistry: TraitDefinitionSchema,
-  identityGeneration: IdentityGenerationTableSchema,
-  personalityGeneration: PersonalityGenerationTableSchema,
-  nemesisHierarchies: NemesisHierarchySchema,
-  knowledgePropagation: KnowledgePropagationRuleSchema.array(),
-  rumorPropagation: RumorPropagationRuleSchema.array(),
-  relationshipThresholds: RelationshipThresholdSchema.array(),
-  worldEvents: WorldEventsConfigSchema,
-  systemContent: GenericSystemContentSchema
-};
+export const CampaignCategorySchemas: Record<keyof CampaignData, z.ZodTypeAny> = buildCampaignCategorySchemas();

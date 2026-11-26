@@ -5,6 +5,7 @@ import { useState } from 'preact/hooks';
 export interface AccordionProps {
   readonly title: string;
   readonly badge?: ComponentChildren | undefined;
+  readonly actions?: ComponentChildren | undefined;
   readonly defaultExpanded?: boolean | undefined;
   readonly expanded?: boolean | undefined;
   readonly onToggle?: ((expanded: boolean) => void) | undefined;
@@ -18,6 +19,7 @@ export interface AccordionProps {
 export function Accordion({
   title,
   badge,
+  actions,
   defaultExpanded = false,
   expanded,
   onToggle,
@@ -37,13 +39,16 @@ export function Accordion({
 
   return (
     <div className={className ? `ui-accordion ${className}` : 'ui-accordion'}>
-      <button type="button" className="ui-accordion__trigger" aria-expanded={isExpanded} onClick={handleToggle}>
-        <span>
-          {isExpanded ? '▾ ' : '▸ '}
-          {title}
-        </span>
-        {badge ? <span>{badge}</span> : null}
-      </button>
+      <div className="ui-accordion__header">
+        <button type="button" className="ui-accordion__trigger" aria-expanded={isExpanded} onClick={handleToggle}>
+          <span>
+            {isExpanded ? '▾ ' : '▸ '}
+            {title}
+          </span>
+          {badge ? <span>{badge}</span> : null}
+        </button>
+        {actions ? <div className="ui-accordion__actions">{actions}</div> : null}
+      </div>
       {isExpanded ? <div className="ui-accordion__content">{children}</div> : null}
     </div>
   );

@@ -247,17 +247,22 @@ export function bindDOMControls(display: ROT.Display): void {
       initRNG(Number(playtestSeed));
     }
     const spawnOverrideRaw = sessionStorage.getItem('editor_playtest_spawn');
-    let spawnOverride: { areaId: string; x: number; y: number } | undefined;
+    let spawnOverride: { areaId: string; x: number; y: number; z?: number } | undefined;
     if (spawnOverrideRaw) {
       try {
-        const parsed = JSON.parse(spawnOverrideRaw);
-        if (
-          parsed &&
-          typeof parsed.areaId === 'string' &&
-          typeof parsed.x === 'number' &&
-          typeof parsed.y === 'number'
-        ) {
-          spawnOverride = parsed;
+        const parsed = JSON.parse(spawnOverrideRaw) as {
+          areaId?: unknown;
+          x?: unknown;
+          y?: unknown;
+          z?: unknown;
+        };
+        if (typeof parsed.areaId === 'string' && typeof parsed.x === 'number' && typeof parsed.y === 'number') {
+          spawnOverride = {
+            areaId: parsed.areaId,
+            x: parsed.x,
+            y: parsed.y,
+            ...(typeof parsed.z === 'number' ? { z: parsed.z } : {})
+          };
         }
       } catch {
         // Ignore invalid spawn override

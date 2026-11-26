@@ -11,6 +11,7 @@ import { SettingsModal } from '../menus/SettingsModal.tsx';
 import { ConsoleModalHost } from '../modals/ConsoleModalHost.tsx';
 import { DebugOverlay } from '../modals/DebugOverlay.tsx';
 import { DialogueModal } from '../modals/DialogueModal.tsx';
+import { EditorShell } from '../editor/EditorShell.tsx';
 import { FactionsModal } from '../modals/FactionsModal.tsx';
 import { HelpModal } from '../modals/HelpModal.tsx';
 import { InvestigationModal } from '../modals/InvestigationModal.tsx';
@@ -37,6 +38,7 @@ export function AppUiRoot(): JSX.Element {
     <div className="ui-shell-anchor" data-ui-shell="ready">
       <HudRoot />
       <VerbMenuPopover />
+      <EditorShell />
       <MainMenu />
       <RulesetSelectModal />
       <CampaignSelectModal />

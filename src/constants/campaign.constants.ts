@@ -1,3 +1,5 @@
+import type { CampaignData } from '../types/campaign.types.ts';
+
 /** Current schema version of the CampaignData structure. Bump on breaking changes. */
 export const CURRENT_SCHEMA_VERSION = 1 as const;
 
@@ -14,7 +16,7 @@ export const INSTALLED_CAMPAIGNS_STORE = 'installed_campaigns' as const;
 export const EDITOR_WORKSPACES_STORE = 'editor_workspaces' as const;
 
 /** Mapping of campaign category keys to their default authoring level. */
-export const AUTHORING_LEVELS: Record<string, 'Static' | 'Blueprint' | 'Dynamic'> = {
+export const AUTHORING_LEVELS: Readonly<Record<keyof CampaignData, 'Static' | 'Blueprint' | 'Dynamic'>> = {
   manifest: 'Static',
   rules: 'Static',
   theme: 'Static',
@@ -49,5 +51,6 @@ export const AUTHORING_LEVELS: Record<string, 'Static' | 'Blueprint' | 'Dynamic'
   knowledgePropagation: 'Blueprint',
   rumorPropagation: 'Blueprint',
   relationshipThresholds: 'Dynamic',
-  worldEvents: 'Blueprint'
+  worldEvents: 'Blueprint',
+  systemContent: 'Static'
 };

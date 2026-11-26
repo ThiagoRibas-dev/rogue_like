@@ -96,6 +96,12 @@ function describeActiveScreen(state: GameState | null): { readonly title: string
           'Use Tab to move between panels, Arrow keys to navigate lists/grids, ? or Alt+I to inspect highlighted items, and Escape to close.'
       };
     }
+    case UIMode.Editor:
+      return {
+        title: 'Campaign Editor',
+        summary:
+          'Author campaigns, maps, dialogues, factions, and simulation tests. Use Undo/Redo, Save, Play Test, or Escape to exit.'
+      };
     default:
       return {
         title: `Active Screen (${state.uiMode})`,

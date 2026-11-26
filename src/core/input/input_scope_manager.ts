@@ -360,12 +360,7 @@ export class InputScopeManager {
       else if (matched.id === 'editor.redo') this.editorHook?.onRedo();
       else if (matched.id === 'editor.save') this.editorHook?.onSave?.();
       else if (matched.id === 'editor.playtest') this.editorHook?.onPlaytest?.();
-      return true;
-    }
-
-    if (!isTextInput && this.isCommandBound(event, 'system.escape_or_pause', overrides, false, activeRulesetId)) {
-      event.preventDefault();
-      this.editorHook?.onEscape?.();
+      else if (matched.id === 'system.escape_or_pause') this.editorHook?.onEscape?.();
       return true;
     }
 

@@ -42,7 +42,7 @@ export function collapsePath(path: string): void {
 
 /**
  * Reveal a field by expanding its ancestors, then return navigation instructions
- * for the controller layer (`editor_workspace.ts`, `editor_toolbar.ts`).
+ * for the editor store (`editor_store.ts`, `ValidationDock.tsx`).
  *
  * The navigator itself does not touch the DOM; it only updates the persistent
  * `expandedPaths` set and returns the target info for downstream consumers.
@@ -70,7 +70,7 @@ export function revealField(targetPath: string): {
 
 /**
  * Toggle a single path (open if closed, close if open) without affecting descendants.
- * Used by accordion click handlers in `zod_form_renderer.ts`.
+ * Used by accordion click handlers in `ZodFormContainers.tsx`.
  */
 export function togglePath(path: string): boolean {
   if (expandedPaths.has(path)) {

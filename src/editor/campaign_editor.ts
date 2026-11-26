@@ -3,7 +3,8 @@ import { CURRENT_SCHEMA_VERSION } from '../constants/campaign.constants.ts';
 import { loadEditorWorkspace, saveEditorWorkspace } from '../core/campaign_store.ts';
 import { hydrateCampaignSpritePacks } from '../core/loader/sprite_pack_loader.ts';
 import { runEncounterDirector } from '../map/encounter_director.ts';
-import { generateArea } from '../map/generator.ts';
+import { generateArea, type GeneratedArea } from '../map/generator.ts';
+import { dialogService, toastService } from '../rendering/ui/primitives/dialog_service.ts';
 import { type CampaignData, CampaignDataSchema } from '../types/campaign.types.ts';
 import { applyPatch, generateInversePatch, type PatchOperation } from '../utils/json-patch.ts';
 import { auditCampaignLinks, getValueAtPath } from './campaign_link_auditor.ts';
@@ -13,9 +14,35 @@ import { readCampaignFromZip, writeCampaignToZip } from './workspace_file_servic
 export * from './campaign_link_auditor.ts';
 
 /**
+ * Controls operations in the Campaign Editor, handling workspace save/load, validation, undo/redo, and sandbox generation.
+ */
+export interface EditorController {
+  getDocument(): CampaignData;
+  resetDocument(newDoc: CampaignData): void;
+  loadFromIDB(workspaceId: string): Promise<void>;
+  saveWorkspace(): Promise<void>;
+  importZipWorkspace(file: File): Promise<void>;
+  exportZipWorkspace(): Promise<void>;
+  applyOperations(ops: PatchOperation[], coalesce?: boolean): void;
+  undo(): void;
+  redo(): void;
+  canUndo(): boolean;
+  canRedo(): boolean;
+  validate(): ReadonlyArray<ValidationError>;
+  hasUnsavedChanges(): boolean;
+  generateSandboxArea(areaId: string): GeneratedArea;
+  generateSandboxAreaWithSeed?(
+    areaId: string,
+    seed: number,
+    overrides?: { crBudget?: number; encounterProfileId?: string }
+  ): GeneratedArea;
+  onChange(listener: (doc: CampaignData, errors: ReadonlyArray<ValidationError>, isCoalesced: boolean) => void): void;
+}
+
+/**
  * Controller class coordinating active workspace document modifications and undo/redo stacks.
  */
-export class CampaignEditor {
+export class CampaignEditor implements EditorController {
   private doc: CampaignData;
   private undoStack: Array<PatchOperation[]> = [];
   private redoStack: Array<PatchOperation[]> = [];
@@ -139,7 +166,10 @@ export class CampaignEditor {
       this.emitChange();
     } catch (err) {
       console.error('Failed to load workspace:', err);
-      alert(`Failed to load workspace: ${(err as Error).message}`);
+      await dialogService.alert({
+        title: 'Load Failed',
+        message: `Failed to load workspace: ${(err as Error).message}`
+      });
     }
   }
 
@@ -154,10 +184,13 @@ export class CampaignEditor {
     try {
       await saveEditorWorkspace(this.workspaceId, this.doc);
       this.isDirty = false;
-      alert('Workspace saved successfully!');
+      toastService.push('Workspace saved successfully!', 'success');
     } catch (err) {
       console.error('Failed to save workspace:', err);
-      alert(`Failed to save workspace: ${(err as Error).message}`);
+      await dialogService.alert({
+        title: 'Save Failed',
+        message: `Failed to save workspace: ${(err as Error).message}`
+      });
     }
   }
 
@@ -174,9 +207,13 @@ export class CampaignEditor {
       this.lastEditedPath = null;
       this.coalescedOriginalValue = undefined;
       this.emitChange();
+      toastService.push(`Imported "${newDoc.manifest.name}"`, 'success');
     } catch (err) {
       console.error('Failed to import ZIP:', err);
-      alert(`Failed to import ZIP: ${(err as Error).message}`);
+      await dialogService.alert({
+        title: 'Import Failed',
+        message: `Failed to import ZIP: ${(err as Error).message}`
+      });
     }
   }
 
@@ -189,7 +226,13 @@ export class CampaignEditor {
     const errors = this.validate();
     const hasErrors = errors.some((e) => e.severity === 'error');
     if (hasErrors) {
-      if (!confirm(`Campaign has validation errors. Export anyway?`)) {
+      const proceed = await dialogService.confirm({
+        title: 'Export With Errors?',
+        message: 'Campaign has validation errors. Export anyway?',
+        confirmLabel: 'Export Anyway',
+        danger: true
+      });
+      if (!proceed) {
         return;
       }
     }
@@ -202,9 +245,13 @@ export class CampaignEditor {
       a.download = `${this.doc.manifest.id || 'campaign'}_export.zip`;
       a.click();
       URL.revokeObjectURL(url);
+      toastService.push('Campaign ZIP exported.', 'success');
     } catch (err) {
       console.error('Failed to export ZIP:', err);
-      alert(`Failed to export ZIP: ${(err as Error).message}`);
+      await dialogService.alert({
+        title: 'Export Failed',
+        message: `Failed to export ZIP: ${(err as Error).message}`
+      });
     }
   }
 

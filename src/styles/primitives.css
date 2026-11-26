@@ -273,7 +273,14 @@
   background: var(--ui-bg-panel-alt);
 }
 
+.ui-accordion__header {
+  display: flex;
+  align-items: center;
+}
+
 .ui-accordion__trigger {
+  flex: 1 1 auto;
+  min-width: 0;
   width: 100%;
   display: flex;
   align-items: center;
@@ -291,6 +298,14 @@
 
 .ui-accordion__trigger:hover {
   background: var(--ui-bg-hover);
+}
+
+.ui-accordion__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-space-1);
+  padding-right: var(--ui-space-2);
+  flex-shrink: 0;
 }
 
 .ui-accordion__content {

@@ -7,12 +7,12 @@ import { buildViewportSnapshot } from './viewport_snapshot.ts';
 import type { ViewportSnapshot } from './viewport_snapshot.types.ts';
 import { renderVFXAndFogOverlay } from './ui/vfx_overlay.ui.ts';
 import { renderTacticalOverlay } from './ui/tactical_overlay.ui.ts';
-import { renderEditorUI } from './editor_ui.ts';
 import type { CampaignEditor } from '../editor/campaign_editor.ts';
 import { hasSaveGame } from '../core/save.ts';
 import { recordRenderSample } from '../core/performance.ts';
 import { recordEarlyReturn, recordDisplayCanvas, recordMapRender } from './render_debug.ts';
 import { uiStore } from './ui/core/ui_store.ts';
+import { editorStore } from './ui/editor/editor_store.ts';
 
 /** Default viewport fallback width when neither ROT.Display nor GameMap provides finite dimensions. */
 const DEFAULT_PRESENTER_VIEWPORT_W = 50;
@@ -55,24 +55,18 @@ export function renderPresenterFrame(
 
   const frameStartMs = performance.now();
   const gameLayout = document.getElementById('game-layout');
-  const editorLayout = document.getElementById('editor-layout');
 
   const hasSave = hasSaveGame();
+  editorStore.bindController(globalCampaignEditor);
   uiStore.syncFromPresenter(state, hasSave, dirtyDomains);
 
   if (state.uiMode === UIMode.Editor) {
     if (gameLayout) gameLayout.classList.add('hidden');
-    if (editorLayout) editorLayout.classList.remove('hidden');
-    if (dirtyDomains.has(PresentationDomain.Editor) || dirtyDomains.has(PresentationDomain.Modals)) {
-      renderEditorUI(state, globalCampaignEditor);
-    }
     recordEarlyReturn('editor-mode');
     return;
   }
 
   if (gameLayout) gameLayout.classList.remove('hidden');
-  if (editorLayout) editorLayout.classList.add('hidden');
-  renderEditorUI(state, globalCampaignEditor);
 
   // Invalidate snapshot cache upon area transition or campaign change
   if (lastRenderedAreaId !== state.currentAreaId || lastRenderedCampaignId !== state.campaignId) {

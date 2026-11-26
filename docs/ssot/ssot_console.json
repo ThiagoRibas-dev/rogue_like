@@ -1460,16 +1460,18 @@
   "src/editor/campaign_editor.ts": {
     "domain": "Core Console: Campaign Editor Subsystem",
     "tier": "tier1_console",
-    "responsibility": "Controller class coordinating active workspace document modifications and undo/redo stacks.",
+    "responsibility": "Controller interface and implementation coordinating workspace document modifications, undo/redo stacks, and dialog/toast notifications.",
     "canonicalEntryPoints": [
+      "EditorController",
       "CampaignEditor"
     ],
     "ownershipBoundary": {
       "includes": "Pure implementation and exports for src/editor/campaign_editor.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
+      "excludes": "External state mutation or UI rendering."
     },
     "antiPatterns": [
-      "Do not duplicate or bypass exports from src/editor/campaign_editor.ts."
+      "Do not duplicate or bypass exports from src/editor/campaign_editor.ts.",
+      "Never use native window.alert/confirm/prompt inside CampaignEditor."
     ]
   },
   "src/editor/campaign_link_auditor.ts": {
@@ -1507,8 +1509,10 @@
   "src/editor/reference_index.ts": {
     "domain": "Core Console: Campaign Editor Subsystem",
     "tier": "tier1_console",
-    "responsibility": "Cached reverse-reference indexer over `CampaignData`.",
+    "responsibility": "Cached reverse-reference indexer and unified bidirectional field-reference resolver over CampaignData.",
     "canonicalEntryPoints": [
+      "ReferenceTargetKind",
+      "resolveFieldReferenceKind",
       "ReferenceUsage",
       "ReferenceIndex",
       "buildReferenceIndex",
@@ -1520,7 +1524,7 @@
       "excludes": "External state mutation or unrelated subsystem logic."
     },
     "antiPatterns": [
-      "Do not duplicate or bypass exports from src/editor/reference_index.ts."
+      "Do not duplicate field-to-kind reference tables outside resolveFieldReferenceKind."
     ]
   },
   "src/editor/simulation/ai_arena.ts": {
@@ -2065,131 +2069,24 @@
       "Do not duplicate or bypass exports from src/rendering/display.ts."
     ]
   },
-  "src/rendering/editor_ui.ts": {
-    "domain": "Core Console: Rendering & UI Views",
-    "tier": "tier1_console",
-    "responsibility": "Controls operations in the Campaign Editor, handling workspace save/load, validation, undo/redo, and sandbox generation.",
-    "canonicalEntryPoints": [
-      "EditorController",
-      "renderEditorUI"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/editor_ui.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/editor_ui.ts."
-    ]
-  },
   "src/rendering/editor/editor_config.ts": {
     "domain": "Core Console: Rendering & UI Views",
     "tier": "tier1_console",
-    "responsibility": "Module implementation for src/rendering/editor/editor_config.ts",
+    "responsibility": "Auto-discovers Campaign Editor Activity Bar view groups and panel types directly from CampaignDataSchema.shape.",
     "canonicalEntryPoints": [
+      "EditorGroupId",
+      "CampaignCategoryMeta",
+      "CAMPAIGN_CATEGORY_META",
+      "resolveCategoryPanelType",
+      "getCategoryAuthoringLevel",
       "VIEW_GROUPS"
     ],
     "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/editor/editor_config.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
+      "includes": "Compile-time exhaustive category metadata and schema-derived VIEW_GROUPS builder.",
+      "excludes": "Hardcoded manual lists of CampaignData category schemas."
     },
     "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/editor/editor_config.ts."
-    ]
-  },
-  "src/rendering/editor/editor_sidebar.ts": {
-    "domain": "Core Console: Rendering & UI Views",
-    "tier": "tier1_console",
-    "responsibility": "Renders the search header, item list, and handlers inside the sidebar panel.",
-    "canonicalEntryPoints": [
-      "renderSidebar"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/editor/editor_sidebar.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/editor/editor_sidebar.ts."
-    ]
-  },
-  "src/rendering/editor/editor_splash.ts": {
-    "domain": "Core Console: Rendering & UI Views",
-    "tier": "tier1_console",
-    "responsibility": "Renders the initial Campaign Editor splash screen for selecting or creating workspaces.",
-    "canonicalEntryPoints": [
-      "renderEditorSplashScreen",
-      "renderSimulationLabSubTabs"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/editor/editor_splash.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/editor/editor_splash.ts."
-    ]
-  },
-  "src/rendering/editor/editor_state.ts": {
-    "domain": "Core Console: Rendering & UI Views",
-    "tier": "tier1_console",
-    "responsibility": "Subscribes a callback to change notifications in the editor state.",
-    "canonicalEntryPoints": [
-      "EditorState",
-      "editorState",
-      "subscribeToEditorState",
-      "notifyEditorStateChanged"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/editor/editor_state.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/editor/editor_state.ts."
-    ]
-  },
-  "src/rendering/editor/editor_toolbar.ts": {
-    "domain": "Core Console: Rendering & UI Views",
-    "tier": "tier1_console",
-    "responsibility": "Renders the HTML structure of the toolbar inside the given header container.",
-    "canonicalEntryPoints": [
-      "renderToolbar",
-      "bindToolbarEvents",
-      "updateToolbarState"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/editor/editor_toolbar.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/editor/editor_toolbar.ts."
-    ]
-  },
-  "src/rendering/editor/editor_workspace.ts": {
-    "domain": "Core Console: Rendering & UI Views",
-    "tier": "tier1_console",
-    "responsibility": "Renders the primary workspace container, horizontal tabs, and delegates editing panel content.",
-    "canonicalEntryPoints": [
-      "renderWorkspace"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/editor/editor_workspace.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/editor/editor_workspace.ts."
-    ]
-  },
-  "src/rendering/editor/new_campaign_modal.ts": {
-    "domain": "Core Console: Rendering & UI Views",
-    "tier": "tier1_console",
-    "responsibility": "Renders the New Campaign wizard modal in the Campaign Editor.",
-    "canonicalEntryPoints": [
-      "showNewCampaignModal"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/editor/new_campaign_modal.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/editor/new_campaign_modal.ts."
+      "Never add top-level CampaignData categories without a matching CAMPAIGN_CATEGORY_META entry."
     ]
   },
   "src/rendering/inspect_tooltip.ts": {
@@ -2347,82 +2244,6 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/rendering/tactical_snapshot.ts."
-    ]
-  },
-  "src/rendering/ui/ai_arena.ui.ts": {
-    "domain": "Core Console: Rendering & UI Views",
-    "tier": "tier1_console",
-    "responsibility": "Renders the AI Arena simulation workspace where the user can pit two templates against each other.",
-    "canonicalEntryPoints": [
-      "renderSimulationLab"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/ai_arena.ui.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/ai_arena.ui.ts."
-    ]
-  },
-  "src/rendering/ui/area_editor.ts": {
-    "domain": "Core Console: Rendering & UI Views",
-    "tier": "tier1_console",
-    "responsibility": "Renders the Area Editor which includes the standard form and an optional Grid Painter for static maps.",
-    "canonicalEntryPoints": [
-      "renderAreaEditor"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/area_editor.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/area_editor.ts."
-    ]
-  },
-  "src/rendering/ui/area_playtest_menu.ui.ts": {
-    "domain": "Core Console: Rendering & UI Views",
-    "tier": "tier1_console",
-    "responsibility": "Static map right-click context menu for \"Playtest from Here\" spawning.",
-    "canonicalEntryPoints": [
-      "PlaytestMenuProps",
-      "renderPlaytestMenu"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/area_playtest_menu.ui.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/area_playtest_menu.ui.ts."
-    ]
-  },
-  "src/rendering/ui/area_static_painter.ts": {
-    "domain": "Core Console: Rendering & UI Views",
-    "tier": "tier1_console",
-    "responsibility": "Renders the interactive ASCII/Tile Grid Painter for static area layouts in the Area Editor.",
-    "canonicalEntryPoints": [
-      "renderStaticAreaPainter"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/area_static_painter.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/area_static_painter.ts."
-    ]
-  },
-  "src/rendering/ui/balance_lab.ui.ts": {
-    "domain": "Core Console: Rendering & UI Views",
-    "tier": "tier1_console",
-    "responsibility": "Renders the Balance Lab simulation tab in the Simulation Lab.",
-    "canonicalEntryPoints": [
-      "renderBalanceLab"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/balance_lab.ui.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/balance_lab.ui.ts."
     ]
   },
   "src/rendering/ui/cartridge_ui_registry.ts": {
@@ -2794,76 +2615,10 @@
       "Never cache focusable element lists once at open time; always query live on Tab."
     ]
   },
-  "src/rendering/ui/dialogue_editor.ts": {
-    "domain": "Core Console: Rendering & UI Views",
-    "tier": "tier1_console",
-    "responsibility": "Renders a specialized tree-first editor for Dialogue Trees.",
-    "canonicalEntryPoints": [
-      "renderDialogueTreeEditor"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/dialogue_editor.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/dialogue_editor.ts."
-    ]
-  },
-  "src/rendering/ui/dialogue_simulator_panel.ts": {
-    "domain": "Core Console: Rendering & UI Views",
-    "tier": "tier1_console",
-    "responsibility": "Renders the interactive dialogue tree test simulator panel inside the Dialogue Editor.",
-    "canonicalEntryPoints": [
-      "renderDialogueSimulatorPanel"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/dialogue_simulator_panel.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/dialogue_simulator_panel.ts."
-    ]
-  },
-  "src/rendering/ui/director_sandbox.ui.ts": {
-    "domain": "Core Console: Rendering & UI Views",
-    "tier": "tier1_console",
-    "responsibility": "Renders the Encounter Director Sandbox panel.",
-    "canonicalEntryPoints": [
-      "renderDirectorSandbox",
-      "renderReceipt",
-      "updateJsonPreview"
-    ],
-    "ownershipBoundary": {
-      "includes": "Coordinating facade and primary orchestration exports declared directly in src/rendering/ui/director_sandbox.ui.ts.",
-      "excludes": "Underlying primitive symbols re-exported from leaf modules (e.g. src/rendering/ui/director/director_telemetry_view.ts)."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/director_sandbox.ui.ts."
-    ]
-  },
-  "src/rendering/ui/director/director_controls.ts": {
-    "domain": "Core Console: Rendering & UI Views",
-    "tier": "tier1_console",
-    "responsibility": "Updates the area info bar when an area is selected.",
-    "canonicalEntryPoints": [
-      "DEFAULT_MAX_SIM_TURNS",
-      "updateAreaInfo",
-      "runGeneration",
-      "handleBakeArea",
-      "runAutoSimulation"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/director/director_controls.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/director/director_controls.ts."
-    ]
-  },
   "src/rendering/ui/director/director_telemetry_view.ts": {
     "domain": "Core Console: Rendering & UI Views",
     "tier": "tier1_console",
-    "responsibility": "Resolves tile color from campaign data for mini-map rendering.",
+    "responsibility": "Pure Encounter Director telemetry and tile/entity projection helpers consumed by DirectorSandbox.",
     "canonicalEntryPoints": [
       "MAP_CELL_SIZE",
       "AXIS_COLORS",
@@ -2871,66 +2626,571 @@
       "getEntityDisplay",
       "lightenColor",
       "getDispositionLabel",
-      "buildBakedStaticArea",
-      "renderMiniMap"
+      "buildBakedStaticArea"
     ],
     "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/director/director_telemetry_view.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
+      "includes": "Pure telemetry and color projection helpers in src/rendering/ui/director/director_telemetry_view.ts.",
+      "excludes": "Imperative DOM manipulation or Preact UI rendering."
     },
     "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/director/director_telemetry_view.ts."
+      "Never write raw DOM string templates inside director_telemetry_view.ts."
     ]
   },
-  "src/rendering/ui/editor_forms.ts": {
+  "src/rendering/ui/editor/EditorActivityBar.tsx": {
     "domain": "Core Console: Rendering & UI Views",
     "tier": "tier1_console",
-    "responsibility": "Modular form field generators for the Vanilla TS Campaign Editor.",
+    "responsibility": "Vertical Activity Bar switching between auto-discovered Campaign Editor groups.",
     "canonicalEntryPoints": [
-      "FieldOptions",
-      "createStringField",
-      "createNumberField",
-      "createBooleanField",
-      "createColorPickerField",
-      "createSelectField",
-      "createMultiSelectField"
+      "EditorActivityBar"
     ],
     "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/editor_forms.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
+      "includes": "Activity bar presentation in src/rendering/ui/editor/EditorActivityBar.tsx.",
+      "excludes": "Business validation or campaign mutation."
     },
     "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/editor_forms.ts."
+      "Never hardcode group arrays outside getRuleset(rulesetId).getEditorViewGroups(VIEW_GROUPS)."
     ]
   },
-  "src/rendering/ui/editor_object_renderer.ts": {
+  "src/rendering/ui/editor/EditorShell.tsx": {
     "domain": "Core Console: Rendering & UI Views",
     "tier": "tier1_console",
-    "responsibility": "A basic recursive form renderer for objects.",
+    "responsibility": "Top-level Preact Campaign Editor shell mounted in #ui-root when uiMode === UIMode.Editor, scoping compact density tokens and EditorInputHook.",
     "canonicalEntryPoints": [
-      "renderFormForObject"
+      "EditorShell"
     ],
     "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/editor_object_renderer.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
+      "includes": "Root editor shell layout, resize handle, and EditorInputHook wiring.",
+      "excludes": "Direct GameState mutation outside EditorController."
     },
     "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/editor_object_renderer.ts."
+      "Never register un-scoped document keydown handlers bypassing InputScopeManager."
     ]
   },
-  "src/rendering/ui/faction_matrix_editor.ts": {
+  "src/rendering/ui/editor/EditorSidebar.tsx": {
     "domain": "Core Console: Rendering & UI Views",
     "tier": "tier1_console",
-    "responsibility": "Renders a specialized 2D data-grid for the Faction Matrix instead of a nested Zod form.",
+    "responsibility": "Collapsible, filterable category dictionary sidebar powered by ListBox and dialogService.",
     "canonicalEntryPoints": [
-      "renderFactionMatrixEditor"
+      "EditorSidebar"
     ],
     "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/faction_matrix_editor.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
+      "includes": "Sidebar item listing, search filter, and CRUD prompts in src/rendering/ui/editor/EditorSidebar.tsx.",
+      "excludes": "Validation math or schema parsing."
     },
     "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/faction_matrix_editor.ts."
+      "Never use native window.prompt/confirm/alert for sidebar CRUD."
+    ]
+  },
+  "src/rendering/ui/editor/EditorSplash.tsx": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Campaign Editor welcome view supporting workspace resume, ZIP import, new campaign creation, and Simulation Lab jump.",
+    "canonicalEntryPoints": [
+      "EditorSplash"
+    ],
+    "ownershipBoundary": {
+      "includes": "Editor splash screen UI in src/rendering/ui/editor/EditorSplash.tsx.",
+      "excludes": "File system persistence logic."
+    },
+    "antiPatterns": [
+      "Use dialogService/toastService instead of native browser alerts."
+    ]
+  },
+  "src/rendering/ui/editor/EditorToolbar.tsx": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Top Campaign Editor action bar with Undo/Redo, Save, ZIP export, Validation toggle, Theme switcher, Playtest, and Exit.",
+    "canonicalEntryPoints": [
+      "exportValidatedCampaignZip",
+      "launchEditorPlaytest",
+      "requestExitEditor",
+      "EditorToolbar"
+    ],
+    "ownershipBoundary": {
+      "includes": "Toolbar UI and export/playtest/exit command helpers in src/rendering/ui/editor/EditorToolbar.tsx.",
+      "excludes": "Simulation loop mutation."
+    },
+    "antiPatterns": [
+      "Never duplicate exportValidatedCampaignZip or launchEditorPlaytest logic elsewhere."
+    ]
+  },
+  "src/rendering/ui/editor/EditorWorkspace.tsx": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Main right-hand editor workspace routing between category tabs, recursive Zod forms, and specialized domain views.",
+    "canonicalEntryPoints": [
+      "EditorWorkspace"
+    ],
+    "ownershipBoundary": {
+      "includes": "Workspace tab routing and item header in src/rendering/ui/editor/EditorWorkspace.tsx.",
+      "excludes": "Low-level field widget rendering."
+    },
+    "antiPatterns": [
+      "Never branch on content IDs or hardcode category lists outside CampaignDataSchema."
+    ]
+  },
+  "src/rendering/ui/editor/NewCampaignModal.tsx": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Accessible ModalShell wizard creating a blank-slate CampaignData project for any registered ruleset.",
+    "canonicalEntryPoints": [
+      "NewCampaignModal"
+    ],
+    "ownershipBoundary": {
+      "includes": "New campaign wizard UI in src/rendering/ui/editor/NewCampaignModal.tsx.",
+      "excludes": "Blank slate template construction (owned by blank_slate_campaign.ts)."
+    },
+    "antiPatterns": [
+      "Do not duplicate createBlankSlateCampaign logic inside UI."
+    ]
+  },
+  "src/rendering/ui/editor/ValidationDock.tsx": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Collapsible bottom diagnostics dock listing synchronous and deep validation issues with click-to-reveal navigation.",
+    "canonicalEntryPoints": [
+      "ValidationDock"
+    ],
+    "ownershipBoundary": {
+      "includes": "Validation diagnostics list and jump buttons in src/rendering/ui/editor/ValidationDock.tsx.",
+      "excludes": "Running validation rules directly."
+    },
+    "antiPatterns": [
+      "Delegate field reveal strictly through editorStore.navigateToPath."
+    ]
+  },
+  "src/rendering/ui/editor/WhereUsedDrawer.tsx": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Global reverse-reference drawer querying ReferenceIndex and jumping to referrer paths.",
+    "canonicalEntryPoints": [
+      "WhereUsedDrawer"
+    ],
+    "ownershipBoundary": {
+      "includes": "Reverse reference presentation and navigation triggers in src/rendering/ui/editor/WhereUsedDrawer.tsx.",
+      "excludes": "Walking CampaignData directly (owned by reference_index.ts)."
+    },
+    "antiPatterns": [
+      "Always consume buildReferenceIndex/queryUsages instead of ad-hoc traversal."
+    ]
+  },
+  "src/rendering/ui/editor/editor_store.ts": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Reactive Preact store binding EditorController, tab/item selection, validation diagnostics, and deep path navigation.",
+    "canonicalEntryPoints": [
+      "EditorStore",
+      "editorStore",
+      "useEditorSelector"
+    ],
+    "ownershipBoundary": {
+      "includes": "Editor shell reactive state and field navigation in src/rendering/ui/editor/editor_store.ts.",
+      "excludes": "Direct JSON Patch mutation or rendering markup."
+    },
+    "antiPatterns": [
+      "Never mutate CampaignData directly in editor_store.ts; route patches through EditorController."
+    ]
+  },
+  "src/rendering/ui/editor/editor_store_helpers.ts": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Pure EditorStore constants, snapshot types, JSON Pointer escaping, reference kind mapping, and shallow/deep diagnostic deduplication.",
+    "canonicalEntryPoints": [
+      "MIN_SIDEBAR_WIDTH",
+      "DEFAULT_SIDEBAR_WIDTH",
+      "MAX_SIDEBAR_WIDTH",
+      "EditorTabId",
+      "WhereUsedTarget",
+      "EditorStoreSnapshot",
+      "createInitialEditorSnapshot",
+      "resolveCategoryReferenceKind",
+      "escapeJsonPointerSegment",
+      "dedupeValidationDiagnostics"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure state helpers and types in src/rendering/ui/editor/editor_store_helpers.ts.",
+      "excludes": "Reactive subscriptions or DOM queries."
+    },
+    "antiPatterns": [
+      "Keep all helpers pure and side-effect free."
+    ]
+  },
+  "src/rendering/ui/editor/forms/ZodFormContainers.tsx": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Collapsible Accordion object container and reorderable array container for Preact Zod forms.",
+    "canonicalEntryPoints": [
+      "ZodObjectFieldProps",
+      "ZodObjectField",
+      "ZodArrayFieldProps",
+      "ZodArrayField"
+    ],
+    "ownershipBoundary": {
+      "includes": "ZodObject and ZodArray container components in src/rendering/ui/editor/forms/ZodFormContainers.tsx.",
+      "excludes": "Leaf primitive widgets."
+    },
+    "antiPatterns": [
+      "Never use RFC 6902 append /- when inserting array elements; use explicit numeric indices."
+    ]
+  },
+  "src/rendering/ui/editor/forms/ZodFormPrimitives.tsx": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Preact primitive field renderers (string, enum, number, boolean, color, reference Select, multi-tag picker, raw JSON fallback).",
+    "canonicalEntryPoints": [
+      "ZodPrimitiveFieldProps",
+      "MultiSelectTagsField",
+      "ZodPrimitiveField",
+      "AddOptionalFieldButton"
+    ],
+    "ownershipBoundary": {
+      "includes": "Leaf Zod scalar/array-tag controls in src/rendering/ui/editor/forms/ZodFormPrimitives.tsx.",
+      "excludes": "Container recursion or union branching."
+    },
+    "antiPatterns": [
+      "Guard inputs via shared FormControls primitives instead of raw DOM innerHTML."
+    ]
+  },
+  "src/rendering/ui/editor/forms/ZodFormRenderer.tsx": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Recursive Preact form dispatcher routing Zod schemas to primitives, records, unions, arrays, and objects.",
+    "canonicalEntryPoints": [
+      "ZodFormRendererProps",
+      "ZodFormRenderer"
+    ],
+    "ownershipBoundary": {
+      "includes": "Top-level Zod schema switch in src/rendering/ui/editor/forms/ZodFormRenderer.tsx.",
+      "excludes": "Schema modification or imperative DOM building."
+    },
+    "antiPatterns": [
+      "Never silence unhandled complex types silently when ZodRecordEditor or ZodUnionEditor applies."
+    ]
+  },
+  "src/rendering/ui/editor/forms/ZodRecordEditor.tsx": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "First-class Preact dictionary editor for z.ZodRecord fields with key prompt/confirm via dialogService.",
+    "canonicalEntryPoints": [
+      "ZodRecordEditorProps",
+      "ZodRecordEditor"
+    ],
+    "ownershipBoundary": {
+      "includes": "Recursive key-value record editing UI in src/rendering/ui/editor/forms/ZodRecordEditor.tsx.",
+      "excludes": "Native browser prompts."
+    },
+    "antiPatterns": [
+      "Always escape record keys with escapeJsonPointerSegment when building patch paths."
+    ]
+  },
+  "src/rendering/ui/editor/forms/ZodUnionEditor.tsx": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Preact variant switcher and form renderer for z.ZodDiscriminatedUnion and z.ZodUnion schemas.",
+    "canonicalEntryPoints": [
+      "ZodUnionEditorProps",
+      "ZodUnionEditor"
+    ],
+    "ownershipBoundary": {
+      "includes": "Union variant switching and branch schema rendering in src/rendering/ui/editor/forms/ZodUnionEditor.tsx.",
+      "excludes": "Custom per-feature hardcoded condition/reward forms."
+    },
+    "antiPatterns": [
+      "Construct variant defaults from the selected branch schema via buildDefaultValueForZodSchema."
+    ]
+  },
+  "src/rendering/ui/editor/forms/zod_form_helpers.ts": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Pure schema unwrapping, ZodDefault-aware default construction, and exact/descendant validation error grouping.",
+    "canonicalEntryPoints": [
+      "UnwrappedZodSchema",
+      "unwrapZodFieldSchema",
+      "buildDefaultValueForZodSchema",
+      "collectFieldErrors"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure Zod schema introspection helpers for Preact forms.",
+      "excludes": "DOM rendering or EditorController mutation."
+    },
+    "antiPatterns": [
+      "Keep all helpers pure and SSR/Happy-DOM safe."
+    ]
+  },
+  "src/rendering/ui/editor/labs/AiArena.tsx": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Preact AI Arena combat simulator lab pitting two entity templates head-to-head.",
+    "canonicalEntryPoints": [
+      "AiArenaProps",
+      "AiArena"
+    ],
+    "ownershipBoundary": {
+      "includes": "AI Arena controls and batch report table in src/rendering/ui/editor/labs/AiArena.tsx.",
+      "excludes": "Simulation math (owned by src/editor/simulation/ai_arena.ts)."
+    },
+    "antiPatterns": [
+      "Do not duplicate combat simulation loops inside UI components."
+    ]
+  },
+  "src/rendering/ui/editor/labs/BalanceLab.tsx": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Preact Balance QA sandbox running automated headless balance suites and displaying metric tables.",
+    "canonicalEntryPoints": [
+      "BalanceLabProps",
+      "BalanceLab"
+    ],
+    "ownershipBoundary": {
+      "includes": "Balance simulator controls and report view in src/rendering/ui/editor/labs/BalanceLab.tsx.",
+      "excludes": "Simulation logic (owned by src/editor/balance_simulator.ts)."
+    },
+    "antiPatterns": [
+      "Never hardcode ruleset-specific balance thresholds in UI."
+    ]
+  },
+  "src/rendering/ui/editor/labs/DirectorSandbox.tsx": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Preact Encounter Director Sandbox previewing procedural area generation, CR receipts, auto-sim combat, and static map baking.",
+    "canonicalEntryPoints": [
+      "DirectorSandboxProps",
+      "DirectorSandbox"
+    ],
+    "ownershipBoundary": {
+      "includes": "Director preview canvas, budget controls, and bake actions in src/rendering/ui/editor/labs/DirectorSandbox.tsx.",
+      "excludes": "Director allocation math (owned by src/map/encounter_director.ts)."
+    },
+    "antiPatterns": [
+      "Reuse director_telemetry_view helpers rather than duplicating color/entity projections."
+    ]
+  },
+  "src/rendering/ui/editor/labs/DirectorSandboxViews.tsx": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Presentational Preact subviews for DirectorSandbox (CR budget receipt, JSX tile mini-map, and combat auto-simulation metrics).",
+    "canonicalEntryPoints": [
+      "EncounterArenaReport",
+      "DirectorReceiptView",
+      "DirectorMiniMap",
+      "DirectorSimReportView"
+    ],
+    "ownershipBoundary": {
+      "includes": "Telemetry presentation subviews in src/rendering/ui/editor/labs/DirectorSandboxViews.tsx.",
+      "excludes": "Area generation orchestration or JSON Patch baking."
+    },
+    "antiPatterns": [
+      "Do not mutate campaign documents inside telemetry subviews."
+    ]
+  },
+  "src/rendering/ui/editor/labs/KnowledgeSimulator.tsx": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Preact Knowledge & Rumor Simulator hosting the interactive canvas graph and propagation tick controls.",
+    "canonicalEntryPoints": [
+      "KnowledgeSimulatorProps",
+      "KnowledgeSimulator"
+    ],
+    "ownershipBoundary": {
+      "includes": "Simulator controls and canvas lifecycle in src/rendering/ui/editor/labs/KnowledgeSimulator.tsx.",
+      "excludes": "Graph drawing math (owned by knowledge_sim_canvas.ts)."
+    },
+    "antiPatterns": [
+      "Do not duplicate physics/drawing loops outside knowledge_sim_canvas.ts."
+    ]
+  },
+  "src/rendering/ui/editor/labs/knowledge_sim_helpers.ts": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Pure graph builder and rumor eligibility predicate helpers for KnowledgeSimulator.",
+    "canonicalEntryPoints": [
+      "buildKnowledgeGraph",
+      "isNpcEligible"
+    ],
+    "ownershipBoundary": {
+      "includes": "Graph topology construction and propagation eligibility in src/rendering/ui/editor/labs/knowledge_sim_helpers.ts.",
+      "excludes": "Canvas animation and Preact UI state."
+    },
+    "antiPatterns": [
+      "Keep graph construction deterministic with rng and pure over CampaignData."
+    ]
+  },
+  "src/rendering/ui/editor/labs/NarrativeFuzzer.tsx": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Preact Narrative Fuzzer lab running async headless state-fuzzing batches and inspecting bug replays.",
+    "canonicalEntryPoints": [
+      "NarrativeFuzzerProps",
+      "NarrativeFuzzer"
+    ],
+    "ownershipBoundary": {
+      "includes": "Fuzzer batch configuration, progress bar, and report accordions.",
+      "excludes": "Headless fuzzer execution (owned by narrative_fuzzer_async.ts)."
+    },
+    "antiPatterns": [
+      "Do not render nested interactive controls inside Accordion headers."
+    ]
+  },
+  "src/rendering/ui/editor/labs/SimulationLab.tsx": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Unified Preact container hosting all 5 Simulation Lab tools behind an accessible Tabs bar.",
+    "canonicalEntryPoints": [
+      "SimulationLabProps",
+      "SimulationLab"
+    ],
+    "ownershipBoundary": {
+      "includes": "Sub-tab routing across the 5 simulation labs.",
+      "excludes": "Individual lab simulations."
+    },
+    "antiPatterns": [
+      "Use shared Tabs primitive instead of unlinked buttons."
+    ]
+  },
+  "src/rendering/ui/editor/views/AreaEditor.tsx": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Preact Area Editor combining Map Preview / Static Painter / Area Properties sub-views.",
+    "canonicalEntryPoints": [
+      "AreaEditorProps",
+      "AreaEditor"
+    ],
+    "ownershipBoundary": {
+      "includes": "Area mode tabs and procedural preview orchestration in src/rendering/ui/editor/views/AreaEditor.tsx.",
+      "excludes": "Static map tile painting loop (owned by AreaStaticPainter.tsx)."
+    },
+    "antiPatterns": [
+      "Preserve generator preview cancellation on area switches."
+    ]
+  },
+  "src/rendering/ui/editor/views/AreaPlaytestMenu.tsx": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Preact context menu offering \"Playtest from Here\" at clicked map (x, y, z) coordinates.",
+    "canonicalEntryPoints": [
+      "AreaPlaytestMenuProps",
+      "AreaPlaytestMenu"
+    ],
+    "ownershipBoundary": {
+      "includes": "Context menu overlay and playtest trigger in src/rendering/ui/editor/views/AreaPlaytestMenu.tsx.",
+      "excludes": "Canvas hit-testing."
+    },
+    "antiPatterns": [
+      "Propagate active z alongside x/y when spawning playtest overrides."
+    ]
+  },
+  "src/rendering/ui/editor/views/AreaStaticPainter.tsx": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Multi-Z Preact Static Map Painter supporting Z-slice management (zLevels), tile/entity/item brushes, and z-tagged placedEntities.",
+    "canonicalEntryPoints": [
+      "AreaStaticPainterProps",
+      "AreaStaticPainter"
+    ],
+    "ownershipBoundary": {
+      "includes": "ROT.Display canvas painting and multi-Z slice toolbar in src/rendering/ui/editor/views/AreaStaticPainter.tsx.",
+      "excludes": "Procedural generator preview."
+    },
+    "antiPatterns": [
+      "Always filter and tag placedEntities by activeZ when painting multi-Z maps."
+    ]
+  },
+  "src/rendering/ui/editor/views/AreaStaticPainterToolbars.tsx": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Presentational Z-slice elevation bar and tile/entity/item brush palette toolbar for AreaStaticPainter.",
+    "canonicalEntryPoints": [
+      "AreaPaintMode",
+      "AreaPaintDef",
+      "AreaStaticPainterToolbarsProps",
+      "AreaStaticPainterToolbars"
+    ],
+    "ownershipBoundary": {
+      "includes": "Toolbar presentation for AreaStaticPainter in src/rendering/ui/editor/views/AreaStaticPainterToolbars.tsx.",
+      "excludes": "ROT.Display canvas painting and JSON Patch writes."
+    },
+    "antiPatterns": [
+      "Keep toolbars controlled via props from AreaStaticPainter."
+    ]
+  },
+  "src/rendering/ui/editor/views/DialogueEditor.tsx": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Specialized Dialogue Tree Preact editor with node cards, ModalShell option trigger editor, and DialogueSimulatorPanel.",
+    "canonicalEntryPoints": [
+      "DialogueEditorProps",
+      "DialogueEditor"
+    ],
+    "ownershipBoundary": {
+      "includes": "Dialogue node/option editing UI in src/rendering/ui/editor/views/DialogueEditor.tsx.",
+      "excludes": "Dialogue simulation evaluation logic."
+    },
+    "antiPatterns": [
+      "Use ModalShell and dialogService rather than imperative modals or window.prompt."
+    ]
+  },
+  "src/rendering/ui/editor/views/DialogueSimulatorPanel.tsx": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Interactive Preact Dialogue Simulator allowing live condition overrides, conversation stepping, and execution trace logging.",
+    "canonicalEntryPoints": [
+      "DialogueSimulatorPanelProps",
+      "DialogueSimulatorPanel"
+    ],
+    "ownershipBoundary": {
+      "includes": "Simulated conversation stepper and trace drawer in src/rendering/ui/editor/views/DialogueSimulatorPanel.tsx.",
+      "excludes": "Dialogue tree CRUD."
+    },
+    "antiPatterns": [
+      "Keep mock game state isolated from live runtime game state."
+    ]
+  },
+  "src/rendering/ui/editor/views/FactionMatrixEditor.tsx": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "2D Preact Faction Relations Matrix grid with semantic status styling and reciprocal faction CRUD.",
+    "canonicalEntryPoints": [
+      "FactionMatrixEditorProps",
+      "FactionMatrixEditor"
+    ],
+    "ownershipBoundary": {
+      "includes": "Faction matrix table UI and symmetric JSON Patch operations.",
+      "excludes": "Faction simulation rules."
+    },
+    "antiPatterns": [
+      "Always clean symmetric matrix columns when removing a faction."
+    ]
+  },
+  "src/rendering/ui/editor/views/TriggerComposer.tsx": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Interactive Preact Trigger Composer compiling reusable triggerTemplates into validated CampaignData triggers.",
+    "canonicalEntryPoints": [
+      "TriggerComposerProps",
+      "TriggerComposer"
+    ],
+    "ownershipBoundary": {
+      "includes": "Template selector, placeholder binding inputs, and live JSON preview in src/rendering/ui/editor/views/TriggerComposer.tsx.",
+      "excludes": "Trigger compilation engine (owned by trigger-composer.system.ts)."
+    },
+    "antiPatterns": [
+      "Delegate compilation exclusively to compileTrigger."
+    ]
+  },
+  "src/rendering/ui/editor/views/WorldGraph.tsx": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Interactive Preact force-directed World Graph canvas displaying area connections and click-to-select nodes.",
+    "canonicalEntryPoints": [
+      "WorldGraphProps",
+      "WorldGraph"
+    ],
+    "ownershipBoundary": {
+      "includes": "Animation lifecycle and node hit-selection in src/rendering/ui/editor/views/WorldGraph.tsx.",
+      "excludes": "Force-layout physics and canvas drawing (owned by world_graph_canvas.ts)."
+    },
+    "antiPatterns": [
+      "Reuse world_graph_canvas.ts helpers for physics and rendering."
     ]
   },
   "src/rendering/ui/hud_alerts.ui.ts": {
@@ -3001,21 +3261,6 @@
       "Do not duplicate or bypass exports from src/rendering/ui/knowledge_sim_canvas.ts."
     ]
   },
-  "src/rendering/ui/knowledge_simulator.ui.ts": {
-    "domain": "Core Console: Rendering & UI Views",
-    "tier": "tier1_console",
-    "responsibility": "Renders the localized Knowledge & Rumor Simulator.",
-    "canonicalEntryPoints": [
-      "renderKnowledgeSimulator"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/knowledge_simulator.ui.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/knowledge_simulator.ui.ts."
-    ]
-  },
   "src/rendering/ui/loading_overlay.ui.ts": {
     "domain": "Core Console: Rendering & UI Views",
     "tier": "tier1_console",
@@ -3032,37 +3277,6 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/rendering/ui/loading_overlay.ui.ts."
-    ]
-  },
-  "src/rendering/ui/modal.ui.ts": {
-    "domain": "Core Console: Rendering & UI Views",
-    "tier": "tier1_console",
-    "responsibility": "Properties governing custom dialog overlays for string prompt inputs.",
-    "canonicalEntryPoints": [
-      "PromptModalOptions",
-      "showPromptModal"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/modal.ui.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/modal.ui.ts."
-    ]
-  },
-  "src/rendering/ui/narrative_fuzzer.ui.ts": {
-    "domain": "Core Console: Rendering & UI Views",
-    "tier": "tier1_console",
-    "responsibility": "Renders the Narrative Fuzzer simulation tab in the Simulation Lab.",
-    "canonicalEntryPoints": [
-      "renderNarrativeFuzzer"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/narrative_fuzzer.ui.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/narrative_fuzzer.ui.ts."
     ]
   },
   "src/rendering/ui/settings_attributions.ts": {
@@ -3097,21 +3311,6 @@
       "Do not duplicate or bypass exports from src/rendering/ui/tactical_overlay.ui.ts."
     ]
   },
-  "src/rendering/ui/trigger_composer.ui.ts": {
-    "domain": "Core Console: Rendering & UI Views",
-    "tier": "tier1_console",
-    "responsibility": "Extracts all unique placeholder variables (e.g., $NEMESIS_ID) from a template.",
-    "canonicalEntryPoints": [
-      "renderTriggerComposer"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/trigger_composer.ui.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/trigger_composer.ui.ts."
-    ]
-  },
   "src/rendering/ui/ui_utils.ts": {
     "domain": "Core Console: Rendering & UI Views",
     "tier": "tier1_console",
@@ -3126,22 +3325,6 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/rendering/ui/ui_utils.ts."
-    ]
-  },
-  "src/rendering/ui/validation_panel.ui.ts": {
-    "domain": "Core Console: Rendering & UI Views",
-    "tier": "tier1_console",
-    "responsibility": "Persistent collapsible bottom diagnostics dock.",
-    "canonicalEntryPoints": [
-      "ValidationPanelProps",
-      "renderValidationPanel"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/validation_panel.ui.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/validation_panel.ui.ts."
     ]
   },
   "src/rendering/ui/vfx_overlay.ui.ts": {
@@ -3161,22 +3344,6 @@
       "Do not duplicate or bypass exports from src/rendering/ui/vfx_overlay.ui.ts."
     ]
   },
-  "src/rendering/ui/where_used.ui.ts": {
-    "domain": "Core Console: Rendering & UI Views",
-    "tier": "tier1_console",
-    "responsibility": "\"Where Used\" global reverse-reference inspector drawer/dock.",
-    "canonicalEntryPoints": [
-      "WhereUsedDrawerProps",
-      "renderWhereUsedDrawer"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/where_used.ui.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/where_used.ui.ts."
-    ]
-  },
   "src/rendering/ui/world_graph_canvas.ts": {
     "domain": "Core Console: Rendering & UI Views",
     "tier": "tier1_console",
@@ -3193,71 +3360,6 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/rendering/ui/world_graph_canvas.ts."
-    ]
-  },
-  "src/rendering/ui/world_graph.ts": {
-    "domain": "Core Console: Rendering & UI Views",
-    "tier": "tier1_console",
-    "responsibility": "Renders an interactive node-link visualization of the areas in the campaign.",
-    "canonicalEntryPoints": [
-      "renderWorldGraph"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/world_graph.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/world_graph.ts."
-    ]
-  },
-  "src/rendering/ui/zod_form_containers.ts": {
-    "domain": "Core Console: Rendering & UI Views",
-    "tier": "tier1_console",
-    "responsibility": "Renders recursive ZodArray and ZodObject container sections for the dynamic Zod Form Renderer.",
-    "canonicalEntryPoints": [
-      "renderNestedObjectField",
-      "renderArrayField"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/zod_form_containers.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/zod_form_containers.ts."
-    ]
-  },
-  "src/rendering/ui/zod_form_primitives.ts": {
-    "domain": "Core Console: Rendering & UI Views",
-    "tier": "tier1_console",
-    "responsibility": "Schema unwrapping, label formatting, reference dropdown resolution, and primitive string field rendering for Zod forms.",
-    "canonicalEntryPoints": [
-      "renderRawJsonField",
-      "renderStringField",
-      "renderNumberField",
-      "renderBooleanField",
-      "renderMultiSelectTagsField"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/zod_form_primitives.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/zod_form_primitives.ts."
-    ]
-  },
-  "src/rendering/ui/zod_form_renderer.ts": {
-    "domain": "Core Console: Rendering & UI Views",
-    "tier": "tier1_console",
-    "responsibility": "Renders a form dynamically based on a Zod schema.",
-    "canonicalEntryPoints": [
-      "renderFormForZodSchema"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/zod_form_renderer.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/zod_form_renderer.ts."
     ]
   },
   "src/rendering/viewport_snapshot.ts": {

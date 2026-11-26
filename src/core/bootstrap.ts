@@ -42,6 +42,7 @@ export interface SpawnOverride {
   readonly areaId: string;
   readonly x: number;
   readonly y: number;
+  readonly z?: number | undefined;
 }
 
 export async function startNewGame(
@@ -150,7 +151,7 @@ export async function startNewGame(
 
   const spawnX = spawnOverride?.x ?? startPos.x;
   const spawnY = spawnOverride?.y ?? startPos.y;
-  const spawnZ = startPos.z ?? 0;
+  const spawnZ = spawnOverride?.z ?? startPos.z ?? 0;
   const [stateAfterPlayerSpawn] = spawnEntity(state, 'player', spawnX, spawnY, undefined, undefined, spawnZ);
   state = stateAfterPlayerSpawn;
   if (state.map.chunkGrid !== undefined) {
